@@ -4,7 +4,6 @@ from datetime import datetime, date
 from werkzeug.utils import secure_filename
 from email_service import yeni_ise_giris_bildirimi, isten_cikis_bildirimi
 import os
-import sqlite3
 import hashlib
 import pandas as pd
 import io
@@ -55,7 +54,7 @@ def admin_required(f):
             return redirect(url_for('login'))
         
         conn = get_db()
-        user = conn.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+        user = conn.execute('SELECT role FROM users WHERE id = %s', (session['user_id'],)).fetchone()
         conn.close()
         
         if not user or user['role'] != 'admin':
@@ -73,7 +72,7 @@ def manager_required(f):
             return redirect(url_for('login'))
         
         conn = get_db()
-        user = conn.execute('SELECT role FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+        user = conn.execute('SELECT role FROM users WHERE id = %s', (session['user_id'],)).fetchone()
         conn.close()
         
         if not user or user['role'] not in ['admin', 'manager']:
@@ -120,7 +119,7 @@ def login():
         conn = get_db()
         user = conn.execute('''
             SELECT * FROM users 
-            WHERE username = ? AND password_hash = ? AND aktif = 1
+            WHERE username = %s AND password_hash = %s AND aktif = TRUE
         ''', (username, password_hash)).fetchone()
         
         if user:
@@ -130,7 +129,7 @@ def login():
             session['role'] = user['role']
             
             # Son giriş tarihini güncelle
-            conn.execute('UPDATE users SET son_giris_tarihi = ? WHERE id = ?', 
+            conn.execute('UPDATE users SET son_giris_tarihi = %s WHERE id = %s', 
                         (datetime.now(), user['id']))
             conn.commit()
             conn.close()
@@ -180,22 +179,35 @@ def index():
         FROM projeler p
         LEFT JOIN hedef_kadrolar hk ON p.id = hk.proje_id
         LEFT JOIN adaylar a ON hk.id = a.kadro_id
-        LEFT JOIN calisanlar c ON hk.id = c.kadro_id AND c.aktif = 1
-        WHERE p.aktif = 1
+        LEFT JOIN calisanlar c ON hk.id = c.kadro_id AND c.aktif = TRUE
+        WHERE p.aktif = TRUE
         GROUP BY p.id, p.proje_adi
     ''').fetchall()
     
     # Kadro bazında detay
     kadrolar = conn.execute('''
         SELECT 
-            hk.*,
+            hk.id,
+            hk.proje_id,
+            hk.pozisyon_adi,
+            hk.calisma_sekli,
+            hk.mudurluk_id,
+            hk.direktorluk_id,
+            hk.il_id,
+            hk.ilce_id,
+            hk.magaza_adi,
+            hk.hedef_kisi_sayisi,
+            hk.dolu_kisi_sayisi,
+            hk.aracli_durum,
+            hk.durum,
+            hk.olusturma_tarihi,
             p.proje_adi,
             m.mudurluk_adi,
             d.direktorluk_adi,
             i.il_adi,
             ic.ilce_adi,
             COUNT(DISTINCT a.id) as aday_sayisi,
-            COUNT(DISTINCT CASE WHEN c.aktif = 1 THEN c.id END) as calisan_sayisi
+            COUNT(DISTINCT CASE WHEN c.aktif = TRUE THEN c.id END) as calisan_sayisi
         FROM hedef_kadrolar hk
         LEFT JOIN projeler p ON hk.proje_id = p.id
         LEFT JOIN mudurluker m ON hk.mudurluk_id = m.id
@@ -204,7 +216,10 @@ def index():
         LEFT JOIN ilceler ic ON hk.ilce_id = ic.id
         LEFT JOIN adaylar a ON hk.id = a.kadro_id
         LEFT JOIN calisanlar c ON hk.id = c.kadro_id
-        GROUP BY hk.id
+        GROUP BY hk.id, hk.proje_id, hk.pozisyon_adi, hk.calisma_sekli, hk.mudurluk_id, 
+                 hk.direktorluk_id, hk.il_id, hk.ilce_id, hk.magaza_adi, hk.hedef_kisi_sayisi,
+                 hk.dolu_kisi_sayisi, hk.aracli_durum, hk.durum, hk.olusturma_tarihi,
+                 p.proje_adi, m.mudurluk_adi, d.direktorluk_adi, i.il_adi, ic.ilce_adi
         ORDER BY p.proje_adi, i.il_adi, ic.ilce_adi
     ''').fetchall()
     
@@ -225,7 +240,7 @@ def index():
         FROM calisanlar c
         LEFT JOIN hedef_kadrolar hk ON c.kadro_id = hk.id
         LEFT JOIN iller i ON hk.il_id = i.id
-        WHERE c.aktif = 1
+        WHERE c.aktif = TRUE
         GROUP BY i.il_adi
         ORDER BY calisan_sayisi DESC
         LIMIT 10
@@ -234,11 +249,11 @@ def index():
     # 2. Aylık işe giriş trendi (Son 6 ay)
     aylik_giris = conn.execute('''
         SELECT 
-            strftime('%Y-%m', ise_baslama_tarihi) as ay,
+            TO_CHAR(ise_baslama_tarihi, 'YYYY-MM') as ay,
             COUNT(*) as sayi
         FROM calisanlar
-        WHERE ise_baslama_tarihi >= date('now', '-6 months')
-        AND aktif = 1
+        WHERE ise_baslama_tarihi >= CURRENT_DATE - INTERVAL '6 months'
+        AND aktif = TRUE
         GROUP BY ay
         ORDER BY ay
     ''').fetchall()
@@ -250,7 +265,7 @@ def index():
             COUNT(DISTINCT c.id) as calisan_sayisi
         FROM calisanlar c
         LEFT JOIN hedef_kadrolar hk ON c.kadro_id = hk.id
-        WHERE c.aktif = 1
+        WHERE c.aktif = TRUE
         GROUP BY hk.aracli_durum
     ''').fetchall()
     
@@ -262,7 +277,7 @@ def index():
         FROM calisanlar c
         LEFT JOIN hedef_kadrolar hk ON c.kadro_id = hk.id
         LEFT JOIN mudurluker m ON hk.mudurluk_id = m.id
-        WHERE c.aktif = 1
+        WHERE c.aktif = TRUE
         GROUP BY mudurluk
         ORDER BY calisan_sayisi DESC
         LIMIT 8
@@ -277,7 +292,7 @@ def index():
             COUNT(DISTINCT a.id) as aday_sayisi
         FROM iller i
         LEFT JOIN hedef_kadrolar hk ON i.id = hk.il_id
-        LEFT JOIN calisanlar c ON hk.id = c.kadro_id AND c.aktif = 1
+        LEFT JOIN calisanlar c ON hk.id = c.kadro_id AND c.aktif = TRUE
         LEFT JOIN adaylar a ON hk.id = a.kadro_id AND a.durum = 'Aday'
         GROUP BY i.id, i.il_adi
         ORDER BY i.il_adi
@@ -285,10 +300,10 @@ def index():
     
     # 6. Genel istatistikler
     stats = {
-        'toplam_proje': conn.execute('SELECT COUNT(*) as cnt FROM projeler WHERE aktif = 1').fetchone()['cnt'],
+        'toplam_proje': conn.execute('SELECT COUNT(*) as cnt FROM projeler WHERE aktif = TRUE').fetchone()['cnt'],
         'toplam_kadro': conn.execute('SELECT COUNT(*) as cnt FROM hedef_kadrolar').fetchone()['cnt'],
         'toplam_aday': conn.execute('SELECT COUNT(*) as cnt FROM adaylar').fetchone()['cnt'],
-        'toplam_calisan': conn.execute('SELECT COUNT(*) as cnt FROM calisanlar WHERE aktif = 1').fetchone()['cnt'],
+        'toplam_calisan': conn.execute('SELECT COUNT(*) as cnt FROM calisanlar WHERE aktif = TRUE').fetchone()['cnt'],
         'hedef_toplam': conn.execute('SELECT SUM(hedef_kisi_sayisi) as total FROM hedef_kadrolar').fetchone()['total'] or 0,
         'dolu_toplam': conn.execute('SELECT SUM(dolu_kisi_sayisi) as total FROM hedef_kadrolar').fetchone()['total'] or 0,
         'acik_kadro': conn.execute("SELECT COUNT(*) as cnt FROM hedef_kadrolar WHERE durum = 'Açık'").fetchone()['cnt'],
@@ -333,7 +348,7 @@ def proje_ekle():
         
         conn = get_db()
         cursor = conn.cursor()
-        cursor.execute('INSERT INTO projeler (proje_adi, aciklama, musteri_id) VALUES (?, ?, ?)', 
+        cursor.execute('INSERT INTO projeler (proje_adi, aciklama, musteri_id) VALUES (%s, %s, %s)', 
                       (proje_adi, aciklama, musteri_id))
         proje_id = cursor.lastrowid
         conn.commit()
@@ -345,7 +360,7 @@ def proje_ekle():
     
     # Müşteri listesi
     conn = get_db()
-    musteriler = conn.execute('SELECT * FROM musteriler WHERE aktif = 1 ORDER BY musteri_adi').fetchall()
+    musteriler = conn.execute('SELECT * FROM musteriler WHERE aktif = TRUE ORDER BY musteri_adi').fetchall()
     conn.close()
     
     return render_template('proje_form.html', musteriler=musteriler)
@@ -372,7 +387,7 @@ def kadrolar():
                hk.durum,
                hk.olusturma_tarihi,
                COUNT(DISTINCT a.id) as aday_sayisi,
-               COUNT(DISTINCT CASE WHEN c.aktif = 1 THEN c.id END) as calisan_sayisi
+               COUNT(DISTINCT CASE WHEN c.aktif = TRUE THEN c.id END) as calisan_sayisi
         FROM hedef_kadrolar hk
         LEFT JOIN projeler p ON hk.proje_id = p.id
         LEFT JOIN mudurluker m ON hk.mudurluk_id = m.id
@@ -381,7 +396,10 @@ def kadrolar():
         LEFT JOIN ilceler ic ON hk.ilce_id = ic.id
         LEFT JOIN adaylar a ON hk.id = a.kadro_id
         LEFT JOIN calisanlar c ON hk.id = c.kadro_id
-        GROUP BY hk.id
+        GROUP BY hk.id, hk.proje_id, p.proje_adi, hk.pozisyon_adi, hk.calisma_sekli,
+                 m.mudurluk_adi, d.direktorluk_adi, i.il_adi, ic.ilce_adi, hk.magaza_adi,
+                 hk.aracli_durum, hk.hedef_kisi_sayisi, hk.dolu_kisi_sayisi, hk.durum,
+                 hk.olusturma_tarihi
         ORDER BY p.proje_adi, hk.olusturma_tarihi DESC
     ''').fetchall()
     conn.close()
@@ -412,14 +430,14 @@ def kadro_ekle():
     INSERT INTO hedef_kadrolar 
     (proje_id, pozisyon_adi, mudurluk_id, direktorluk_id, il_id, ilce_id, 
      magaza_adi, hedef_kisi_sayisi, dolu_kisi_sayisi, aracli_durum, calisma_sekli)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
 ''', (proje_id, pozisyon_adi, mudurluk_id, direktorluk_id, il_id, ilce_id, 
       magaza_adi, hedef_kisi_sayisi, 0, aracli_durum, calisma_sekli))
         
         kadro_id = cursor.lastrowid
         
         # Durum güncelle (başlangıçta her zaman Açık)
-        cursor.execute('UPDATE hedef_kadrolar SET durum = ? WHERE id = ?', ('Açık', kadro_id))
+        cursor.execute('UPDATE hedef_kadrolar SET durum = %s WHERE id = %s', ('Açık', kadro_id))
         
         conn.commit()
         conn.close()
@@ -433,7 +451,7 @@ def kadro_ekle():
     
     projeler = conn.execute('''
         SELECT * FROM projeler 
-        WHERE aktif = 1 
+        WHERE aktif = TRUE 
         ORDER BY proje_adi
     ''').fetchall()
     
@@ -455,7 +473,7 @@ def kadro_ekle():
     # Çalışma şekilleri - YENİ
     calisma_sekilleri = conn.execute('''
         SELECT calisma_sekli FROM calisma_sekilleri 
-        WHERE aktif = 1 
+        WHERE aktif = TRUE 
         ORDER BY calisma_sekli
     ''').fetchall()
     
@@ -543,7 +561,7 @@ def aday_ekle():
         telefon = request.form.get('telefon', '')
         email = request.form.get('email', '')
         tc_kimlik = request.form.get('tc_kimlik', '')
-        dogum_tarihi = request.form.get('dogum_tarihi', None)  # ← BURASI VAR MI?
+        dogum_tarihi = request.form.get('dogum_tarihi', None)  # â† BURASI VAR MI?
         notlar = request.form.get('notlar', '')
         
         # KAYNAK BİLGİSİ
@@ -555,13 +573,13 @@ def aday_ekle():
             kaynak_id = None
         
         # DEBUG: Form verilerini kontrol et
-        print(f"DEBUG - Dogum Tarihi: [{dogum_tarihi}]")  # ← DEBUG EKLENDİ
+        print(f"DEBUG - Dogum Tarihi: [{dogum_tarihi}]")  # â† DEBUG EKLENDİ
         
         conn = get_db()
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO adaylar (kadro_id, ad_soyad, telefon, email, tc_kimlik, dogum_tarihi, notlar, kaynak_id, kaynak_diger)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         ''', (kadro_id, ad_soyad, telefon or None, email or None, tc_kimlik or None, 
               dogum_tarihi or None, notlar or None, kaynak_id, kaynak_diger if kaynak_diger else None))
         
@@ -595,7 +613,7 @@ def aday_ekle():
     # Kaynaklar listesi
     kaynaklar = conn.execute('''
         SELECT * FROM kaynaklar 
-        WHERE aktif = 1 
+        WHERE aktif = TRUE 
         ORDER BY kaynak_adi
     ''').fetchall()
     
@@ -631,7 +649,7 @@ def aday_calisana_donustur(aday_id):
     LEFT JOIN iller i ON hk.il_id = i.id
     LEFT JOIN ilceler ic ON hk.ilce_id = ic.id
     LEFT JOIN projeler p ON hk.proje_id = p.id
-    WHERE a.id = ?
+    WHERE a.id = %s
     ''', (aday_id,)).fetchone()
     
     if not aday_detay_raw:
@@ -646,20 +664,20 @@ def aday_calisana_donustur(aday_id):
     cursor.execute('''
         INSERT INTO calisanlar (aday_id, kadro_id, ad_soyad, telefon, email, tc_kimlik, 
                                dogum_tarihi, ise_baslama_tarihi, aracli_durum)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
     ''', (aday_id, aday_detay['kadro_id'], aday_detay['ad_soyad'], aday_detay['telefon'], 
           aday_detay['email'], aday_detay['tc_kimlik'], aday_detay.get('dogum_tarihi'),
           ise_baslama_tarihi, aday_detay['aracli_durum']))
     
     # Aday durumunu güncelle
-    cursor.execute('UPDATE adaylar SET durum = ?, ise_baslama_tarihi = ? WHERE id = ?',
+    cursor.execute('UPDATE adaylar SET durum = %s, ise_baslama_tarihi = %s WHERE id = %s',
                    ('Çalışan', ise_baslama_tarihi, aday_id))
     
     # Kadro dolu sayısını artır
     cursor.execute('''
         UPDATE hedef_kadrolar 
         SET dolu_kisi_sayisi = dolu_kisi_sayisi + 1
-        WHERE id = ?
+        WHERE id = %s
     ''', (aday_detay['kadro_id'],))
     
     # Kadro durumunu kontrol et ve güncelle
@@ -669,13 +687,13 @@ def aday_calisana_donustur(aday_id):
             WHEN dolu_kisi_sayisi >= hedef_kisi_sayisi THEN 'Dolu'
             ELSE 'Açık'
         END
-        WHERE id = ?
+        WHERE id = %s
     ''', (aday_detay['kadro_id'],))
     
     conn.commit()
     
     # Email bildirimi gönder
-    print("🔥🔥🔥 EMAIL KODU ÇALIŞTI! 🔥🔥🔥")
+    print("ðŸ”¥ðŸ”¥ðŸ”¥ EMAIL KODU ÇALIŞTI! ðŸ”¥ðŸ”¥ðŸ”¥")
     try:
         aday_bilgileri = {
             'id': aday_id,
@@ -687,8 +705,8 @@ def aday_calisana_donustur(aday_id):
             'ise_baslama_tarihi': ise_baslama_tarihi,
             'proje_adi': aday_detay['proje_adi'],
             'pozisyon_adi': aday_detay['pozisyon_adi'],
-            'mudurluk_adi': aday_detay['mudurluk_adi'] or '-',  # ← YENİ
-            'direktorluk_adi': aday_detay['direktorluk_adi'] or '-',  # ← YENİ
+            'mudurluk_adi': aday_detay['mudurluk_adi'] or '-',  # â† YENİ
+            'direktorluk_adi': aday_detay['direktorluk_adi'] or '-',  # â† YENİ
             'il': aday_detay['il_adi'],
             'ilce': aday_detay['ilce_adi'] or '-',
             'magaza_adi': aday_detay['magaza_adi'] or '-',
@@ -705,7 +723,7 @@ def aday_calisana_donustur(aday_id):
         if email_basarili:
             flash(email_mesaj, 'info')
     except Exception as e:
-        print(f"❌ Email gönderimi hatası: {e}")
+        print(f"âŒ Email gönderimi hatası: {e}")
         import traceback
         traceback.print_exc()
         flash(f'Uyarı: Email bildirimi gönderilemedi', 'warning')
@@ -739,7 +757,7 @@ def calisanlar():
         LEFT JOIN iller i ON hk.il_id = i.id
         LEFT JOIN ilceler ic ON hk.ilce_id = ic.id
         LEFT JOIN projeler p ON hk.proje_id = p.id
-        WHERE c.aktif = 1
+        WHERE c.aktif = TRUE
         ORDER BY c.ise_baslama_tarihi DESC
     ''').fetchall()
     
@@ -805,7 +823,7 @@ def calisanlar_excel_export():
         LEFT JOIN iller i ON hk.il_id = i.id
         LEFT JOIN ilceler ic ON hk.ilce_id = ic.id
         LEFT JOIN projeler p ON hk.proje_id = p.id
-        WHERE c.aktif = 1
+        WHERE c.aktif = TRUE
         ORDER BY c.ise_baslama_tarihi DESC
     ''').fetchall()
     conn.close()
@@ -905,7 +923,7 @@ def calisan_cikis(calisan_id):
         FROM calisanlar c
         LEFT JOIN hedef_kadrolar hk ON c.kadro_id = hk.id
         LEFT JOIN projeler p ON hk.proje_id = p.id
-        WHERE c.id = ? AND c.aktif = 1
+        WHERE c.id = %s AND c.aktif = TRUE
     ''', (calisan_id,)).fetchone()
     
     if not calisan:
@@ -915,7 +933,7 @@ def calisan_cikis(calisan_id):
     # Çıkış nedenleri
     cikis_nedenleri = conn.execute('''
         SELECT * FROM cikis_nedenleri 
-        WHERE aktif = 1 
+        WHERE aktif = TRUE 
         ORDER BY neden
     ''').fetchall()
     
@@ -940,7 +958,7 @@ def calisan_cikis_kaydet(calisan_id):
     cursor = conn.cursor()
     
     # Çalışan kontrolü
-    calisan = conn.execute('SELECT * FROM calisanlar WHERE id = ? AND aktif = 1', 
+    calisan = conn.execute('SELECT * FROM calisanlar WHERE id = %s AND aktif = TRUE', 
                           (calisan_id,)).fetchone()
     
     if not calisan:
@@ -976,7 +994,7 @@ def calisan_cikis_kaydet(calisan_id):
              zimmet_teslim, kiyafet_teslim, anahtar_teslim, kimlik_teslim,
              ihbar_tazminat_durumu, kidem_tazminat_durumu,
              yonetici_notu, ik_notu, genel_degerlendirme, islem_yapan)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         ''', (calisan_id, cikis_tarihi, cikis_nedeni, liste_durumu, tekrar_ise_alinabilir,
               zimmet_teslim, kiyafet_teslim, anahtar_teslim, kimlik_teslim,
               ihbar_tazminat_durumu, kidem_tazminat_durumu,
@@ -988,11 +1006,11 @@ def calisan_cikis_kaydet(calisan_id):
         # 2. Çalışanı pasif yap ve çıkış bilgilerini güncelle
         cursor.execute('''
             UPDATE calisanlar 
-            SET aktif = 0,
-                cikis_tarihi = ?,
-                cikis_nedeni = ?,
-                liste_durumu = ?
-            WHERE id = ?
+            SET aktif = FALSE,
+                cikis_tarihi = %s,
+                cikis_nedeni = %s,
+                liste_durumu = %s
+            WHERE id = %s
         ''', (cikis_tarihi, cikis_nedeni, liste_durumu, calisan_id))
         
         # 3. YENI: Aday durumunu güncelle
@@ -1001,7 +1019,7 @@ def calisan_cikis_kaydet(calisan_id):
             cursor.execute('''
             UPDATE adaylar 
             SET durum = 'Pasif'
-               WHERE id = ?
+               WHERE id = %s
     ''', (aday_id,))
         
         # 4. Kadro doluluk sayısını güncelle
@@ -1009,17 +1027,17 @@ def calisan_cikis_kaydet(calisan_id):
         cursor.execute('''
             UPDATE hedef_kadrolar 
             SET dolu_kisi_sayisi = dolu_kisi_sayisi - 1
-            WHERE id = ?
+            WHERE id = %s
         ''', (kadro_id,))
         
-        # 5. Kadro durumunu güncelle (Dolu → Açık)
+        # 5. Kadro durumunu güncelle (Dolu â†’ Açık)
         cursor.execute('''
             UPDATE hedef_kadrolar 
             SET durum = CASE 
                 WHEN dolu_kisi_sayisi < hedef_kisi_sayisi THEN 'Açık'
                 ELSE 'Dolu'
             END
-            WHERE id = ?
+            WHERE id = %s
         ''', (kadro_id,))
         
         conn.commit()
@@ -1049,7 +1067,7 @@ def calisan_cikis_kaydet(calisan_id):
     LEFT JOIN projeler p ON hk.proje_id = p.id
     LEFT JOIN iller i ON hk.il_id = i.id
     LEFT JOIN ilceler ic ON hk.ilce_id = ic.id
-    WHERE c.id = ?
+    WHERE c.id = %s
 ''', (calisan_id,)).fetchone()
             
             cikis_bilgileri = {
@@ -1060,8 +1078,8 @@ def calisan_cikis_kaydet(calisan_id):
                 'tc_kimlik': calisan_detay['tc_kimlik'] or '-',
                 'proje_adi': calisan_detay['proje_adi'],
                 'pozisyon_adi': calisan_detay['pozisyon_adi'],
-                'mudurluk_adi': calisan_detay['mudurluk_adi'] or '-',  # ← YENİ
-                'direktorluk_adi': calisan_detay['direktorluk_adi'] or '-',  # ← YENİ
+                'mudurluk_adi': calisan_detay['mudurluk_adi'] or '-',  # â† YENİ
+                'direktorluk_adi': calisan_detay['direktorluk_adi'] or '-',  # â† YENİ
                 'il': calisan_detay['il_adi'],
                 'ilce': calisan_detay['ilce_adi'] or '-',
                 'magaza_adi': calisan_detay['magaza_adi'] or '-',
@@ -1160,7 +1178,7 @@ def cikis_detay(kayit_id):
         LEFT JOIN direktorlukler d ON hk.direktorluk_id = d.id
         LEFT JOIN iller i ON hk.il_id = i.id
         LEFT JOIN ilceler ic ON hk.ilce_id = ic.id
-        WHERE ck.id = ?
+        WHERE ck.id = %s
     ''', (kayit_id,)).fetchone()
     
     if not kayit:
@@ -1299,7 +1317,7 @@ def calisanlar_duzenle(calisan_id):
             SELECT c.*, hk.proje_id
             FROM calisanlar c
             LEFT JOIN hedef_kadrolar hk ON c.kadro_id = hk.id
-            WHERE c.id = ?
+            WHERE c.id = %s
         ''', (calisan_id,)).fetchone()
         
         if not calisan:
@@ -1316,7 +1334,7 @@ def calisanlar_duzenle(calisan_id):
             LEFT JOIN ilceler ic ON hk.ilce_id = ic.id
             ORDER BY p.proje_adi, hk.pozisyon_adi
         ''').fetchall()
-        calisma_sekilleri = conn.execute('SELECT * FROM calisma_sekilleri WHERE aktif = 1 ORDER BY calisma_sekli').fetchall()
+        calisma_sekilleri = conn.execute('SELECT * FROM calisma_sekilleri WHERE aktif = TRUE ORDER BY calisma_sekli').fetchall()
         
         conn.close()
         
@@ -1338,31 +1356,31 @@ def calisanlar_duzenle(calisan_id):
         kadro_id = request.form['kadro_id']
         aracli_durum = request.form.get('aracli_durum', 'Araçsız')
         calisma_sekli_id = request.form.get('calisma_sekli_id', None)
-        aktif = 1 if request.form.get('aktif') else 0
+        aktif = TRUE if request.form.get('aktif') else 0
         
         try:
             cursor = conn.cursor()
             
             # Eski kadro bilgisi
-            eski_calisan = conn.execute('SELECT kadro_id FROM calisanlar WHERE id = ?', 
+            eski_calisan = conn.execute('SELECT kadro_id FROM calisanlar WHERE id = %s', 
                                        (calisan_id,)).fetchone()
             eski_kadro_id = eski_calisan['kadro_id']
             
             # Çalışanı güncelle
             cursor.execute('''
                 UPDATE calisanlar 
-                SET ad_soyad = ?,
-                    telefon = ?,
-                    email = ?,
-                    tc_kimlik = ?,
-                    dogum_tarihi = ?,
-                    adres = ?,
-                    ise_baslama_tarihi = ?,
-                    kadro_id = ?,
-                    aracli_durum = ?,
-                    calisma_sekli_id = ?,
-                    aktif = ?
-                WHERE id = ?
+                SET ad_soyad = %s,
+                    telefon = %s,
+                    email = %s,
+                    tc_kimlik = %s,
+                    dogum_tarihi = %s,
+                    adres = %s,
+                    ise_baslama_tarihi = %s,
+                    kadro_id = %s,
+                    aracli_durum = %s,
+                    calisma_sekli_id = %s,
+                    aktif = %s
+                WHERE id = %s
             ''', (ad_soyad, telefon, email, tc_kimlik, dogum_tarihi, adres,
                   ise_baslama_tarihi, kadro_id, aracli_durum, calisma_sekli_id,
                   aktif, calisan_id))
@@ -1373,14 +1391,14 @@ def calisanlar_duzenle(calisan_id):
                 cursor.execute('''
                     UPDATE hedef_kadrolar 
                     SET dolu_kisi_sayisi = dolu_kisi_sayisi - 1
-                    WHERE id = ?
+                    WHERE id = %s
                 ''', (eski_kadro_id,))
                 
                 # Yeni kadroya ekle
                 cursor.execute('''
                     UPDATE hedef_kadrolar 
                     SET dolu_kisi_sayisi = dolu_kisi_sayisi + 1
-                    WHERE id = ?
+                    WHERE id = %s
                 ''', (kadro_id,))
                 
                 # Her iki kadronun durumunu güncelle
@@ -1390,7 +1408,7 @@ def calisanlar_duzenle(calisan_id):
                         WHEN dolu_kisi_sayisi >= hedef_kisi_sayisi THEN 'Dolu'
                         ELSE 'Açık'
                     END
-                    WHERE id IN (?, ?)
+                    WHERE id IN (%s, %s)
                 ''', (eski_kadro_id, kadro_id))
             
             conn.commit()
@@ -1431,7 +1449,7 @@ def calisan_detay(calisan_id):
         LEFT JOIN iller i ON hk.il_id = i.id
         LEFT JOIN ilceler ic ON hk.ilce_id = ic.id
         LEFT JOIN projeler p ON hk.proje_id = p.id
-        WHERE c.id = ?
+        WHERE c.id = %s
     ''', (calisan_id,)).fetchone()
     
     if not calisan_raw:
@@ -1476,8 +1494,8 @@ def calisan_detay(calisan_id):
         SELECT d.*, u.username as yukleyen
         FROM dosyalar d
         LEFT JOIN users u ON d.yukleyen_user_id = u.id
-        WHERE (d.ilgili_tablo = 'calisanlar' AND d.ilgili_id = ?)
-           OR (d.ilgili_tablo = 'adaylar' AND d.ilgili_id = ?)
+        WHERE (d.ilgili_tablo = 'calisanlar' AND d.ilgili_id = %s)
+           OR (d.ilgili_tablo = 'adaylar' AND d.ilgili_id = %s)
         ORDER BY d.yukleme_tarihi DESC
     ''', (calisan_id, calisan['aday_id'])).fetchall()
     
@@ -1527,7 +1545,7 @@ def calisan_dosya_yukle(calisan_id):
     cursor.execute('''
         INSERT INTO dosyalar 
         (ilgili_tablo, ilgili_id, dosya_tipi, dosya_adi, dosya_yolu, dosya_boyutu, yukleyen_user_id, aciklama)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     ''', ('calisanlar', calisan_id, dosya_tipi, filename, dosya_yolu, dosya_boyutu, session['user_id'], aciklama))
     conn.commit()
     conn.close()
@@ -1558,10 +1576,10 @@ def api_stats():
     conn = get_db()
     
     stats = {
-        'toplam_proje': conn.execute('SELECT COUNT(*) as cnt FROM projeler WHERE aktif = 1').fetchone()['cnt'],
+        'toplam_proje': conn.execute('SELECT COUNT(*) as cnt FROM projeler WHERE aktif = TRUE').fetchone()['cnt'],
         'toplam_kadro': conn.execute('SELECT COUNT(*) as cnt FROM hedef_kadrolar').fetchone()['cnt'],
         'toplam_aday': conn.execute('SELECT COUNT(*) as cnt FROM adaylar').fetchone()['cnt'],
-        'toplam_calisan': conn.execute('SELECT COUNT(*) as cnt FROM calisanlar WHERE aktif = 1').fetchone()['cnt'],
+        'toplam_calisan': conn.execute('SELECT COUNT(*) as cnt FROM calisanlar WHERE aktif = TRUE').fetchone()['cnt'],
         'hedef_toplam': conn.execute('SELECT SUM(hedef_kisi_sayisi) as total FROM hedef_kadrolar').fetchone()['total'] or 0,
         'dolu_toplam': conn.execute('SELECT SUM(dolu_kisi_sayisi) as total FROM hedef_kadrolar').fetchone()['total'] or 0
     }
@@ -1602,7 +1620,7 @@ def user_ekle():
         try:
             cursor.execute('''
                 INSERT INTO users (username, password_hash, email, full_name, role)
-                VALUES (?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s)
             ''', (username, password_hash, email, full_name, role))
             user_id = cursor.lastrowid
             conn.commit()
@@ -1629,7 +1647,7 @@ def user_duzenle(user_id):
         email = request.form.get('email', '')
         full_name = request.form['full_name']
         role = request.form['role']
-        aktif = 1 if request.form.get('aktif') == 'on' else 0
+        aktif = TRUE if request.form.get('aktif') == 'on' else 0
         
         # Şifre değiştirilmek isteniyorsa
         new_password = request.form.get('new_password', '')
@@ -1637,14 +1655,14 @@ def user_duzenle(user_id):
             password_hash = hashlib.sha256(new_password.encode()).hexdigest()
             conn.execute('''
                 UPDATE users 
-                SET email = ?, full_name = ?, role = ?, aktif = ?, password_hash = ?
-                WHERE id = ?
+                SET email = %s, full_name = %s, role = %s, aktif = %s, password_hash = %s
+                WHERE id = %s
             ''', (email, full_name, role, aktif, password_hash, user_id))
         else:
             conn.execute('''
                 UPDATE users 
-                SET email = ?, full_name = ?, role = ?, aktif = ?
-                WHERE id = ?
+                SET email = %s, full_name = %s, role = %s, aktif = %s
+                WHERE id = %s
             ''', (email, full_name, role, aktif, user_id))
         
         conn.commit()
@@ -1656,7 +1674,7 @@ def user_duzenle(user_id):
         flash('Kullanıcı başarıyla güncellendi!', 'success')
         return redirect(url_for('users'))
     
-    user = conn.execute('SELECT * FROM users WHERE id = ?', (user_id,)).fetchone()
+    user = conn.execute('SELECT * FROM users WHERE id = %s', (user_id,)).fetchone()
     conn.close()
     
     if not user:
@@ -1675,10 +1693,10 @@ def user_sil(user_id):
         return redirect(url_for('users'))
     
     conn = get_db()
-    user = conn.execute('SELECT username FROM users WHERE id = ?', (user_id,)).fetchone()
+    user = conn.execute('SELECT username FROM users WHERE id = %s', (user_id,)).fetchone()
     
     if user:
-        conn.execute('DELETE FROM users WHERE id = ?', (user_id,))
+        conn.execute('DELETE FROM users WHERE id = %s', (user_id,))
         conn.commit()
         log_islem('SİLME', 'users', user_id, 
                  f'{user["username"]} kullanıcısı silindi', 
@@ -1695,7 +1713,7 @@ def user_sil(user_id):
 def profil():
     """Kullanıcı profili"""
     conn = get_db()
-    user = conn.execute('SELECT * FROM users WHERE id = ?', (session['user_id'],)).fetchone()
+    user = conn.execute('SELECT * FROM users WHERE id = %s', (session['user_id'],)).fetchone()
     conn.close()
     return render_template('profil.html', user=user)
 
@@ -1715,7 +1733,7 @@ def sifre_degistir():
     eski_sifre_hash = hashlib.sha256(eski_sifre.encode()).hexdigest()
     
     conn = get_db()
-    user = conn.execute('SELECT * FROM users WHERE id = ? AND password_hash = ?', 
+    user = conn.execute('SELECT * FROM users WHERE id = %s AND password_hash = %s', 
                        (session['user_id'], eski_sifre_hash)).fetchone()
     
     if not user:
@@ -1725,7 +1743,7 @@ def sifre_degistir():
     
     # Yeni şifreyi kaydet
     yeni_sifre_hash = hashlib.sha256(yeni_sifre.encode()).hexdigest()
-    conn.execute('UPDATE users SET password_hash = ? WHERE id = ?', 
+    conn.execute('UPDATE users SET password_hash = %s WHERE id = %s', 
                 (yeni_sifre_hash, session['user_id']))
     conn.commit()
     conn.close()
@@ -1783,7 +1801,7 @@ def aday_dosya_yukle(aday_id):
     cursor.execute('''
         INSERT INTO dosyalar 
         (ilgili_tablo, ilgili_id, dosya_tipi, dosya_adi, dosya_yolu, dosya_boyutu, yukleyen_user_id, aciklama)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     ''', ('adaylar', aday_id, dosya_tipi, filename, dosya_yolu, dosya_boyutu, session['user_id'], aciklama))
     conn.commit()
     conn.close()
@@ -1799,7 +1817,7 @@ def aday_dosya_yukle(aday_id):
 def dosya_indir(dosya_id):
     """Dosya indir"""
     conn = get_db()
-    dosya = conn.execute('SELECT * FROM dosyalar WHERE id = ?', (dosya_id,)).fetchone()
+    dosya = conn.execute('SELECT * FROM dosyalar WHERE id = %s', (dosya_id,)).fetchone()
     conn.close()
     
     if not dosya:
@@ -1820,7 +1838,7 @@ def dosya_indir(dosya_id):
 def dosya_sil(dosya_id):
     """Dosya sil"""
     conn = get_db()
-    dosya = conn.execute('SELECT * FROM dosyalar WHERE id = ?', (dosya_id,)).fetchone()
+    dosya = conn.execute('SELECT * FROM dosyalar WHERE id = %s', (dosya_id,)).fetchone()
     
     if not dosya:
         conn.close()
@@ -1841,7 +1859,7 @@ def dosya_sil(dosya_id):
         print(f"Dosya silinemedi: {e}")
     
     # Veritabanından sil
-    conn.execute('DELETE FROM dosyalar WHERE id = ?', (dosya_id,))
+    conn.execute('DELETE FROM dosyalar WHERE id = %s', (dosya_id,))
     conn.commit()
     conn.close()
     
@@ -1869,7 +1887,7 @@ def aday_detay(aday_id):
         LEFT JOIN iller i ON hk.il_id = i.id
         LEFT JOIN ilceler ic ON hk.ilce_id = ic.id
         LEFT JOIN projeler p ON hk.proje_id = p.id
-        WHERE a.id = ?
+        WHERE a.id = %s
     ''', (aday_id,)).fetchone()
     
     if not aday:
@@ -1882,7 +1900,7 @@ def aday_detay(aday_id):
         SELECT d.*, u.username as yukleyen
         FROM dosyalar d
         LEFT JOIN users u ON d.yukleyen_user_id = u.id
-        WHERE d.ilgili_tablo = 'adaylar' AND d.ilgili_id = ?
+        WHERE d.ilgili_tablo = 'adaylar' AND d.ilgili_id = %s
         ORDER BY d.yukleme_tarihi DESC
     ''', (aday_id,)).fetchall()
     
@@ -1952,8 +1970,8 @@ def email_ayarlari_guncelle():
             ayar_adi = key.replace('ayar_', '')
             cursor.execute('''
                 UPDATE email_ayarlari 
-                SET ayar_degeri = ? 
-                WHERE ayar_adi = ?
+                SET ayar_degeri = %s 
+                WHERE ayar_adi = %s
             ''', (value, ayar_adi))
     
     conn.commit()
@@ -1974,12 +1992,12 @@ def email_sablon_duzenle(sablon_id):
     if request.method == 'POST':
         sablon_konusu = request.form['sablon_konusu']
         sablon_icerik = request.form['sablon_icerik']
-        aktif = 1 if request.form.get('aktif') == 'on' else 0
+        aktif = TRUE if request.form.get('aktif') == 'on' else 0
         
         conn.execute('''
             UPDATE email_sablonlari 
-            SET sablon_konusu = ?, sablon_icerik = ?, aktif = ?
-            WHERE id = ?
+            SET sablon_konusu = %s, sablon_icerik = %s, aktif = %s
+            WHERE id = %s
         ''', (sablon_konusu, sablon_icerik, aktif, sablon_id))
         conn.commit()
         conn.close()
@@ -1990,7 +2008,7 @@ def email_sablon_duzenle(sablon_id):
         flash('Email şablonu başarıyla güncellendi!', 'success')
         return redirect(url_for('email_ayarlari'))
     
-    sablon = conn.execute('SELECT * FROM email_sablonlari WHERE id = ?', (sablon_id,)).fetchone()
+    sablon = conn.execute('SELECT * FROM email_sablonlari WHERE id = %s', (sablon_id,)).fetchone()
     conn.close()
     
     if not sablon:
@@ -2076,10 +2094,10 @@ def tanimlar():
     
     # İstatistikler
     stats = {
-        'mudurluk_sayisi': conn.execute('SELECT COUNT(*) as cnt FROM mudurluker WHERE aktif = 1').fetchone()['cnt'],
-        'direktorluk_sayisi': conn.execute('SELECT COUNT(*) as cnt FROM direktorlukler WHERE aktif = 1').fetchone()['cnt'],
-        'calisma_sekli_sayisi': conn.execute('SELECT COUNT(*) as cnt FROM calisma_sekilleri WHERE aktif = 1').fetchone()['cnt'],
-        'kaynak_sayisi': conn.execute('SELECT COUNT(*) as cnt FROM kaynaklar WHERE aktif = 1').fetchone()['cnt']
+        'mudurluk_sayisi': conn.execute('SELECT COUNT(*) as cnt FROM mudurluker WHERE aktif = TRUE').fetchone()['cnt'],
+        'direktorluk_sayisi': conn.execute('SELECT COUNT(*) as cnt FROM direktorlukler WHERE aktif = TRUE').fetchone()['cnt'],
+        'calisma_sekli_sayisi': conn.execute('SELECT COUNT(*) as cnt FROM calisma_sekilleri WHERE aktif = TRUE').fetchone()['cnt'],
+        'kaynak_sayisi': conn.execute('SELECT COUNT(*) as cnt FROM kaynaklar WHERE aktif = TRUE').fetchone()['cnt']
     }
     
     # Müdürlükler
@@ -2096,21 +2114,26 @@ def tanimlar():
     
     # Çalışma Şekilleri - YENİ
     calisma_sekilleri = conn.execute('''
-        SELECT cs.*,
+        SELECT cs.id,
+               cs.calisma_sekli,
+               cs.aktif,
                COUNT(hk.id) as kadro_sayisi
         FROM calisma_sekilleri cs
         LEFT JOIN hedef_kadrolar hk ON cs.calisma_sekli = hk.calisma_sekli
-        GROUP BY cs.id
+        GROUP BY cs.id, cs.calisma_sekli, cs.aktif
         ORDER BY cs.calisma_sekli
     ''').fetchall()
     
     # Kaynaklar - YENİ
     kaynaklar = conn.execute('''
-        SELECT k.*,
+        SELECT k.id,
+               k.kaynak_adi,
+               k.aciklama,
+               k.aktif,
                COUNT(a.id) as aday_sayisi
         FROM kaynaklar k
         LEFT JOIN adaylar a ON k.id = a.kaynak_id
-        GROUP BY k.id
+        GROUP BY k.id, k.kaynak_adi, k.aciklama, k.aktif
         ORDER BY k.kaynak_adi
     ''').fetchall()
     
@@ -2133,7 +2156,7 @@ def mudurluk_ekle():
     cursor = conn.cursor()
     
     try:
-        cursor.execute('INSERT INTO mudurluker (mudurluk_adi) VALUES (?)', (mudurluk_adi,))
+        cursor.execute('INSERT INTO mudurluker (mudurluk_adi) VALUES (%s)', (mudurluk_adi,))
         mudurluk_id = cursor.lastrowid
         conn.commit()
         log_islem('EKLEME', 'mudurluker', mudurluk_id, f'{mudurluk_adi} müdürlüğü eklendi')
@@ -2154,7 +2177,7 @@ def direktorluk_ekle():
     cursor = conn.cursor()
     
     try:
-        cursor.execute('INSERT INTO direktorlukler (direktorluk_adi) VALUES (?)', (direktorluk_adi,))
+        cursor.execute('INSERT INTO direktorlukler (direktorluk_adi) VALUES (%s)', (direktorluk_adi,))
         direktorluk_id = cursor.lastrowid
         conn.commit()
         log_islem('EKLEME', 'direktorlukler', direktorluk_id, f'{direktorluk_adi} direktörlüğü eklendi')
@@ -2170,10 +2193,10 @@ def direktorluk_ekle():
 def mudurluk_sil(mudurluk_id):
     """Müdürlük sil"""
     conn = get_db()
-    mudurluk = conn.execute('SELECT mudurluk_adi FROM mudurluker WHERE id = ?', (mudurluk_id,)).fetchone()
+    mudurluk = conn.execute('SELECT mudurluk_adi FROM mudurluker WHERE id = %s', (mudurluk_id,)).fetchone()
     
     if mudurluk:
-        conn.execute('DELETE FROM mudurluker WHERE id = ?', (mudurluk_id,))
+        conn.execute('DELETE FROM mudurluker WHERE id = %s', (mudurluk_id,))
         conn.commit()
         log_islem('SİLME', 'mudurluker', mudurluk_id, f'{mudurluk["mudurluk_adi"]} müdürlüğü silindi')
         flash('Müdürlük başarıyla silindi!', 'success')
@@ -2186,10 +2209,10 @@ def mudurluk_sil(mudurluk_id):
 def direktorluk_sil(direktorluk_id):
     """Direktörlük sil"""
     conn = get_db()
-    direktorluk = conn.execute('SELECT direktorluk_adi FROM direktorlukler WHERE id = ?', (direktorluk_id,)).fetchone()
+    direktorluk = conn.execute('SELECT direktorluk_adi FROM direktorlukler WHERE id = %s', (direktorluk_id,)).fetchone()
     
     if direktorluk:
-        conn.execute('DELETE FROM direktorlukler WHERE id = ?', (direktorluk_id,))
+        conn.execute('DELETE FROM direktorlukler WHERE id = %s', (direktorluk_id,))
         conn.commit()
         log_islem('SİLME', 'direktorlukler', direktorluk_id, f'{direktorluk["direktorluk_adi"]} direktörlüğü silindi')
         flash('Direktörlük başarıyla silindi!', 'success')
@@ -2205,7 +2228,7 @@ def api_ilceler(il_id):
     ilceler = conn.execute('''
         SELECT id, ilce_adi 
         FROM ilceler 
-        WHERE il_id = ? AND aktif = 1 
+        WHERE il_id = %s AND aktif = TRUE 
         ORDER BY ilce_adi
     ''', (il_id,)).fetchall()
     conn.close()
@@ -2223,16 +2246,26 @@ def musteriler():
     conn = get_db()
     
     stats = {
-        'toplam_musteri': conn.execute('SELECT COUNT(*) as cnt FROM musteriler WHERE aktif = 1').fetchone()['cnt'],
+        'toplam_musteri': conn.execute('SELECT COUNT(*) as cnt FROM musteriler WHERE aktif = TRUE').fetchone()['cnt'],
         'toplam_proje': conn.execute('SELECT COUNT(*) as cnt FROM projeler WHERE musteri_id IS NOT NULL').fetchone()['cnt']
     }
     
     musteriler = conn.execute('''
-        SELECT m.*,
+        SELECT m.id,
+               m.musteri_adi,
+               m.sektor,
+               m.yetkili_kisi,
+               m.telefon,
+               m.email,
+               m.adres,
+               m.logo_yolu,
+               m.aktif,
+               m.olusturma_tarihi,
                COUNT(DISTINCT p.id) as proje_sayisi
         FROM musteriler m
         LEFT JOIN projeler p ON m.id = p.musteri_id
-        GROUP BY m.id
+        GROUP BY m.id, m.musteri_adi, m.sektor, m.yetkili_kisi, m.telefon, 
+                 m.email, m.adres, m.logo_yolu, m.aktif, m.olusturma_tarihi
         ORDER BY m.musteri_adi
     ''').fetchall()
     
@@ -2257,7 +2290,7 @@ def musteri_ekle():
         try:
             cursor.execute('''
                 INSERT INTO musteriler (musteri_adi, sektor, yetkili_kisi, telefon, email, adres)
-                VALUES (?, ?, ?, ?, ?, ?)
+                VALUES (%s, %s, %s, %s, %s, %s)
             ''', (musteri_adi, sektor, yetkili_kisi, telefon, email, adres))
             musteri_id = cursor.lastrowid
             
@@ -2275,7 +2308,7 @@ def musteri_ekle():
                     logo_yolu = os.path.join(upload_path, yeni_dosya_adi)
                     file.save(logo_yolu)
                     
-                    cursor.execute('UPDATE musteriler SET logo_yolu = ? WHERE id = ?', 
+                    cursor.execute('UPDATE musteriler SET logo_yolu = %s WHERE id = %s', 
                                  (logo_yolu, musteri_id))
             
             conn.commit()
@@ -2303,14 +2336,14 @@ def musteri_duzenle(musteri_id):
         telefon = request.form.get('telefon', '')
         email = request.form.get('email', '')
         adres = request.form.get('adres', '')
-        aktif = 1 if request.form.get('aktif') == 'on' else 0
+        aktif = TRUE if request.form.get('aktif') == 'on' else 0
         
         cursor = conn.cursor()
         cursor.execute('''
             UPDATE musteriler 
-            SET musteri_adi = ?, sektor = ?, yetkili_kisi = ?, 
-                telefon = ?, email = ?, adres = ?, aktif = ?
-            WHERE id = ?
+            SET musteri_adi = %s, sektor = %s, yetkili_kisi = %s, 
+                telefon = %s, email = %s, adres = %s, aktif = %s
+            WHERE id = %s
         ''', (musteri_adi, sektor, yetkili_kisi, telefon, email, adres, aktif, musteri_id))
         
         # Logo güncelleme
@@ -2327,7 +2360,7 @@ def musteri_duzenle(musteri_id):
                 logo_yolu = os.path.join(upload_path, yeni_dosya_adi)
                 file.save(logo_yolu)
                 
-                cursor.execute('UPDATE musteriler SET logo_yolu = ? WHERE id = ?', 
+                cursor.execute('UPDATE musteriler SET logo_yolu = %s WHERE id = %s', 
                              (logo_yolu, musteri_id))
         
         conn.commit()
@@ -2336,7 +2369,7 @@ def musteri_duzenle(musteri_id):
         conn.close()
         return redirect(url_for('musteriler'))
     
-    musteri = conn.execute('SELECT * FROM musteriler WHERE id = ?', (musteri_id,)).fetchone()
+    musteri = conn.execute('SELECT * FROM musteriler WHERE id = %s', (musteri_id,)).fetchone()
     conn.close()
     
     if not musteri:
@@ -2350,10 +2383,10 @@ def musteri_duzenle(musteri_id):
 def musteri_sil(musteri_id):
     """Müşteri sil"""
     conn = get_db()
-    musteri = conn.execute('SELECT musteri_adi FROM musteriler WHERE id = ?', (musteri_id,)).fetchone()
+    musteri = conn.execute('SELECT musteri_adi FROM musteriler WHERE id = %s', (musteri_id,)).fetchone()
     
     if musteri:
-        conn.execute('DELETE FROM musteriler WHERE id = ?', (musteri_id,))
+        conn.execute('DELETE FROM musteriler WHERE id = %s', (musteri_id,))
         conn.commit()
         log_islem('SİLME', 'musteriler', musteri_id, f'{musteri["musteri_adi"]} müşterisi silindi')
         flash('Müşteri başarıyla silindi!', 'success')
@@ -2365,7 +2398,7 @@ def musteri_sil(musteri_id):
 def musteri_logo(musteri_id):
     """Müşteri logosunu göster"""
     conn = get_db()
-    musteri = conn.execute('SELECT logo_yolu FROM musteriler WHERE id = ?', (musteri_id,)).fetchone()
+    musteri = conn.execute('SELECT logo_yolu FROM musteriler WHERE id = %s', (musteri_id,)).fetchone()
     conn.close()
     
     if musteri and musteri['logo_yolu'] and os.path.exists(musteri['logo_yolu']):
@@ -2547,7 +2580,7 @@ def adaylar_import_yukle():
                     continue
                 
                 # Proje kontrolü
-                proje = cursor.execute('SELECT id FROM projeler WHERE proje_adi = ? AND aktif = 1', 
+                proje = cursor.execute('SELECT id FROM projeler WHERE proje_adi = %s AND aktif = TRUE', 
                                       (proje_adi,)).fetchone()
                 if not proje:
                     hatalar.append(f"Satır {satir_no}: '{proje_adi}' projesi bulunamadı")
@@ -2555,7 +2588,7 @@ def adaylar_import_yukle():
                 proje_id = proje['id']
                 
                 # İl kontrolü
-                il = cursor.execute('SELECT id FROM iller WHERE il_adi = ? AND aktif = 1', 
+                il = cursor.execute('SELECT id FROM iller WHERE il_adi = %s AND aktif = TRUE', 
                                    (il_adi,)).fetchone()
                 if not il:
                     hatalar.append(f"Satır {satir_no}: '{il_adi}' ili bulunamadı")
@@ -2566,7 +2599,7 @@ def adaylar_import_yukle():
                 ilce_adi = str(row.get('İlçe', '')).strip()
                 ilce_id = None
                 if ilce_adi and ilce_adi != 'nan':
-                    ilce = cursor.execute('SELECT id FROM ilceler WHERE ilce_adi = ? AND il_id = ? AND aktif = 1',
+                    ilce = cursor.execute('SELECT id FROM ilceler WHERE ilce_adi = %s AND il_id = %s AND aktif = TRUE',
                                         (ilce_adi, il_id)).fetchone()
                     if ilce:
                         ilce_id = ilce['id']
@@ -2575,7 +2608,7 @@ def adaylar_import_yukle():
                 mudurluk_adi = str(row.get('Müdürlük', '')).strip()
                 mudurluk_id = None
                 if mudurluk_adi and mudurluk_adi != 'nan':
-                    mudurluk = cursor.execute('SELECT id FROM mudurluker WHERE mudurluk_adi = ? AND aktif = 1',
+                    mudurluk = cursor.execute('SELECT id FROM mudurluker WHERE mudurluk_adi = %s AND aktif = TRUE',
                                              (mudurluk_adi,)).fetchone()
                     if mudurluk:
                         mudurluk_id = mudurluk['id']
@@ -2584,7 +2617,7 @@ def adaylar_import_yukle():
                 direktorluk_adi = str(row.get('Direktörlük', '')).strip()
                 direktorluk_id = None
                 if direktorluk_adi and direktorluk_adi != 'nan':
-                    direktorluk = cursor.execute('SELECT id FROM direktorlukler WHERE direktorluk_adi = ? AND aktif = 1',
+                    direktorluk = cursor.execute('SELECT id FROM direktorlukler WHERE direktorluk_adi = %s AND aktif = TRUE',
                                                 (direktorluk_adi,)).fetchone()
                     if direktorluk:
                         direktorluk_id = direktorluk['id']
@@ -2596,10 +2629,10 @@ def adaylar_import_yukle():
                 
                 kadro = cursor.execute('''
                     SELECT id FROM hedef_kadrolar 
-                    WHERE proje_id = ? AND pozisyon_adi = ? 
-                    AND il_id = ? AND COALESCE(ilce_id, 0) = COALESCE(?, 0)
-                    AND COALESCE(magaza_adi, '') = ?
-                    AND aracli_durum = ?
+                    WHERE proje_id = %s AND pozisyon_adi = %s 
+                    AND il_id = %s AND COALESCE(ilce_id, 0) = COALESCE(%s, 0)
+                    AND COALESCE(magaza_adi, '') = %s
+                    AND aracli_durum = %s
                 ''', (proje_id, pozisyon_adi, il_id, ilce_id, magaza_adi, aracli_durum)).fetchone()
                 
                 if not kadro:
@@ -2608,7 +2641,7 @@ def adaylar_import_yukle():
                         INSERT INTO hedef_kadrolar 
                         (proje_id, pozisyon_adi, mudurluk_id, direktorluk_id, il_id, ilce_id, 
                          magaza_adi, aracli_durum, hedef_kisi_sayisi)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1)
                     ''', (proje_id, pozisyon_adi, mudurluk_id, direktorluk_id, il_id, ilce_id, 
                           magaza_adi, aracli_durum))
                     kadro_id = cursor.lastrowid
@@ -2647,7 +2680,7 @@ def adaylar_import_yukle():
                 # Adayı ekle
                 cursor.execute('''
                     INSERT INTO adaylar (kadro_id, ad_soyad, telefon, email, tc_kimlik, basvuru_tarihi, notlar)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
                 ''', (kadro_id, ad_soyad, telefon or None, email or None, tc_kimlik or None, 
                       basvuru_tarihi, notlar or None))
                 
@@ -2669,14 +2702,14 @@ def adaylar_import_yukle():
         if basarili_sayisi > 0 and len(hatalar) == 0:
             return jsonify({
                 'success': True,
-                'message': f'✅ {basarili_sayisi} aday başarıyla eklendi!',
+                'message': f'âœ… {basarili_sayisi} aday başarıyla eklendi!',
                 'basarili_sayisi': basarili_sayisi,
                 'hata_sayisi': 0
             })
         elif basarili_sayisi > 0 and len(hatalar) > 0:
             return jsonify({
                 'success': True,
-                'message': f'⚠️ {basarili_sayisi} aday eklendi, {len(hatalar)} satırda hata oluştu',
+                'message': f'âš ï¸ {basarili_sayisi} aday eklendi, {len(hatalar)} satırda hata oluştu',
                 'basarili_sayisi': basarili_sayisi,
                 'hata_sayisi': len(hatalar),
                 'hatalar': hatalar[:10]  # İlk 10 hatayı göster
@@ -2684,7 +2717,7 @@ def adaylar_import_yukle():
         else:
             return jsonify({
                 'success': False,
-                'message': f'❌ Hiçbir aday eklenemedi. {len(hatalar)} hata bulundu.',
+                'message': f'âŒ Hiçbir aday eklenemedi. {len(hatalar)} hata bulundu.',
                 'basarili_sayisi': 0,
                 'hata_sayisi': len(hatalar),
                 'hatalar': hatalar[:10]
@@ -2883,7 +2916,7 @@ def calisanlar_import_yukle():
                     continue
                 
                 # Proje kontrolü
-                proje = cursor.execute('SELECT id FROM projeler WHERE proje_adi = ? AND aktif = 1',
+                proje = cursor.execute('SELECT id FROM projeler WHERE proje_adi = %s AND aktif = TRUE',
                                       (proje_adi,)).fetchone()
                 if not proje:
                     hatalar.append(f"Satır {satir_no}: '{proje_adi}' projesi bulunamadı")
@@ -2891,7 +2924,7 @@ def calisanlar_import_yukle():
                 proje_id = proje['id']
                 
                 # İl kontrolü
-                il = cursor.execute('SELECT id FROM iller WHERE il_adi = ? AND aktif = 1',
+                il = cursor.execute('SELECT id FROM iller WHERE il_adi = %s AND aktif = TRUE',
                                    (il_adi,)).fetchone()
                 if not il:
                     hatalar.append(f"Satır {satir_no}: '{il_adi}' ili bulunamadı")
@@ -2902,7 +2935,7 @@ def calisanlar_import_yukle():
                 ilce_adi = str(row.get('İlçe', '')).strip()
                 ilce_id = None
                 if ilce_adi and ilce_adi != 'nan':
-                    ilce = cursor.execute('SELECT id FROM ilceler WHERE ilce_adi = ? AND il_id = ? AND aktif = 1',
+                    ilce = cursor.execute('SELECT id FROM ilceler WHERE ilce_adi = %s AND il_id = %s AND aktif = TRUE',
                                         (ilce_adi, il_id)).fetchone()
                     if ilce:
                         ilce_id = ilce['id']
@@ -2910,7 +2943,7 @@ def calisanlar_import_yukle():
                 mudurluk_adi = str(row.get('Müdürlük', '')).strip()
                 mudurluk_id = None
                 if mudurluk_adi and mudurluk_adi != 'nan':
-                    mudurluk = cursor.execute('SELECT id FROM mudurluker WHERE mudurluk_adi = ? AND aktif = 1',
+                    mudurluk = cursor.execute('SELECT id FROM mudurluker WHERE mudurluk_adi = %s AND aktif = TRUE',
                                              (mudurluk_adi,)).fetchone()
                     if mudurluk:
                         mudurluk_id = mudurluk['id']
@@ -2918,7 +2951,7 @@ def calisanlar_import_yukle():
                 direktorluk_adi = str(row.get('Direktörlük', '')).strip()
                 direktorluk_id = None
                 if direktorluk_adi and direktorluk_adi != 'nan':
-                    direktorluk = cursor.execute('SELECT id FROM direktorlukler WHERE direktorluk_adi = ? AND aktif = 1',
+                    direktorluk = cursor.execute('SELECT id FROM direktorlukler WHERE direktorluk_adi = %s AND aktif = TRUE',
                                                 (direktorluk_adi,)).fetchone()
                     if direktorluk:
                         direktorluk_id = direktorluk['id']
@@ -2930,10 +2963,10 @@ def calisanlar_import_yukle():
                 
                 kadro = cursor.execute('''
                     SELECT id FROM hedef_kadrolar
-                    WHERE proje_id = ? AND pozisyon_adi = ?
-                    AND il_id = ? AND COALESCE(ilce_id, 0) = COALESCE(?, 0)
-                    AND COALESCE(magaza_adi, '') = ?
-                    AND aracli_durum = ?
+                    WHERE proje_id = %s AND pozisyon_adi = %s
+                    AND il_id = %s AND COALESCE(ilce_id, 0) = COALESCE(%s, 0)
+                    AND COALESCE(magaza_adi, '') = %s
+                    AND aracli_durum = %s
                 ''', (proje_id, pozisyon_adi, il_id, ilce_id, magaza_adi, aracli_durum)).fetchone()
                 
                 if not kadro:
@@ -2942,7 +2975,7 @@ def calisanlar_import_yukle():
                         INSERT INTO hedef_kadrolar
                         (proje_id, pozisyon_adi, mudurluk_id, direktorluk_id, il_id, ilce_id,
                          magaza_adi, aracli_durum, hedef_kisi_sayisi, dolu_kisi_sayisi)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 1, 1)
                     ''', (proje_id, pozisyon_adi, mudurluk_id, direktorluk_id, il_id, ilce_id,
                           magaza_adi, aracli_durum))
                     kadro_id = cursor.lastrowid
@@ -2952,7 +2985,7 @@ def calisanlar_import_yukle():
                     cursor.execute('''
                         UPDATE hedef_kadrolar
                         SET dolu_kisi_sayisi = dolu_kisi_sayisi + 1
-                        WHERE id = ?
+                        WHERE id = %s
                     ''', (kadro_id,))
                 
                 # Opsiyonel alanlar
@@ -2968,7 +3001,7 @@ def calisanlar_import_yukle():
                 cursor.execute('''
                     INSERT INTO calisanlar 
                     (aday_id, kadro_id, ad_soyad, telefon, email, tc_kimlik, ise_baslama_tarihi)
-                    VALUES (0, ?, ?, ?, ?, ?, ?)
+                    VALUES (0, %s, %s, %s, %s, %s, %s)
                 ''', (kadro_id, ad_soyad, telefon or None, email or None, tc_kimlik, ise_baslama_tarihi))
                 
                 basarili_sayisi += 1
@@ -2989,14 +3022,14 @@ def calisanlar_import_yukle():
         if basarili_sayisi > 0 and len(hatalar) == 0:
             return jsonify({
                 'success': True,
-                'message': f'✅ {basarili_sayisi} çalışan başarıyla eklendi!',
+                'message': f'âœ… {basarili_sayisi} çalışan başarıyla eklendi!',
                 'basarili_sayisi': basarili_sayisi,
                 'hata_sayisi': 0
             })
         elif basarili_sayisi > 0 and len(hatalar) > 0:
             return jsonify({
                 'success': True,
-                'message': f'⚠️ {basarili_sayisi} çalışan eklendi, {len(hatalar)} satırda hata oluştu',
+                'message': f'âš ï¸ {basarili_sayisi} çalışan eklendi, {len(hatalar)} satırda hata oluştu',
                 'basarili_sayisi': basarili_sayisi,
                 'hata_sayisi': len(hatalar),
                 'hatalar': hatalar[:10]
@@ -3004,7 +3037,7 @@ def calisanlar_import_yukle():
         else:
             return jsonify({
                 'success': False,
-                'message': f'❌ Hiçbir çalışan eklenemedi. {len(hatalar)} hata bulundu.',
+                'message': f'âŒ Hiçbir çalışan eklenemedi. {len(hatalar)} hata bulundu.',
                 'basarili_sayisi': 0,
                 'hata_sayisi': len(hatalar),
                 'hatalar': hatalar[:10]
@@ -3023,16 +3056,19 @@ def kaynaklar():
     conn = get_db()
     
     stats = {
-        'toplam_kaynak': conn.execute('SELECT COUNT(*) as cnt FROM kaynaklar WHERE aktif = 1').fetchone()['cnt'],
+        'toplam_kaynak': conn.execute('SELECT COUNT(*) as cnt FROM kaynaklar WHERE aktif = TRUE').fetchone()['cnt'],
         'kaynak_kullanan_aday': conn.execute('SELECT COUNT(DISTINCT kaynak_id) as cnt FROM adaylar WHERE kaynak_id IS NOT NULL').fetchone()['cnt']
     }
     
     kaynaklar = conn.execute('''
-        SELECT k.*,
+        SELECT k.id,
+               k.kaynak_adi,
+               k.aciklama,
+               k.aktif,
                COUNT(a.id) as aday_sayisi
         FROM kaynaklar k
         LEFT JOIN adaylar a ON k.id = a.kaynak_id
-        GROUP BY k.id
+        GROUP BY k.id, k.kaynak_adi, k.aciklama, k.aktif
         ORDER BY k.kaynak_adi
     ''').fetchall()
     
@@ -3063,7 +3099,7 @@ def kaynak_ekle():
     cursor = conn.cursor()
     
     try:
-        cursor.execute('INSERT INTO kaynaklar (kaynak_adi, aciklama) VALUES (?, ?)', 
+        cursor.execute('INSERT INTO kaynaklar (kaynak_adi, aciklama) VALUES (%s, %s)', 
                       (kaynak_adi, aciklama))
         kaynak_id = cursor.lastrowid
         conn.commit()
@@ -3082,15 +3118,15 @@ def kaynak_sil(kaynak_id):
     conn = get_db()
     
     # Önce bu kaynağı kullanan aday var mı kontrol et
-    aday_sayisi = conn.execute('SELECT COUNT(*) as cnt FROM adaylar WHERE kaynak_id = ?', 
+    aday_sayisi = conn.execute('SELECT COUNT(*) as cnt FROM adaylar WHERE kaynak_id = %s', 
                                (kaynak_id,)).fetchone()['cnt']
     
     if aday_sayisi > 0:
         flash(f'Bu kaynak {aday_sayisi} aday tarafından kullanılıyor, silinemez!', 'danger')
     else:
-        kaynak = conn.execute('SELECT kaynak_adi FROM kaynaklar WHERE id = ?', (kaynak_id,)).fetchone()
+        kaynak = conn.execute('SELECT kaynak_adi FROM kaynaklar WHERE id = %s', (kaynak_id,)).fetchone()
         if kaynak:
-            conn.execute('DELETE FROM kaynaklar WHERE id = ?', (kaynak_id,))
+            conn.execute('DELETE FROM kaynaklar WHERE id = %s', (kaynak_id,))
             conn.commit()
             log_islem('SİLME', 'kaynaklar', kaynak_id, f'{kaynak["kaynak_adi"]} kaynağı silindi')
             flash('Kaynak başarıyla silindi!', 'success')
@@ -3104,10 +3140,10 @@ def kaynak_toggle(kaynak_id):
     """Kaynak aktif/pasif durumu değiştir"""
     conn = get_db()
     
-    kaynak = conn.execute('SELECT * FROM kaynaklar WHERE id = ?', (kaynak_id,)).fetchone()
+    kaynak = conn.execute('SELECT * FROM kaynaklar WHERE id = %s', (kaynak_id,)).fetchone()
     if kaynak:
         yeni_durum = 0 if kaynak['aktif'] else 1
-        conn.execute('UPDATE kaynaklar SET aktif = ? WHERE id = ?', (yeni_durum, kaynak_id))
+        conn.execute('UPDATE kaynaklar SET aktif = %s WHERE id = %s', (yeni_durum, kaynak_id))
         conn.commit()
         
         durum_text = 'aktif' if yeni_durum else 'pasif'
@@ -3125,16 +3161,18 @@ def calisma_sekilleri():
     conn = get_db()
     
     stats = {
-        'toplam_sekil': conn.execute('SELECT COUNT(*) as cnt FROM calisma_sekilleri WHERE aktif = 1').fetchone()['cnt'],
+        'toplam_sekil': conn.execute('SELECT COUNT(*) as cnt FROM calisma_sekilleri WHERE aktif = TRUE').fetchone()['cnt'],
         'kullanan_kadro': conn.execute('SELECT COUNT(DISTINCT calisma_sekli) as cnt FROM hedef_kadrolar WHERE calisma_sekli IS NOT NULL').fetchone()['cnt']
     }
     
     calisma_sekilleri = conn.execute('''
-        SELECT cs.*,
+        SELECT cs.id,
+               cs.calisma_sekli,
+               cs.aktif,
                COUNT(hk.id) as kadro_sayisi
         FROM calisma_sekilleri cs
         LEFT JOIN hedef_kadrolar hk ON cs.calisma_sekli = hk.calisma_sekli
-        GROUP BY cs.id
+        GROUP BY cs.id, cs.calisma_sekli, cs.aktif
         ORDER BY cs.calisma_sekli
     ''').fetchall()
     
@@ -3155,7 +3193,7 @@ def calisma_sekli_ekle():
     cursor = conn.cursor()
     
     try:
-        cursor.execute('INSERT INTO calisma_sekilleri (calisma_sekli, aciklama) VALUES (?, ?)', 
+        cursor.execute('INSERT INTO calisma_sekilleri (calisma_sekli, aciklama) VALUES (%s, %s)', 
                       (calisma_sekli, aciklama))
         sekil_id = cursor.lastrowid
         conn.commit()
@@ -3174,15 +3212,15 @@ def calisma_sekli_sil(sekil_id):
     conn = get_db()
     
     # Önce bu çalışma şeklini kullanan kadro var mı kontrol et
-    kadro_sayisi = conn.execute('SELECT COUNT(*) as cnt FROM hedef_kadrolar WHERE calisma_sekli = (SELECT calisma_sekli FROM calisma_sekilleri WHERE id = ?)', 
+    kadro_sayisi = conn.execute('SELECT COUNT(*) as cnt FROM hedef_kadrolar WHERE calisma_sekli = (SELECT calisma_sekli FROM calisma_sekilleri WHERE id = %s)', 
                                 (sekil_id,)).fetchone()['cnt']
     
     if kadro_sayisi > 0:
         flash(f'Bu çalışma şekli {kadro_sayisi} kadro tarafından kullanılıyor, silinemez!', 'danger')
     else:
-        sekil = conn.execute('SELECT calisma_sekli FROM calisma_sekilleri WHERE id = ?', (sekil_id,)).fetchone()
+        sekil = conn.execute('SELECT calisma_sekli FROM calisma_sekilleri WHERE id = %s', (sekil_id,)).fetchone()
         if sekil:
-            conn.execute('DELETE FROM calisma_sekilleri WHERE id = ?', (sekil_id,))
+            conn.execute('DELETE FROM calisma_sekilleri WHERE id = %s', (sekil_id,))
             conn.commit()
             log_islem('SİLME', 'calisma_sekilleri', sekil_id, f'{sekil["calisma_sekli"]} çalışma şekli silindi')
             flash('Çalışma şekli başarıyla silindi!', 'success')
@@ -3196,10 +3234,10 @@ def calisma_sekli_toggle(sekil_id):
     """Çalışma şekli aktif/pasif durumu değiştir"""
     conn = get_db()
     
-    sekil = conn.execute('SELECT * FROM calisma_sekilleri WHERE id = ?', (sekil_id,)).fetchone()
+    sekil = conn.execute('SELECT * FROM calisma_sekilleri WHERE id = %s', (sekil_id,)).fetchone()
     if sekil:
         yeni_durum = 0 if sekil['aktif'] else 1
-        conn.execute('UPDATE calisma_sekilleri SET aktif = ? WHERE id = ?', (yeni_durum, sekil_id))
+        conn.execute('UPDATE calisma_sekilleri SET aktif = %s WHERE id = %s', (yeni_durum, sekil_id))
         conn.commit()
         
         durum_text = 'aktif' if yeni_durum else 'pasif'
@@ -3316,10 +3354,10 @@ def cikis_kayitlari_excel_export():
         ws.cell(row=row_num, column=17, value='Evet' if kayit['tekrar_ise_alinabilir'] else 'Hayır').alignment = center_alignment
         
         # Checklist
-        ws.cell(row=row_num, column=18, value='✓' if kayit['zimmet_teslim'] else '✗').alignment = center_alignment
-        ws.cell(row=row_num, column=19, value='✓' if kayit['kiyafet_teslim'] else '✗').alignment = center_alignment
-        ws.cell(row=row_num, column=20, value='✓' if kayit['anahtar_teslim'] else '✗').alignment = center_alignment
-        ws.cell(row=row_num, column=21, value='✓' if kayit['kimlik_teslim'] else '✗').alignment = center_alignment
+        ws.cell(row=row_num, column=18, value='âœ“' if kayit['zimmet_teslim'] else 'âœ—').alignment = center_alignment
+        ws.cell(row=row_num, column=19, value='âœ“' if kayit['kiyafet_teslim'] else 'âœ—').alignment = center_alignment
+        ws.cell(row=row_num, column=20, value='âœ“' if kayit['anahtar_teslim'] else 'âœ—').alignment = center_alignment
+        ws.cell(row=row_num, column=21, value='âœ“' if kayit['kimlik_teslim'] else 'âœ—').alignment = center_alignment
         
         # Tazminatlar
         ws.cell(row=row_num, column=22, value=kayit['ihbar_tazminat_durumu'] or '-').alignment = cell_alignment

@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import io
 import smtplib
 from email.mime.text import MIMEText
@@ -15,7 +15,7 @@ def get_email_ayar(ayar_adi):
     """Email ayarını getir"""
     conn = get_db()
     ayar = conn.execute(
-        'SELECT ayar_degeri FROM email_ayarlari WHERE ayar_adi = ? AND aktif = 1',
+        'SELECT ayar_degeri FROM email_ayarlari WHERE ayar_adi = %s AND aktif = TRUE',
         (ayar_adi,)
     ).fetchone()
     conn.close()
@@ -25,7 +25,7 @@ def get_email_sablon(sablon_adi):
     """Email şablonunu getir"""
     conn = get_db()
     sablon = conn.execute(
-        'SELECT * FROM email_sablonlari WHERE sablon_adi = ? AND aktif = 1',
+        'SELECT * FROM email_sablonlari WHERE sablon_adi = %s AND aktif = TRUE',
         (sablon_adi,)
     ).fetchone()
     conn.close()
@@ -89,11 +89,10 @@ def email_gonder(alici_email, konu, icerik, sablon_adi=None, ilgili_tablo=None, 
 def log_email(alici_email, konu, durum, hata_mesaji, sablon_adi=None, ilgili_tablo=None, ilgili_id=None):
     """Email gönderim logunu kaydet"""
     conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('''
+    conn.execute('''
         INSERT INTO email_loglari 
         (alici_email, konu, sablon_adi, gonderim_durumu, hata_mesaji, ilgili_tablo, ilgili_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
     ''', (alici_email, konu, sablon_adi, durum, hata_mesaji, ilgili_tablo, ilgili_id))
     conn.commit()
     conn.close()

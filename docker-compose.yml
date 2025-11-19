@@ -12,10 +12,17 @@ services:
       - FLASK_ENV=development
       - DATABASE_URL=postgresql://tgportal:tgportal123@db:5432/tgportal
       - REDIS_URL=redis://redis:6379/0
+      - SEED_DATA=true
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
     restart: unless-stopped
+    command: >
+      sh -c "python -c 'from database import init_db, seed_sample_data; init_db(); seed_sample_data()' && 
+             python -c 'from app import app; print(\"App loaded:\", app)' &&
+             gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 120 --reload 'app:app'"
 
   db:
     image: postgres:15-alpine
@@ -28,6 +35,11 @@ services:
     ports:
       - "5432:5432"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tgportal -d tgportal"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
