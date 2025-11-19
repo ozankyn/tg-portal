@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+
+{% block title %}Kadrolar - İK Yönetim Sistemi{% endblock %}
+
+{% block extra_css %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<style>
+    .filter-panel {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .filter-panel .form-label {
+        font-weight: 600;
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+    }
+    .filter-panel .form-select {
+        font-size: 0.875rem;
+    }
+    #filterToggle {
+        transition: all 0.3s;
+    }
+    .dt-buttons {
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h2><i class="bi bi-briefcase"></i> Hedef Kadrolar</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('kadro_ekle') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Yeni Kadro Ekle
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                
+                <!-- Gelişmiş Filtreleme Paneli -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <button class="btn btn-outline-primary btn-sm" type="button" id="filterToggle">
+                        <i class="bi bi-funnel"></i> Gelişmiş Filtreler
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" type="button" id="clearFilters">
+                        <i class="bi bi-x-circle"></i> Filtreleri Temizle
+                    </button>
+                </div>
+
+                <div class="filter-panel" id="filterPanel" style="display: none;">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Proje</label>
+                            <select class="form-select form-select-sm" id="filterProje">
+                                <option value="">Tümü</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Pozisyon</label>
+                            <select class="form-select form-select-sm" id="filterPozisyon">
+                                <option value="">Tümü</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Çalışma Şekli</label>
+                            <select class="form-select form-select-sm" id="filterCalisma">
+                                <option value="">Tümü</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">İl</label>
+                            <select class="form-select form-select-sm" id="filterIl">
+                                <option value="">Tümü</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">İlçe</label>
+                            <select class="form-select form-select-sm" id="filterIlce">
+                                <option value="">Tümü</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-2">
+                        <div class="col-md-3">
+                            <label class="form-label">Müdürlük</label>
+                            <select class="form-select form-select-sm" id="filterMudurluk">
+                                <option value="">Tümü</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Direktörlük</label>
+                            <select class="form-select form-select-sm" id="filterDirektorluk">
+                                <option value="">Tümü</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Araç Durumu</label>
+                            <select class="form-select form-select-sm" id="filterArac">
+                                <option value="">Tümü</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Durum</label>
+                            <select class="form-select form-select-sm" id="filterDurum">
+                                <option value="">Tümü</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table id="kadrolarTable" class="table table-hover table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Proje</th>
+                                <th>Pozisyon</th>
+                                <th>Çalışma Şekli</th>
+                                <th>Müdürlük</th>
+                                <th>Direktörlük</th>
+                                <th>İl</th>
+                                <th>İlçe</th>
+                                <th>Mağaza</th>
+                                <th>Araç</th>
+                                <th class="text-center">Hedef</th>
+                                <th class="text-center">Dolu</th>
+                                <th class="text-center">Aday</th>
+                                <th class="text-center">Çalışan</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for kadro in kadrolar %}
+                            <tr>
+                                <td>{{ kadro.id }}</td>
+                                <td><span class="badge bg-primary">{{ kadro.proje_adi }}</span></td>
+                                <td><strong>{{ kadro.pozisyon_adi }}</strong></td>
+                                <td><span class="badge bg-secondary">{{ kadro.calisma_sekli or 'Full Time' }}</span></td>
+                                <td><small>{{ kadro.mudurluk_adi or '-' }}</small></td>
+                                <td><small>{{ kadro.direktorluk_adi or '-' }}</small></td>
+                                <td>{{ kadro.il_adi }}</td>
+                                <td>{{ kadro.ilce_adi or '-' }}</td>
+                                <td><small>{{ kadro.magaza_adi or '-' }}</small></td>
+                                <td data-order="{{ kadro.aracli_durum }}">
+                                    {% if kadro.aracli_durum == 'Araçlı' %}
+                                        <span class="badge bg-success">Araçlı</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Araçsız</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center"><span class="badge bg-info">{{ kadro.hedef_kisi_sayisi }}</span></td>
+                                <td class="text-center"><span class="badge bg-success">{{ kadro.dolu_kisi_sayisi }}</span></td>
+                                <td class="text-center"><span class="badge bg-warning text-dark">{{ kadro.aday_sayisi }}</span></td>
+                                <td class="text-center"><span class="badge bg-success">{{ kadro.calisan_sayisi }}</span></td>
+                                <td data-order="{{ kadro.durum }}">
+                                    {% if kadro.durum == 'Dolu' %}
+                                        <span class="badge bg-success">Dolu</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Açık</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<!-- DataTables Buttons -->
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // DataTable başlat
+    var table = $('#kadrolarTable').DataTable({
+        language: {
+            url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/tr.json'
+        },
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Tümü"]],
+        order: [[0, 'desc']], // ID'ye göre azalan sıralama
+        responsive: true,
+        stateSave: true,
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                text: '<i class="bi bi-file-earmark-excel"></i> Excel İndir',
+                className: 'btn btn-success btn-sm',
+                title: 'Hedef_Kadrolar_' + new Date().toISOString().slice(0,10),
+                exportOptions: {
+                    columns: ':visible',
+                    format: {
+                        body: function (data, row, column, node) {
+                            // Badge'lerdeki metni temizle
+                            return $('<div>').html(data).text().trim();
+                        }
+                    }
+                }
+            }
+        ]
+    });
+
+    // Filtre dropdown'larını doldur
+    function populateFilters() {
+        // Proje (sütun 1)
+        var projeData = table.column(1).data().unique().sort();
+        projeData.each(function(d) {
+            var value = $('<div>').html(d).text().trim();
+            if (value && value !== '-') {
+                $('#filterProje').append('<option value="' + value + '">' + value + '</option>');
+            }
+        });
+
+        // Pozisyon (sütun 2)
+        var pozisyonData = table.column(2).data().unique().sort();
+        pozisyonData.each(function(d) {
+            var value = $('<div>').html(d).text().trim();
+            if (value && value !== '-') {
+                $('#filterPozisyon').append('<option value="' + value + '">' + value + '</option>');
+            }
+        });
+
+        // Çalışma Şekli (sütun 3)
+        var calismaData = table.column(3).data().unique().sort();
+        calismaData.each(function(d) {
+            var value = $('<div>').html(d).text().trim();
+            if (value && value !== '-') {
+                $('#filterCalisma').append('<option value="' + value + '">' + value + '</option>');
+            }
+        });
+
+        // Müdürlük (sütun 4)
+        var mudurlukData = table.column(4).data().unique().sort();
+        mudurlukData.each(function(d) {
+            var value = $('<div>').html(d).text().trim();
+            if (value && value !== '-') {
+                $('#filterMudurluk').append('<option value="' + value + '">' + value + '</option>');
+            }
+        });
+
+        // Direktörlük (sütun 5)
+        var direktorlukData = table.column(5).data().unique().sort();
+        direktorlukData.each(function(d) {
+            var value = $('<div>').html(d).text().trim();
+            if (value && value !== '-') {
+                $('#filterDirektorluk').append('<option value="' + value + '">' + value + '</option>');
+            }
+        });
+
+        // İl (sütun 6)
+        var ilData = table.column(6).data().unique().sort();
+        ilData.each(function(d) {
+            var value = $('<div>').html(d).text().trim();
+            if (value && value !== '-') {
+                $('#filterIl').append('<option value="' + value + '">' + value + '</option>');
+            }
+        });
+
+        // İlçe (sütun 7)
+        var ilceData = table.column(7).data().unique().sort();
+        ilceData.each(function(d) {
+            var value = $('<div>').html(d).text().trim();
+            if (value && value !== '-') {
+                $('#filterIlce').append('<option value="' + value + '">' + value + '</option>');
+            }
+        });
+
+        // Araç (sütun 9)
+        var aracData = table.column(9).data().unique().sort();
+        aracData.each(function(d) {
+            var value = $('<div>').html(d).text().trim();
+            if (value && value !== '-') {
+                $('#filterArac').append('<option value="' + value + '">' + value + '</option>');
+            }
+        });
+
+        // Durum (sütun 14)
+        var durumData = table.column(14).data().unique().sort();
+        durumData.each(function(d) {
+            var value = $('<div>').html(d).text().trim();
+            if (value && value !== '-') {
+                $('#filterDurum').append('<option value="' + value + '">' + value + '</option>');
+            }
+        });
+    }
+
+    populateFilters();
+
+    // Filtre toggle
+    $('#filterToggle').click(function() {
+        $('#filterPanel').slideToggle(300);
+        $(this).find('i').toggleClass('bi-funnel bi-funnel-fill');
+    });
+
+    // Filtre uygula
+    $('#filterProje').on('change', function() {
+        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+        table.column(1).search(val ? '^' + val + '$' : '', true, false).draw();
+    });
+
+    $('#filterPozisyon').on('change', function() {
+        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+        table.column(2).search(val ? '^' + val + '$' : '', true, false).draw();
+    });
+
+    $('#filterCalisma').on('change', function() {
+        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+        table.column(3).search(val ? '^' + val + '$' : '', true, false).draw();
+    });
+
+    $('#filterMudurluk').on('change', function() {
+        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+        table.column(4).search(val ? '^' + val + '$' : '', true, false).draw();
+    });
+
+    $('#filterDirektorluk').on('change', function() {
+        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+        table.column(5).search(val ? '^' + val + '$' : '', true, false).draw();
+    });
+
+    $('#filterIl').on('change', function() {
+        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+        table.column(6).search(val ? '^' + val + '$' : '', true, false).draw();
+    });
+
+    $('#filterIlce').on('change', function() {
+        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+        table.column(7).search(val ? '^' + val + '$' : '', true, false).draw();
+    });
+
+    $('#filterArac').on('change', function() {
+        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+        table.column(9).search(val ? '^' + val + '$' : '', true, false).draw();
+    });
+
+    $('#filterDurum').on('change', function() {
+        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+        table.column(14).search(val ? '^' + val + '$' : '', true, false).draw();
+    });
+
+    // Filtreleri temizle
+    $('#clearFilters').click(function() {
+        $('.filter-panel select').val('');
+        table.columns().search('').draw();
+    });
+});
+</script>
+{% endblock %}

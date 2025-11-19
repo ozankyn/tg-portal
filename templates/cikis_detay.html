@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}Çıkış Kaydı Detay - İK Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h2><i class="bi bi-file-text"></i> Çıkış Kaydı Detayı</h2>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('cikis_kayitlari') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Listeye Dön
+        </a>
+        <button onclick="window.print()" class="btn btn-primary">
+            <i class="bi bi-printer"></i> Yazdır
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Çalışan Bilgileri -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person-badge"></i> Çalışan Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong>Ad Soyad:</strong></p>
+                        <p class="text-muted">{{ kayit.ad_soyad }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong>Telefon:</strong></p>
+                        <p class="text-muted">{{ kayit.telefon or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong>Email:</strong></p>
+                        <p class="text-muted">{{ kayit.email or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong>Proje:</strong></p>
+                        <p><span class="badge bg-primary">{{ kayit.proje_adi }}</span></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong>Pozisyon:</strong></p>
+                        <p class="text-muted">{{ kayit.pozisyon_adi }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong>Lokasyon:</strong></p>
+                        <p class="text-muted">{{ kayit.il_adi }}{% if kayit.ilce_adi %} / {{ kayit.ilce_adi }}{% endif %}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong>Mağaza:</strong></p>
+                        <p class="text-muted">{{ kayit.magaza_adi or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong>İşe Başlama:</strong></p>
+                        <p class="text-muted">{{ kayit.ise_baslama_tarihi }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Çıkış Bilgileri -->
+        <div class="card mb-4 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-x"></i> Çıkış Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <p class="mb-1"><strong>Çıkış Tarihi:</strong></p>
+                        <p class="text-muted">{{ kayit.cikis_tarihi }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <p class="mb-1"><strong>Çıkış Nedeni:</strong></p>
+                        <p><span class="badge bg-info">{{ kayit.cikis_nedeni }}</span></p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <p class="mb-1"><strong>Liste Durumu:</strong></p>
+                        <p>
+                            {% if kayit.liste_durumu == 'Beyaz' %}
+                                <span class="badge bg-success fs-6">🤍 Beyaz Liste</span>
+                            {% elif kayit.liste_durumu == 'Gri' %}
+                                <span class="badge bg-warning text-dark fs-6">⚫ Gri Liste</span>
+                            {% else %}
+                                <span class="badge bg-danger fs-6">⛔ Kara Liste</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <p class="mb-1"><strong>Tekrar İşe Alınabilir:</strong></p>
+                        <p>
+                            {% if kayit.tekrar_ise_alinabilir %}
+                                <span class="badge bg-success">✅ Evet</span>
+                            {% else %}
+                                <span class="badge bg-danger">❌ Hayır</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-12">
+                        <p class="mb-1"><strong>Çalışma Süresi:</strong></p>
+                        {% if kayit.ise_baslama_tarihi and kayit.cikis_tarihi %}
+                            {% set baslama = kayit.ise_baslama_tarihi %}
+                            {% set cikis = kayit.cikis_tarihi %}
+                            <p class="text-muted">
+                                {{ baslama }} - {{ cikis }}
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teslim Checklist -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Teslim Checklist</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <p class="mb-1">
+                            {% if kayit.zimmet_teslim %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            {% else %}
+                                <i class="bi bi-x-circle-fill text-danger"></i>
+                            {% endif %}
+                            <strong>Zimmet Teslimi</strong>
+                        </p>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <p class="mb-1">
+                            {% if kayit.kiyafet_teslim %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            {% else %}
+                                <i class="bi bi-x-circle-fill text-danger"></i>
+                            {% endif %}
+                            <strong>Kıyafet Teslimi</strong>
+                        </p>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <p class="mb-1">
+                            {% if kayit.anahtar_teslim %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            {% else %}
+                                <i class="bi bi-x-circle-fill text-danger"></i>
+                            {% endif %}
+                            <strong>Anahtar Teslimi</strong>
+                        </p>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <p class="mb-1">
+                            {% if kayit.kimlik_teslim %}
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            {% else %}
+                                <i class="bi bi-x-circle-fill text-danger"></i>
+                            {% endif %}
+                            <strong>Kimlik Kartı</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tazminat Bilgileri -->
+        {% if kayit.ihbar_tazminat_durumu or kayit.kidem_tazminat_durumu %}
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-cash-coin"></i> Tazminat Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong>İhbar Tazminatı:</strong></p>
+                        <p class="text-muted">{{ kayit.ihbar_tazminat_durumu or '-' }}</p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <p class="mb-1"><strong>Kıdem Tazminatı:</strong></p>
+                        <p class="text-muted">{{ kayit.kidem_tazminat_durumu or '-' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Notlar -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Notlar ve Değerlendirme</h5>
+            </div>
+            <div class="card-body">
+                {% if kayit.yonetici_notu %}
+                <div class="mb-3">
+                    <p class="mb-1"><strong>Yönetici Notu:</strong></p>
+                    <p class="text-muted">{{ kayit.yonetici_notu }}</p>
+                </div>
+                {% endif %}
+                
+                {% if kayit.ik_notu %}
+                <div class="mb-3">
+                    <p class="mb-1"><strong>İK Notu:</strong></p>
+                    <p class="text-muted">{{ kayit.ik_notu }}</p>
+                </div>
+                {% endif %}
+                
+                {% if kayit.genel_degerlendirme %}
+                <div class="mb-0">
+                    <p class="mb-1"><strong>Genel Değerlendirme:</strong></p>
+                    <p class="text-muted">{{ kayit.genel_degerlendirme }}</p>
+                </div>
+                {% endif %}
+                
+                {% if not kayit.yonetici_notu and not kayit.ik_notu and not kayit.genel_degerlendirme %}
+                <p class="text-muted mb-0">Not bulunmuyor.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sağ Sidebar -->
+    <div class="col-lg-4">
+        <!-- Özet Bilgi -->
+        <div class="card mb-4 border-primary">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-info-circle"></i> Özet Bilgi</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <small class="text-muted">Kayıt ID</small>
+                    <p class="mb-0"><strong>#{{ kayit.id }}</strong></p>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">İşlem Yapan</small>
+                    <p class="mb-0">{{ kayit.islem_yapan }}</p>
+                </div>
+                <div class="mb-3">
+                    <small class="text-muted">Kayıt Tarihi</small>
+                    <p class="mb-0">{{ kayit.olusturma_tarihi }}</p>
+                </div>
+                {% if kayit.guncelleme_tarihi and kayit.guncelleme_tarihi != kayit.olusturma_tarihi %}
+                <div>
+                    <small class="text-muted">Güncelleme</small>
+                    <p class="mb-0">{{ kayit.guncelleme_tarihi }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Liste Açıklamaları -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-question-circle"></i> Liste Tanımları</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <p class="mb-1"><strong>🤍 Beyaz Liste</strong></p>
+                    <small class="text-muted">Tekrar işe alınabilir, referans verilebilir. Sorunsuz ayrılış.</small>
+                </div>
+                <div class="mb-3">
+                    <p class="mb-1"><strong>⚫ Gri Liste</strong></p>
+                    <small class="text-muted">Şartlı işe alınabilir. Dikkatli yaklaşılmalı, bazı sorunlar yaşandı.</small>
+                </div>
+                <div>
+                    <p class="mb-1"><strong>⛔ Kara Liste</strong></p>
+                    <small class="text-muted">İşe alınmaz. Ciddi sorunlar yaşandı, güvenilir değil.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

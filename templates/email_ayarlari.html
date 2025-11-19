@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+
+{% block title %}Email Ayarları - İK Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h2><i class="bi bi-envelope-gear"></i> Email Ayarları</h2>
+    </div>
+</div>
+
+<!-- İstatistikler -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <i class="bi bi-envelope-check text-primary" style="font-size: 36px;"></i>
+                <h3 class="mt-2">{{ stats.toplam_gonderim }}</h3>
+                <p class="text-muted mb-0">Toplam Gönderim</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle text-success" style="font-size: 36px;"></i>
+                <h3 class="mt-2">{{ stats.basarili }}</h3>
+                <p class="text-muted mb-0">Başarılı</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-danger">
+            <div class="card-body text-center">
+                <i class="bi bi-x-circle text-danger" style="font-size: 36px;"></i>
+                <h3 class="mt-2">{{ stats.basarisiz }}</h3>
+                <p class="text-muted mb-0">Başarısız</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <i class="bi bi-percent text-info" style="font-size: 36px;"></i>
+                <h3 class="mt-2">
+                    {% if stats.toplam_gonderim > 0 %}
+                        {{ "%.1f"|format((stats.basarili / stats.toplam_gonderim * 100)) }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </h3>
+                <p class="text-muted mb-0">Başarı Oranı</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs -->
+<ul class="nav nav-tabs mb-3" id="emailTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="ayarlar-tab" data-bs-toggle="tab" 
+                data-bs-target="#ayarlar" type="button">
+            <i class="bi bi-gear"></i> SMTP Ayarları
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="sablonlar-tab" data-bs-toggle="tab" 
+                data-bs-target="#sablonlar" type="button">
+            <i class="bi bi-file-text"></i> Email Şablonları
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="loglar-tab" data-bs-toggle="tab" 
+                data-bs-target="#loglar" type="button">
+            <i class="bi bi-clock-history"></i> Email Logları
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="test-tab" data-bs-toggle="tab" 
+                data-bs-target="#test" type="button">
+            <i class="bi bi-send"></i> Test Email
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="emailTabsContent">
+    <!-- SMTP Ayarları Tab -->
+    <div class="tab-pane fade show active" id="ayarlar" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> SMTP Sunucu Ayarları</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('email_ayarlari_guncelle') }}">
+                    <div class="row">
+                        {% for ayar in ayarlar %}
+                        <div class="col-md-6 mb-3">
+                            <label for="ayar_{{ ayar.ayar_adi }}" class="form-label">
+                                <strong>{{ ayar.ayar_adi|replace('_', ' ')|title }}</strong>
+                            </label>
+                            {% if ayar.ayar_adi == 'smtp_sifre' %}
+                                <input type="password" class="form-control" 
+                                       id="ayar_{{ ayar.ayar_adi }}" 
+                                       name="ayar_{{ ayar.ayar_adi }}" 
+                                       value="{{ ayar.ayar_degeri }}"
+                                       placeholder="••••••••">
+                            {% else %}
+                                <input type="text" class="form-control" 
+                                       id="ayar_{{ ayar.ayar_adi }}" 
+                                       name="ayar_{{ ayar.ayar_adi }}" 
+                                       value="{{ ayar.ayar_degeri }}"
+                                       placeholder="{{ ayar.aciklama }}">
+                            {% endif %}
+                            <small class="text-muted">{{ ayar.aciklama }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        <strong>Güvenlik Uyarısı:</strong> Gmail kullanıyorsanız, 2 adımlı doğrulama açık olmalı ve "Uygulama Şifresi" kullanmalısınız.
+                        <a href="https://myaccount.google.com/apppasswords" target="_blank">Uygulama Şifresi Oluştur</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Ayarları Kaydet
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Şablonları Tab -->
+    <div class="tab-pane fade" id="sablonlar" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-file-text"></i> Email Şablonları</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Şablon Adı</th>
+                                <th>Konu</th>
+                                <th>Durum</th>
+                                <th>Oluşturma Tarihi</th>
+                                <th>İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sablon in sablonlar %}
+                            <tr>
+                                <td><strong>{{ sablon.sablon_adi }}</strong></td>
+                                <td>{{ sablon.sablon_konusu|truncate(50) }}</td>
+                                <td>
+                                    {% if sablon.aktif %}
+                                        <span class="badge bg-success">Aktif</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Pasif</span>
+                                    {% endif %}
+                                </td>
+                                <td><small>{{ sablon.olusturma_tarihi }}</small></td>
+                                <td>
+                                    <a href="{{ url_for('email_sablon_duzenle', sablon_id=sablon.id) }}" 
+                                       class="btn btn-sm btn-warning">
+                                        <i class="bi bi-pencil"></i> Düzenle
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Logları Tab -->
+    <div class="tab-pane fade" id="loglar" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Email Gönderim Logları</h5>
+                <form method="POST" action="{{ url_for('email_loglari_temizle') }}" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-danger" 
+                            onclick="return confirm('30 günden eski logları silmek istediğinizden emin misiniz?')">
+                        <i class="bi bi-trash"></i> Eski Logları Temizle
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tarih/Saat</th>
+                                <th>Alıcı</th>
+                                <th>Konu</th>
+                                <th>Şablon</th>
+                                <th>Durum</th>
+                                <th>Hata</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in loglar %}
+                            <tr>
+                                <td><small>{{ log.gonderim_tarihi }}</small></td>
+                                <td><small>{{ log.alici_email }}</small></td>
+                                <td><small>{{ log.konu|truncate(40) }}</small></td>
+                                <td><small>{{ log.sablon_adi or '-' }}</small></td>
+                                <td>
+                                    {% if log.gonderim_durumu == 'gonderildi' %}
+                                        <span class="badge bg-success">Gönderildi</span>
+                                    {% elif log.gonderim_durumu == 'hata' %}
+                                        <span class="badge bg-danger">Hata</span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Beklemede</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if log.hata_mesaji %}
+                                        <small class="text-danger">{{ log.hata_mesaji|truncate(50) }}</small>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Email Tab -->
+    <div class="tab-pane fade" id="test" role="tabpanel">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-send"></i> Test Email Gönder</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('email_test_gonder') }}">
+                    <div class="mb-3">
+                        <label for="test_email" class="form-label">Test Email Adresi</label>
+                        <input type="email" class="form-control" id="test_email" 
+                               name="test_email" required
+                               placeholder="test@example.com">
+                        <small class="text-muted">Email ayarlarınızı test etmek için bir email adresi girin</small>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning text-dark">
+                        <i class="bi bi-send"></i> Test Email Gönder
+                    </button>
+                </form>
+
+                <div class="alert alert-info mt-4">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Test Email İçeriği:</strong> Basit bir test mesajı gönderilecektir. 
+                    Email başarıyla gönderilirse, SMTP ayarlarınız doğru çalışıyor demektir.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

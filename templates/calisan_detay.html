@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block title %}{{ calisan.ad_soyad }} - Çalışan Detay{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <h2>
+            <i class="bi bi-person-check-fill"></i> {{ calisan.ad_soyad }}
+            <span class="badge bg-success">Çalışan</span>
+        </h2>
+        <a href="{{ url_for('calisanlar') }}" class="btn btn-sm btn-secondary">
+            <i class="bi bi-arrow-left"></i> Çalışanlar Listesine Dön
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Çalışan Bilgileri -->
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person-vcard"></i> Kişisel Bilgiler</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th width="40%">Ad Soyad:</th>
+                        <td><strong>{{ calisan.ad_soyad }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Telefon:</th>
+                        <td>{{ calisan.telefon or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ calisan.email or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>TC Kimlik:</th>
+                        <td>{{ calisan.tc_kimlik or '-' }}</td>
+                    </tr>
+                    <tr>
+    <th>Doğum Tarihi:</th>
+    <td>
+        {% if calisan.dogum_tarihi %}
+            {{ calisan.dogum_tarihi }}
+            {% if calisan.yas %}
+                <span class="badge bg-success ms-2" style="font-size: 13px;">
+                    <i class="bi bi-cake2"></i> {{ calisan.yas }} yaş
+                </span>
+            {% endif %}
+        {% else %}
+            <span class="text-muted">-</span>
+        {% endif %}
+    </td>
+</tr>
+                    <tr>
+                        <th>İşe Başlama:</th>
+                        <td><span class="badge bg-success">{{ calisan.ise_baslama_tarihi }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>Durum:</th>
+                        <td>
+                            {% if calisan.aktif %}
+                                <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Pasif</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kadro Bilgileri -->
+    <div class="col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-briefcase"></i> Kadro Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th width="40%">Proje:</th>
+                        <td><span class="badge bg-primary">{{ calisan.proje_adi }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>Pozisyon:</th>
+                        <td><strong>{{ calisan.pozisyon_adi }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Müdürlük:</th>
+                        <td>{{ calisan.mudurluk_adi or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Direktörlük:</th>
+                        <td>{{ calisan.direktorluk_adi or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>İl / İlçe:</th>
+                        <td>{{ calisan.il_adi }}{% if calisan.ilce_adi %} / {{ calisan.ilce_adi }}{% endif %}</td>
+                    </tr>
+                    <tr>
+                        <th>Mağaza:</th>
+                        <td>{{ calisan.magaza_adi or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Araç Durumu:</th>
+                        <td>
+                            {% if calisan.aracli_durum == 'Araçlı' %}
+                                <span class="badge bg-success">Araçlı</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Araçsız</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dosyalar -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-folder"></i> Dosyalar</h5>
+                <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#dosyaYukleModal">
+                    <i class="bi bi-upload"></i> Dosya Yükle
+                </button>
+            </div>
+            <div class="card-body">
+                {% if dosyalar %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Dosya Adı</th>
+                                <th>Tür</th>
+                                <th>Boyut</th>
+                                <th>Yükleyen</th>
+                                <th>Tarih</th>
+                                <th>Açıklama</th>
+                                <th>İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for dosya in dosyalar %}
+                            <tr>
+                                <td>
+                                    <i class="bi bi-file-earmark"></i>
+                                    {{ dosya.dosya_adi }}
+                                </td>
+                                <td><span class="badge bg-info">{{ dosya.dosya_tipi }}</span></td>
+                                <td><small>{{ "%.2f"|format(dosya.dosya_boyutu / 1024 / 1024) }} MB</small></td>
+                                <td><small>{{ dosya.yukleyen }}</small></td>
+                                <td><small>{{ dosya.yukleme_tarihi }}</small></td>
+                                <td><small>{{ dosya.aciklama or '-' }}</small></td>
+                                <td>
+                                    <a href="{{ url_for('dosya_indir', dosya_id=dosya.id) }}" 
+                                       class="btn btn-sm btn-primary">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                    {% if has_permission('delete') %}
+                                    <form method="POST" action="{{ url_for('dosya_sil', dosya_id=dosya.id) }}" 
+                                          style="display: inline;"
+                                          onsubmit="return confirm('Bu dosyayı silmek istediğinizden emin misiniz?');">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> Henüz dosya yüklenmemiş.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dosya Yükleme Modal -->
+<div class="modal fade" id="dosyaYukleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('calisan_dosya_yukle', calisan_id=calisan.id) }}" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">Dosya Yükle</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="dosya_tipi" class="form-label">Dosya Türü</label>
+                        <select class="form-select" id="dosya_tipi" name="dosya_tipi" required>
+                            <option value="kimlik">Kimlik</option>
+                            <option value="diploma">Diploma</option>
+                            <option value="ozgecmis">Özgeçmiş</option>
+                            <option value="sozlesme">Sözleşme</option>
+                            <option value="diger">Diğer</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="dosya" class="form-label">Dosya Seç</label>
+                        <input type="file" class="form-control" id="dosya" name="dosya" required>
+                        <small class="text-muted">İzin verilen: PDF, DOC, DOCX, JPG, PNG (Max: 10MB)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="aciklama" class="form-label">Açıklama</label>
+                        <textarea class="form-control" id="aciklama" name="aciklama" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Yükle
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

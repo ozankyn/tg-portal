@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}İşten Çıkış - İK Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <h2><i class="bi bi-box-arrow-right"></i> İşten Çıkış İşlemi</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-10">
+        <!-- Çalışan Bilgileri Kartı -->
+        <div class="card mb-4 border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-person-badge"></i> Çalışan Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Ad Soyad:</strong> {{ calisan.ad_soyad }}</p>
+                        <p><strong>Telefon:</strong> {{ calisan.telefon or '-' }}</p>
+                        <p><strong>Email:</strong> {{ calisan.email or '-' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Proje:</strong> {{ calisan.proje_adi }}</p>
+                        <p><strong>Pozisyon:</strong> {{ calisan.pozisyon_adi }}</p>
+                        <p><strong>İşe Başlama:</strong> {{ calisan.ise_baslama_tarihi }}</p>
+                        <p><strong>Çalışma Süresi:</strong> 
+                            {% if calisan.ise_baslama_tarihi %}
+            {{ calisan.ise_baslama_tarihi }}
+        {% else %}
+            -
+        {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- İşten Çıkış Formu -->
+        <form method="POST" action="{{ url_for('calisan_cikis_kaydet', calisan_id=calisan.id) }}">
+            <!-- Temel Bilgiler -->
+            <div class="card mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar-x"></i> Çıkış Bilgileri</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="cikis_tarihi" class="form-label">Çıkış Tarihi *</label>
+                            <input type="date" class="form-control" id="cikis_tarihi" 
+                                   name="cikis_tarihi" value="{{ today }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="cikis_nedeni" class="form-label">Çıkış Nedeni *</label>
+                            <select class="form-select" id="cikis_nedeni" name="cikis_nedeni" required>
+                                <option value="">Seçiniz...</option>
+                                {% for neden in cikis_nedenleri %}
+                                <option value="{{ neden.neden }}">{{ neden.neden }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="liste_durumu" class="form-label">Liste Durumu *</label>
+                            <select class="form-select" id="liste_durumu" name="liste_durumu" required>
+                                <option value="Beyaz" selected>🤍 Beyaz Liste (İşe alınabilir)</option>
+                                <option value="Gri">⚫ Gri Liste (Şartlı alınabilir)</option>
+                                <option value="Kara">⛔ Kara Liste (İşe alınmaz)</option>
+                            </select>
+                            <small class="text-muted">Çalışanın gelecekte tekrar işe alınma durumu</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="tekrar_ise_alinabilir" 
+                                       name="tekrar_ise_alinabilir" value="1" checked>
+                                <label class="form-check-label" for="tekrar_ise_alinabilir">
+                                    <strong>Tekrar İşe Alınabilir</strong>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teslim Checklist -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-check"></i> Teslim Checklist</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="zimmet_teslim" 
+                                       name="zimmet_teslim" value="1">
+                                <label class="form-check-label" for="zimmet_teslim">
+                                    <i class="bi bi-box-seam"></i> Zimmet Teslimi
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="kiyafet_teslim" 
+                                       name="kiyafet_teslim" value="1">
+                                <label class="form-check-label" for="kiyafet_teslim">
+                                    <i class="bi bi-bag"></i> Kıyafet Teslimi
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="anahtar_teslim" 
+                                       name="anahtar_teslim" value="1">
+                                <label class="form-check-label" for="anahtar_teslim">
+                                    <i class="bi bi-key"></i> Anahtar Teslimi
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="kimlik_teslim" 
+                                       name="kimlik_teslim" value="1">
+                                <label class="form-check-label" for="kimlik_teslim">
+                                    <i class="bi bi-person-badge"></i> Kimlik Kartı
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tazminat Bilgileri -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-cash-coin"></i> Tazminat Bilgileri</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="ihbar_tazminat_durumu" class="form-label">İhbar Tazminatı Durumu</label>
+                            <select class="form-select" id="ihbar_tazminat_durumu" name="ihbar_tazminat_durumu">
+                                <option value="">Seçiniz...</option>
+                                <option value="Ödendi">Ödendi</option>
+                                <option value="Ödenmedi">Ödenmedi</option>
+                                <option value="Çalıştı">İhbar Süresini Çalıştı</option>
+                                <option value="Hak Yok">Hak Kazanmadı</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="kidem_tazminat_durumu" class="form-label">Kıdem Tazminatı Durumu</label>
+                            <select class="form-select" id="kidem_tazminat_durumu" name="kidem_tazminat_durumu">
+                                <option value="">Seçiniz...</option>
+                                <option value="Ödendi">Ödendi</option>
+                                <option value="Ödenmedi">Ödenmedi</option>
+                                <option value="Hak Yok">Hak Kazanmadı (1 yıldan az)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notlar -->
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Notlar ve Değerlendirme</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="yonetici_notu" class="form-label">Yönetici Notu</label>
+                        <textarea class="form-control" id="yonetici_notu" name="yonetici_notu" 
+                                  rows="3" placeholder="Yöneticinin çalışan hakkındaki görüşleri..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ik_notu" class="form-label">İK Notu</label>
+                        <textarea class="form-control" id="ik_notu" name="ik_notu" 
+                                  rows="3" placeholder="İK departmanının notları..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="genel_degerlendirme" class="form-label">Genel Değerlendirme</label>
+                        <textarea class="form-control" id="genel_degerlendirme" name="genel_degerlendirme" 
+                                  rows="4" placeholder="Çalışanın genel performansı, davranışları ve öneriler..."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Onay ve Butonlar -->
+            <div class="card mb-4 border-danger">
+                <div class="card-body">
+                    <div class="alert alert-danger mb-3">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <strong>DİKKAT:</strong> Bu işlem geri alınamaz! Çalışan pasif duruma geçirilecek ve 
+                        kadro doluluk sayısı güncellenecektir.
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="onay" required>
+                        <label class="form-check-label" for="onay">
+                            <strong>Yukarıdaki bilgilerin doğruluğunu onaylıyorum ve işten çıkış işlemini 
+                            gerçekleştirmek istiyorum.</strong>
+                        </label>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger btn-lg">
+                            <i class="bi bi-box-arrow-right"></i> İşten Çıkışı Kaydet
+                        </button>
+                        <a href="{{ url_for('calisanlar') }}" class="btn btn-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> İptal
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}{{ musteri.musteri_adi }} - Müşteri Düzenle{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <h2><i class="bi bi-building-fill-gear"></i> Müşteri Düzenle: {{ musteri.musteri_adi }}</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="musteri_adi" class="form-label">Müşteri Adı *</label>
+                            <input type="text" class="form-control" id="musteri_adi" name="musteri_adi" 
+                                   value="{{ musteri.musteri_adi }}" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="sektor" class="form-label">Sektör</label>
+                            <input type="text" class="form-control" id="sektor" name="sektor" 
+                                   value="{{ musteri.sektor or '' }}" placeholder="Ör: Perakende">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="yetkili_kisi" class="form-label">Yetkili Kişi</label>
+                            <input type="text" class="form-control" id="yetkili_kisi" name="yetkili_kisi" 
+                                   value="{{ musteri.yetkili_kisi or '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="telefon" class="form-label">Telefon</label>
+                            <input type="text" class="form-control" id="telefon" name="telefon" 
+                                   value="{{ musteri.telefon or '' }}" placeholder="5XX XXX XX XX">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" 
+                               value="{{ musteri.email or '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="adres" class="form-label">Adres</label>
+                        <textarea class="form-control" id="adres" name="adres" rows="2">{{ musteri.adres or '' }}</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="logo" class="form-label">Logo</label>
+                        {% if musteri.logo_yolu %}
+                        <div class="mb-2">
+                            <img src="{{ url_for('musteri_logo', musteri_id=musteri.id) }}" 
+                                 alt="{{ musteri.musteri_adi }}" 
+                                 style="max-width: 150px; max-height: 100px; object-fit: contain;"
+                                 class="border p-2">
+                        </div>
+                        {% endif %}
+                        <input type="file" class="form-control" id="logo" name="logo" accept="image/*">
+                        <small class="text-muted">Yeni logo seçerseniz eskisi değiştirilecektir</small>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="aktif" name="aktif" 
+                               {% if musteri.aktif %}checked{% endif %}>
+                        <label class="form-check-label" for="aktif">Aktif</label>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Güncelle
+                        </button>
+                        <a href="{{ url_for('musteriler') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> İptal
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

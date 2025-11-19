@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Çalışma Şekilleri - İK Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h2><i class="bi bi-clock-history"></i> Çalışma Şekilleri</h2>
+        <p class="text-muted">Çalışma şekillerini yönetin (Full Time, Part Time vb.)</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#calismaSekilEkleModal">
+            <i class="bi bi-plus-circle"></i> Yeni Çalışma Şekli Ekle
+        </button>
+    </div>
+</div>
+
+<!-- İstatistikler -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h5 class="card-title">Toplam Çalışma Şekli</h5>
+                <h2>{{ stats.toplam_sekil }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">Kullanılan Şekil Sayısı</h5>
+                <h2>{{ stats.kullanan_kadro }}</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Çalışma Şekilleri Listesi -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Çalışma Şekilleri Listesi</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>ID</th>
+                                <th>Çalışma Şekli</th>
+                                <th>Açıklama</th>
+                                <th>Kadro Sayısı</th>
+                                <th>Durum</th>
+                                <th>Oluşturma Tarihi</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sekil in calisma_sekilleri %}
+                            <tr>
+                                <td>{{ sekil.id }}</td>
+                                <td><strong>{{ sekil.calisma_sekli }}</strong></td>
+                                <td>{{ sekil.aciklama or '-' }}</td>
+                                <td>
+                                    <span class="badge bg-primary">{{ sekil.kadro_sayisi }}</span>
+                                </td>
+                                <td>
+                                    {% if sekil.aktif %}
+                                        <span class="badge bg-success">Aktif</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Pasif</span>
+                                    {% endif %}
+                                </td>
+                                <td><small>{{ sekil.olusturma_tarihi }}</small></td>
+                                <td>
+                                    <!-- Aktif/Pasif Toggle -->
+                                    <form method="POST" action="{{ url_for('calisma_sekli_toggle', sekil_id=sekil.id) }}" style="display: inline;">
+                                        <button type="submit" class="btn btn-sm btn-warning" 
+                                                title="{% if sekil.aktif %}Pasif Yap{% else %}Aktif Yap{% endif %}">
+                                            <i class="bi bi-toggle-{% if sekil.aktif %}on{% else %}off{% endif %}"></i>
+                                        </button>
+                                    </form>
+                                    
+                                    <!-- Sil -->
+                                    {% if sekil.kadro_sayisi == 0 %}
+                                    <form method="POST" action="{{ url_for('calisma_sekli_sil', sekil_id=sekil.id) }}" 
+                                          style="display: inline;"
+                                          onsubmit="return confirm('Bu çalışma şeklini silmek istediğinizden emin misiniz?');">
+                                        <button type="submit" class="btn btn-sm btn-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-secondary" disabled title="Bu çalışma şekli kullanılıyor, silinemez">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">Henüz çalışma şekli eklenmemiş</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Çalışma Şekli Ekle Modal -->
+<div class="modal fade" id="calismaSekilEkleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Çalışma Şekli Ekle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('calisma_sekli_ekle') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="calisma_sekli" class="form-label">Çalışma Şekli *</label>
+                        <input type="text" class="form-control" id="calisma_sekli" name="calisma_sekli" required>
+                        <small class="text-muted">Örn: Full Time, Part Time, Freelance</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="aciklama" class="form-label">Açıklama</label>
+                        <textarea class="form-control" id="aciklama" name="aciklama" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> İptal
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

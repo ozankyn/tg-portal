@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Profilim - İK Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <h2><i class="bi bi-person-circle"></i> Profilim</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person"></i> Kullanıcı Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="40%">Kullanıcı Adı:</th>
+                        <td><strong>{{ user.username }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Tam Ad:</th>
+                        <td>{{ user.full_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ user.email or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Rol:</th>
+                        <td>
+                            {% if user.role == 'admin' %}
+                                <span class="badge bg-danger">Sistem Yöneticisi</span>
+                            {% elif user.role == 'manager' %}
+                                <span class="badge bg-warning text-dark">Yönetici</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Kullanıcı</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Durum:</th>
+                        <td>
+                            {% if user.aktif %}
+                                <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Pasif</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Kayıt Tarihi:</th>
+                        <td>{{ user.olusturma_tarihi }}</td>
+                    </tr>
+                    <tr>
+                        <th>Son Giriş:</th>
+                        <td>{{ user.son_giris_tarihi or 'İlk giriş' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-key"></i> Şifre Değiştir</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('sifre_degistir') }}">
+                    <div class="mb-3">
+                        <label for="eski_sifre" class="form-label">Mevcut Şifre *</label>
+                        <input type="password" class="form-control" id="eski_sifre" 
+                               name="eski_sifre" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="yeni_sifre" class="form-label">Yeni Şifre *</label>
+                        <input type="password" class="form-control" id="yeni_sifre" 
+                               name="yeni_sifre" required minlength="6">
+                        <small class="text-muted">En az 6 karakter</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="yeni_sifre_tekrar" class="form-label">Yeni Şifre (Tekrar) *</label>
+                        <input type="password" class="form-control" id="yeni_sifre_tekrar" 
+                               name="yeni_sifre_tekrar" required minlength="6">
+                    </div>
+
+                    <button type="submit" class="btn btn-warning text-dark">
+                        <i class="bi bi-shield-lock"></i> Şifreyi Değiştir
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-shield-check"></i> Güvenlik İpuçları</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Şifrenizi düzenli olarak değiştirin</li>
+                    <li>Güçlü şifre kullanın (harf, rakam, sembol)</li>
+                    <li>Şifrenizi kimseyle paylaşmayın</li>
+                    <li>Her sistemde farklı şifre kullanın</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

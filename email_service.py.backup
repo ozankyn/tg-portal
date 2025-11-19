@@ -1,0 +1,143 @@
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from database import get_db
+from datetime import datetime
+
+def get_email_ayar(ayar_adi):
+    """Email ayarını getir"""
+    conn = get_db()
+    ayar = conn.execute(
+        'SELECT ayar_degeri FROM email_ayarlari WHERE ayar_adi = ? AND aktif = 1',
+        (ayar_adi,)
+    ).fetchone()
+    conn.close()
+    return ayar['ayar_degeri'] if ayar else None
+
+def get_email_sablon(sablon_adi):
+    """Email şablonunu getir"""
+    conn = get_db()
+    sablon = conn.execute(
+        'SELECT * FROM email_sablonlari WHERE sablon_adi = ? AND aktif = 1',
+        (sablon_adi,)
+    ).fetchone()
+    conn.close()
+    return sablon
+
+def email_gonder(alici_email, konu, icerik, sablon_adi=None, ilgili_tablo=None, ilgili_id=None):
+    """
+    Email gönder
+    """
+    try:
+        # SMTP ayarları
+        smtp_sunucu = get_email_ayar('smtp_sunucu')
+        smtp_port = int(get_email_ayar('smtp_port') or 587)
+        smtp_kullanici = get_email_ayar('smtp_kullanici')
+        smtp_sifre = get_email_ayar('smtp_sifre')
+        gonderici_adi = get_email_ayar('gonderici_adi')
+        
+        if not all([smtp_sunucu, smtp_kullanici, smtp_sifre]):
+            raise Exception("Email ayarları eksik!")
+        
+        # Email oluştur
+        msg = MIMEMultipart('alternative')
+        msg['From'] = f"{gonderici_adi} <{smtp_kullanici}>"
+        msg['To'] = alici_email
+        msg['Subject'] = konu
+        
+        # HTML içerik
+        html_part = MIMEText(icerik, 'html', 'utf-8')
+        msg.attach(html_part)
+        
+        # SMTP ile gönder
+        with smtplib.SMTP(smtp_sunucu, smtp_port) as server:
+            server.starttls()
+            server.login(smtp_kullanici, smtp_sifre)
+            server.send_message(msg)
+        
+        # Başarılı log
+        log_email(alici_email, konu, 'gonderildi', None, sablon_adi, ilgili_tablo, ilgili_id)
+        return True, "Email başarıyla gönderildi"
+        
+    except Exception as e:
+        # Hata log
+        log_email(alici_email, konu, 'hata', str(e), sablon_adi, ilgili_tablo, ilgili_id)
+        return False, str(e)
+
+def log_email(alici_email, konu, durum, hata_mesaji, sablon_adi=None, ilgili_tablo=None, ilgili_id=None):
+    """Email gönderim logunu kaydet"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO email_loglari 
+        (alici_email, konu, sablon_adi, gonderim_durumu, hata_mesaji, ilgili_tablo, ilgili_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    ''', (alici_email, konu, sablon_adi, durum, hata_mesaji, ilgili_tablo, ilgili_id))
+    conn.commit()
+    conn.close()
+
+def yeni_ise_giris_bildirimi(aday_bilgileri):
+    """
+    Yeni işe giriş bildirimi gönder
+    aday_bilgileri: dict - Aday ve pozisyon bilgileri
+    """
+    # Şablonu getir
+    sablon = get_email_sablon('yeni_ise_giris')
+    if not sablon:
+        return False, "Email şablonu bulunamadı"
+    
+    # Şablon değişkenlerini doldur
+    portal_url = "https://ikportal.teamguerilla.com"
+    gonderim_zamani = datetime.now().strftime('%d.%m.%Y %H:%M')
+    
+    icerik = sablon['sablon_icerik'].format(
+        ad_soyad=aday_bilgileri.get('ad_soyad', '-'),
+        proje_adi=aday_bilgileri.get('proje_adi', '-'),
+        pozisyon_adi=aday_bilgileri.get('pozisyon_adi', '-'),
+        il=aday_bilgileri.get('il', '-'),
+        ilce=aday_bilgileri.get('ilce', '-'),
+        magaza_adi=aday_bilgileri.get('magaza_adi', '-'),
+        ise_baslama_tarihi=aday_bilgileri.get('ise_baslama_tarihi', '-'),
+        telefon=aday_bilgileri.get('telefon', '-'),
+        email=aday_bilgileri.get('email', '-'),
+        portal_url=portal_url,
+        gonderim_zamani=gonderim_zamani
+    )
+    
+    konu = sablon['sablon_konusu'].format(
+        ad_soyad=aday_bilgileri.get('ad_soyad', '-')
+    )
+    
+    # Alıcı listesi
+    alicilar = [
+        ('egitim_email', 'Eğitim Departmanı'),
+        ('filo_email', 'Filo Departmanı'),
+        ('ik_email', 'İK Departmanı'),
+        ('yonetici_email', 'Yönetici')
+    ]
+    
+    basarili_sayisi = 0
+    hatalar = []
+    
+    for ayar_adi, departman_adi in alicilar:
+        email = get_email_ayar(ayar_adi)
+        if email:
+            basarili, mesaj = email_gonder(
+                email, 
+                konu, 
+                icerik, 
+                'yeni_ise_giris',
+                'calisanlar',
+                aday_bilgileri.get('id')
+            )
+            if basarili:
+                basarili_sayisi += 1
+                print(f"✅ {departman_adi} email gönderildi: {email}")
+            else:
+                hatalar.append(f"{departman_adi}: {mesaj}")
+                print(f"❌ {departman_adi} email gönderilemedi: {mesaj}")
+    
+    if basarili_sayisi > 0:
+        return True, f"{basarili_sayisi} departmana bildirim gönderildi"
+    else:
+        return False, "Hiçbir departmana email gönderilemedi: " + ", ".join(hatalar)

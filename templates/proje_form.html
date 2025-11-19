@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Yeni Proje - İK Yönetim Sistemi{% endblock %}
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <h2><i class="bi bi-folder-plus"></i> Yeni Proje Ekle</h2>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="musteri_id" class="form-label">Müşteri</label>
+                        <select class="form-select" id="musteri_id" name="musteri_id">
+                            <option value="">Müşteri Seçin (Opsiyonel)</option>
+                            {% for musteri in musteriler %}
+                            <option value="{{ musteri.id }}">
+                                {{ musteri.musteri_adi }}{% if musteri.sektor %} - {{ musteri.sektor }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Bu proje hangi müşteriye ait?</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="proje_adi" class="form-label">Proje Adı *</label>
+                        <input type="text" class="form-control" id="proje_adi" name="proje_adi" 
+                               placeholder="Ör: Migros İstanbul Kadrolar 2025" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="aciklama" class="form-label">Açıklama</label>
+                        <textarea class="form-control" id="aciklama" name="aciklama" rows="3" 
+                                  placeholder="Proje hakkında detaylar..."></textarea>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Proje Ekle
+                        </button>
+                        <a href="{{ url_for('projeler') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> İptal
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

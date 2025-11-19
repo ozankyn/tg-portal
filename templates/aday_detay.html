@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block title %}Aday Detay - {{ aday.ad_soyad }} - İK Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h2><i class="bi bi-person-badge"></i> Aday Detayı</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('adaylar') }}">Adaylar</a></li>
+                <li class="breadcrumb-item active">{{ aday.ad_soyad }}</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('adaylar') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Geri Dön
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Sol Kolon: Aday Bilgileri -->
+    <div class="col-md-6">
+        <!-- Temel Bilgiler -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-person-lines-fill"></i> Temel Bilgiler</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th width="40%">Ad Soyad:</th>
+                        <td><strong>{{ aday.ad_soyad }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>Telefon:</th>
+                        <td>
+                            {% if aday.telefon %}
+                                <a href="tel:{{ aday.telefon }}">{{ aday.telefon }}</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Email:</th>
+                        <td>
+                            {% if aday.email %}
+                                <a href="mailto:{{ aday.email }}">{{ aday.email }}</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>TC Kimlik:</th>
+                        <td>{{ aday.tc_kimlik or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Başvuru Tarihi:</th>
+                        <td>{{ aday.basvuru_tarihi }}</td>
+                    </tr>
+                    <tr>
+                        <th>Durum:</th>
+                        <td>
+                            {% if aday.durum == 'Çalışan' %}
+                                <span class="badge bg-success">Çalışan</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Aday</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if aday.ise_baslama_tarihi %}
+                    <tr>
+                        <th>İşe Başlama:</th>
+                        <td>{{ aday.ise_baslama_tarihi }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+
+        <!-- Pozisyon Bilgileri -->
+        <div class="card mb-3">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-briefcase"></i> Pozisyon Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th width="40%">Proje:</th>
+                        <td><span class="badge bg-primary">{{ aday.proje_adi }}</span></td>
+                    </tr>
+                    <tr>
+                        <th>Pozisyon:</th>
+                        <td><strong>{{ aday.pozisyon_adi }}</strong></td>
+                    </tr>
+                    <tr>
+                        <th>İl / İlçe:</th>
+                        <td>{{ aday.il }}{% if aday.ilce %} / {{ aday.ilce }}{% endif %}</td>
+                    </tr>
+                    <tr>
+                        <th>Mağaza:</th>
+                        <td>{{ aday.magaza_adi or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Notlar -->
+        {% if aday.notlar %}
+        <div class="card mb-3">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="bi bi-sticky"></i> Notlar</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ aday.notlar }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- İşlemler -->
+        {% if aday.durum == 'Aday' and has_permission('edit') %}
+        <div class="card border-success">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-arrow-right-circle"></i> İşlemler</h5>
+            </div>
+            <div class="card-body text-center">
+                <button type="button" class="btn btn-success btn-lg" 
+                        onclick="openModal({{ aday.id }}, '{{ aday.ad_soyad }}')">
+                    <i class="bi bi-arrow-right-circle"></i> Çalışana Dönüştür
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Sağ Kolon: Dosyalar -->
+    <div class="col-md-6">
+        <!-- Dosya Yükleme -->
+        <div class="card mb-3">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-cloud-upload"></i> Dosya Yükle</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('aday_dosya_yukle', aday_id=aday.id) }}" 
+                      enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="dosya_tipi" class="form-label">Dosya Tipi *</label>
+                        <select class="form-select" id="dosya_tipi" name="dosya_tipi" required>
+                            <option value="cv">CV / Özgeçmiş</option>
+                            <option value="kimlik">Kimlik Fotokopisi</option>
+                            <option value="ikametgah">İkametgah Belgesi</option>
+                            <option value="diploma">Diploma / Sertifika</option>
+                            <option value="adli_sicil">Adli Sicil Kaydı</option>
+                            <option value="saglik_raporu">Sağlık Raporu</option>
+                            <option value="diger">Diğer</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="dosya" class="form-label">Dosya Seç *</label>
+                        <input type="file" class="form-control" id="dosya" name="dosya" required>
+                        <small class="text-muted">
+                            İzin verilen formatlar: PDF, DOC, DOCX, JPG, PNG (Max: 10 MB)
+                        </small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="aciklama" class="form-label">Açıklama</label>
+                        <textarea class="form-control" id="aciklama" name="aciklama" 
+                                  rows="2" placeholder="Opsiyonel not ekleyin"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-warning text-dark w-100">
+                        <i class="bi bi-upload"></i> Yükle
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Yüklü Dosyalar -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="bi bi-files"></i> Yüklü Dosyalar 
+                    <span class="badge bg-secondary">{{ dosyalar|length }}</span>
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if dosyalar %}
+                <div class="list-group">
+                    {% for dosya in dosyalar %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">
+                                    {% if dosya.dosya_tipi == 'cv' %}
+                                        <i class="bi bi-file-earmark-person text-primary"></i>
+                                    {% elif dosya.dosya_tipi == 'kimlik' %}
+                                        <i class="bi bi-card-heading text-info"></i>
+                                    {% elif dosya.dosya_tipi == 'diploma' %}
+                                        <i class="bi bi-mortarboard text-success"></i>
+                                    {% else %}
+                                        <i class="bi bi-file-earmark text-secondary"></i>
+                                    {% endif %}
+                                    {{ dosya.dosya_adi }}
+                                </h6>
+                                <small class="text-muted">
+                                    <strong>Tip:</strong> {{ dosya.dosya_tipi|upper }} | 
+                                    <strong>Boyut:</strong> {{ (dosya.dosya_boyutu / 1024 / 1024)|round(2) }} MB<br>
+                                    <strong>Yükleyen:</strong> {{ dosya.yukleyen }} | 
+                                    <strong>Tarih:</strong> {{ dosya.yukleme_tarihi }}
+                                </small>
+                                {% if dosya.aciklama %}
+                                <p class="mb-1 mt-2"><small><em>{{ dosya.aciklama }}</em></small></p>
+                                {% endif %}
+                            </div>
+                            <div class="btn-group-vertical ms-2" role="group">
+                                <a href="{{ url_for('dosya_indir', dosya_id=dosya.id) }}" 
+                                   class="btn btn-sm btn-primary" title="İndir">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <button type="button" class="btn btn-sm btn-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModal{{ dosya.id }}" 
+                                        title="Sil">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Silme Modal -->
+                        <div class="modal fade" id="deleteModal{{ dosya.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-sm">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Dosya Sil</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('dosya_sil', dosya_id=dosya.id) }}">
+                                        <div class="modal-body">
+                                            <p>Bu dosyayı silmek istediğinizden emin misiniz?</p>
+                                            <p class="text-danger"><small><i class="bi bi-exclamation-triangle"></i> Bu işlem geri alınamaz!</small></p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">İptal</button>
+                                            <button type="submit" class="btn btn-danger btn-sm">Sil</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-inbox" style="font-size: 48px;"></i>
+                    <p class="mt-2">Henüz dosya yüklenmemiş</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Çalışana Dönüştür Modal -->
+<div class="modal fade" id="calisanModal" tabindex="-1" aria-labelledby="calisanModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="calisanModalLabel">Çalışana Dönüştür</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" id="calisanForm">
+                <div class="modal-body">
+                    <p><strong id="adayAdi"></strong> adayını çalışana dönüştürmek istediğinizden emin misiniz?</p>
+                    <div class="mb-3">
+                        <label for="ise_baslama_tarihi" class="form-label">İşe Başlama Tarihi *</label>
+                        <input type="date" class="form-control" 
+                               id="ise_baslama_tarihi"
+                               name="ise_baslama_tarihi" 
+                               required>
+                    </div>
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Bilgi:</strong> Bu işlem kadro doluluk sayısını otomatik güncelleyecek ve ilgili departmanlara bildirim gönderecektir.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> İptal
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Onayla ve Dönüştür
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openModal(adayId, adayAdi) {
+    // Form action'ı ayarla
+    document.getElementById('calisanForm').action = '/aday/' + adayId + '/calisana-donustur';
+    
+    // Aday adını göster
+    document.getElementById('adayAdi').textContent = adayAdi;
+    
+    // Bugünün tarihini default olarak ayarla
+    var today = new Date().toISOString().split('T')[0];
+    document.getElementById('ise_baslama_tarihi').value = today;
+    
+    // Modal'ı aç
+    var myModal = new bootstrap.Modal(document.getElementById('calisanModal'));
+    myModal.show();
+}
+
+// Modal kapandığında formu temizle
+document.getElementById('calisanModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('calisanForm').reset();
+});
+
+// Dosya boyutu kontrolü
+document.getElementById('dosya').addEventListener('change', function() {
+    var file = this.files[0];
+    if (file && file.size > 10 * 1024 * 1024) {
+        alert('Dosya boyutu 10 MB\'dan büyük olamaz!');
+        this.value = '';
+    }
+});
+</script>
+{% endblock %}
