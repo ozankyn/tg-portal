@@ -1,0 +1,706 @@
+{% extends "base.html" %}
+
+{% block title %}Araç Teslim/İade{% endblock %}
+
+{% block extra_css %}
+<style>
+.photo-preview {
+    display: inline-block;
+    margin: 5px;
+    position: relative;
+}
+.photo-preview img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+}
+.photo-preview .remove-photo {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: red;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    border: none;
+    cursor: pointer;
+}
+
+/* Print Styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    .print-only {
+        display: block !important;
+    }
+    body {
+        background: white;
+    }
+    .card {
+        page-break-inside: avoid;
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+    .signature-box {
+        border: 2px solid #000;
+        height: 100px;
+        margin-top: 30px;
+        page-break-inside: avoid;
+    }
+    table {
+        page-break-inside: auto;
+    }
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+}
+.print-only {
+    display: none;
+}
+.signature-box {
+    min-height: 100px;
+    border: 2px dashed #ccc;
+    text-align: center;
+    padding-top: 40px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="no-print">
+        <h2><i class="bi bi-arrow-left-right"></i> Araç Teslim / İade İşlemi</h2>
+
+        <ul class="nav nav-tabs mb-4" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#teslim">
+                    <i class="bi bi-box-arrow-right"></i> Teslim
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#iade">
+                    <i class="bi bi-box-arrow-in-left"></i> İade
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="tab-content">
+        <!-- TESLİM FORMU -->
+        <div class="tab-pane fade show active" id="teslim">
+            <form method="POST" enctype="multipart/form-data" id="teslimForm">
+                <input type="hidden" name="islem_tipi" value="Teslim">
+                
+                <!-- Yazdır Butonu -->
+                <div class="no-print mb-3">
+                    <button type="button" class="btn btn-info" onclick="printTeslimForm()">
+                        <i class="bi bi-printer"></i> Teslim Formu Yazdır
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Kaydet
+                    </button>
+                    <a href="{{ url_for('filo_araclar') }}" class="btn btn-secondary">İptal</a>
+                </div>
+
+                <!-- Form Başlık (Print için) -->
+                <div class="print-only text-center mb-4">
+                    <h2><strong>ARAÇ TESLİM TUTANAĞI</strong></h2>
+                    <p><strong>Tarih:</strong> <span id="print_teslim_tarih"></span></p>
+                    <hr style="border: 2px solid #000;">
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white no-print">
+                        <h5 class="mb-0">Araç ve Çalışan Bilgileri</h5>
+                    </div>
+                    <div class="print-only">
+                        <h5 style="background: #eee; padding: 10px;"><strong>Araç ve Çalışan Bilgileri</strong></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 no-print">
+                                <label class="form-label">Araç <span class="text-danger">*</span></label>
+                                <select name="arac_id" class="form-select" required id="teslim_arac">
+                                    <option value="">Seçiniz</option>
+                                    {% for arac in bosta_araclar %}
+                                    <option value="{{ arac.id }}" 
+                                            data-plaka="{{ arac.plaka }}" 
+                                            data-marka="{{ arac.marka }} {{ arac.model }}">
+                                        {{ arac.plaka }} - {{ arac.marka }} {{ arac.model }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 no-print">
+                                <label class="form-label">Çalışan <span class="text-danger">*</span></label>
+                                <select name="calisan_id" class="form-select" required id="teslim_calisan">
+                                    <option value="">Seçiniz</option>
+                                    {% for calisan in calisanlar %}
+                                    <option value="{{ calisan.id }}" data-adsoyad="{{ calisan.ad_soyad }}">
+                                        {{ calisan.ad_soyad }} - {{ calisan.telefon }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Print için bilgiler -->
+                        <div class="print-only">
+                            <table class="table table-bordered" style="border: 2px solid #000;">
+                                <tr>
+                                    <th style="width: 25%; background: #f5f5f5;">Plaka:</th>
+                                    <td style="width: 25%;"><strong><span id="print_teslim_plaka"></span></strong></td>
+                                    <th style="width: 25%; background: #f5f5f5;">Teslim Alan:</th>
+                                    <td style="width: 25%;"><strong><span id="print_teslim_calisan"></span></strong></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Araç:</th>
+                                    <td colspan="3"><span id="print_teslim_marka"></span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header no-print">
+                        <h5 class="mb-0">Araç Durumu</h5>
+                    </div>
+                    <div class="print-only">
+                        <h5 style="background: #eee; padding: 10px;"><strong>Araç Durumu</strong></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row no-print">
+                            <div class="col-md-3">
+                                <label class="form-label">Tarih/Saat <span class="text-danger">*</span></label>
+                                <input type="datetime-local" name="islem_tarihi" class="form-control" 
+                                       value="{{ now.strftime('%Y-%m-%dT%H:%M') }}" required id="teslim_tarih">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Kilometre <span class="text-danger">*</span></label>
+                                <input type="number" name="kilometre" class="form-control" required id="teslim_km">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Yakıt Durumu</label>
+                                <select name="yakit_durumu" class="form-select" id="teslim_yakit">
+                                    <option value="">Seçiniz</option>
+                                    <option value="Boş">Boş</option>
+                                    <option value="1/4">1/4</option>
+                                    <option value="1/2">1/2</option>
+                                    <option value="3/4">3/4</option>
+                                    <option value="Dolu">Dolu</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Temizlik</label>
+                                <select name="temizlik_durumu" class="form-select" id="teslim_temizlik">
+                                    <option value="">Seçiniz</option>
+                                    <option value="Temiz">Temiz</option>
+                                    <option value="Orta">Orta</option>
+                                    <option value="Kirli">Kirli</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3 no-print">
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input type="checkbox" name="hasar_var" class="form-check-input" id="hasar_var_teslim">
+                                    <label class="form-check-label" for="hasar_var_teslim">
+                                        <strong>Hasar Var</strong>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3 no-print">
+                            <div class="col-md-6">
+                                <label class="form-label">İç Durum</label>
+                                <textarea name="ic_durum_aciklama" class="form-control" rows="2" id="teslim_ic"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Dış Durum</label>
+                                <textarea name="dis_durum_aciklama" class="form-control" rows="2" id="teslim_dis"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3 no-print">
+                            <div class="col-md-6">
+                                <label class="form-label">Hasar Açıklaması</label>
+                                <textarea name="hasar_aciklama" class="form-control" rows="2" id="teslim_hasar"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Eksikler</label>
+                                <textarea name="eksikler" class="form-control" rows="2" id="teslim_eksik"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Print için özet -->
+                        <div class="print-only">
+                            <table class="table table-bordered" style="border: 2px solid #000;">
+                                <tr>
+                                    <th style="width: 30%; background: #f5f5f5;">Kilometre:</th>
+                                    <td><strong><span id="print_teslim_km"></span> km</strong></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Yakıt Durumu:</th>
+                                    <td><span id="print_teslim_yakit"></span></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Temizlik Durumu:</th>
+                                    <td><span id="print_teslim_temizlik"></span></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">İç Durum:</th>
+                                    <td><span id="print_teslim_ic"></span></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Dış Durum:</th>
+                                    <td><span id="print_teslim_dis"></span></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Hasar/Arıza:</th>
+                                    <td><span id="print_teslim_hasar"></span></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Eksikler:</th>
+                                    <td><span id="print_teslim_eksik"></span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header no-print">
+                        <h5 class="mb-0">Araç Fotoğrafları</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12 no-print">
+                                <label class="form-label">Fotoğraf Yükle (Çoklu seçim yapabilirsiniz)</label>
+                                <input type="file" name="fotograf[]" class="form-control" 
+                                       accept="image/*" multiple id="teslim_foto_input" onchange="previewTeslimPhotos(this)">
+                                <small class="text-muted">Ön, arka, sağ, sol, iç görünüm, gösterge, kilometre, vb.</small>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-12" id="teslim_foto_preview"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <label class="form-label">Genel Notlar</label>
+                        <textarea name="notlar" class="form-control" rows="3" id="teslim_notlar"></textarea>
+                        
+                        <div class="print-only mt-3">
+                            <table class="table table-bordered" style="border: 2px solid #000;">
+                                <tr>
+                                    <th style="background: #f5f5f5;">Notlar:</th>
+                                    <td><span id="print_teslim_notlar"></span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Print için imza alanları -->
+                <div class="print-only" style="page-break-before: avoid; margin-top: 50px;">
+                    <hr style="border: 2px solid #000; margin: 30px 0;">
+                    <div class="row">
+                        <div class="col-6 text-center">
+                            <div class="signature-box">
+                                <p><strong>İmza</strong></p>
+                            </div>
+                            <p style="margin-top: 10px;">
+                                <strong>TESLİM EDEN</strong><br>
+                                Ad Soyad:<br>
+                                Tarih:
+                            </p>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="signature-box">
+                                <p><strong>İmza</strong></p>
+                            </div>
+                            <p style="margin-top: 10px;">
+                                <strong>TESLİM ALAN</strong><br>
+                                Ad Soyad: <span id="print_teslim_calisan2"></span><br>
+                                Tarih:
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="no-print">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-check-circle"></i> Kaydet ve Tamamla
+                    </button>
+                    <a href="{{ url_for('filo_araclar') }}" class="btn btn-secondary btn-lg">İptal</a>
+                </div>
+            </form>
+        </div>
+
+        <!-- İADE FORMU -->
+        <div class="tab-pane fade" id="iade">
+            <form method="POST" enctype="multipart/form-data" id="iadeForm">
+                <input type="hidden" name="islem_tipi" value="İade">
+                
+                <div class="no-print mb-3">
+                    <button type="button" class="btn btn-info" onclick="printIadeForm()">
+                        <i class="bi bi-printer"></i> İade Formu Yazdır
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-box-arrow-in-left"></i> Kaydet
+                    </button>
+                    <a href="{{ url_for('filo_araclar') }}" class="btn btn-secondary">İptal</a>
+                </div>
+
+                <div class="print-only text-center mb-4">
+                    <h2><strong>ARAÇ İADE TUTANAĞI</strong></h2>
+                    <p><strong>Tarih:</strong> <span id="print_iade_tarih"></span></p>
+                    <hr style="border: 2px solid #000;">
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header bg-warning no-print">
+                        <h5 class="mb-0">Araç ve Çalışan Bilgileri</h5>
+                    </div>
+                    <div class="print-only">
+                        <h5 style="background: #eee; padding: 10px;"><strong>Araç ve Çalışan Bilgileri</strong></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12 no-print">
+                                <label class="form-label">Zimmetli Araç <span class="text-danger">*</span></label>
+                                <select name="arac_id" class="form-select" id="iade_arac_select" required>
+                                    <option value="">Seçiniz</option>
+                                    {% for arac in zimmetli_araclar %}
+                                    <option value="{{ arac.id }}" 
+                                            data-calisan="{{ arac.calisan_id }}"
+                                            data-plaka="{{ arac.plaka }}"
+                                            data-marka="{{ arac.marka }} {{ arac.model }}"
+                                            data-adsoyad="{{ arac.ad_soyad }}">
+                                        {{ arac.plaka }} - {{ arac.marka }} {{ arac.model }} ({{ arac.ad_soyad }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <input type="hidden" name="calisan_id" id="iade_calisan_id">
+                            </div>
+                        </div>
+
+                        <div class="print-only">
+                            <table class="table table-bordered" style="border: 2px solid #000;">
+                                <tr>
+                                    <th style="width: 25%; background: #f5f5f5;">Plaka:</th>
+                                    <td style="width: 25%;"><strong><span id="print_iade_plaka"></span></strong></td>
+                                    <th style="width: 25%; background: #f5f5f5;">İade Eden:</th>
+                                    <td style="width: 25%;"><strong><span id="print_iade_calisan"></span></strong></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Araç:</th>
+                                    <td colspan="3"><span id="print_iade_marka"></span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header no-print">
+                        <h5 class="mb-0">Araç Durumu (İade)</h5>
+                    </div>
+                    <div class="print-only">
+                        <h5 style="background: #eee; padding: 10px;"><strong>Araç Durumu</strong></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row no-print">
+                            <div class="col-md-3">
+                                <label class="form-label">Tarih/Saat <span class="text-danger">*</span></label>
+                                <input type="datetime-local" name="islem_tarihi" class="form-control" 
+                                       value="{{ now.strftime('%Y-%m-%dT%H:%M') }}" required id="iade_tarih">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Kilometre <span class="text-danger">*</span></label>
+                                <input type="number" name="kilometre" class="form-control" required id="iade_km">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Yakıt Durumu</label>
+                                <select name="yakit_durumu" class="form-select" id="iade_yakit">
+                                    <option value="">Seçiniz</option>
+                                    <option value="Boş">Boş</option>
+                                    <option value="1/4">1/4</option>
+                                    <option value="1/2">1/2</option>
+                                    <option value="3/4">3/4</option>
+                                    <option value="Dolu">Dolu</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Temizlik</label>
+                                <select name="temizlik_durumu" class="form-select" id="iade_temizlik">
+                                    <option value="">Seçiniz</option>
+                                    <option value="Temiz">Temiz</option>
+                                    <option value="Orta">Orta</option>
+                                    <option value="Kirli">Kirli</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3 no-print">
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input type="checkbox" name="hasar_var" class="form-check-input" id="hasar_var_iade">
+                                    <label class="form-check-label" for="hasar_var_iade">
+                                        <strong>Hasar Var</strong>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3 no-print">
+                            <div class="col-md-6">
+                                <label class="form-label">İç Durum</label>
+                                <textarea name="ic_durum_aciklama" class="form-control" rows="2" id="iade_ic"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Dış Durum</label>
+                                <textarea name="dis_durum_aciklama" class="form-control" rows="2" id="iade_dis"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="row mt-3 no-print">
+                            <div class="col-md-6">
+                                <label class="form-label">Hasar Açıklaması</label>
+                                <textarea name="hasar_aciklama" class="form-control" rows="2" id="iade_hasar"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Eksikler</label>
+                                <textarea name="eksikler" class="form-control" rows="2" id="iade_eksik"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="print-only">
+                            <table class="table table-bordered" style="border: 2px solid #000;">
+                                <tr>
+                                    <th style="width: 30%; background: #f5f5f5;">Kilometre:</th>
+                                    <td><strong><span id="print_iade_km"></span> km</strong></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Yakıt Durumu:</th>
+                                    <td><span id="print_iade_yakit"></span></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Temizlik Durumu:</th>
+                                    <td><span id="print_iade_temizlik"></span></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">İç Durum:</th>
+                                    <td><span id="print_iade_ic"></span></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Dış Durum:</th>
+                                    <td><span id="print_iade_dis"></span></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Hasar/Arıza:</th>
+                                    <td><span id="print_iade_hasar"></span></td>
+                                </tr>
+                                <tr>
+                                    <th style="background: #f5f5f5;">Eksikler:</th>
+                                    <td><span id="print_iade_eksik"></span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header no-print">
+                        <h5 class="mb-0">İade Fotoğrafları</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-12 no-print">
+                                <label class="form-label">Fotoğraf Yükle (Çoklu)</label>
+                                <input type="file" name="fotograf[]" class="form-control" 
+                                       accept="image/*" multiple id="iade_foto_input" onchange="previewIadePhotos(this)">
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-12" id="iade_foto_preview"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <label class="form-label">Genel Notlar</label>
+                        <textarea name="notlar" class="form-control" rows="3" id="iade_notlar"></textarea>
+                        
+                        <div class="print-only mt-3">
+                            <table class="table table-bordered" style="border: 2px solid #000;">
+                                <tr>
+                                    <th style="background: #f5f5f5;">Notlar:</th>
+                                    <td><span id="print_iade_notlar"></span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="print-only" style="page-break-before: avoid; margin-top: 50px;">
+                    <hr style="border: 2px solid #000; margin: 30px 0;">
+                    <div class="row">
+                        <div class="col-6 text-center">
+                            <div class="signature-box">
+                                <p><strong>İmza</strong></p>
+                            </div>
+                            <p style="margin-top: 10px;">
+                                <strong>İADE EDEN</strong><br>
+                                Ad Soyad: <span id="print_iade_calisan2"></span><br>
+                                Tarih:
+                            </p>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="signature-box">
+                                <p><strong>İmza</strong></p>
+                            </div>
+                            <p style="margin-top: 10px;">
+                                <strong>İADE ALAN</strong><br>
+                                Ad Soyad:<br>
+                                Tarih:
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="no-print">
+                    <button type="submit" class="btn btn-warning btn-lg">
+                        <i class="bi bi-box-arrow-in-left"></i> Kaydet ve Tamamla
+                    </button>
+                    <a href="{{ url_for('filo_araclar') }}" class="btn btn-secondary btn-lg">İptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Fotoğraf önizleme - Teslim
+function previewTeslimPhotos(input) {
+    const preview = document.getElementById('teslim_foto_preview');
+    preview.innerHTML = '';
+    
+    if (input.files) {
+        Array.from(input.files).forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const div = document.createElement('div');
+                div.className = 'photo-preview';
+                div.innerHTML = `
+                    <img src="${e.target.result}" alt="Foto ${index + 1}">
+                    <button type="button" class="remove-photo" onclick="this.parentElement.remove()">×</button>
+                `;
+                preview.appendChild(div);
+            }
+            reader.readAsDataURL(file);
+        });
+    }
+}
+
+// Fotoğraf önizleme - İade
+function previewIadePhotos(input) {
+    const preview = document.getElementById('iade_foto_preview');
+    preview.innerHTML = '';
+    
+    if (input.files) {
+        Array.from(input.files).forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const div = document.createElement('div');
+                div.className = 'photo-preview';
+                div.innerHTML = `
+                    <img src="${e.target.result}" alt="Foto ${index + 1}">
+                    <button type="button" class="remove-photo" onclick="this.parentElement.remove()">×</button>
+                `;
+                preview.appendChild(div);
+            }
+            reader.readAsDataURL(file);
+        });
+    }
+}
+
+// İade formunda araç seçildiğinde
+document.getElementById('iade_arac_select')?.addEventListener('change', function() {
+    const option = this.options[this.selectedIndex];
+    document.getElementById('iade_calisan_id').value = option.getAttribute('data-calisan') || '';
+});
+
+// YAZDIRMA FONKSİYONLARI
+function printTeslimForm() {
+    // Tarih
+    const tarih = document.getElementById('teslim_tarih').value;
+    document.getElementById('print_teslim_tarih').textContent = tarih;
+    
+    // Araç bilgileri
+    const aracSelect = document.getElementById('teslim_arac');
+    const aracOption = aracSelect.options[aracSelect.selectedIndex];
+    document.getElementById('print_teslim_plaka').textContent = aracOption.getAttribute('data-plaka') || '-';
+    document.getElementById('print_teslim_marka').textContent = aracOption.getAttribute('data-marka') || '-';
+    
+    // Çalışan
+    const calisanSelect = document.getElementById('teslim_calisan');
+    const calisanOption = calisanSelect.options[calisanSelect.selectedIndex];
+    const calisanAd = calisanOption.getAttribute('data-adsoyad') || '-';
+    document.getElementById('print_teslim_calisan').textContent = calisanAd;
+    document.getElementById('print_teslim_calisan2').textContent = calisanAd;
+    
+    // Durum bilgileri
+    document.getElementById('print_teslim_km').textContent = document.getElementById('teslim_km').value || '-';
+    document.getElementById('print_teslim_yakit').textContent = document.getElementById('teslim_yakit').value || '-';
+    document.getElementById('print_teslim_temizlik').textContent = document.getElementById('teslim_temizlik').value || '-';
+    document.getElementById('print_teslim_ic').textContent = document.getElementById('teslim_ic').value || '-';
+    document.getElementById('print_teslim_dis').textContent = document.getElementById('teslim_dis').value || '-';
+    document.getElementById('print_teslim_hasar').textContent = document.getElementById('teslim_hasar').value || '-';
+    document.getElementById('print_teslim_eksik').textContent = document.getElementById('teslim_eksik').value || '-';
+    document.getElementById('print_teslim_notlar').textContent = document.getElementById('teslim_notlar').value || '-';
+    
+    // Yazdır
+    window.print();
+}
+
+function printIadeForm() {
+    // Tarih
+    const tarih = document.getElementById('iade_tarih').value;
+    document.getElementById('print_iade_tarih').textContent = tarih;
+    
+    // Araç ve çalışan
+    const aracSelect = document.getElementById('iade_arac_select');
+    const aracOption = aracSelect.options[aracSelect.selectedIndex];
+    document.getElementById('print_iade_plaka').textContent = aracOption.getAttribute('data-plaka') || '-';
+    document.getElementById('print_iade_marka').textContent = aracOption.getAttribute('data-marka') || '-';
+    const calisanAd = aracOption.getAttribute('data-adsoyad') || '-';
+    document.getElementById('print_iade_calisan').textContent = calisanAd;
+    document.getElementById('print_iade_calisan2').textContent = calisanAd;
+    
+    // Durum
+    document.getElementById('print_iade_km').textContent = document.getElementById('iade_km').value || '-';
+    document.getElementById('print_iade_yakit').textContent = document.getElementById('iade_yakit').value || '-';
+    document.getElementById('print_iade_temizlik').textContent = document.getElementById('iade_temizlik').value || '-';
+    document.getElementById('print_iade_ic').textContent = document.getElementById('iade_ic').value || '-';
+    document.getElementById('print_iade_dis').textContent = document.getElementById('iade_dis').value || '-';
+    document.getElementById('print_iade_hasar').textContent = document.getElementById('iade_hasar').value || '-';
+    document.getElementById('print_iade_eksik').textContent = document.getElementById('iade_eksik').value || '-';
+    document.getElementById('print_iade_notlar').textContent = document.getElementById('iade_notlar').value || '-';
+    
+    // Yazdır
+    window.print();
+}
+</script>
+{% endblock %}

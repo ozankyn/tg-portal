@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+
+{% block title %}Araç Listesi - Filo Yönetimi{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-car"></i> Filo Yönetimi - Araçlar</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('filo_arac_ekle') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Yeni Araç
+            </a>
+            <a href="{{ url_for('filo_teslim_iade') }}" class="btn btn-success">
+                <i class="fas fa-exchange-alt"></i> Teslim/İade
+            </a>
+            <a href="{{ url_for('filo_raporlar') }}" class="btn btn-info">
+                <i class="fas fa-chart-bar"></i> Raporlar
+            </a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Durum</label>
+                    <select name="durum" class="form-select">
+                        <option value="">Tümü</option>
+                        <option value="Aktif" {% if request.args.get('durum') == 'Aktif' %}selected{% endif %}>Aktif</option>
+                        <option value="Bakımda" {% if request.args.get('durum') == 'Bakımda' %}selected{% endif %}>Bakımda</option>
+                        <option value="Hasarlı" {% if request.args.get('durum') == 'Hasarlı' %}selected{% endif %}>Hasarlı</option>
+                        <option value="Pasif" {% if request.args.get('durum') == 'Pasif' %}selected{% endif %}>Pasif</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Zimmet</label>
+                    <select name="zimmet" class="form-select">
+                        <option value="">Tümü</option>
+                        <option value="zimmetli" {% if request.args.get('zimmet') == 'zimmetli' %}selected{% endif %}>Zimmetli</option>
+                        <option value="bosta" {% if request.args.get('zimmet') == 'bosta' %}selected{% endif %}>Boşta</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button type="submit" class="btn btn-primary">Filtrele</button>
+                        <a href="{{ url_for('filo_araclar') }}" class="btn btn-secondary">Temizle</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if araclar %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Plaka</th>
+                            <th>Marka/Model</th>
+                            <th>Yıl</th>
+                            <th>Durum</th>
+                            <th>Zimmet</th>
+                            <th>KM</th>
+                            <th>Sigorta</th>
+                            <th>Muayene</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for arac in araclar %}
+                        <tr>
+                            <td><strong>{{ arac.plaka }}</strong></td>
+                            <td>{{ arac.marka }} {{ arac.model }}</td>
+                            <td>{{ arac.yil or '-' }}</td>
+                            <td>
+                                {% if arac.durum == 'Aktif' %}
+                                    <span class="badge bg-success">{{ arac.durum }}</span>
+                                {% elif arac.durum == 'Bakımda' %}
+                                    <span class="badge bg-warning">{{ arac.durum }}</span>
+                                {% elif arac.durum == 'Hasarlı' %}
+                                    <span class="badge bg-danger">{{ arac.durum }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ arac.durum }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if arac.zimmetli_calisan %}
+                                    <span class="badge bg-primary">
+                                        <i class="fas fa-user"></i> {{ arac.zimmetli_calisan }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Boşta</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ "{:,}".format(arac.guncel_km) }}</td>
+                            <td><small>{{ arac.sigorta_bitis_tarihi or '-' }}</small></td>
+                            <td><small>{{ arac.sonraki_muayene_tarihi or '-' }}</small></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('filo_arac_detay', arac_id=arac.id) }}" 
+                                       class="btn btn-info" title="Detay">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('filo_arac_duzenle', arac_id=arac.id) }}" 
+                                       class="btn btn-warning" title="Düzenle">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-muted mt-3">Toplam: {{ araclar|length }} araç</p>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Henüz araç kaydı yok.
+                <a href="{{ url_for('filo_arac_ekle') }}">Yeni araç ekleyin</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

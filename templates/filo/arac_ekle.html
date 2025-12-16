@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Yeni Araç Ekle - Filo Yönetimi{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="fas fa-car"></i> Yeni Araç Ekle</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('filo_araclar') }}">Araçlar</a></li>
+                    <li class="breadcrumb-item active">Yeni Araç</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <form method="POST" class="needs-validation" novalidate>
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Temel Bilgiler</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label class="form-label">Plaka <span class="text-danger">*</span></label>
+                        <input type="text" name="plaka" class="form-control" required 
+                               placeholder="34 ABC 1234" style="text-transform: uppercase;">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Mülkiyet Tipi <span class="text-danger">*</span></label>
+                        <select name="mulkiyet_tipi" class="form-select" required>
+                            <option value="Özmal">Özmal</option>
+                            <option value="Kiralık">Kiralık</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Marka <span class="text-danger">*</span></label>
+                        <input type="text" name="marka" class="form-control" required 
+                               placeholder="Ford, Toyota, vb.">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Model <span class="text-danger">*</span></label>
+                        <input type="text" name="model" class="form-control" required 
+                               placeholder="Transit, Corolla, vb.">
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Yıl</label>
+                        <input type="number" name="yil" class="form-control" min="1990" max="2030" 
+                               placeholder="2023">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Renk</label>
+                        <input type="text" name="renk" class="form-control" placeholder="Beyaz">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Başlangıç KM</label>
+                        <input type="number" name="baslangic_km" class="form-control" value="0">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Güncel KM</label>
+                        <input type="number" name="guncel_km" class="form-control" value="0">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Teknik Bilgiler</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Şasi No</label>
+                        <input type="text" name="sasi_no" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Motor No</label>
+                        <input type="text" name="motor_no" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Yakıt Tipi</label>
+                        <select name="yakit_tipi" class="form-select">
+                            <option value="">Seçiniz</option>
+                            <option value="Benzin">Benzin</option>
+                            <option value="Dizel">Dizel</option>
+                            <option value="LPG">LPG</option>
+                            <option value="Elektrik">Elektrik</option>
+                            <option value="Hybrid">Hybrid</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">Sigorta Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Sigorta Şirketi</label>
+                        <input type="text" name="sigorta_sirket" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Poliçe No</label>
+                        <input type="text" name="sigorta_police_no" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Bitiş Tarihi</label>
+                        <input type="date" name="sigorta_bitis_tarihi" class="form-control">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">Muayene Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Son Muayene Tarihi</label>
+                        <input type="date" name="muayene_tarihi" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Sonraki Muayene Tarihi</label>
+                        <input type="date" name="sonraki_muayene_tarihi" class="form-control">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Notlar</h5>
+            </div>
+            <div class="card-body">
+                <textarea name="notlar" class="form-control" rows="3" 
+                          placeholder="Araç hakkında ek notlar..."></textarea>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save"></i> Kaydet
+            </button>
+            <a href="{{ url_for('filo_araclar') }}" class="btn btn-secondary btn-lg">
+                <i class="fas fa-times"></i> İptal
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+// Form validation
+(function() {
+    'use strict';
+    var forms = document.querySelectorAll('.needs-validation');
+    Array.prototype.slice.call(forms).forEach(function(form) {
+        form.addEventListener('submit', function(event) {
+            if (!form.checkValidity()) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            form.classList.add('was-validated');
+        }, false);
+    });
+})();
+</script>
+{% endblock %}

@@ -74,6 +74,54 @@
                         </a>
                     </li>
                     {% endif %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="filoDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-truck"></i> Filo Yönetimi
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="filoDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('filo_araclar') }}">
+                                    <i class="bi bi-list"></i> Araç Listesi
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('filo_arac_ekle') }}">
+                                    <i class="bi bi-plus-circle"></i> Yeni Araç Ekle
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('filo_teslim_iade') }}">
+                                    <i class="bi bi-arrow-left-right"></i> Teslim/İade
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('filo_kiralamalar') }}">
+                                    <i class="bi bi-file-text"></i> Kiralık Araçlar
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('filo_trafik_cezalari') }}">
+                                    <i class="bi bi-exclamation-triangle"></i> Trafik Cezaları
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('filo_raporlar') }}">
+                                    <i class="bi bi-graph-up"></i> Raporlar
+                                </a>
+                            </li>
+                            {% if session.role in ['admin', 'finans'] %}
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('filo_kiralama_odemeler') }}">
+                                    <i class="bi bi-cash"></i> Ödemeler
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </li>
                 </ul>
 				<ul class="navbar-nav ms-auto">
                     <li class="nav-item dropdown">

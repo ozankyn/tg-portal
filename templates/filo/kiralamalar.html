@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Kiralık Araçlar - Filo Yönetimi{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="fas fa-file-contract"></i> Kiralık Araçlar</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('filo_araclar') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Araçlar
+            </a>
+            {% if can_view_finance %}
+            <a href="{{ url_for('filo_kiralama_odemeler') }}" class="btn btn-info">
+                <i class="fas fa-money-bill"></i> Ödemeler
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if kiralamalar %}
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>Aktif Sözleşmeler</h5>
+                    <h2>{{ kiralamalar|selectattr('sozlesme_durumu', 'equalto', 'Aktif')|list|length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-warning text-dark">
+                <div class="card-body">
+                    <h5>Yakında Bitiyor</h5>
+                    <h2>{{ kiralamalar|selectattr('sozlesme_durumu', 'equalto', 'Yakında Bitiyor')|list|length }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5>Süresi Dolmuş</h5>
+                    <h2>{{ kiralamalar|selectattr('sozlesme_durumu', 'equalto', 'Süresi Dolmuş')|list|length }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Plaka</th>
+                            <th>Araç</th>
+                            <th>Kiralama Şirketi</th>
+                            <th>Sözleşme Dönemi</th>
+                            <th>Kalan Gün</th>
+                            {% if can_view_finance %}
+                            <th>Aylık Bedel</th>
+                            {% endif %}
+                            <th>Durum</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for kiralama in kiralamalar %}
+                        <tr>
+                            <td><strong>{{ kiralama.plaka }}</strong></td>
+                            <td>{{ kiralama.marka }} {{ kiralama.model }}</td>
+                            <td>
+                                {{ kiralama.kiralama_sirket }}
+                                {% if kiralama.yetkili_kisi %}
+                                <br><small class="text-muted">{{ kiralama.yetkili_kisi }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>
+                                    {{ kiralama.sozlesme_baslangic }} <br>
+                                    <i class="fas fa-arrow-down"></i><br>
+                                    {{ kiralama.sozlesme_bitis }}
+                                </small>
+                            </td>
+                            <td>
+                                {% if kiralama.kalan_gun < 0 %}
+                                    <span class="badge bg-danger">{{ kiralama.kalan_gun|abs }} gün geçti</span>
+                                {% elif kiralama.kalan_gun <= 30 %}
+                                    <span class="badge bg-warning">{{ kiralama.kalan_gun }} gün</span>
+                                {% else %}
+                                    <span class="badge bg-success">{{ kiralama.kalan_gun }} gün</span>
+                                {% endif %}
+                            </td>
+                            {% if can_view_finance %}
+                            <td>
+                                {% if kiralama.aylik_kira_bedeli %}
+                                    <strong>{{ "{:,.2f}".format(kiralama.aylik_kira_bedeli) }} {{ kiralama.para_birimi }}</strong>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
+                            <td>
+                                {% if kiralama.sozlesme_durumu == 'Aktif' %}
+                                    <span class="badge bg-success">{{ kiralama.sozlesme_durumu }}</span>
+                                {% elif kiralama.sozlesme_durumu == 'Yakında Bitiyor' %}
+                                    <span class="badge bg-warning">{{ kiralama.sozlesme_durumu }}</span>
+                                {% else %}
+                                    <span class="badge bg-danger">{{ kiralama.sozlesme_durumu }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('filo_arac_detay', arac_id=kiralama.arac_id) }}" 
+                                       class="btn btn-info" title="Detay">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('filo_kiralama_duzenle', kiralama_id=kiralama.id) }}" 
+                                       class="btn btn-warning" title="Düzenle">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    {% if can_view_finance %}
+                                    <a href="{{ url_for('filo_kiralama_odeme_ekle', kiralama_id=kiralama.id) }}" 
+                                       class="btn btn-success" title="Ödeme Ekle">
+                                        <i class="fas fa-money-bill"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if kiralama.sozlesme_dosya_yolu %}
+                                    <a href="{{ url_for('static', filename='uploads/' + kiralama.sozlesme_dosya_yolu) }}" 
+                                       class="btn btn-secondary" title="Sözleşme" target="_blank">
+                                        <i class="fas fa-file-pdf"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-muted mt-3">Toplam: {{ kiralamalar|length }} kiralık araç</p>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> Henüz kiralık araç kaydı bulunmamaktadır.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Trafik Cezası Düzenle{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="bi bi-pencil"></i> Trafik Cezası Düzenle</h2>
+            <nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('filo_trafik_cezalari') }}">Trafik Cezaları</a></li>
+                    <li class="breadcrumb-item active">Düzenle</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">{{ ceza.plaka }} - Ceza Bilgileri</h5>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Temel Bilgiler</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Çalışan</label>
+                        <select name="calisan_id" class="form-select">
+                            <option value="">Seçiniz</option>
+                            {% for calisan in calisanlar %}
+                            <option value="{{ calisan.id }}" {% if ceza.calisan_id == calisan.id %}selected{% endif %}>
+                                {{ calisan.ad_soyad }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Ceza Tarihi <span class="text-danger">*</span></label>
+                        <input type="date" name="ceza_tarihi" class="form-control" 
+                               value="{{ ceza.ceza_tarihi }}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Ceza Saati</label>
+                        <input type="time" name="ceza_saati" class="form-control" 
+                               value="{{ ceza.ceza_saati }}">
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Ceza Türü <span class="text-danger">*</span></label>
+                        <select name="ceza_turu" class="form-select" required>
+                            {% for tur in ceza_turleri %}
+                            <option value="{{ tur.ceza_turu }}" {% if ceza.ceza_turu == tur.ceza_turu %}selected{% endif %}>
+                                {{ tur.ceza_turu }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Ceza Yeri</label>
+                        <input type="text" name="ceza_yeri" class="form-control" 
+                               value="{{ ceza.ceza_yeri }}">
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Ceza No</label>
+                        <input type="text" name="ceza_no" class="form-control" 
+                               value="{{ ceza.ceza_no }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Tebliğ Tarihi</label>
+                        <input type="date" name="teblig_tarihi" class="form-control" 
+                               value="{{ ceza.teblig_tarihi }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Sorumlu</label>
+                        <select name="sorumlu" class="form-select">
+                            <option value="Çalışan" {% if ceza.sorumlu == 'Çalışan' %}selected{% endif %}>Çalışan</option>
+                            <option value="Şirket" {% if ceza.sorumlu == 'Şirket' %}selected{% endif %}>Şirket</option>
+                            <option value="Belirsiz" {% if ceza.sorumlu == 'Belirsiz' %}selected{% endif %}>Belirsiz</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-12">
+                        <label class="form-label">Açıklama</label>
+                        <textarea name="ceza_aciklama" class="form-control" rows="2">{{ ceza.ceza_aciklama }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">Tutar Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Ceza Tutarı <span class="text-danger">*</span></label>
+                        <input type="number" name="ceza_tutari" class="form-control" 
+                               value="{{ ceza.ceza_tutari }}" step="0.01" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">İndirimli Tutar</label>
+                        <input type="number" name="indirimli_tutar" class="form-control" 
+                               value="{{ ceza.indirimli_tutar }}" step="0.01">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Ödeme Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label class="form-label">Ödeme Durumu</label>
+                        <select name="odeme_durumu" class="form-select">
+                            <option value="Ödenmedi" {% if ceza.odeme_durumu == 'Ödenmedi' %}selected{% endif %}>Ödenmedi</option>
+                            <option value="Ödendi" {% if ceza.odeme_durumu == 'Ödendi' %}selected{% endif %}>Ödendi</option>
+                            <option value="İtiraz Edildi" {% if ceza.odeme_durumu == 'İtiraz Edildi' %}selected{% endif %}>İtiraz Edildi</option>
+                            <option value="İptal" {% if ceza.odeme_durumu == 'İptal' %}selected{% endif %}>İptal</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Ödeme Tarihi</label>
+                        <input type="date" name="odeme_tarihi" class="form-control" 
+                               value="{{ ceza.odeme_tarihi }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Ödeme Şekli</label>
+                        <select name="odeme_sekli" class="form-select">
+                            <option value="">Seçiniz</option>
+                            <option value="Banka Transferi" {% if ceza.odeme_sekli == 'Banka Transferi' %}selected{% endif %}>Banka Transferi</option>
+                            <option value="Kredi Kartı" {% if ceza.odeme_sekli == 'Kredi Kartı' %}selected{% endif %}>Kredi Kartı</option>
+                            <option value="Nakit" {% if ceza.odeme_sekli == 'Nakit' %}selected{% endif %}>Nakit</option>
+                            <option value="PTT" {% if ceza.odeme_sekli == 'PTT' %}selected{% endif %}>PTT</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Belgeler</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="form-label">Ceza Belgesi</label>
+                        {% if ceza.ceza_belgesi_yolu %}
+                        <p>
+                            <a href="{{ url_for('static', filename='uploads/' + ceza.ceza_belgesi_yolu) }}" 
+                               target="_blank" class="btn btn-sm btn-secondary">
+                                <i class="bi bi-file-pdf"></i> Mevcut Belge
+                            </a>
+                        </p>
+                        {% endif %}
+                        <input type="file" name="ceza_belgesi" class="form-control" accept="image/*,.pdf">
+                        <small class="text-muted">Yeni belge yüklemek için seçiniz</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Ödeme Belgesi</label>
+                        {% if ceza.odeme_belgesi_yolu %}
+                        <p>
+                            <a href="{{ url_for('static', filename='uploads/' + ceza.odeme_belgesi_yolu) }}" 
+                               target="_blank" class="btn btn-sm btn-secondary">
+                                <i class="bi bi-file-pdf"></i> Mevcut Belge
+                            </a>
+                        </p>
+                        {% endif %}
+                        <input type="file" name="odeme_belgesi" class="form-control" accept="image/*,.pdf">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <label class="form-label">Notlar</label>
+                <textarea name="notlar" class="form-control" rows="3">{{ ceza.notlar }}</textarea>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-save"></i> Güncelle
+            </button>
+            <a href="{{ url_for('filo_trafik_cezalari') }}" class="btn btn-secondary btn-lg">
+                <i class="bi bi-x"></i> İptal
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Trafik Cezaları Raporları{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2><i class="bi bi-graph-up"></i> Trafik Cezaları Raporları</h2>
+            <nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('filo_trafik_cezalari') }}">Trafik Cezaları</a></li>
+                    <li class="breadcrumb-item active">Raporlar</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Araç Bazlı En Çok Ceza Yiyen -->
+    <div class="card mb-4">
+        <div class="card-header bg-danger text-white">
+            <h5 class="mb-0"><i class="bi bi-car-front"></i> En Çok Ceza Yiyen Araçlar</h5>
+        </div>
+        <div class="card-body">
+            {% if arac_bazli %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Plaka</th>
+                            <th>Araç</th>
+                            <th>Ceza Sayısı</th>
+                            <th>Toplam Tutar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for arac in arac_bazli %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td><strong>{{ arac.plaka }}</strong></td>
+                            <td>{{ arac.marka }} {{ arac.model }}</td>
+                            <td>
+                                <span class="badge bg-danger">{{ arac.ceza_sayisi }}</span>
+                            </td>
+                            <td><strong>{{ "{:,.2f}".format(arac.toplam_tutar) }} TRY</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">Henüz ceza kaydı yok.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Çalışan Bazlı En Çok Ceza Yiyen -->
+    <div class="card mb-4">
+        <div class="card-header bg-warning">
+            <h5 class="mb-0"><i class="bi bi-person"></i> En Çok Ceza Yiyen Çalışanlar</h5>
+        </div>
+        <div class="card-body">
+            {% if calisan_bazli %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Çalışan</th>
+                            <th>Ceza Sayısı</th>
+                            <th>Toplam Tutar</th>
+                            <th>Kesilen Tutar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for calisan in calisan_bazli %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td><strong>{{ calisan.ad_soyad }}</strong></td>
+                            <td>
+                                <span class="badge bg-warning">{{ calisan.ceza_sayisi }}</span>
+                            </td>
+                            <td>{{ "{:,.2f}".format(calisan.toplam_tutar) }} TRY</td>
+                            <td>
+                                {% if calisan.kesilen_tutar > 0 %}
+                                <span class="text-success">{{ "{:,.2f}".format(calisan.kesilen_tutar) }} TRY</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">Henüz ceza kaydı yok.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Ceza Türü Bazlı -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-list"></i> Ceza Türü Dağılımı</h5>
+                </div>
+                <div class="card-body">
+                    {% if tur_bazli %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Ceza Türü</th>
+                                    <th>Adet</th>
+                                    <th>Toplam</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tur in tur_bazli %}
+                                <tr>
+                                    <td>{{ tur.ceza_turu }}</td>
+                                    <td><span class="badge bg-secondary">{{ tur.adet }}</span></td>
+                                    <td>{{ "{:,.2f}".format(tur.toplam_tutar) }} TRY</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Henüz ceza kaydı yok.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Aylık Trend -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-calendar3"></i> Aylık Trend (Son 12 Ay)</h5>
+                </div>
+                <div class="card-body">
+                    {% if aylik %}
+                    <canvas id="aylikGrafik"></canvas>
+                    {% else %}
+                    <p class="text-muted">Henüz ceza kaydı yok.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if aylik %}
+<script>
+// Aylık grafik
+const ctx = document.getElementById('aylikGrafik').getContext('2d');
+const aylar = {{ aylik | map(attribute='ay') | list | tojson }};
+const adetler = {{ aylik | map(attribute='adet') | list | tojson }};
+const tutarlar = {{ aylik | map(attribute='tutar') | list | tojson }};
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: aylar,
+        datasets: [{
+            label: 'Ceza Sayısı',
+            data: adetler,
+            borderColor: 'rgb(255, 99, 132)',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            yAxisID: 'y'
+        }, {
+            label: 'Toplam Tutar (TRY)',
+            data: tutarlar,
+            borderColor: 'rgb(54, 162, 235)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            yAxisID: 'y1'
+        }]
+    },
+    options: {
+        responsive: true,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        scales: {
+            y: {
+                type: 'linear',
+                display: true,
+                position: 'left',
+                title: {
+                    display: true,
+                    text: 'Ceza Sayısı'
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: 'Tutar (TRY)'
+                },
+                grid: {
+                    drawOnChartArea: false,
+                }
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}
