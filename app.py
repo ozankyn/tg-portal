@@ -4,6 +4,7 @@ from datetime import datetime, date
 from werkzeug.utils import secure_filename
 from email_service import yeni_ise_giris_bildirimi, isten_cikis_bildirimi
 import os
+import sqlite3
 import hashlib
 import pandas as pd
 import io
@@ -19,7 +20,7 @@ app.secret_key = 'ozanerenkayan1988'
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600
 
-# Dosya yükleme ayarları
+# Dosya yÃ¼kleme ayarlarÄ±
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'gif'}
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
@@ -28,11 +29,11 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 
 def allowed_file(filename):
-    """Dosya uzantısı kontrol"""
+    """Dosya uzantÄ±sÄ± kontrol"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def get_file_size_mb(size_bytes):
-    """Dosya boyutunu MB olarak döndür"""
+    """Dosya boyutunu MB olarak dÃ¶ndÃ¼r"""
     return round(size_bytes / (1024 * 1024), 2)
 
 # Login gerekli decorator
@@ -40,7 +41,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            flash('Bu sayfayı görüntülemek için giriş yapmalısınız.', 'warning')
+            flash('Bu sayfayÄ± gÃ¶rÃ¼ntÃ¼lemek iÃ§in giriÅŸ yapmalÄ±sÄ±nÄ±z.', 'warning')
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
@@ -50,7 +51,7 @@ def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            flash('Bu sayfayı görüntülemek için giriş yapmalısınız.', 'warning')
+            flash('Bu sayfayÄ± gÃ¶rÃ¼ntÃ¼lemek iÃ§in giriÅŸ yapmalÄ±sÄ±nÄ±z.', 'warning')
             return redirect(url_for('login'))
         
         conn = get_db()
@@ -58,7 +59,7 @@ def admin_required(f):
         conn.close()
         
         if not user or user['role'] != 'admin':
-            flash('Bu sayfaya erişim yetkiniz yok.', 'danger')
+            flash('Bu sayfaya eriÅŸim yetkiniz yok.', 'danger')
             return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
@@ -68,7 +69,7 @@ def manager_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            flash('Bu sayfayı görüntülemek için giriş yapmalısınız.', 'warning')
+            flash('Bu sayfayÄ± gÃ¶rÃ¼ntÃ¼lemek iÃ§in giriÅŸ yapmalÄ±sÄ±nÄ±z.', 'warning')
             return redirect(url_for('login'))
         
         conn = get_db()
@@ -76,7 +77,7 @@ def manager_required(f):
         conn.close()
         
         if not user or user['role'] not in ['admin', 'manager']:
-            flash('Bu sayfaya erişim yetkiniz yok.', 'danger')
+            flash('Bu sayfaya eriÅŸim yetkiniz yok.', 'danger')
             return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
@@ -84,7 +85,7 @@ def manager_required(f):
 # Yetki kontrol fonksiyonu
 def has_permission(action):
     """
-    Kullanıcının belirli bir işlem için yetkisi var mı?
+    KullanÄ±cÄ±nÄ±n belirli bir iÅŸlem iÃ§in yetkisi var mÄ±?
     action: 'view', 'add', 'edit', 'delete'
     """
     if 'user_id' not in session:
@@ -100,17 +101,17 @@ def has_permission(action):
     
     return action in permissions.get(role, [])  
 
-# Template'lerde kullanılacak fonksiyonlar
+# Template'lerde kullanÄ±lacak fonksiyonlar
 @app.context_processor
 def utility_processor():
-    """Template'lerde kullanılacak yardımcı fonksiyonlar"""
+    """Template'lerde kullanÄ±lacak yardÄ±mcÄ± fonksiyonlar"""
     def check_permission(action):
         return has_permission(action)
     return dict(has_permission=check_permission)    
     
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """Login sayfası"""
+    """Login sayfasÄ±"""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -128,18 +129,18 @@ def login():
             session['full_name'] = user['full_name']
             session['role'] = user['role']
             
-            # Son giriş tarihini güncelle
+            # Son giriÅŸ tarihini gÃ¼ncelle
             conn.execute('UPDATE users SET son_giris_tarihi = %s WHERE id = %s', 
                         (datetime.now(), user['id']))
             conn.commit()
             conn.close()
             
-            log_islem('GİRİŞ', 'users', user['id'], f'{username} sisteme giriş yaptı')
-            flash(f'Hoş geldiniz, {user["full_name"]}!', 'success')
+            log_islem('GÄ°RÄ°Åž', 'users', user['id'], f'{username} sisteme giriÅŸ yaptÄ±')
+            flash(f'HoÅŸ geldiniz, {user["full_name"]}!', 'success')
             return redirect(url_for('index'))
         else:
             conn.close()
-            flash('Kullanıcı adı veya şifre hatalı!', 'danger')
+            flash('KullanÄ±cÄ± adÄ± veya ÅŸifre hatalÄ±!', 'danger')
     
     return render_template('login.html')
    
@@ -152,13 +153,13 @@ def logout():
     user_id = session.get('user_id')
     
     if user_id:
-        log_islem('ÇIKIŞ', 'users', user_id, f'{username} sistemden çıkış yaptı')
+        log_islem('Ã‡IKIÅž', 'users', user_id, f'{username} sistemden Ã§Ä±kÄ±ÅŸ yaptÄ±')
     
     session.clear()
-    flash('Başarıyla çıkış yaptınız.', 'info')
+    flash('BaÅŸarÄ±yla Ã§Ä±kÄ±ÅŸ yaptÄ±nÄ±z.', 'info')
     return redirect(url_for('login'))    
 
-# app.py içindeki index() fonksiyonunu bu kodla değiştir
+# app.py iÃ§indeki index() fonksiyonunu bu kodla deÄŸiÅŸtir
 
 @app.route('/')
 @login_required
@@ -166,7 +167,7 @@ def index():
     """Ana sayfa - Dashboard"""
     conn = get_db()
     
-    # Proje bazında özet
+    # Proje bazÄ±nda Ã¶zet
     projeler = conn.execute('''
         SELECT 
             p.id,
@@ -184,21 +185,19 @@ def index():
         GROUP BY p.id, p.proje_adi
     ''').fetchall()
     
-    # Kadro bazında detay
+    # Kadro bazÄ±nda detay
     kadrolar = conn.execute('''
         SELECT 
             hk.id,
             hk.proje_id,
-            hk.pozisyon_adi,
-            hk.calisma_sekli,
             hk.mudurluk_id,
             hk.direktorluk_id,
             hk.il_id,
             hk.ilce_id,
+            hk.pozisyon_adi,
             hk.magaza_adi,
             hk.hedef_kisi_sayisi,
             hk.dolu_kisi_sayisi,
-            hk.aracli_durum,
             hk.durum,
             hk.olusturma_tarihi,
             p.proje_adi,
@@ -216,23 +215,22 @@ def index():
         LEFT JOIN ilceler ic ON hk.ilce_id = ic.id
         LEFT JOIN adaylar a ON hk.id = a.kadro_id
         LEFT JOIN calisanlar c ON hk.id = c.kadro_id
-        GROUP BY hk.id, hk.proje_id, hk.pozisyon_adi, hk.calisma_sekli, hk.mudurluk_id, 
-                 hk.direktorluk_id, hk.il_id, hk.ilce_id, hk.magaza_adi, hk.hedef_kisi_sayisi,
-                 hk.dolu_kisi_sayisi, hk.aracli_durum, hk.durum, hk.olusturma_tarihi,
+        GROUP BY hk.id, hk.proje_id, hk.mudurluk_id, hk.direktorluk_id, hk.il_id, hk.ilce_id,
+                 hk.pozisyon_adi, hk.magaza_adi, hk.hedef_kisi_sayisi, hk.dolu_kisi_sayisi, hk.durum, hk.olusturma_tarihi,
                  p.proje_adi, m.mudurluk_adi, d.direktorluk_adi, i.il_adi, ic.ilce_adi
         ORDER BY p.proje_adi, i.il_adi, ic.ilce_adi
     ''').fetchall()
     
-    # Son işlemler
+    # Son iÅŸlemler
     son_islemler = conn.execute('''
         SELECT * FROM surec_loglari 
         ORDER BY islem_tarihi DESC 
         LIMIT 10
     ''').fetchall()
     
-    # === GRAFİK VERİLERİ ===
+    # === GRAFÄ°K VERÄ°LERÄ° ===
     
-    # 1. İl bazında çalışan dağılımı (Top 10)
+    # 1. Ä°l bazÄ±nda Ã§alÄ±ÅŸan daÄŸÄ±lÄ±mÄ± (Top 10)
     il_dagilim = conn.execute('''
         SELECT 
             i.il_adi,
@@ -246,7 +244,7 @@ def index():
         LIMIT 10
     ''').fetchall()
     
-    # 2. Aylık işe giriş trendi (Son 6 ay)
+    # 2. AylÄ±k iÅŸe giriÅŸ trendi (Son 6 ay)
     aylik_giris = conn.execute('''
         SELECT 
             TO_CHAR(ise_baslama_tarihi, 'YYYY-MM') as ay,
@@ -254,11 +252,11 @@ def index():
         FROM calisanlar
         WHERE ise_baslama_tarihi >= CURRENT_DATE - INTERVAL '6 months'
         AND aktif = TRUE
-        GROUP BY ay
+        GROUP BY TO_CHAR(ise_baslama_tarihi, 'YYYY-MM')
         ORDER BY ay
     ''').fetchall()
     
-    # 3. Araçlı/Araçsız dağılım
+    # 3. AraÃ§lÄ±/AraÃ§sÄ±z daÄŸÄ±lÄ±m
     arac_dagilim = conn.execute('''
         SELECT 
             hk.aracli_durum,
@@ -269,10 +267,10 @@ def index():
         GROUP BY hk.aracli_durum
     ''').fetchall()
     
-    # 4. Müdürlük bazında dağılım (varsa)
+    # 4. MÃ¼dÃ¼rlÃ¼k bazÄ±nda daÄŸÄ±lÄ±m (varsa)
     mudurluk_dagilim = conn.execute('''
         SELECT 
-            COALESCE(m.mudurluk_adi, 'Tanımsız') as mudurluk,
+            COALESCE(m.mudurluk_adi, 'TanÄ±msÄ±z') as mudurluk,
             COUNT(DISTINCT c.id) as calisan_sayisi
         FROM calisanlar c
         LEFT JOIN hedef_kadrolar hk ON c.kadro_id = hk.id
@@ -283,7 +281,7 @@ def index():
         LIMIT 8
     ''').fetchall()
     
-    # 5. HARİTA İÇİN: TÜM İLLER VERİSİ - YENİ
+    # 5. HARÄ°TA Ä°Ã‡Ä°N: TÃœM Ä°LLER VERÄ°SÄ° - YENÄ°
     harita_verisi = conn.execute('''
         SELECT 
             i.il_adi,
@@ -306,7 +304,7 @@ def index():
         'toplam_calisan': conn.execute('SELECT COUNT(*) as cnt FROM calisanlar WHERE aktif = TRUE').fetchone()['cnt'],
         'hedef_toplam': conn.execute('SELECT SUM(hedef_kisi_sayisi) as total FROM hedef_kadrolar').fetchone()['total'] or 0,
         'dolu_toplam': conn.execute('SELECT SUM(dolu_kisi_sayisi) as total FROM hedef_kadrolar').fetchone()['total'] or 0,
-        'acik_kadro': conn.execute("SELECT COUNT(*) as cnt FROM hedef_kadrolar WHERE durum = 'Açık'").fetchone()['cnt'],
+        'acik_kadro': conn.execute("SELECT COUNT(*) as cnt FROM hedef_kadrolar WHERE durum = 'AÃ§Ä±k'").fetchone()['cnt'],
         'dolu_kadro': conn.execute("SELECT COUNT(*) as cnt FROM hedef_kadrolar WHERE durum = 'Dolu'").fetchone()['cnt']
     }
     
@@ -320,7 +318,7 @@ def index():
                          aylik_giris=aylik_giris,
                          arac_dagilim=arac_dagilim,
                          mudurluk_dagilim=mudurluk_dagilim,
-                         harita_verisi=harita_verisi,  # YENİ
+                         harita_verisi=harita_verisi,  # YENÄ°
                          stats=stats)
 
 @app.route('/projeler')
@@ -354,11 +352,11 @@ def proje_ekle():
         conn.commit()
         conn.close()
         
-        log_islem('EKLEME', 'projeler', proje_id, f'{proje_adi} projesi oluşturuldu')
-        flash('Proje başarıyla eklendi!', 'success')
+        log_islem('EKLEME', 'projeler', proje_id, f'{proje_adi} projesi oluÅŸturuldu')
+        flash('Proje baÅŸarÄ±yla eklendi!', 'success')
         return redirect(url_for('projeler'))
     
-    # Müşteri listesi
+    # MÃ¼ÅŸteri listesi
     conn = get_db()
     musteriler = conn.execute('SELECT * FROM musteriler WHERE aktif = TRUE ORDER BY musteri_adi').fetchall()
     conn.close()
@@ -373,6 +371,10 @@ def kadrolar():
     kadrolar = conn.execute('''
         SELECT hk.id,
                hk.proje_id,
+               hk.mudurluk_id,
+               hk.direktorluk_id,
+               hk.il_id,
+               hk.ilce_id,
                p.proje_adi,
                hk.pozisyon_adi,
                hk.calisma_sekli,
@@ -396,10 +398,10 @@ def kadrolar():
         LEFT JOIN ilceler ic ON hk.ilce_id = ic.id
         LEFT JOIN adaylar a ON hk.id = a.kadro_id
         LEFT JOIN calisanlar c ON hk.id = c.kadro_id
-        GROUP BY hk.id, hk.proje_id, p.proje_adi, hk.pozisyon_adi, hk.calisma_sekli,
-                 m.mudurluk_adi, d.direktorluk_adi, i.il_adi, ic.ilce_adi, hk.magaza_adi,
-                 hk.aracli_durum, hk.hedef_kisi_sayisi, hk.dolu_kisi_sayisi, hk.durum,
-                 hk.olusturma_tarihi
+        GROUP BY hk.id, hk.proje_id, hk.mudurluk_id, hk.direktorluk_id, hk.il_id, hk.ilce_id,
+                 p.proje_adi, hk.pozisyon_adi, hk.calisma_sekli, m.mudurluk_adi, d.direktorluk_adi,
+                 i.il_adi, ic.ilce_adi, hk.magaza_adi, hk.aracli_durum, hk.hedef_kisi_sayisi,
+                 hk.dolu_kisi_sayisi, hk.durum, hk.olusturma_tarihi
         ORDER BY p.proje_adi, hk.olusturma_tarihi DESC
     ''').fetchall()
     conn.close()
@@ -413,7 +415,7 @@ def kadro_ekle():
         # Form verilerini al
         proje_id = request.form['proje_id']
         pozisyon_adi = request.form['pozisyon_adi']
-        calisma_sekli = request.form['calisma_sekli']  # YENİ
+        calisma_sekli = request.form['calisma_sekli']  # YENÄ°
         mudurluk_id = request.form.get('mudurluk_id') or None
         direktorluk_id = request.form.get('direktorluk_id') or None
         il_id = request.form['il_id']
@@ -436,17 +438,17 @@ def kadro_ekle():
         
         kadro_id = cursor.lastrowid
         
-        # Durum güncelle (başlangıçta her zaman Açık)
-        cursor.execute('UPDATE hedef_kadrolar SET durum = %s WHERE id = %s', ('Açık', kadro_id))
+        # Durum gÃ¼ncelle (baÅŸlangÄ±Ã§ta her zaman AÃ§Ä±k)
+        cursor.execute('UPDATE hedef_kadrolar SET durum = %s WHERE id = %s', ('AÃ§Ä±k', kadro_id))
         
         conn.commit()
         conn.close()
         
         log_islem('EKLEME', 'hedef_kadrolar', kadro_id, f'{pozisyon_adi} kadrosu eklendi')
-        flash('Kadro başarıyla eklendi!', 'success')
+        flash('Kadro baÅŸarÄ±yla eklendi!', 'success')
         return redirect(url_for('kadrolar'))
     
-    # GET request - form için gerekli verileri çek
+    # GET request - form iÃ§in gerekli verileri Ã§ek
     conn = get_db()
     
     projeler = conn.execute('''
@@ -470,7 +472,7 @@ def kadro_ekle():
         ORDER BY il_adi
     ''').fetchall()
     
-    # Çalışma şekilleri - YENİ
+    # Ã‡alÄ±ÅŸma ÅŸekilleri - YENÄ°
     calisma_sekilleri = conn.execute('''
         SELECT calisma_sekli FROM calisma_sekilleri 
         WHERE aktif = TRUE 
@@ -512,15 +514,24 @@ def adaylar():
         ORDER BY a.basvuru_tarihi DESC
     ''').fetchall()
     
-    # Yaş hesaplama
+    # YaÅŸ hesaplama
     adaylar = []
     for aday in adaylar_raw:
         aday_dict = dict(aday)
         
-        # Yaş hesapla
+        # YaÅŸ hesapla
         if aday_dict.get('dogum_tarihi'):
             try:
-                dogum = datetime.strptime(aday_dict['dogum_tarihi'], '%Y-%m-%d')
+                dogum_tarihi = aday_dict['dogum_tarihi']
+                
+                # PostgreSQL date objesi veya string - ikisini de destekle
+                if isinstance(dogum_tarihi, str):
+                    dogum = datetime.strptime(dogum_tarihi, '%Y-%m-%d')
+                elif hasattr(dogum_tarihi, 'year'):  # date objesi
+                    dogum = datetime(dogum_tarihi.year, dogum_tarihi.month, dogum_tarihi.day)
+                else:
+                    raise ValueError("Bilinmeyen tarih formati")
+                
                 bugun = datetime.now()
                 
                 yil = bugun.year - dogum.year
@@ -538,7 +549,8 @@ def adaylar():
                 
                 aday_dict['yas'] = f"{yil}.{ay}"
                 aday_dict['yas_yil'] = yil
-            except:
+            except Exception as e:
+                print(f"Yas hesaplama hatasi (aday): {e}")
                 aday_dict['yas'] = None
                 aday_dict['yas_yil'] = None
         else:
@@ -564,16 +576,16 @@ def aday_ekle():
         dogum_tarihi = request.form.get('dogum_tarihi', None)  # â† BURASI VAR MI?
         notlar = request.form.get('notlar', '')
         
-        # KAYNAK BİLGİSİ
+        # KAYNAK BÄ°LGÄ°SÄ°
         kaynak_id = request.form.get('kaynak_id') or None
         kaynak_diger = request.form.get('kaynak_diger', '').strip()
         
-        # Eğer "Diğer" seçilmişse kaynak_id'yi NULL yap
+        # EÄŸer "DiÄŸer" seÃ§ilmiÅŸse kaynak_id'yi NULL yap
         if kaynak_id and int(kaynak_id) == -1:
             kaynak_id = None
         
         # DEBUG: Form verilerini kontrol et
-        print(f"DEBUG - Dogum Tarihi: [{dogum_tarihi}]")  # â† DEBUG EKLENDİ
+        print(f"DEBUG - Dogum Tarihi: [{dogum_tarihi}]")  # â† DEBUG EKLENDÄ°
         
         conn = get_db()
         cursor = conn.cursor()
@@ -587,11 +599,11 @@ def aday_ekle():
         conn.commit()
         conn.close()
         
-        log_islem('EKLEME', 'adaylar', aday_id, f'{ad_soyad} adayı sisteme eklendi')
-        flash('Aday başarıyla eklendi!', 'success')
+        log_islem('EKLEME', 'adaylar', aday_id, f'{ad_soyad} adayÄ± sisteme eklendi')
+        flash('Aday baÅŸarÄ±yla eklendi!', 'success')
         return redirect(url_for('adaylar'))
     
-    # GET request için
+    # GET request iÃ§in
     conn = get_db()
     kadrolar = conn.execute('''
         SELECT hk.*, 
@@ -606,7 +618,7 @@ def aday_ekle():
         LEFT JOIN direktorlukler d ON hk.direktorluk_id = d.id
         LEFT JOIN iller i ON hk.il_id = i.id
         LEFT JOIN ilceler ic ON hk.ilce_id = ic.id
-        WHERE hk.durum = 'Açık'
+        WHERE hk.durum = 'AÃ§Ä±k'
         ORDER BY p.proje_adi, hk.pozisyon_adi
     ''').fetchall()
     
@@ -623,7 +635,7 @@ def aday_ekle():
 @app.route('/aday/<int:aday_id>/calisana-donustur', methods=['POST'])
 @manager_required
 def aday_calisana_donustur(aday_id):
-    """Adayı çalışana dönüştür"""
+    """AdayÄ± Ã§alÄ±ÅŸana dÃ¶nÃ¼ÅŸtÃ¼r"""
     ise_baslama_tarihi = request.form.get('ise_baslama_tarihi', datetime.now().strftime('%Y-%m-%d'))
     
     conn = get_db()
@@ -654,13 +666,13 @@ def aday_calisana_donustur(aday_id):
     
     if not aday_detay_raw:
         conn.close()
-        flash('Aday bulunamadı!', 'danger')
+        flash('Aday bulunamadÄ±!', 'danger')
         return redirect(url_for('adaylar'))
     
-    # Dict'e çevir
+    # Dict'e Ã§evir
     aday_detay = dict(aday_detay_raw)
     
-    # Çalışan olarak ekle
+    # Ã‡alÄ±ÅŸan olarak ekle
     cursor.execute('''
         INSERT INTO calisanlar (aday_id, kadro_id, ad_soyad, telefon, email, tc_kimlik, 
                                dogum_tarihi, ise_baslama_tarihi, aracli_durum)
@@ -669,31 +681,31 @@ def aday_calisana_donustur(aday_id):
           aday_detay['email'], aday_detay['tc_kimlik'], aday_detay.get('dogum_tarihi'),
           ise_baslama_tarihi, aday_detay['aracli_durum']))
     
-    # Aday durumunu güncelle
+    # Aday durumunu gÃ¼ncelle
     cursor.execute('UPDATE adaylar SET durum = %s, ise_baslama_tarihi = %s WHERE id = %s',
-                   ('Çalışan', ise_baslama_tarihi, aday_id))
+                   ('Ã‡alÄ±ÅŸan', ise_baslama_tarihi, aday_id))
     
-    # Kadro dolu sayısını artır
+    # Kadro dolu sayÄ±sÄ±nÄ± artÄ±r
     cursor.execute('''
         UPDATE hedef_kadrolar 
         SET dolu_kisi_sayisi = dolu_kisi_sayisi + 1
         WHERE id = %s
     ''', (aday_detay['kadro_id'],))
     
-    # Kadro durumunu kontrol et ve güncelle
+    # Kadro durumunu kontrol et ve gÃ¼ncelle
     cursor.execute('''
         UPDATE hedef_kadrolar 
         SET durum = CASE 
             WHEN dolu_kisi_sayisi >= hedef_kisi_sayisi THEN 'Dolu'
-            ELSE 'Açık'
+            ELSE 'AÃ§Ä±k'
         END
         WHERE id = %s
     ''', (aday_detay['kadro_id'],))
     
     conn.commit()
     
-    # Email bildirimi gönder
-    print("ðŸ”¥ðŸ”¥ðŸ”¥ EMAIL KODU ÇALIŞTI! ðŸ”¥ðŸ”¥ðŸ”¥")
+    # Email bildirimi gÃ¶nder
+    print("ðŸ”¥ðŸ”¥ðŸ”¥ EMAIL KODU Ã‡ALIÅžTI! ðŸ”¥ðŸ”¥ðŸ”¥")
     try:
         aday_bilgileri = {
             'id': aday_id,
@@ -705,8 +717,8 @@ def aday_calisana_donustur(aday_id):
             'ise_baslama_tarihi': ise_baslama_tarihi,
             'proje_adi': aday_detay['proje_adi'],
             'pozisyon_adi': aday_detay['pozisyon_adi'],
-            'mudurluk_adi': aday_detay['mudurluk_adi'] or '-',  # â† YENİ
-            'direktorluk_adi': aday_detay['direktorluk_adi'] or '-',  # â† YENİ
+            'mudurluk_adi': aday_detay['mudurluk_adi'] or '-',  # â† YENÄ°
+            'direktorluk_adi': aday_detay['direktorluk_adi'] or '-',  # â† YENÄ°
             'il': aday_detay['il_adi'],
             'ilce': aday_detay['ilce_adi'] or '-',
             'magaza_adi': aday_detay['magaza_adi'] or '-',
@@ -723,23 +735,23 @@ def aday_calisana_donustur(aday_id):
         if email_basarili:
             flash(email_mesaj, 'info')
     except Exception as e:
-        print(f"âŒ Email gönderimi hatası: {e}")
+        print(f"âŒ Email gÃ¶nderimi hatasÄ±: {e}")
         import traceback
         traceback.print_exc()
-        flash(f'Uyarı: Email bildirimi gönderilemedi', 'warning')
+        flash(f'UyarÄ±: Email bildirimi gÃ¶nderilemedi', 'warning')
     
     conn.close()
     
-    log_islem('DÖNÜŞÜM', 'calisanlar', aday_id, 
-             f'{aday_detay["ad_soyad"]} adaydan çalışana dönüştürüldü', 
+    log_islem('DÃ–NÃœÅžÃœM', 'calisanlar', aday_id, 
+             f'{aday_detay["ad_soyad"]} adaydan Ã§alÄ±ÅŸana dÃ¶nÃ¼ÅŸtÃ¼rÃ¼ldÃ¼', 
              session.get('username'))
-    flash('Aday başarıyla çalışana dönüştürüldü!', 'success')
+    flash('Aday baÅŸarÄ±yla Ã§alÄ±ÅŸana dÃ¶nÃ¼ÅŸtÃ¼rÃ¼ldÃ¼!', 'success')
     return redirect(url_for('calisanlar'))
 
 @app.route('/calisanlar')
 @login_required
 def calisanlar():
-    """Çalışan listesi"""
+    """Ã‡alÄ±ÅŸan listesi"""
     conn = get_db()
     calisanlar_raw = conn.execute('''
         SELECT c.*, 
@@ -761,15 +773,24 @@ def calisanlar():
         ORDER BY c.ise_baslama_tarihi DESC
     ''').fetchall()
     
-    # Yaş hesaplama
+    # YaÅŸ hesaplama
     calisanlar = []
     for calisan in calisanlar_raw:
         calisan_dict = dict(calisan)
         
-        # Yaş hesapla
+        # YaÅŸ hesapla
         if calisan_dict.get('dogum_tarihi'):
             try:
-                dogum = datetime.strptime(calisan_dict['dogum_tarihi'], '%Y-%m-%d')
+                dogum_tarihi = calisan_dict['dogum_tarihi']
+                
+                # PostgreSQL date objesi veya string - ikisini de destekle
+                if isinstance(dogum_tarihi, str):
+                    dogum = datetime.strptime(dogum_tarihi, '%Y-%m-%d')
+                elif hasattr(dogum_tarihi, 'year'):  # date objesi
+                    dogum = datetime(dogum_tarihi.year, dogum_tarihi.month, dogum_tarihi.day)
+                else:
+                    raise ValueError("Bilinmeyen tarih formati")
+                
                 bugun = datetime.now()
                 
                 yil = bugun.year - dogum.year
@@ -787,7 +808,8 @@ def calisanlar():
                 
                 calisan_dict['yas'] = f"{yil}.{ay}"
                 calisan_dict['yas_yil'] = yil
-            except:
+            except Exception as e:
+                print(f"Yas hesaplama hatasi (calisan): {e}")
                 calisan_dict['yas'] = None
                 calisan_dict['yas_yil'] = None
         else:
@@ -802,7 +824,7 @@ def calisanlar():
 @app.route('/calisanlar/excel-export')
 @login_required
 def calisanlar_excel_export():
-    """Çalışanları Excel'e aktar"""
+    """Ã‡alÄ±ÅŸanlarÄ± Excel'e aktar"""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
     from io import BytesIO
@@ -828,17 +850,17 @@ def calisanlar_excel_export():
     ''').fetchall()
     conn.close()
     
-    # Excel oluştur
+    # Excel oluÅŸtur
     wb = Workbook()
     ws = wb.active
-    ws.title = "Çalışanlar"
+    ws.title = "Ã‡alÄ±ÅŸanlar"
     
-    # Başlık satırı
+    # BaÅŸlÄ±k satÄ±rÄ±
     headers = ['ID', 'Ad Soyad', 'Telefon', 'Email', 'TC Kimlik', 
-               'Doğum Tarihi', 'Yaş',
-               'Proje', 'Pozisyon', 'Müdürlük', 'Direktörlük',
-               'İl', 'İlçe', 'Mağaza', 'Araç Durumu', 'Çalışma Şekli',
-               'İşe Başlama', 'Durum']
+               'DoÄŸum Tarihi', 'YaÅŸ',
+               'Proje', 'Pozisyon', 'MÃ¼dÃ¼rlÃ¼k', 'DirektÃ¶rlÃ¼k',
+               'Ä°l', 'Ä°lÃ§e', 'MaÄŸaza', 'AraÃ§ Durumu', 'Ã‡alÄ±ÅŸma Åžekli',
+               'Ä°ÅŸe BaÅŸlama', 'Durum']
     
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
@@ -846,13 +868,21 @@ def calisanlar_excel_export():
         cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
         cell.alignment = Alignment(horizontal="center", vertical="center")
     
-    # Veri satırları
+    # Veri satÄ±rlarÄ±
     for row_idx, calisan in enumerate(calisanlar, 2):
-        # Yaş hesapla
+        # YaÅŸ hesapla
         yas_str = '-'
         if calisan['dogum_tarihi']:
             try:
-                dogum = datetime.strptime(calisan['dogum_tarihi'], '%Y-%m-%d')
+                dogum_tarihi = calisan['dogum_tarihi']
+                
+                if isinstance(dogum_tarihi, str):
+                    dogum = datetime.strptime(dogum_tarihi, '%Y-%m-%d')
+                elif hasattr(dogum_tarihi, 'year'):
+                    dogum = datetime(dogum_tarihi.year, dogum_tarihi.month, dogum_tarihi.day)
+                else:
+                    raise ValueError("Bilinmeyen tarih formati")
+                
                 bugun = datetime.now()
                 yil = bugun.year - dogum.year
                 ay = bugun.month - dogum.month
@@ -887,7 +917,7 @@ def calisanlar_excel_export():
         ws.cell(row=row_idx, column=17, value=calisan['ise_baslama_tarihi'])
         ws.cell(row=row_idx, column=18, value='Aktif' if calisan['aktif'] else 'Pasif')
     
-    # Sütun genişliklerini ayarla
+    # SÃ¼tun geniÅŸliklerini ayarla
     for col in ws.columns:
         max_length = 0
         column = col[0].column_letter
@@ -896,7 +926,7 @@ def calisanlar_excel_export():
                 max_length = max(max_length, len(str(cell.value)))
         ws.column_dimensions[column].width = min(max_length + 2, 50)
     
-    # Dosyayı belleğe kaydet
+    # DosyayÄ± belleÄŸe kaydet
     output = BytesIO()
     wb.save(output)
     output.seek(0)
@@ -912,10 +942,10 @@ def calisanlar_excel_export():
 @app.route('/calisan/<int:calisan_id>/cikis', methods=['GET'])
 @login_required
 def calisan_cikis(calisan_id):
-    """İşten çıkış formu"""
+    """Ä°ÅŸten Ã§Ä±kÄ±ÅŸ formu"""
     conn = get_db()
     
-    # Çalışan bilgilerini getir
+    # Ã‡alÄ±ÅŸan bilgilerini getir
     calisan = conn.execute('''
         SELECT c.*, 
                hk.pozisyon_adi,
@@ -927,10 +957,10 @@ def calisan_cikis(calisan_id):
     ''', (calisan_id,)).fetchone()
     
     if not calisan:
-        flash('Çalışan bulunamadı veya zaten pasif durumda!', 'error')
+        flash('Ã‡alÄ±ÅŸan bulunamadÄ± veya zaten pasif durumda!', 'error')
         return redirect(url_for('calisanlar'))
     
-    # Çıkış nedenleri
+    # Ã‡Ä±kÄ±ÅŸ nedenleri
     cikis_nedenleri = conn.execute('''
         SELECT * FROM cikis_nedenleri 
         WHERE aktif = TRUE 
@@ -939,7 +969,7 @@ def calisan_cikis(calisan_id):
     
     conn.close()
     
-    # Bugünün tarihi
+    # BugÃ¼nÃ¼n tarihi
     today = date.today().isoformat()
     now = datetime.now()
     
@@ -953,16 +983,16 @@ def calisan_cikis(calisan_id):
 @app.route('/calisan/<int:calisan_id>/cikis/kaydet', methods=['POST'])
 @login_required
 def calisan_cikis_kaydet(calisan_id):
-    """İşten çıkışı kaydet"""
+    """Ä°ÅŸten Ã§Ä±kÄ±ÅŸÄ± kaydet"""
     conn = get_db()
     cursor = conn.cursor()
     
-    # Çalışan kontrolü
+    # Ã‡alÄ±ÅŸan kontrolÃ¼
     calisan = conn.execute('SELECT * FROM calisanlar WHERE id = %s AND aktif = TRUE', 
                           (calisan_id,)).fetchone()
     
     if not calisan:
-        flash('Çalışan bulunamadı!', 'error')
+        flash('Ã‡alÄ±ÅŸan bulunamadÄ±!', 'error')
         return redirect(url_for('calisanlar'))
     
     # Form verilerini al
@@ -987,7 +1017,7 @@ def calisan_cikis_kaydet(calisan_id):
     genel_degerlendirme = request.form.get('genel_degerlendirme', '')
     
     try:
-        # 1. Çıkış kaydı oluştur
+        # 1. Ã‡Ä±kÄ±ÅŸ kaydÄ± oluÅŸtur
         cursor.execute('''
             INSERT INTO cikis_kayitlari 
             (calisan_id, cikis_tarihi, cikis_nedeni, liste_durumu, tekrar_ise_alinabilir,
@@ -1003,7 +1033,7 @@ def calisan_cikis_kaydet(calisan_id):
         
         cikis_kayit_id = cursor.lastrowid
         
-        # 2. Çalışanı pasif yap ve çıkış bilgilerini güncelle
+        # 2. Ã‡alÄ±ÅŸanÄ± pasif yap ve Ã§Ä±kÄ±ÅŸ bilgilerini gÃ¼ncelle
         cursor.execute('''
             UPDATE calisanlar 
             SET aktif = FALSE,
@@ -1013,7 +1043,7 @@ def calisan_cikis_kaydet(calisan_id):
             WHERE id = %s
         ''', (cikis_tarihi, cikis_nedeni, liste_durumu, calisan_id))
         
-        # 3. YENI: Aday durumunu güncelle
+        # 3. YENI: Aday durumunu gÃ¼ncelle
         aday_id = calisan['aday_id']
         if aday_id:
             cursor.execute('''
@@ -1022,7 +1052,7 @@ def calisan_cikis_kaydet(calisan_id):
                WHERE id = %s
     ''', (aday_id,))
         
-        # 4. Kadro doluluk sayısını güncelle
+        # 4. Kadro doluluk sayÄ±sÄ±nÄ± gÃ¼ncelle
         kadro_id = calisan['kadro_id']
         cursor.execute('''
             UPDATE hedef_kadrolar 
@@ -1030,11 +1060,11 @@ def calisan_cikis_kaydet(calisan_id):
             WHERE id = %s
         ''', (kadro_id,))
         
-        # 5. Kadro durumunu güncelle (Dolu â†’ Açık)
+        # 5. Kadro durumunu gÃ¼ncelle (Dolu â†’ AÃ§Ä±k)
         cursor.execute('''
             UPDATE hedef_kadrolar 
             SET durum = CASE 
-                WHEN dolu_kisi_sayisi < hedef_kisi_sayisi THEN 'Açık'
+                WHEN dolu_kisi_sayisi < hedef_kisi_sayisi THEN 'AÃ§Ä±k'
                 ELSE 'Dolu'
             END
             WHERE id = %s
@@ -1043,13 +1073,13 @@ def calisan_cikis_kaydet(calisan_id):
         conn.commit()
         
         # Log kaydet
-        log_islem('ÇIKIŞ', 'calisanlar', calisan_id, 
-                 f'{calisan["ad_soyad"]} - {cikis_nedeni} nedeniyle işten çıkış')
+        log_islem('Ã‡IKIÅž', 'calisanlar', calisan_id, 
+                 f'{calisan["ad_soyad"]} - {cikis_nedeni} nedeniyle iÅŸten Ã§Ä±kÄ±ÅŸ')
         # ============================================
-        # YENİ: E-POSTA BİLDİRİMİ
+        # YENÄ°: E-POSTA BÄ°LDÄ°RÄ°MÄ°
         # ============================================
         try:
-            # Çalışan detay bilgilerini getir
+            # Ã‡alÄ±ÅŸan detay bilgilerini getir
             calisan_detay = conn.execute('''
     SELECT c.*,
            hk.pozisyon_adi,
@@ -1078,12 +1108,12 @@ def calisan_cikis_kaydet(calisan_id):
                 'tc_kimlik': calisan_detay['tc_kimlik'] or '-',
                 'proje_adi': calisan_detay['proje_adi'],
                 'pozisyon_adi': calisan_detay['pozisyon_adi'],
-                'mudurluk_adi': calisan_detay['mudurluk_adi'] or '-',  # â† YENİ
-                'direktorluk_adi': calisan_detay['direktorluk_adi'] or '-',  # â† YENİ
+                'mudurluk_adi': calisan_detay['mudurluk_adi'] or '-',  # â† YENÄ°
+                'direktorluk_adi': calisan_detay['direktorluk_adi'] or '-',  # â† YENÄ°
                 'il': calisan_detay['il_adi'],
                 'ilce': calisan_detay['ilce_adi'] or '-',
                 'magaza_adi': calisan_detay['magaza_adi'] or '-',
-                'aracli_durum': calisan_detay['aracli_durum'] or 'Araçsız',
+                'aracli_durum': calisan_detay['aracli_durum'] or 'AraÃ§sÄ±z',
                 'ise_baslama_tarihi': calisan_detay['ise_baslama_tarihi'],
                 'cikis_tarihi': cikis_tarihi,
                 'cikis_nedeni': cikis_nedeni,
@@ -1105,14 +1135,14 @@ def calisan_cikis_kaydet(calisan_id):
             if email_basarili:
                 flash(email_mesaj, 'info')
         except Exception as e:
-            print(f"Email gönderimi hatası: {e}")
-            flash(f'Uyarı: Email bildirimi gönderilemedi', 'warning')
+            print(f"Email gÃ¶nderimi hatasÄ±: {e}")
+            flash(f'UyarÄ±: Email bildirimi gÃ¶nderilemedi', 'warning')
         
         return redirect(url_for('cikis_kayitlari'))
         
     except Exception as e:
         conn.rollback()
-        flash(f'Hata oluştu: {str(e)}', 'error')
+        flash(f'Hata oluÅŸtu: {str(e)}', 'error')
         return redirect(url_for('calisan_cikis', calisan_id=calisan_id))
     finally:
         conn.close()
@@ -1121,7 +1151,7 @@ def calisan_cikis_kaydet(calisan_id):
 @app.route('/cikis-kayitlari')
 @login_required
 def cikis_kayitlari():
-    """Çıkış kayıtları listesi"""
+    """Ã‡Ä±kÄ±ÅŸ kayÄ±tlarÄ± listesi"""
     conn = get_db()
     
     kayitlar = conn.execute('''
@@ -1139,7 +1169,7 @@ def cikis_kayitlari():
         ORDER BY ck.cikis_tarihi DESC, ck.olusturma_tarihi DESC
     ''').fetchall()
     
-    # İstatistikler
+    # Ä°statistikler
     stats = {
         'toplam_cikis': len(kayitlar),
         'beyaz_liste': len([k for k in kayitlar if k['liste_durumu'] == 'Beyaz']),
@@ -1182,18 +1212,18 @@ def cikis_detay(kayit_id):
     ''', (kayit_id,)).fetchone()
     
     if not kayit:
-        flash('Kayıt bulunamadı!', 'error')
+        flash('KayÄ±t bulunamadÄ±!', 'error')
         return redirect(url_for('cikis_kayitlari'))
     
     conn.close()
     
-    # YENİ: Return ekle!
+    # YENÄ°: Return ekle!
     return render_template('cikis_detay.html', kayit=kayit)    
     
 @app.route('/adaylar/excel-export')
 @login_required
 def adaylar_excel_export():
-    """Adayları Excel'e aktar"""
+    """AdaylarÄ± Excel'e aktar"""
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment
     from io import BytesIO
@@ -1220,17 +1250,17 @@ def adaylar_excel_export():
     ''').fetchall()
     conn.close()
     
-    # Excel oluştur
+    # Excel oluÅŸtur
     wb = Workbook()
     ws = wb.active
     ws.title = "Adaylar"
     
-    # Başlık satırı
+    # BaÅŸlÄ±k satÄ±rÄ±
     headers = ['ID', 'Ad Soyad', 'Telefon', 'Email', 'TC Kimlik', 
-               'Doğum Tarihi', 'Yaş', 
-               'Proje', 'Pozisyon', 'Müdürlük', 'Direktörlük', 
-               'İl', 'İlçe', 'Mağaza', 'Araç Durumu', 'Çalışma Şekli',
-               'Kaynak', 'Başvuru Tarihi', 'Durum']
+               'DoÄŸum Tarihi', 'YaÅŸ', 
+               'Proje', 'Pozisyon', 'MÃ¼dÃ¼rlÃ¼k', 'DirektÃ¶rlÃ¼k', 
+               'Ä°l', 'Ä°lÃ§e', 'MaÄŸaza', 'AraÃ§ Durumu', 'Ã‡alÄ±ÅŸma Åžekli',
+               'Kaynak', 'BaÅŸvuru Tarihi', 'Durum']
     
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
@@ -1238,13 +1268,21 @@ def adaylar_excel_export():
         cell.fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
         cell.alignment = Alignment(horizontal="center", vertical="center")
     
-    # Veri satırları
+    # Veri satÄ±rlarÄ±
     for row_idx, aday in enumerate(adaylar, 2):
-        # Yaş hesapla
+        # YaÅŸ hesapla
         yas_str = '-'
         if aday['dogum_tarihi']:
             try:
-                dogum = datetime.strptime(aday['dogum_tarihi'], '%Y-%m-%d')
+                dogum_tarihi = aday['dogum_tarihi']
+                
+                if isinstance(dogum_tarihi, str):
+                    dogum = datetime.strptime(dogum_tarihi, '%Y-%m-%d')
+                elif hasattr(dogum_tarihi, 'year'):
+                    dogum = datetime(dogum_tarihi.year, dogum_tarihi.month, dogum_tarihi.day)
+                else:
+                    raise ValueError("Bilinmeyen tarih formati")
+                
                 bugun = datetime.now()
                 yil = bugun.year - dogum.year
                 ay = bugun.month - dogum.month
@@ -1280,7 +1318,7 @@ def adaylar_excel_export():
         ws.cell(row=row_idx, column=18, value=aday['basvuru_tarihi'])
         ws.cell(row=row_idx, column=19, value=aday['durum'])
     
-    # Sütun genişliklerini ayarla
+    # SÃ¼tun geniÅŸliklerini ayarla
     for col in ws.columns:
         max_length = 0
         column = col[0].column_letter
@@ -1289,7 +1327,7 @@ def adaylar_excel_export():
                 max_length = max(max_length, len(str(cell.value)))
         ws.column_dimensions[column].width = min(max_length + 2, 50)
     
-    # Dosyayı belleğe kaydet
+    # DosyayÄ± belleÄŸe kaydet
     output = BytesIO()
     wb.save(output)
     output.seek(0)
@@ -1302,17 +1340,17 @@ def adaylar_excel_export():
         download_name=f'adaylar_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
     )
     
-# ÇALIŞAN DÜZENLE ROUTE'U
-# app.py'ye eklenecek (İşten çıkış route'larından sonra)
+# Ã‡ALIÅžAN DÃœZENLE ROUTE'U
+# app.py'ye eklenecek (Ä°ÅŸten Ã§Ä±kÄ±ÅŸ route'larÄ±ndan sonra)
 
 @app.route('/calisan/<int:calisan_id>/duzenle', methods=['GET', 'POST'])
 @login_required
 def calisanlar_duzenle(calisan_id):
-    """Çalışan düzenle"""
+    """Ã‡alÄ±ÅŸan dÃ¼zenle"""
     conn = get_db()
     
     if request.method == 'GET':
-        # Çalışan bilgilerini getir
+        # Ã‡alÄ±ÅŸan bilgilerini getir
         calisan = conn.execute('''
             SELECT c.*, hk.proje_id
             FROM calisanlar c
@@ -1321,10 +1359,10 @@ def calisanlar_duzenle(calisan_id):
         ''', (calisan_id,)).fetchone()
         
         if not calisan:
-            flash('Çalışan bulunamadı!', 'error')
+            flash('Ã‡alÄ±ÅŸan bulunamadÄ±!', 'error')
             return redirect(url_for('calisanlar'))
         
-        # Dropdown'lar için veriler
+        # Dropdown'lar iÃ§in veriler
         projeler = conn.execute('SELECT * FROM projeler ORDER BY proje_adi').fetchall()
         kadrolar = conn.execute('''
             SELECT hk.*, p.proje_adi, i.il_adi, ic.ilce_adi
@@ -1354,7 +1392,7 @@ def calisanlar_duzenle(calisan_id):
         adres = request.form.get('adres', '')
         ise_baslama_tarihi = request.form['ise_baslama_tarihi']
         kadro_id = request.form['kadro_id']
-        aracli_durum = request.form.get('aracli_durum', 'Araçsız')
+        aracli_durum = request.form.get('aracli_durum', 'AraÃ§sÄ±z')
         calisma_sekli_id = request.form.get('calisma_sekli_id', None)
         aktif = TRUE if request.form.get('aktif') else 0
         
@@ -1366,7 +1404,7 @@ def calisanlar_duzenle(calisan_id):
                                        (calisan_id,)).fetchone()
             eski_kadro_id = eski_calisan['kadro_id']
             
-            # Çalışanı güncelle
+            # Ã‡alÄ±ÅŸanÄ± gÃ¼ncelle
             cursor.execute('''
                 UPDATE calisanlar 
                 SET ad_soyad = %s,
@@ -1385,9 +1423,9 @@ def calisanlar_duzenle(calisan_id):
                   ise_baslama_tarihi, kadro_id, aracli_durum, calisma_sekli_id,
                   aktif, calisan_id))
             
-            # Kadro değiştiyse doluluk sayılarını güncelle
+            # Kadro deÄŸiÅŸtiyse doluluk sayÄ±larÄ±nÄ± gÃ¼ncelle
             if eski_kadro_id != int(kadro_id):
-                # Eski kadrodan çıkar
+                # Eski kadrodan Ã§Ä±kar
                 cursor.execute('''
                     UPDATE hedef_kadrolar 
                     SET dolu_kisi_sayisi = dolu_kisi_sayisi - 1
@@ -1401,12 +1439,12 @@ def calisanlar_duzenle(calisan_id):
                     WHERE id = %s
                 ''', (kadro_id,))
                 
-                # Her iki kadronun durumunu güncelle
+                # Her iki kadronun durumunu gÃ¼ncelle
                 cursor.execute('''
                     UPDATE hedef_kadrolar 
                     SET durum = CASE 
                         WHEN dolu_kisi_sayisi >= hedef_kisi_sayisi THEN 'Dolu'
-                        ELSE 'Açık'
+                        ELSE 'AÃ§Ä±k'
                     END
                     WHERE id IN (%s, %s)
                 ''', (eski_kadro_id, kadro_id))
@@ -1414,15 +1452,15 @@ def calisanlar_duzenle(calisan_id):
             conn.commit()
             
             # Log kaydet
-            log_islem('GÜNCELLEME', 'calisanlar', calisan_id, 
-                     f'{ad_soyad} bilgileri güncellendi')
+            log_islem('GÃœNCELLEME', 'calisanlar', calisan_id, 
+                     f'{ad_soyad} bilgileri gÃ¼ncellendi')
             
-            flash('Çalışan başarıyla güncellendi!', 'success')
+            flash('Ã‡alÄ±ÅŸan baÅŸarÄ±yla gÃ¼ncellendi!', 'success')
             return redirect(url_for('calisan_detay', calisan_id=calisan_id))
             
         except Exception as e:
             conn.rollback()
-            flash(f'Hata oluştu: {str(e)}', 'error')
+            flash(f'Hata oluÅŸtu: {str(e)}', 'error')
             return redirect(url_for('calisanlar_duzenle', calisan_id=calisan_id))
         finally:
             conn.close()    
@@ -1430,10 +1468,10 @@ def calisanlar_duzenle(calisan_id):
 @app.route('/calisan/<int:calisan_id>/detay')
 @login_required
 def calisan_detay(calisan_id):
-    """Çalışan detay sayfası"""
+    """Ã‡alÄ±ÅŸan detay sayfasÄ±"""
     conn = get_db()
     
-    # Çalışan bilgileri
+    # Ã‡alÄ±ÅŸan bilgileri
     calisan_raw = conn.execute('''
         SELECT c.*, 
                hk.pozisyon_adi, hk.magaza_adi, hk.aracli_durum, hk.calisma_sekli,
@@ -1454,16 +1492,24 @@ def calisan_detay(calisan_id):
     
     if not calisan_raw:
         conn.close()
-        flash('Çalışan bulunamadı!', 'danger')
+        flash('Ã‡alÄ±ÅŸan bulunamadÄ±!', 'danger')
         return redirect(url_for('calisanlar'))
     
-    # Dict'e çevir
+    # Dict'e Ã§evir
     calisan = dict(calisan_raw)
     
-    # YAŞ HESAPLA
+    # YAÅž HESAPLA
     if calisan.get('dogum_tarihi'):
         try:
-            dogum = datetime.strptime(calisan['dogum_tarihi'], '%Y-%m-%d')
+            dogum_tarihi = calisan['dogum_tarihi']
+            
+            if isinstance(dogum_tarihi, str):
+                dogum = datetime.strptime(dogum_tarihi, '%Y-%m-%d')
+            elif hasattr(dogum_tarihi, 'year'):
+                dogum = datetime(dogum_tarihi.year, dogum_tarihi.month, dogum_tarihi.day)
+            else:
+                raise ValueError("Bilinmeyen tarih formati")
+            
             bugun = datetime.now()
             
             yil = bugun.year - dogum.year
@@ -1482,14 +1528,14 @@ def calisan_detay(calisan_id):
             calisan['yas'] = f"{yil}.{ay}"
             calisan['yas_yil'] = yil
         except Exception as e:
-            print(f"Yaş hesaplama hatası: {e}")
+            print(f"Yas hesaplama hatasi: {e}")
             calisan['yas'] = None
             calisan['yas_yil'] = None
     else:
         calisan['yas'] = None
         calisan['yas_yil'] = None
     
-    # Dosyalar (aday_id üzerinden de ara - aday döneminden kalan dosyalar için)
+    # Dosyalar (aday_id Ã¼zerinden de ara - aday dÃ¶neminden kalan dosyalar iÃ§in)
     dosyalar = conn.execute('''
         SELECT d.*, u.username as yukleyen
         FROM dosyalar d
@@ -1506,9 +1552,9 @@ def calisan_detay(calisan_id):
 @app.route('/calisan/<int:calisan_id>/dosya-yukle', methods=['POST'])
 @login_required
 def calisan_dosya_yukle(calisan_id):
-    """Çalışana dosya yükle"""
+    """Ã‡alÄ±ÅŸana dosya yÃ¼kle"""
     if 'dosya' not in request.files:
-        flash('Dosya seçilmedi!', 'danger')
+        flash('Dosya seÃ§ilmedi!', 'danger')
         return redirect(url_for('calisan_detay', calisan_id=calisan_id))
     
     file = request.files['dosya']
@@ -1516,30 +1562,30 @@ def calisan_dosya_yukle(calisan_id):
     aciklama = request.form.get('aciklama', '')
     
     if file.filename == '':
-        flash('Dosya seçilmedi!', 'danger')
+        flash('Dosya seÃ§ilmedi!', 'danger')
         return redirect(url_for('calisan_detay', calisan_id=calisan_id))
     
     if not allowed_file(file.filename):
-        flash('Geçersiz dosya formatı! İzin verilen: PDF, DOC, DOCX, JPG, PNG', 'danger')
+        flash('GeÃ§ersiz dosya formatÄ±! Ä°zin verilen: PDF, DOC, DOCX, JPG, PNG', 'danger')
         return redirect(url_for('calisan_detay', calisan_id=calisan_id))
     
-    # Güvenli dosya adı oluştur
+    # GÃ¼venli dosya adÄ± oluÅŸtur
     filename = secure_filename(file.filename)
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     yeni_dosya_adi = f"{calisan_id}_{dosya_tipi}_{timestamp}_{filename}"
     
-    # Klasör yolu
+    # KlasÃ¶r yolu
     upload_path = os.path.join(app.config['UPLOAD_FOLDER'], 'calisanlar')
     os.makedirs(upload_path, exist_ok=True)
     
-    # Dosyayı kaydet
+    # DosyayÄ± kaydet
     dosya_yolu = os.path.join(upload_path, yeni_dosya_adi)
     file.save(dosya_yolu)
     
     # Dosya boyutu
     dosya_boyutu = os.path.getsize(dosya_yolu)
     
-    # Veritabanına kaydet
+    # VeritabanÄ±na kaydet
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
@@ -1551,15 +1597,15 @@ def calisan_dosya_yukle(calisan_id):
     conn.close()
     
     log_islem('DOSYA_YUKLEME', 'dosyalar', calisan_id, 
-             f'{dosya_tipi} dosyası yüklendi: {filename}', session.get('username'))
+             f'{dosya_tipi} dosyasÄ± yÃ¼klendi: {filename}', session.get('username'))
     
-    flash(f'Dosya başarıyla yüklendi! ({get_file_size_mb(dosya_boyutu)} MB)', 'success')
+    flash(f'Dosya baÅŸarÄ±yla yÃ¼klendi! ({get_file_size_mb(dosya_boyutu)} MB)', 'success')
     return redirect(url_for('calisan_detay', calisan_id=calisan_id))    
 
 @app.route('/loglar')
 @login_required
 def loglar():
-    """Süreç logları"""
+    """SÃ¼reÃ§ loglarÄ±"""
     conn = get_db()
     loglar = conn.execute('''
         SELECT * FROM surec_loglari 
@@ -1572,7 +1618,7 @@ def loglar():
 @app.route('/api/stats')
 @login_required
 def api_stats():
-    """Dashboard için istatistikler"""
+    """Dashboard iÃ§in istatistikler"""
     conn = get_db()
     
     stats = {
@@ -1589,7 +1635,7 @@ def api_stats():
 @app.route('/users')
 @admin_required
 def users():
-    """Kullanıcı listesi (Sadece Admin)"""
+    """KullanÄ±cÄ± listesi (Sadece Admin)"""
     conn = get_db()
     users = conn.execute('''
         SELECT id, username, email, full_name, role, aktif, 
@@ -1603,7 +1649,7 @@ def users():
 @app.route('/user/ekle', methods=['GET', 'POST'])
 @admin_required
 def user_ekle():
-    """Yeni kullanıcı ekle (Sadece Admin)"""
+    """Yeni kullanÄ±cÄ± ekle (Sadece Admin)"""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -1611,7 +1657,7 @@ def user_ekle():
         full_name = request.form['full_name']
         role = request.form['role']
         
-        # Şifreyi hashle
+        # Åžifreyi hashle
         password_hash = hashlib.sha256(password.encode()).hexdigest()
         
         conn = get_db()
@@ -1627,20 +1673,20 @@ def user_ekle():
             conn.close()
             
             log_islem('EKLEME', 'users', user_id, 
-                     f'{username} kullanıcısı oluşturuldu (Rol: {role})', 
+                     f'{username} kullanÄ±cÄ±sÄ± oluÅŸturuldu (Rol: {role})', 
                      session.get('username', 'Sistem'))
-            flash(f'Kullanıcı "{username}" başarıyla eklendi!', 'success')
+            flash(f'KullanÄ±cÄ± "{username}" baÅŸarÄ±yla eklendi!', 'success')
             return redirect(url_for('users'))
         except sqlite3.IntegrityError:
             conn.close()
-            flash('Bu kullanıcı adı zaten kullanılıyor!', 'danger')
+            flash('Bu kullanÄ±cÄ± adÄ± zaten kullanÄ±lÄ±yor!', 'danger')
     
     return render_template('user_form.html')
 
 @app.route('/user/<int:user_id>/duzenle', methods=['GET', 'POST'])
 @admin_required
 def user_duzenle(user_id):
-    """Kullanıcı düzenle (Sadece Admin)"""
+    """KullanÄ±cÄ± dÃ¼zenle (Sadece Admin)"""
     conn = get_db()
     
     if request.method == 'POST':
@@ -1649,7 +1695,7 @@ def user_duzenle(user_id):
         role = request.form['role']
         aktif = TRUE if request.form.get('aktif') == 'on' else 0
         
-        # Şifre değiştirilmek isteniyorsa
+        # Åžifre deÄŸiÅŸtirilmek isteniyorsa
         new_password = request.form.get('new_password', '')
         if new_password:
             password_hash = hashlib.sha256(new_password.encode()).hexdigest()
@@ -1668,17 +1714,17 @@ def user_duzenle(user_id):
         conn.commit()
         conn.close()
         
-        log_islem('GÜNCELLEME', 'users', user_id, 
-                 f'Kullanıcı bilgileri güncellendi', 
+        log_islem('GÃœNCELLEME', 'users', user_id, 
+                 f'KullanÄ±cÄ± bilgileri gÃ¼ncellendi', 
                  session.get('username', 'Sistem'))
-        flash('Kullanıcı başarıyla güncellendi!', 'success')
+        flash('KullanÄ±cÄ± baÅŸarÄ±yla gÃ¼ncellendi!', 'success')
         return redirect(url_for('users'))
     
     user = conn.execute('SELECT * FROM users WHERE id = %s', (user_id,)).fetchone()
     conn.close()
     
     if not user:
-        flash('Kullanıcı bulunamadı!', 'danger')
+        flash('KullanÄ±cÄ± bulunamadÄ±!', 'danger')
         return redirect(url_for('users'))
     
     return render_template('user_edit.html', user=user)
@@ -1686,10 +1732,10 @@ def user_duzenle(user_id):
 @app.route('/user/<int:user_id>/sil', methods=['POST'])
 @admin_required
 def user_sil(user_id):
-    """Kullanıcı sil (Sadece Admin)"""
-    # Kendi hesabını silemez
+    """KullanÄ±cÄ± sil (Sadece Admin)"""
+    # Kendi hesabÄ±nÄ± silemez
     if user_id == session.get('user_id'):
-        flash('Kendi hesabınızı silemezsiniz!', 'danger')
+        flash('Kendi hesabÄ±nÄ±zÄ± silemezsiniz!', 'danger')
         return redirect(url_for('users'))
     
     conn = get_db()
@@ -1698,12 +1744,12 @@ def user_sil(user_id):
     if user:
         conn.execute('DELETE FROM users WHERE id = %s', (user_id,))
         conn.commit()
-        log_islem('SİLME', 'users', user_id, 
-                 f'{user["username"]} kullanıcısı silindi', 
+        log_islem('SÄ°LME', 'users', user_id, 
+                 f'{user["username"]} kullanÄ±cÄ±sÄ± silindi', 
                  session.get('username', 'Sistem'))
-        flash(f'Kullanıcı "{user["username"]}" başarıyla silindi!', 'success')
+        flash(f'KullanÄ±cÄ± "{user["username"]}" baÅŸarÄ±yla silindi!', 'success')
     else:
-        flash('Kullanıcı bulunamadı!', 'danger')
+        flash('KullanÄ±cÄ± bulunamadÄ±!', 'danger')
     
     conn.close()
     return redirect(url_for('users'))
@@ -1711,7 +1757,7 @@ def user_sil(user_id):
 @app.route('/profil')
 @login_required
 def profil():
-    """Kullanıcı profili"""
+    """KullanÄ±cÄ± profili"""
     conn = get_db()
     user = conn.execute('SELECT * FROM users WHERE id = %s', (session['user_id'],)).fetchone()
     conn.close()
@@ -1720,16 +1766,16 @@ def profil():
 @app.route('/profil/sifre-degistir', methods=['POST'])
 @login_required
 def sifre_degistir():
-    """Şifre değiştir"""
+    """Åžifre deÄŸiÅŸtir"""
     eski_sifre = request.form['eski_sifre']
     yeni_sifre = request.form['yeni_sifre']
     yeni_sifre_tekrar = request.form['yeni_sifre_tekrar']
     
     if yeni_sifre != yeni_sifre_tekrar:
-        flash('Yeni şifreler eşleşmiyor!', 'danger')
+        flash('Yeni ÅŸifreler eÅŸleÅŸmiyor!', 'danger')
         return redirect(url_for('profil'))
     
-    # Eski şifre kontrolü
+    # Eski ÅŸifre kontrolÃ¼
     eski_sifre_hash = hashlib.sha256(eski_sifre.encode()).hexdigest()
     
     conn = get_db()
@@ -1738,33 +1784,33 @@ def sifre_degistir():
     
     if not user:
         conn.close()
-        flash('Eski şifre hatalı!', 'danger')
+        flash('Eski ÅŸifre hatalÄ±!', 'danger')
         return redirect(url_for('profil'))
     
-    # Yeni şifreyi kaydet
+    # Yeni ÅŸifreyi kaydet
     yeni_sifre_hash = hashlib.sha256(yeni_sifre.encode()).hexdigest()
     conn.execute('UPDATE users SET password_hash = %s WHERE id = %s', 
                 (yeni_sifre_hash, session['user_id']))
     conn.commit()
     conn.close()
     
-    log_islem('GÜNCELLEME', 'users', session['user_id'], 
-             'Şifre değiştirildi', session.get('username', 'Sistem'))
-    flash('Şifreniz başarıyla değiştirildi!', 'success')
+    log_islem('GÃœNCELLEME', 'users', session['user_id'], 
+             'Åžifre deÄŸiÅŸtirildi', session.get('username', 'Sistem'))
+    flash('Åžifreniz baÅŸarÄ±yla deÄŸiÅŸtirildi!', 'success')
     return redirect(url_for('profil')) 
 
 @app.route('/yetkisiz')
 @login_required
 def yetkisiz():
-    """Yetki yok sayfası"""
+    """Yetki yok sayfasÄ±"""
     return render_template('yetkisiz.html')
     
 @app.route('/aday/<int:aday_id>/dosya-yukle', methods=['POST'])
 @login_required
 def aday_dosya_yukle(aday_id):
-    """Adaya dosya yükle"""
+    """Adaya dosya yÃ¼kle"""
     if 'dosya' not in request.files:
-        flash('Dosya seçilmedi!', 'danger')
+        flash('Dosya seÃ§ilmedi!', 'danger')
         return redirect(url_for('aday_detay', aday_id=aday_id))
     
     file = request.files['dosya']
@@ -1772,30 +1818,30 @@ def aday_dosya_yukle(aday_id):
     aciklama = request.form.get('aciklama', '')
     
     if file.filename == '':
-        flash('Dosya seçilmedi!', 'danger')
+        flash('Dosya seÃ§ilmedi!', 'danger')
         return redirect(url_for('aday_detay', aday_id=aday_id))
     
     if not allowed_file(file.filename):
-        flash('Geçersiz dosya formatı! İzin verilen: PDF, DOC, DOCX, JPG, PNG', 'danger')
+        flash('GeÃ§ersiz dosya formatÄ±! Ä°zin verilen: PDF, DOC, DOCX, JPG, PNG', 'danger')
         return redirect(url_for('aday_detay', aday_id=aday_id))
     
-    # Güvenli dosya adı oluştur
+    # GÃ¼venli dosya adÄ± oluÅŸtur
     filename = secure_filename(file.filename)
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     yeni_dosya_adi = f"{aday_id}_{dosya_tipi}_{timestamp}_{filename}"
     
-    # Klasör yolu
+    # KlasÃ¶r yolu
     upload_path = os.path.join(app.config['UPLOAD_FOLDER'], 'adaylar')
     os.makedirs(upload_path, exist_ok=True)
     
-    # Dosyayı kaydet
+    # DosyayÄ± kaydet
     dosya_yolu = os.path.join(upload_path, yeni_dosya_adi)
     file.save(dosya_yolu)
     
     # Dosya boyutu
     dosya_boyutu = os.path.getsize(dosya_yolu)
     
-    # Veritabanına kaydet
+    # VeritabanÄ±na kaydet
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute('''
@@ -1807,9 +1853,9 @@ def aday_dosya_yukle(aday_id):
     conn.close()
     
     log_islem('DOSYA_YUKLEME', 'dosyalar', aday_id, 
-             f'{dosya_tipi} dosyası yüklendi: {filename}', session.get('username'))
+             f'{dosya_tipi} dosyasÄ± yÃ¼klendi: {filename}', session.get('username'))
     
-    flash(f'Dosya başarıyla yüklendi! ({get_file_size_mb(dosya_boyutu)} MB)', 'success')
+    flash(f'Dosya baÅŸarÄ±yla yÃ¼klendi! ({get_file_size_mb(dosya_boyutu)} MB)', 'success')
     return redirect(url_for('aday_detay', aday_id=aday_id))
 
 @app.route('/dosya/<int:dosya_id>/indir')
@@ -1821,7 +1867,7 @@ def dosya_indir(dosya_id):
     conn.close()
     
     if not dosya:
-        flash('Dosya bulunamadı!', 'danger')
+        flash('Dosya bulunamadÄ±!', 'danger')
         return redirect(url_for('index'))
     
     try:
@@ -1842,23 +1888,23 @@ def dosya_sil(dosya_id):
     
     if not dosya:
         conn.close()
-        flash('Dosya bulunamadı!', 'danger')
+        flash('Dosya bulunamadÄ±!', 'danger')
         return redirect(request.referrer or url_for('index'))
     
-    # Yetki kontrolü (sadece admin veya yükleyen silebilir)
+    # Yetki kontrolÃ¼ (sadece admin veya yÃ¼kleyen silebilir)
     if session.get('role') != 'admin' and dosya['yukleyen_user_id'] != session['user_id']:
         conn.close()
-        flash('Bu dosyayı silme yetkiniz yok!', 'danger')
+        flash('Bu dosyayÄ± silme yetkiniz yok!', 'danger')
         return redirect(request.referrer or url_for('index'))
     
-    # Fiziksel dosyayı sil
+    # Fiziksel dosyayÄ± sil
     try:
         if os.path.exists(dosya['dosya_yolu']):
             os.remove(dosya['dosya_yolu'])
     except Exception as e:
         print(f"Dosya silinemedi: {e}")
     
-    # Veritabanından sil
+    # VeritabanÄ±ndan sil
     conn.execute('DELETE FROM dosyalar WHERE id = %s', (dosya_id,))
     conn.commit()
     conn.close()
@@ -1866,13 +1912,13 @@ def dosya_sil(dosya_id):
     log_islem('DOSYA_SILME', 'dosyalar', dosya_id, 
              f'Dosya silindi: {dosya["dosya_adi"]}', session.get('username'))
     
-    flash('Dosya başarıyla silindi!', 'success')
+    flash('Dosya baÅŸarÄ±yla silindi!', 'success')
     return redirect(request.referrer or url_for('index'))
 
 @app.route('/aday/<int:aday_id>/detay')
 @login_required
 def aday_detay(aday_id):
-    """Aday detay sayfası"""
+    """Aday detay sayfasÄ±"""
     conn = get_db()
     
     # Aday bilgileri
@@ -1892,7 +1938,7 @@ def aday_detay(aday_id):
     
     if not aday:
         conn.close()
-        flash('Aday bulunamadı!', 'danger')
+        flash('Aday bulunamadÄ±!', 'danger')
         return redirect(url_for('adaylar'))
     
     # Dosyalar
@@ -1912,10 +1958,10 @@ def aday_detay(aday_id):
 @app.route('/email-ayarlari')
 @admin_required
 def email_ayarlari():
-    """Email ayarları sayfası (Sadece Admin)"""
+    """Email ayarlarÄ± sayfasÄ± (Sadece Admin)"""
     conn = get_db()
     
-    # Email ayarları
+    # Email ayarlarÄ±
     ayarlar = conn.execute('''
         SELECT * FROM email_ayarlari 
         ORDER BY 
@@ -1929,20 +1975,20 @@ def email_ayarlari():
             END
     ''').fetchall()
     
-    # Email şablonları
+    # Email ÅŸablonlarÄ±
     sablonlar = conn.execute('''
         SELECT * FROM email_sablonlari 
         ORDER BY olusturma_tarihi DESC
     ''').fetchall()
     
-    # Email logları (son 50)
+    # Email loglarÄ± (son 50)
     loglar = conn.execute('''
         SELECT * FROM email_loglari 
         ORDER BY gonderim_tarihi DESC 
         LIMIT 50
     ''').fetchall()
     
-    # İstatistikler
+    # Ä°statistikler
     stats = {
         'toplam_gonderim': conn.execute('SELECT COUNT(*) as cnt FROM email_loglari').fetchone()['cnt'],
         'basarili': conn.execute("SELECT COUNT(*) as cnt FROM email_loglari WHERE gonderim_durumu = 'gonderildi'").fetchone()['cnt'],
@@ -1960,11 +2006,11 @@ def email_ayarlari():
 @app.route('/email-ayarlari/guncelle', methods=['POST'])
 @admin_required
 def email_ayarlari_guncelle():
-    """Email ayarlarını güncelle"""
+    """Email ayarlarÄ±nÄ± gÃ¼ncelle"""
     conn = get_db()
     cursor = conn.cursor()
     
-    # Form'dan gelen tüm ayarları güncelle
+    # Form'dan gelen tÃ¼m ayarlarÄ± gÃ¼ncelle
     for key, value in request.form.items():
         if key.startswith('ayar_'):
             ayar_adi = key.replace('ayar_', '')
@@ -1977,16 +2023,16 @@ def email_ayarlari_guncelle():
     conn.commit()
     conn.close()
     
-    log_islem('GÜNCELLEME', 'email_ayarlari', 0, 
-             'Email ayarları güncellendi', session.get('username'))
+    log_islem('GÃœNCELLEME', 'email_ayarlari', 0, 
+             'Email ayarlarÄ± gÃ¼ncellendi', session.get('username'))
     
-    flash('Email ayarları başarıyla güncellendi!', 'success')
+    flash('Email ayarlarÄ± baÅŸarÄ±yla gÃ¼ncellendi!', 'success')
     return redirect(url_for('email_ayarlari'))
 
 @app.route('/email-sablonu/<int:sablon_id>/duzenle', methods=['GET', 'POST'])
 @admin_required
 def email_sablon_duzenle(sablon_id):
-    """Email şablonunu düzenle"""
+    """Email ÅŸablonunu dÃ¼zenle"""
     conn = get_db()
     
     if request.method == 'POST':
@@ -2002,17 +2048,17 @@ def email_sablon_duzenle(sablon_id):
         conn.commit()
         conn.close()
         
-        log_islem('GÜNCELLEME', 'email_sablonlari', sablon_id, 
-                 'Email şablonu güncellendi', session.get('username'))
+        log_islem('GÃœNCELLEME', 'email_sablonlari', sablon_id, 
+                 'Email ÅŸablonu gÃ¼ncellendi', session.get('username'))
         
-        flash('Email şablonu başarıyla güncellendi!', 'success')
+        flash('Email ÅŸablonu baÅŸarÄ±yla gÃ¼ncellendi!', 'success')
         return redirect(url_for('email_ayarlari'))
     
     sablon = conn.execute('SELECT * FROM email_sablonlari WHERE id = %s', (sablon_id,)).fetchone()
     conn.close()
     
     if not sablon:
-        flash('Şablon bulunamadı!', 'danger')
+        flash('Åžablon bulunamadÄ±!', 'danger')
         return redirect(url_for('email_ayarlari'))
     
     return render_template('email_sablon_duzenle.html', sablon=sablon)
@@ -2020,7 +2066,7 @@ def email_sablon_duzenle(sablon_id):
 @app.route('/email-test-gonder', methods=['POST'])
 @admin_required
 def email_test_gonder():
-    """Test email gönder"""
+    """Test email gÃ¶nder"""
     test_email = request.form.get('test_email')
     
     if not test_email:
@@ -2032,26 +2078,26 @@ def email_test_gonder():
         
         test_icerik = """
         <h2>Test Email</h2>
-        <p>Bu bir test emailidir. Email ayarlarınız doğru çalışıyor!</p>
-        <p><strong>Gönderim Zamanı:</strong> {}</p>
+        <p>Bu bir test emailidir. Email ayarlarÄ±nÄ±z doÄŸru Ã§alÄ±ÅŸÄ±yor!</p>
+        <p><strong>GÃ¶nderim ZamanÄ±:</strong> {}</p>
         <hr>
         <p style="color: #666; font-size: 12px;">
-            Team Guerilla - İK Yönetim Sistemi<br>
+            Team Guerilla - Ä°K YÃ¶netim Sistemi<br>
             Test Email
         </p>
         """.format(datetime.now().strftime('%d.%m.%Y %H:%M:%S'))
         
         basarili, mesaj = email_gonder(
             test_email,
-            'Test Email - İK Portal',
+            'Test Email - Ä°K Portal',
             test_icerik,
             'test_email'
         )
         
         if basarili:
-            flash(f'Test email başarıyla gönderildi: {test_email}', 'success')
+            flash(f'Test email baÅŸarÄ±yla gÃ¶nderildi: {test_email}', 'success')
         else:
-            flash(f'Test email gönderilemedi: {mesaj}', 'danger')
+            flash(f'Test email gÃ¶nderilemedi: {mesaj}', 'danger')
             
     except Exception as e:
         flash(f'Hata: {str(e)}', 'danger')
@@ -2061,10 +2107,10 @@ def email_test_gonder():
 @app.route('/email-loglari/temizle', methods=['POST'])
 @admin_required
 def email_loglari_temizle():
-    """Email loglarını temizle"""
+    """Email loglarÄ±nÄ± temizle"""
     conn = get_db()
     
-    # 30 günden eski logları sil
+    # 30 gÃ¼nden eski loglarÄ± sil
     conn.execute("""
         DELETE FROM email_loglari 
         WHERE gonderim_tarihi < datetime('now', '-30 days')
@@ -2074,25 +2120,25 @@ def email_loglari_temizle():
     conn.commit()
     conn.close()
     
-    log_islem('SİLME', 'email_loglari', 0, 
+    log_islem('SÄ°LME', 'email_loglari', 0, 
              f'{silinen} eski email logu temizlendi', session.get('username'))
     
     flash(f'{silinen} eski email logu temizlendi!', 'success')
     return redirect(url_for('email_ayarlari'))    
     
 # ============================================
-# TANIMLAR YÖNETİMİ (Müdürlük, Direktörlük)
+# TANIMLAR YÃ–NETÄ°MÄ° (MÃ¼dÃ¼rlÃ¼k, DirektÃ¶rlÃ¼k)
 # ============================================
 
-# tanimlar() route'unu app.py'de güncelle:
+# tanimlar() route'unu app.py'de gÃ¼ncelle:
 
 @app.route('/tanimlar')
 @admin_required
 def tanimlar():
-    """Sistem tanımları - Müdürlük, Direktörlük, Çalışma Şekilleri, Kaynaklar"""
+    """Sistem tanÄ±mlarÄ± - MÃ¼dÃ¼rlÃ¼k, DirektÃ¶rlÃ¼k, Ã‡alÄ±ÅŸma Åžekilleri, Kaynaklar"""
     conn = get_db()
     
-    # İstatistikler
+    # Ä°statistikler
     stats = {
         'mudurluk_sayisi': conn.execute('SELECT COUNT(*) as cnt FROM mudurluker WHERE aktif = TRUE').fetchone()['cnt'],
         'direktorluk_sayisi': conn.execute('SELECT COUNT(*) as cnt FROM direktorlukler WHERE aktif = TRUE').fetchone()['cnt'],
@@ -2100,40 +2146,35 @@ def tanimlar():
         'kaynak_sayisi': conn.execute('SELECT COUNT(*) as cnt FROM kaynaklar WHERE aktif = TRUE').fetchone()['cnt']
     }
     
-    # Müdürlükler
+    # MÃ¼dÃ¼rlÃ¼kler
     mudurluker = conn.execute('''
         SELECT * FROM mudurluker 
         ORDER BY mudurluk_adi
     ''').fetchall()
     
-    # Direktörlükler
+    # DirektÃ¶rlÃ¼kler
     direktorlukler = conn.execute('''
         SELECT * FROM direktorlukler 
         ORDER BY direktorluk_adi
     ''').fetchall()
     
-    # Çalışma Şekilleri - YENİ
+    # Ã‡alÄ±ÅŸma Åžekilleri - YENÄ°
     calisma_sekilleri = conn.execute('''
-        SELECT cs.id,
-               cs.calisma_sekli,
-               cs.aktif,
+        SELECT cs.*,
                COUNT(hk.id) as kadro_sayisi
         FROM calisma_sekilleri cs
         LEFT JOIN hedef_kadrolar hk ON cs.calisma_sekli = hk.calisma_sekli
-        GROUP BY cs.id, cs.calisma_sekli, cs.aktif
+        GROUP BY cs.id
         ORDER BY cs.calisma_sekli
     ''').fetchall()
     
-    # Kaynaklar - YENİ
+    # Kaynaklar - YENÄ°
     kaynaklar = conn.execute('''
-        SELECT k.id,
-               k.kaynak_adi,
-               k.aciklama,
-               k.aktif,
+        SELECT k.*,
                COUNT(a.id) as aday_sayisi
         FROM kaynaklar k
         LEFT JOIN adaylar a ON k.id = a.kaynak_id
-        GROUP BY k.id, k.kaynak_adi, k.aciklama, k.aktif
+        GROUP BY k.id
         ORDER BY k.kaynak_adi
     ''').fetchall()
     
@@ -2149,7 +2190,7 @@ def tanimlar():
 @app.route('/mudurluk/ekle', methods=['POST'])
 @admin_required
 def mudurluk_ekle():
-    """Yeni müdürlük ekle"""
+    """Yeni mÃ¼dÃ¼rlÃ¼k ekle"""
     mudurluk_adi = request.form['mudurluk_adi']
     
     conn = get_db()
@@ -2159,10 +2200,10 @@ def mudurluk_ekle():
         cursor.execute('INSERT INTO mudurluker (mudurluk_adi) VALUES (%s)', (mudurluk_adi,))
         mudurluk_id = cursor.lastrowid
         conn.commit()
-        log_islem('EKLEME', 'mudurluker', mudurluk_id, f'{mudurluk_adi} müdürlüğü eklendi')
-        flash(f'Müdürlük "{mudurluk_adi}" başarıyla eklendi!', 'success')
+        log_islem('EKLEME', 'mudurluker', mudurluk_id, f'{mudurluk_adi} mÃ¼dÃ¼rlÃ¼ÄŸÃ¼ eklendi')
+        flash(f'MÃ¼dÃ¼rlÃ¼k "{mudurluk_adi}" baÅŸarÄ±yla eklendi!', 'success')
     except sqlite3.IntegrityError:
-        flash('Bu müdürlük zaten mevcut!', 'danger')
+        flash('Bu mÃ¼dÃ¼rlÃ¼k zaten mevcut!', 'danger')
     
     conn.close()
     return redirect(url_for('tanimlar'))
@@ -2170,7 +2211,7 @@ def mudurluk_ekle():
 @app.route('/direktorluk/ekle', methods=['POST'])
 @admin_required
 def direktorluk_ekle():
-    """Yeni direktörlük ekle"""
+    """Yeni direktÃ¶rlÃ¼k ekle"""
     direktorluk_adi = request.form['direktorluk_adi']
     
     conn = get_db()
@@ -2180,10 +2221,10 @@ def direktorluk_ekle():
         cursor.execute('INSERT INTO direktorlukler (direktorluk_adi) VALUES (%s)', (direktorluk_adi,))
         direktorluk_id = cursor.lastrowid
         conn.commit()
-        log_islem('EKLEME', 'direktorlukler', direktorluk_id, f'{direktorluk_adi} direktörlüğü eklendi')
-        flash(f'Direktörlük "{direktorluk_adi}" başarıyla eklendi!', 'success')
+        log_islem('EKLEME', 'direktorlukler', direktorluk_id, f'{direktorluk_adi} direktÃ¶rlÃ¼ÄŸÃ¼ eklendi')
+        flash(f'DirektÃ¶rlÃ¼k "{direktorluk_adi}" baÅŸarÄ±yla eklendi!', 'success')
     except sqlite3.IntegrityError:
-        flash('Bu direktörlük zaten mevcut!', 'danger')
+        flash('Bu direktÃ¶rlÃ¼k zaten mevcut!', 'danger')
     
     conn.close()
     return redirect(url_for('tanimlar'))
@@ -2191,15 +2232,15 @@ def direktorluk_ekle():
 @app.route('/mudurluk/<int:mudurluk_id>/sil', methods=['POST'])
 @admin_required
 def mudurluk_sil(mudurluk_id):
-    """Müdürlük sil"""
+    """MÃ¼dÃ¼rlÃ¼k sil"""
     conn = get_db()
     mudurluk = conn.execute('SELECT mudurluk_adi FROM mudurluker WHERE id = %s', (mudurluk_id,)).fetchone()
     
     if mudurluk:
         conn.execute('DELETE FROM mudurluker WHERE id = %s', (mudurluk_id,))
         conn.commit()
-        log_islem('SİLME', 'mudurluker', mudurluk_id, f'{mudurluk["mudurluk_adi"]} müdürlüğü silindi')
-        flash('Müdürlük başarıyla silindi!', 'success')
+        log_islem('SÄ°LME', 'mudurluker', mudurluk_id, f'{mudurluk["mudurluk_adi"]} mÃ¼dÃ¼rlÃ¼ÄŸÃ¼ silindi')
+        flash('MÃ¼dÃ¼rlÃ¼k baÅŸarÄ±yla silindi!', 'success')
     
     conn.close()
     return redirect(url_for('tanimlar'))
@@ -2207,15 +2248,15 @@ def mudurluk_sil(mudurluk_id):
 @app.route('/direktorluk/<int:direktorluk_id>/sil', methods=['POST'])
 @admin_required
 def direktorluk_sil(direktorluk_id):
-    """Direktörlük sil"""
+    """DirektÃ¶rlÃ¼k sil"""
     conn = get_db()
     direktorluk = conn.execute('SELECT direktorluk_adi FROM direktorlukler WHERE id = %s', (direktorluk_id,)).fetchone()
     
     if direktorluk:
         conn.execute('DELETE FROM direktorlukler WHERE id = %s', (direktorluk_id,))
         conn.commit()
-        log_islem('SİLME', 'direktorlukler', direktorluk_id, f'{direktorluk["direktorluk_adi"]} direktörlüğü silindi')
-        flash('Direktörlük başarıyla silindi!', 'success')
+        log_islem('SÄ°LME', 'direktorlukler', direktorluk_id, f'{direktorluk["direktorluk_adi"]} direktÃ¶rlÃ¼ÄŸÃ¼ silindi')
+        flash('DirektÃ¶rlÃ¼k baÅŸarÄ±yla silindi!', 'success')
     
     conn.close()
     return redirect(url_for('tanimlar'))
@@ -2223,7 +2264,7 @@ def direktorluk_sil(direktorluk_id):
 @app.route('/api/ilceler/<int:il_id>')
 @login_required
 def api_ilceler(il_id):
-    """İle göre ilçeleri getir (AJAX için)"""
+    """Ä°le gÃ¶re ilÃ§eleri getir (AJAX iÃ§in)"""
     conn = get_db()
     ilceler = conn.execute('''
         SELECT id, ilce_adi 
@@ -2236,13 +2277,13 @@ def api_ilceler(il_id):
     return jsonify([{'id': ilce['id'], 'ilce_adi': ilce['ilce_adi']} for ilce in ilceler]) 
 
 # ============================================
-# MÜŞTERİ YÖNETİMİ
+# MÃœÅžTERÄ° YÃ–NETÄ°MÄ°
 # ============================================
 
 @app.route('/musteriler')
 @admin_required
 def musteriler():
-    """Müşteri listesi (Sadece Admin)"""
+    """MÃ¼ÅŸteri listesi (Sadece Admin)"""
     conn = get_db()
     
     stats = {
@@ -2251,21 +2292,11 @@ def musteriler():
     }
     
     musteriler = conn.execute('''
-        SELECT m.id,
-               m.musteri_adi,
-               m.sektor,
-               m.yetkili_kisi,
-               m.telefon,
-               m.email,
-               m.adres,
-               m.logo_yolu,
-               m.aktif,
-               m.olusturma_tarihi,
+        SELECT m.*,
                COUNT(DISTINCT p.id) as proje_sayisi
         FROM musteriler m
         LEFT JOIN projeler p ON m.id = p.musteri_id
-        GROUP BY m.id, m.musteri_adi, m.sektor, m.yetkili_kisi, m.telefon, 
-                 m.email, m.adres, m.logo_yolu, m.aktif, m.olusturma_tarihi
+        GROUP BY m.id
         ORDER BY m.musteri_adi
     ''').fetchall()
     
@@ -2275,7 +2306,7 @@ def musteriler():
 @app.route('/musteri/ekle', methods=['GET', 'POST'])
 @admin_required
 def musteri_ekle():
-    """Yeni müşteri ekle"""
+    """Yeni mÃ¼ÅŸteri ekle"""
     if request.method == 'POST':
         musteri_adi = request.form['musteri_adi']
         sektor = request.form.get('sektor', '')
@@ -2294,7 +2325,7 @@ def musteri_ekle():
             ''', (musteri_adi, sektor, yetkili_kisi, telefon, email, adres))
             musteri_id = cursor.lastrowid
             
-            # Logo yükleme
+            # Logo yÃ¼kleme
             if 'logo' in request.files:
                 file = request.files['logo']
                 if file and file.filename and allowed_file(file.filename):
@@ -2312,21 +2343,21 @@ def musteri_ekle():
                                  (logo_yolu, musteri_id))
             
             conn.commit()
-            log_islem('EKLEME', 'musteriler', musteri_id, f'{musteri_adi} müşterisi eklendi')
-            flash(f'Müşteri "{musteri_adi}" başarıyla eklendi!', 'success')
+            log_islem('EKLEME', 'musteriler', musteri_id, f'{musteri_adi} mÃ¼ÅŸterisi eklendi')
+            flash(f'MÃ¼ÅŸteri "{musteri_adi}" baÅŸarÄ±yla eklendi!', 'success')
             conn.close()
             return redirect(url_for('musteriler'))
             
         except sqlite3.IntegrityError:
             conn.close()
-            flash('Bu müşteri adı zaten kullanılıyor!', 'danger')
+            flash('Bu mÃ¼ÅŸteri adÄ± zaten kullanÄ±lÄ±yor!', 'danger')
     
     return render_template('musteri_form.html')
 
 @app.route('/musteri/<int:musteri_id>/duzenle', methods=['GET', 'POST'])
 @admin_required
 def musteri_duzenle(musteri_id):
-    """Müşteri düzenle"""
+    """MÃ¼ÅŸteri dÃ¼zenle"""
     conn = get_db()
     
     if request.method == 'POST':
@@ -2346,7 +2377,7 @@ def musteri_duzenle(musteri_id):
             WHERE id = %s
         ''', (musteri_adi, sektor, yetkili_kisi, telefon, email, adres, aktif, musteri_id))
         
-        # Logo güncelleme
+        # Logo gÃ¼ncelleme
         if 'logo' in request.files:
             file = request.files['logo']
             if file and file.filename and allowed_file(file.filename):
@@ -2364,8 +2395,8 @@ def musteri_duzenle(musteri_id):
                              (logo_yolu, musteri_id))
         
         conn.commit()
-        log_islem('GÜNCELLEME', 'musteriler', musteri_id, f'{musteri_adi} müşterisi güncellendi')
-        flash('Müşteri başarıyla güncellendi!', 'success')
+        log_islem('GÃœNCELLEME', 'musteriler', musteri_id, f'{musteri_adi} mÃ¼ÅŸterisi gÃ¼ncellendi')
+        flash('MÃ¼ÅŸteri baÅŸarÄ±yla gÃ¼ncellendi!', 'success')
         conn.close()
         return redirect(url_for('musteriler'))
     
@@ -2373,7 +2404,7 @@ def musteri_duzenle(musteri_id):
     conn.close()
     
     if not musteri:
-        flash('Müşteri bulunamadı!', 'danger')
+        flash('MÃ¼ÅŸteri bulunamadÄ±!', 'danger')
         return redirect(url_for('musteriler'))
     
     return render_template('musteri_edit.html', musteri=musteri)
@@ -2381,22 +2412,22 @@ def musteri_duzenle(musteri_id):
 @app.route('/musteri/<int:musteri_id>/sil', methods=['POST'])
 @admin_required
 def musteri_sil(musteri_id):
-    """Müşteri sil"""
+    """MÃ¼ÅŸteri sil"""
     conn = get_db()
     musteri = conn.execute('SELECT musteri_adi FROM musteriler WHERE id = %s', (musteri_id,)).fetchone()
     
     if musteri:
         conn.execute('DELETE FROM musteriler WHERE id = %s', (musteri_id,))
         conn.commit()
-        log_islem('SİLME', 'musteriler', musteri_id, f'{musteri["musteri_adi"]} müşterisi silindi')
-        flash('Müşteri başarıyla silindi!', 'success')
+        log_islem('SÄ°LME', 'musteriler', musteri_id, f'{musteri["musteri_adi"]} mÃ¼ÅŸterisi silindi')
+        flash('MÃ¼ÅŸteri baÅŸarÄ±yla silindi!', 'success')
     
     conn.close()
     return redirect(url_for('musteriler'))
 
 @app.route('/musteri/logo/<int:musteri_id>')
 def musteri_logo(musteri_id):
-    """Müşteri logosunu göster"""
+    """MÃ¼ÅŸteri logosunu gÃ¶ster"""
     conn = get_db()
     musteri = conn.execute('SELECT logo_yolu FROM musteriler WHERE id = %s', (musteri_id,)).fetchone()
     conn.close()
@@ -2405,7 +2436,7 @@ def musteri_logo(musteri_id):
         from flask import send_file
         return send_file(musteri['logo_yolu'])
     else:
-        # Varsayılan logo
+        # VarsayÄ±lan logo
         from flask import send_file
         default_logo_path = os.path.join('static', 'images', 'default-company.png')
         if os.path.exists(default_logo_path):
@@ -2416,26 +2447,26 @@ def musteri_logo(musteri_id):
 @app.route('/adaylar/import')
 @manager_required
 def adaylar_import():
-    """Adaylar toplu yükleme sayfası"""
+    """Adaylar toplu yÃ¼kleme sayfasÄ±"""
     return render_template('adaylar_import.html')
 
 @app.route('/adaylar/import/sablon-indir')
 @manager_required
 def adaylar_import_sablon():
-    """Adaylar import şablonu indir"""
+    """Adaylar import ÅŸablonu indir"""
     wb = Workbook()
     ws = wb.active
     ws.title = "Adaylar"
     
-    # Başlık satırı
+    # BaÅŸlÄ±k satÄ±rÄ±
     headers = [
         'Ad Soyad*', 'Telefon', 'Email', 'TC Kimlik', 
-        'Proje Adı*', 'Pozisyon Adı*', 'Müdürlük', 'Direktörlük',
-        'İl*', 'İlçe', 'Mağaza Adı', 'Araç Durumu*', 
-        'Başvuru Tarihi', 'Notlar'
+        'Proje AdÄ±*', 'Pozisyon AdÄ±*', 'MÃ¼dÃ¼rlÃ¼k', 'DirektÃ¶rlÃ¼k',
+        'Ä°l*', 'Ä°lÃ§e', 'MaÄŸaza AdÄ±', 'AraÃ§ Durumu*', 
+        'BaÅŸvuru Tarihi', 'Notlar'
     ]
     
-    # Stil tanımlamaları
+    # Stil tanÄ±mlamalarÄ±
     header_font = Font(bold=True, color="FFFFFF", size=11)
     header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
     header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -2446,7 +2477,7 @@ def adaylar_import_sablon():
         bottom=Side(style='thin')
     )
     
-    # Başlıkları ekle
+    # BaÅŸlÄ±klarÄ± ekle
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = header_font
@@ -2454,12 +2485,12 @@ def adaylar_import_sablon():
         cell.alignment = header_alignment
         cell.border = border
     
-    # Açıklama satırı (2. satır)
+    # AÃ§Ä±klama satÄ±rÄ± (2. satÄ±r)
     aciklamalar = [
         'Zorunlu', 'Opsiyonel', 'Opsiyonel', 'Opsiyonel',
-        'Sistemde kayıtlı proje adı', 'Kadro pozisyon adı', 'Opsiyonel', 'Opsiyonel',
-        'Sistemde kayıtlı il adı', 'Opsiyonel', 'Opsiyonel', 'Araçlı veya Araçsız',
-        'YYYY-MM-DD formatında', 'Opsiyonel notlar'
+        'Sistemde kayÄ±tlÄ± proje adÄ±', 'Kadro pozisyon adÄ±', 'Opsiyonel', 'Opsiyonel',
+        'Sistemde kayÄ±tlÄ± il adÄ±', 'Opsiyonel', 'Opsiyonel', 'AraÃ§lÄ± veya AraÃ§sÄ±z',
+        'YYYY-MM-DD formatÄ±nda', 'Opsiyonel notlar'
     ]
     
     for col, aciklama in enumerate(aciklamalar, 1):
@@ -2467,20 +2498,20 @@ def adaylar_import_sablon():
         cell.font = Font(italic=True, size=9, color="666666")
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
     
-    # Örnek veri satırları (3-5. satırlar)
+    # Ã–rnek veri satÄ±rlarÄ± (3-5. satÄ±rlar)
     ornekler = [
-        ['Ahmet Yılmaz', '05551234567', 'ahmet@example.com', '12345678901', 
-         'Migros Projesi', 'Satış Danışmanı', 'Perakende Müdürlüğü', 'İstanbul Direktörlüğü',
-         'İstanbul', 'Kadıköy', 'Migros Acıbadem', 'Araçsız', 
-         '2025-01-15', 'İyi bir aday'],
-        ['Ayşe Demir', '05559876543', 'ayse@example.com', '98765432109',
-         'Migros Projesi', 'Reyon Görevlisi', '', '',
-         'Ankara', 'Çankaya', '', 'Araçlı',
+        ['Ahmet YÄ±lmaz', '05551234567', 'ahmet@example.com', '12345678901', 
+         'Migros Projesi', 'SatÄ±ÅŸ DanÄ±ÅŸmanÄ±', 'Perakende MÃ¼dÃ¼rlÃ¼ÄŸÃ¼', 'Ä°stanbul DirektÃ¶rlÃ¼ÄŸÃ¼',
+         'Ä°stanbul', 'KadÄ±kÃ¶y', 'Migros AcÄ±badem', 'AraÃ§sÄ±z', 
+         '2025-01-15', 'Ä°yi bir aday'],
+        ['AyÅŸe Demir', '05559876543', 'ayse@example.com', '98765432109',
+         'Migros Projesi', 'Reyon GÃ¶revlisi', '', '',
+         'Ankara', 'Ã‡ankaya', '', 'AraÃ§lÄ±',
          '2025-01-16', ''],
         ['Mehmet Kaya', '', '', '',
-         'CarrefourSA', 'Kasa Görevlisi', '', '',
-         'İzmir', 'Konak', 'CarrefourSA Alsancak', 'Araçsız',
-         '', 'Acil değerlendirilmeli']
+         'CarrefourSA', 'Kasa GÃ¶revlisi', '', '',
+         'Ä°zmir', 'Konak', 'CarrefourSA Alsancak', 'AraÃ§sÄ±z',
+         '', 'Acil deÄŸerlendirilmeli']
     ]
     
     for row_idx, ornek in enumerate(ornekler, 3):
@@ -2489,16 +2520,16 @@ def adaylar_import_sablon():
             cell.alignment = Alignment(vertical="center")
             cell.border = border
     
-    # Sütun genişliklerini ayarla
+    # SÃ¼tun geniÅŸliklerini ayarla
     column_widths = [20, 15, 25, 15, 20, 20, 20, 25, 15, 15, 20, 15, 15, 30]
     for col, width in enumerate(column_widths, 1):
         ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = width
     
-    # Satır yüksekliklerini ayarla
+    # SatÄ±r yÃ¼ksekliklerini ayarla
     ws.row_dimensions[1].height = 30
     ws.row_dimensions[2].height = 25
     
-    # Dosyayı belleğe kaydet
+    # DosyayÄ± belleÄŸe kaydet
     output = BytesIO()
     wb.save(output)
     output.seek(0)
@@ -2514,27 +2545,27 @@ def adaylar_import_sablon():
 @app.route('/adaylar/import/yukle', methods=['POST'])
 @manager_required
 def adaylar_import_yukle():
-    """Adaylar Excel dosyasını yükle ve işle"""
+    """Adaylar Excel dosyasÄ±nÄ± yÃ¼kle ve iÅŸle"""
     if 'excel_file' not in request.files:
-        return jsonify({'success': False, 'message': 'Dosya seçilmedi!'}), 400
+        return jsonify({'success': False, 'message': 'Dosya seÃ§ilmedi!'}), 400
     
     file = request.files['excel_file']
     
     if file.filename == '':
-        return jsonify({'success': False, 'message': 'Dosya seçilmedi!'}), 400
+        return jsonify({'success': False, 'message': 'Dosya seÃ§ilmedi!'}), 400
     
     if not file.filename.endswith(('.xlsx', '.xls')):
-        return jsonify({'success': False, 'message': 'Geçersiz dosya formatı! Sadece Excel dosyaları (.xlsx, .xls) kabul edilir.'}), 400
+        return jsonify({'success': False, 'message': 'GeÃ§ersiz dosya formatÄ±! Sadece Excel dosyalarÄ± (.xlsx, .xls) kabul edilir.'}), 400
     
     try:
-        # Excel dosyasını oku
+        # Excel dosyasÄ±nÄ± oku
         df = pd.read_excel(file, sheet_name=0)
         
-        # Başlık satırından sonraki açıklama satırını atla (eğer varsa)
+        # BaÅŸlÄ±k satÄ±rÄ±ndan sonraki aÃ§Ä±klama satÄ±rÄ±nÄ± atla (eÄŸer varsa)
         if len(df) > 0 and 'Zorunlu' in str(df.iloc[0].values):
             df = df.iloc[1:].reset_index(drop=True)
         
-        # Boş satırları temizle
+        # BoÅŸ satÄ±rlarÄ± temizle
         df = df.dropna(how='all')
         
         conn = get_db()
@@ -2544,59 +2575,59 @@ def adaylar_import_yukle():
         hatalar = []
         
         for index, row in df.iterrows():
-            satir_no = index + 3  # Excel'de başlık + açıklama + 1-indexed
+            satir_no = index + 3  # Excel'de baÅŸlÄ±k + aÃ§Ä±klama + 1-indexed
             
             try:
-                # Zorunlu alanları kontrol et
+                # Zorunlu alanlarÄ± kontrol et
                 ad_soyad = str(row.get('Ad Soyad*', '')).strip()
-                proje_adi = str(row.get('Proje Adı*', '')).strip()
-                pozisyon_adi = str(row.get('Pozisyon Adı*', '')).strip()
-                il_adi = str(row.get('İl*', '')).strip()
-                aracli_durum = str(row.get('Araç Durumu*', '')).strip()
+                proje_adi = str(row.get('Proje AdÄ±*', '')).strip()
+                pozisyon_adi = str(row.get('Pozisyon AdÄ±*', '')).strip()
+                il_adi = str(row.get('Ä°l*', '')).strip()
+                aracli_durum = str(row.get('AraÃ§ Durumu*', '')).strip()
                 
                 if not ad_soyad or ad_soyad == 'nan':
-                    hatalar.append(f"Satır {satir_no}: Ad Soyad zorunludur")
+                    hatalar.append(f"SatÄ±r {satir_no}: Ad Soyad zorunludur")
                     continue
                 
                 if not proje_adi or proje_adi == 'nan':
-                    hatalar.append(f"Satır {satir_no}: Proje Adı zorunludur")
+                    hatalar.append(f"SatÄ±r {satir_no}: Proje AdÄ± zorunludur")
                     continue
                 
                 if not pozisyon_adi or pozisyon_adi == 'nan':
-                    hatalar.append(f"Satır {satir_no}: Pozisyon Adı zorunludur")
+                    hatalar.append(f"SatÄ±r {satir_no}: Pozisyon AdÄ± zorunludur")
                     continue
                 
                 if not il_adi or il_adi == 'nan':
-                    hatalar.append(f"Satır {satir_no}: İl zorunludur")
+                    hatalar.append(f"SatÄ±r {satir_no}: Ä°l zorunludur")
                     continue
                 
                 if not aracli_durum or aracli_durum == 'nan':
-                    hatalar.append(f"Satır {satir_no}: Araç Durumu zorunludur")
+                    hatalar.append(f"SatÄ±r {satir_no}: AraÃ§ Durumu zorunludur")
                     continue
                 
-                # Araç durumu kontrolü
-                if aracli_durum not in ['Araçlı', 'Araçsız']:
-                    hatalar.append(f"Satır {satir_no}: Araç Durumu 'Araçlı' veya 'Araçsız' olmalıdır")
+                # AraÃ§ durumu kontrolÃ¼
+                if aracli_durum not in ['AraÃ§lÄ±', 'AraÃ§sÄ±z']:
+                    hatalar.append(f"SatÄ±r {satir_no}: AraÃ§ Durumu 'AraÃ§lÄ±' veya 'AraÃ§sÄ±z' olmalÄ±dÄ±r")
                     continue
                 
-                # Proje kontrolü
+                # Proje kontrolÃ¼
                 proje = cursor.execute('SELECT id FROM projeler WHERE proje_adi = %s AND aktif = TRUE', 
                                       (proje_adi,)).fetchone()
                 if not proje:
-                    hatalar.append(f"Satır {satir_no}: '{proje_adi}' projesi bulunamadı")
+                    hatalar.append(f"SatÄ±r {satir_no}: '{proje_adi}' projesi bulunamadÄ±")
                     continue
                 proje_id = proje['id']
                 
-                # İl kontrolü
+                # Ä°l kontrolÃ¼
                 il = cursor.execute('SELECT id FROM iller WHERE il_adi = %s AND aktif = TRUE', 
                                    (il_adi,)).fetchone()
                 if not il:
-                    hatalar.append(f"Satır {satir_no}: '{il_adi}' ili bulunamadı")
+                    hatalar.append(f"SatÄ±r {satir_no}: '{il_adi}' ili bulunamadÄ±")
                     continue
                 il_id = il['id']
                 
-                # İlçe kontrolü (opsiyonel)
-                ilce_adi = str(row.get('İlçe', '')).strip()
+                # Ä°lÃ§e kontrolÃ¼ (opsiyonel)
+                ilce_adi = str(row.get('Ä°lÃ§e', '')).strip()
                 ilce_id = None
                 if ilce_adi and ilce_adi != 'nan':
                     ilce = cursor.execute('SELECT id FROM ilceler WHERE ilce_adi = %s AND il_id = %s AND aktif = TRUE',
@@ -2604,8 +2635,8 @@ def adaylar_import_yukle():
                     if ilce:
                         ilce_id = ilce['id']
                 
-                # Müdürlük kontrolü (opsiyonel)
-                mudurluk_adi = str(row.get('Müdürlük', '')).strip()
+                # MÃ¼dÃ¼rlÃ¼k kontrolÃ¼ (opsiyonel)
+                mudurluk_adi = str(row.get('MÃ¼dÃ¼rlÃ¼k', '')).strip()
                 mudurluk_id = None
                 if mudurluk_adi and mudurluk_adi != 'nan':
                     mudurluk = cursor.execute('SELECT id FROM mudurluker WHERE mudurluk_adi = %s AND aktif = TRUE',
@@ -2613,8 +2644,8 @@ def adaylar_import_yukle():
                     if mudurluk:
                         mudurluk_id = mudurluk['id']
                 
-                # Direktörlük kontrolü (opsiyonel)
-                direktorluk_adi = str(row.get('Direktörlük', '')).strip()
+                # DirektÃ¶rlÃ¼k kontrolÃ¼ (opsiyonel)
+                direktorluk_adi = str(row.get('DirektÃ¶rlÃ¼k', '')).strip()
                 direktorluk_id = None
                 if direktorluk_adi and direktorluk_adi != 'nan':
                     direktorluk = cursor.execute('SELECT id FROM direktorlukler WHERE direktorluk_adi = %s AND aktif = TRUE',
@@ -2622,8 +2653,8 @@ def adaylar_import_yukle():
                     if direktorluk:
                         direktorluk_id = direktorluk['id']
                 
-                # Kadro ara veya oluştur
-                magaza_adi = str(row.get('Mağaza Adı', '')).strip()
+                # Kadro ara veya oluÅŸtur
+                magaza_adi = str(row.get('MaÄŸaza AdÄ±', '')).strip()
                 if magaza_adi == 'nan':
                     magaza_adi = ''
                 
@@ -2636,7 +2667,7 @@ def adaylar_import_yukle():
                 ''', (proje_id, pozisyon_adi, il_id, ilce_id, magaza_adi, aracli_durum)).fetchone()
                 
                 if not kadro:
-                    # Kadro yoksa oluştur
+                    # Kadro yoksa oluÅŸtur
                     cursor.execute('''
                         INSERT INTO hedef_kadrolar 
                         (proje_id, pozisyon_adi, mudurluk_id, direktorluk_id, il_id, ilce_id, 
@@ -2665,9 +2696,9 @@ def adaylar_import_yukle():
                 if notlar == 'nan':
                     notlar = ''
                 
-                # Başvuru tarihi
+                # BaÅŸvuru tarihi
                 basvuru_tarihi = None
-                basvuru_tarihi_raw = row.get('Başvuru Tarihi', '')
+                basvuru_tarihi_raw = row.get('BaÅŸvuru Tarihi', '')
                 if pd.notna(basvuru_tarihi_raw):
                     try:
                         if isinstance(basvuru_tarihi_raw, str):
@@ -2677,7 +2708,7 @@ def adaylar_import_yukle():
                     except:
                         pass
                 
-                # Adayı ekle
+                # AdayÄ± ekle
                 cursor.execute('''
                     INSERT INTO adaylar (kadro_id, ad_soyad, telefon, email, tc_kimlik, basvuru_tarihi, notlar)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -2687,37 +2718,37 @@ def adaylar_import_yukle():
                 basarili_sayisi += 1
                 
             except Exception as e:
-                hatalar.append(f"Satır {satir_no}: {str(e)}")
+                hatalar.append(f"SatÄ±r {satir_no}: {str(e)}")
                 continue
         
         conn.commit()
         conn.close()
         
-        # Log kaydı
+        # Log kaydÄ±
         log_islem('TOPLU_EKLEME', 'adaylar', 0, 
-                 f'{basarili_sayisi} aday Excel ile yüklendi', 
+                 f'{basarili_sayisi} aday Excel ile yÃ¼klendi', 
                  session.get('username'))
         
-        # Sonuç mesajı
+        # SonuÃ§ mesajÄ±
         if basarili_sayisi > 0 and len(hatalar) == 0:
             return jsonify({
                 'success': True,
-                'message': f'âœ… {basarili_sayisi} aday başarıyla eklendi!',
+                'message': f'âœ… {basarili_sayisi} aday baÅŸarÄ±yla eklendi!',
                 'basarili_sayisi': basarili_sayisi,
                 'hata_sayisi': 0
             })
         elif basarili_sayisi > 0 and len(hatalar) > 0:
             return jsonify({
                 'success': True,
-                'message': f'âš ï¸ {basarili_sayisi} aday eklendi, {len(hatalar)} satırda hata oluştu',
+                'message': f'âš ï¸ {basarili_sayisi} aday eklendi, {len(hatalar)} satÄ±rda hata oluÅŸtu',
                 'basarili_sayisi': basarili_sayisi,
                 'hata_sayisi': len(hatalar),
-                'hatalar': hatalar[:10]  # İlk 10 hatayı göster
+                'hatalar': hatalar[:10]  # Ä°lk 10 hatayÄ± gÃ¶ster
             })
         else:
             return jsonify({
                 'success': False,
-                'message': f'âŒ Hiçbir aday eklenemedi. {len(hatalar)} hata bulundu.',
+                'message': f'âŒ HiÃ§bir aday eklenemedi. {len(hatalar)} hata bulundu.',
                 'basarili_sayisi': 0,
                 'hata_sayisi': len(hatalar),
                 'hatalar': hatalar[:10]
@@ -2726,36 +2757,36 @@ def adaylar_import_yukle():
     except Exception as e:
         return jsonify({
             'success': False,
-            'message': f'Dosya işlenirken hata oluştu: {str(e)}'
+            'message': f'Dosya iÅŸlenirken hata oluÅŸtu: {str(e)}'
         }), 500
 
 # ============================================
-# ÇALIŞANLAR IMPORT
+# Ã‡ALIÅžANLAR IMPORT
 # ============================================
 
 @app.route('/calisanlar/import')
 @manager_required
 def calisanlar_import():
-    """Çalışanlar toplu yükleme sayfası"""
+    """Ã‡alÄ±ÅŸanlar toplu yÃ¼kleme sayfasÄ±"""
     return render_template('calisanlar_import.html')
 
 @app.route('/calisanlar/import/sablon-indir')
 @manager_required
 def calisanlar_import_sablon():
-    """Çalışanlar import şablonu indir"""
+    """Ã‡alÄ±ÅŸanlar import ÅŸablonu indir"""
     wb = Workbook()
     ws = wb.active
-    ws.title = "Çalışanlar"
+    ws.title = "Ã‡alÄ±ÅŸanlar"
     
-    # Başlık satırı
+    # BaÅŸlÄ±k satÄ±rÄ±
     headers = [
         'Ad Soyad*', 'Telefon', 'Email', 'TC Kimlik*', 
-        'Proje Adı*', 'Pozisyon Adı*', 'Müdürlük', 'Direktörlük',
-        'İl*', 'İlçe', 'Mağaza Adı', 'Araç Durumu*', 
-        'İşe Başlama Tarihi*'
+        'Proje AdÄ±*', 'Pozisyon AdÄ±*', 'MÃ¼dÃ¼rlÃ¼k', 'DirektÃ¶rlÃ¼k',
+        'Ä°l*', 'Ä°lÃ§e', 'MaÄŸaza AdÄ±', 'AraÃ§ Durumu*', 
+        'Ä°ÅŸe BaÅŸlama Tarihi*'
     ]
     
-    # Stil tanımlamaları
+    # Stil tanÄ±mlamalarÄ±
     header_font = Font(bold=True, color="FFFFFF", size=11)
     header_fill = PatternFill(start_color="28a745", end_color="28a745", fill_type="solid")
     header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -2766,7 +2797,7 @@ def calisanlar_import_sablon():
         bottom=Side(style='thin')
     )
     
-    # Başlıkları ekle
+    # BaÅŸlÄ±klarÄ± ekle
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col, value=header)
         cell.font = header_font
@@ -2774,12 +2805,12 @@ def calisanlar_import_sablon():
         cell.alignment = header_alignment
         cell.border = border
     
-    # Açıklama satırı
+    # AÃ§Ä±klama satÄ±rÄ±
     aciklamalar = [
         'Zorunlu', 'Opsiyonel', 'Opsiyonel', 'Zorunlu (11 haneli)',
-        'Sistemde kayıtlı proje adı', 'Kadro pozisyon adı', 'Opsiyonel', 'Opsiyonel',
-        'Sistemde kayıtlı il adı', 'Opsiyonel', 'Opsiyonel', 'Araçlı veya Araçsız',
-        'YYYY-MM-DD formatında zorunlu'
+        'Sistemde kayÄ±tlÄ± proje adÄ±', 'Kadro pozisyon adÄ±', 'Opsiyonel', 'Opsiyonel',
+        'Sistemde kayÄ±tlÄ± il adÄ±', 'Opsiyonel', 'Opsiyonel', 'AraÃ§lÄ± veya AraÃ§sÄ±z',
+        'YYYY-MM-DD formatÄ±nda zorunlu'
     ]
     
     for col, aciklama in enumerate(aciklamalar, 1):
@@ -2787,15 +2818,15 @@ def calisanlar_import_sablon():
         cell.font = Font(italic=True, size=9, color="666666")
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
     
-    # Örnek veri satırları
+    # Ã–rnek veri satÄ±rlarÄ±
     ornekler = [
-        ['Fatma Şahin', '05551112233', 'fatma@example.com', '11122233344',
-         'Migros Projesi', 'Satış Danışmanı', 'Perakende Müdürlüğü', 'İstanbul Direktörlüğü',
-         'İstanbul', 'Kadıköy', 'Migros Acıbadem', 'Araçsız',
+        ['Fatma Åžahin', '05551112233', 'fatma@example.com', '11122233344',
+         'Migros Projesi', 'SatÄ±ÅŸ DanÄ±ÅŸmanÄ±', 'Perakende MÃ¼dÃ¼rlÃ¼ÄŸÃ¼', 'Ä°stanbul DirektÃ¶rlÃ¼ÄŸÃ¼',
+         'Ä°stanbul', 'KadÄ±kÃ¶y', 'Migros AcÄ±badem', 'AraÃ§sÄ±z',
          '2025-01-10'],
-        ['Ali Yılmaz', '05559998877', 'ali@example.com', '55566677788',
-         'CarrefourSA', 'Reyon Görevlisi', '', '',
-         'Ankara', '', 'CarrefourSA Kızılay', 'Araçlı',
+        ['Ali YÄ±lmaz', '05559998877', 'ali@example.com', '55566677788',
+         'CarrefourSA', 'Reyon GÃ¶revlisi', '', '',
+         'Ankara', '', 'CarrefourSA KÄ±zÄ±lay', 'AraÃ§lÄ±',
          '2025-01-05']
     ]
     
@@ -2805,16 +2836,16 @@ def calisanlar_import_sablon():
             cell.alignment = Alignment(vertical="center")
             cell.border = border
     
-    # Sütun genişliklerini ayarla
+    # SÃ¼tun geniÅŸliklerini ayarla
     column_widths = [20, 15, 25, 15, 20, 20, 20, 25, 15, 15, 20, 15, 20]
     for col, width in enumerate(column_widths, 1):
         ws.column_dimensions[ws.cell(row=1, column=col).column_letter].width = width
     
-    # Satır yüksekliklerini ayarla
+    # SatÄ±r yÃ¼ksekliklerini ayarla
     ws.row_dimensions[1].height = 30
     ws.row_dimensions[2].height = 25
     
-    # Dosyayı belleğe kaydet
+    # DosyayÄ± belleÄŸe kaydet
     output = BytesIO()
     wb.save(output)
     output.seek(0)
@@ -2830,27 +2861,27 @@ def calisanlar_import_sablon():
 @app.route('/calisanlar/import/yukle', methods=['POST'])
 @manager_required
 def calisanlar_import_yukle():
-    """Çalışanlar Excel dosyasını yükle ve işle"""
+    """Ã‡alÄ±ÅŸanlar Excel dosyasÄ±nÄ± yÃ¼kle ve iÅŸle"""
     if 'excel_file' not in request.files:
-        return jsonify({'success': False, 'message': 'Dosya seçilmedi!'}), 400
+        return jsonify({'success': False, 'message': 'Dosya seÃ§ilmedi!'}), 400
     
     file = request.files['excel_file']
     
     if file.filename == '':
-        return jsonify({'success': False, 'message': 'Dosya seçilmedi!'}), 400
+        return jsonify({'success': False, 'message': 'Dosya seÃ§ilmedi!'}), 400
     
     if not file.filename.endswith(('.xlsx', '.xls')):
-        return jsonify({'success': False, 'message': 'Geçersiz dosya formatı! Sadece Excel dosyaları (.xlsx, .xls) kabul edilir.'}), 400
+        return jsonify({'success': False, 'message': 'GeÃ§ersiz dosya formatÄ±! Sadece Excel dosyalarÄ± (.xlsx, .xls) kabul edilir.'}), 400
     
     try:
-        # Excel dosyasını oku
+        # Excel dosyasÄ±nÄ± oku
         df = pd.read_excel(file, sheet_name=0)
         
-        # Başlık satırından sonraki açıklama satırını atla
+        # BaÅŸlÄ±k satÄ±rÄ±ndan sonraki aÃ§Ä±klama satÄ±rÄ±nÄ± atla
         if len(df) > 0 and 'Zorunlu' in str(df.iloc[0].values):
             df = df.iloc[1:].reset_index(drop=True)
         
-        # Boş satırları temizle
+        # BoÅŸ satÄ±rlarÄ± temizle
         df = df.dropna(how='all')
         
         conn = get_db()
@@ -2863,47 +2894,47 @@ def calisanlar_import_yukle():
             satir_no = index + 3
             
             try:
-                # Zorunlu alanları kontrol et
+                # Zorunlu alanlarÄ± kontrol et
                 ad_soyad = str(row.get('Ad Soyad*', '')).strip()
                 tc_kimlik = str(row.get('TC Kimlik*', '')).strip()
-                proje_adi = str(row.get('Proje Adı*', '')).strip()
-                pozisyon_adi = str(row.get('Pozisyon Adı*', '')).strip()
-                il_adi = str(row.get('İl*', '')).strip()
-                aracli_durum = str(row.get('Araç Durumu*', '')).strip()
+                proje_adi = str(row.get('Proje AdÄ±*', '')).strip()
+                pozisyon_adi = str(row.get('Pozisyon AdÄ±*', '')).strip()
+                il_adi = str(row.get('Ä°l*', '')).strip()
+                aracli_durum = str(row.get('AraÃ§ Durumu*', '')).strip()
                 
                 if not ad_soyad or ad_soyad == 'nan':
-                    hatalar.append(f"Satır {satir_no}: Ad Soyad zorunludur")
+                    hatalar.append(f"SatÄ±r {satir_no}: Ad Soyad zorunludur")
                     continue
                 
                 if not tc_kimlik or tc_kimlik == 'nan' or len(tc_kimlik) != 11:
-                    hatalar.append(f"Satır {satir_no}: TC Kimlik zorunludur ve 11 haneli olmalıdır")
+                    hatalar.append(f"SatÄ±r {satir_no}: TC Kimlik zorunludur ve 11 haneli olmalÄ±dÄ±r")
                     continue
                 
                 if not proje_adi or proje_adi == 'nan':
-                    hatalar.append(f"Satır {satir_no}: Proje Adı zorunludur")
+                    hatalar.append(f"SatÄ±r {satir_no}: Proje AdÄ± zorunludur")
                     continue
                 
                 if not pozisyon_adi or pozisyon_adi == 'nan':
-                    hatalar.append(f"Satır {satir_no}: Pozisyon Adı zorunludur")
+                    hatalar.append(f"SatÄ±r {satir_no}: Pozisyon AdÄ± zorunludur")
                     continue
                 
                 if not il_adi or il_adi == 'nan':
-                    hatalar.append(f"Satır {satir_no}: İl zorunludur")
+                    hatalar.append(f"SatÄ±r {satir_no}: Ä°l zorunludur")
                     continue
                 
                 if not aracli_durum or aracli_durum == 'nan':
-                    hatalar.append(f"Satır {satir_no}: Araç Durumu zorunludur")
+                    hatalar.append(f"SatÄ±r {satir_no}: AraÃ§ Durumu zorunludur")
                     continue
                 
-                if aracli_durum not in ['Araçlı', 'Araçsız']:
-                    hatalar.append(f"Satır {satir_no}: Araç Durumu 'Araçlı' veya 'Araçsız' olmalıdır")
+                if aracli_durum not in ['AraÃ§lÄ±', 'AraÃ§sÄ±z']:
+                    hatalar.append(f"SatÄ±r {satir_no}: AraÃ§ Durumu 'AraÃ§lÄ±' veya 'AraÃ§sÄ±z' olmalÄ±dÄ±r")
                     continue
                 
-                # İşe başlama tarihi kontrolü
+                # Ä°ÅŸe baÅŸlama tarihi kontrolÃ¼
                 ise_baslama_tarihi = None
-                ise_baslama_tarihi_raw = row.get('İşe Başlama Tarihi*', '')
+                ise_baslama_tarihi_raw = row.get('Ä°ÅŸe BaÅŸlama Tarihi*', '')
                 if pd.isna(ise_baslama_tarihi_raw):
-                    hatalar.append(f"Satır {satir_no}: İşe Başlama Tarihi zorunludur")
+                    hatalar.append(f"SatÄ±r {satir_no}: Ä°ÅŸe BaÅŸlama Tarihi zorunludur")
                     continue
                 
                 try:
@@ -2912,27 +2943,27 @@ def calisanlar_import_yukle():
                     else:
                         ise_baslama_tarihi = ise_baslama_tarihi_raw.strftime('%Y-%m-%d')
                 except:
-                    hatalar.append(f"Satır {satir_no}: İşe Başlama Tarihi formatı hatalı (YYYY-MM-DD olmalı)")
+                    hatalar.append(f"SatÄ±r {satir_no}: Ä°ÅŸe BaÅŸlama Tarihi formatÄ± hatalÄ± (YYYY-MM-DD olmalÄ±)")
                     continue
                 
-                # Proje kontrolü
+                # Proje kontrolÃ¼
                 proje = cursor.execute('SELECT id FROM projeler WHERE proje_adi = %s AND aktif = TRUE',
                                       (proje_adi,)).fetchone()
                 if not proje:
-                    hatalar.append(f"Satır {satir_no}: '{proje_adi}' projesi bulunamadı")
+                    hatalar.append(f"SatÄ±r {satir_no}: '{proje_adi}' projesi bulunamadÄ±")
                     continue
                 proje_id = proje['id']
                 
-                # İl kontrolü
+                # Ä°l kontrolÃ¼
                 il = cursor.execute('SELECT id FROM iller WHERE il_adi = %s AND aktif = TRUE',
                                    (il_adi,)).fetchone()
                 if not il:
-                    hatalar.append(f"Satır {satir_no}: '{il_adi}' ili bulunamadı")
+                    hatalar.append(f"SatÄ±r {satir_no}: '{il_adi}' ili bulunamadÄ±")
                     continue
                 il_id = il['id']
                 
-                # İlçe, Müdürlük, Direktörlük kontrolü (opsiyonel)
-                ilce_adi = str(row.get('İlçe', '')).strip()
+                # Ä°lÃ§e, MÃ¼dÃ¼rlÃ¼k, DirektÃ¶rlÃ¼k kontrolÃ¼ (opsiyonel)
+                ilce_adi = str(row.get('Ä°lÃ§e', '')).strip()
                 ilce_id = None
                 if ilce_adi and ilce_adi != 'nan':
                     ilce = cursor.execute('SELECT id FROM ilceler WHERE ilce_adi = %s AND il_id = %s AND aktif = TRUE',
@@ -2940,7 +2971,7 @@ def calisanlar_import_yukle():
                     if ilce:
                         ilce_id = ilce['id']
                 
-                mudurluk_adi = str(row.get('Müdürlük', '')).strip()
+                mudurluk_adi = str(row.get('MÃ¼dÃ¼rlÃ¼k', '')).strip()
                 mudurluk_id = None
                 if mudurluk_adi and mudurluk_adi != 'nan':
                     mudurluk = cursor.execute('SELECT id FROM mudurluker WHERE mudurluk_adi = %s AND aktif = TRUE',
@@ -2948,7 +2979,7 @@ def calisanlar_import_yukle():
                     if mudurluk:
                         mudurluk_id = mudurluk['id']
                 
-                direktorluk_adi = str(row.get('Direktörlük', '')).strip()
+                direktorluk_adi = str(row.get('DirektÃ¶rlÃ¼k', '')).strip()
                 direktorluk_id = None
                 if direktorluk_adi and direktorluk_adi != 'nan':
                     direktorluk = cursor.execute('SELECT id FROM direktorlukler WHERE direktorluk_adi = %s AND aktif = TRUE',
@@ -2956,8 +2987,8 @@ def calisanlar_import_yukle():
                     if direktorluk:
                         direktorluk_id = direktorluk['id']
                 
-                # Kadro ara veya oluştur
-                magaza_adi = str(row.get('Mağaza Adı', '')).strip()
+                # Kadro ara veya oluÅŸtur
+                magaza_adi = str(row.get('MaÄŸaza AdÄ±', '')).strip()
                 if magaza_adi == 'nan':
                     magaza_adi = ''
                 
@@ -2970,7 +3001,7 @@ def calisanlar_import_yukle():
                 ''', (proje_id, pozisyon_adi, il_id, ilce_id, magaza_adi, aracli_durum)).fetchone()
                 
                 if not kadro:
-                    # Kadro yoksa oluştur
+                    # Kadro yoksa oluÅŸtur
                     cursor.execute('''
                         INSERT INTO hedef_kadrolar
                         (proje_id, pozisyon_adi, mudurluk_id, direktorluk_id, il_id, ilce_id,
@@ -2981,7 +3012,7 @@ def calisanlar_import_yukle():
                     kadro_id = cursor.lastrowid
                 else:
                     kadro_id = kadro['id']
-                    # Dolu sayısını artır
+                    # Dolu sayÄ±sÄ±nÄ± artÄ±r
                     cursor.execute('''
                         UPDATE hedef_kadrolar
                         SET dolu_kisi_sayisi = dolu_kisi_sayisi + 1
@@ -2997,7 +3028,7 @@ def calisanlar_import_yukle():
                 if email == 'nan':
                     email = ''
                 
-                # Çalışanı ekle (aday_id olmadan direkt ekleme)
+                # Ã‡alÄ±ÅŸanÄ± ekle (aday_id olmadan direkt ekleme)
                 cursor.execute('''
                     INSERT INTO calisanlar 
                     (aday_id, kadro_id, ad_soyad, telefon, email, tc_kimlik, ise_baslama_tarihi)
@@ -3007,29 +3038,29 @@ def calisanlar_import_yukle():
                 basarili_sayisi += 1
                 
             except Exception as e:
-                hatalar.append(f"Satır {satir_no}: {str(e)}")
+                hatalar.append(f"SatÄ±r {satir_no}: {str(e)}")
                 continue
         
         conn.commit()
         conn.close()
         
-        # Log kaydı
+        # Log kaydÄ±
         log_islem('TOPLU_EKLEME', 'calisanlar', 0,
-                 f'{basarili_sayisi} çalışan Excel ile yüklendi',
+                 f'{basarili_sayisi} Ã§alÄ±ÅŸan Excel ile yÃ¼klendi',
                  session.get('username'))
         
-        # Sonuç mesajı
+        # SonuÃ§ mesajÄ±
         if basarili_sayisi > 0 and len(hatalar) == 0:
             return jsonify({
                 'success': True,
-                'message': f'âœ… {basarili_sayisi} çalışan başarıyla eklendi!',
+                'message': f'âœ… {basarili_sayisi} Ã§alÄ±ÅŸan baÅŸarÄ±yla eklendi!',
                 'basarili_sayisi': basarili_sayisi,
                 'hata_sayisi': 0
             })
         elif basarili_sayisi > 0 and len(hatalar) > 0:
             return jsonify({
                 'success': True,
-                'message': f'âš ï¸ {basarili_sayisi} çalışan eklendi, {len(hatalar)} satırda hata oluştu',
+                'message': f'âš ï¸ {basarili_sayisi} Ã§alÄ±ÅŸan eklendi, {len(hatalar)} satÄ±rda hata oluÅŸtu',
                 'basarili_sayisi': basarili_sayisi,
                 'hata_sayisi': len(hatalar),
                 'hatalar': hatalar[:10]
@@ -3037,7 +3068,7 @@ def calisanlar_import_yukle():
         else:
             return jsonify({
                 'success': False,
-                'message': f'âŒ Hiçbir çalışan eklenemedi. {len(hatalar)} hata bulundu.',
+                'message': f'âŒ HiÃ§bir Ã§alÄ±ÅŸan eklenemedi. {len(hatalar)} hata bulundu.',
                 'basarili_sayisi': 0,
                 'hata_sayisi': len(hatalar),
                 'hatalar': hatalar[:10]
@@ -3046,7 +3077,7 @@ def calisanlar_import_yukle():
     except Exception as e:
         return jsonify({
             'success': False,
-            'message': f'Dosya işlenirken hata oluştu: {str(e)}'
+            'message': f'Dosya iÅŸlenirken hata oluÅŸtu: {str(e)}'
         }), 500            
 
 @app.route('/kaynaklar')
@@ -3061,18 +3092,15 @@ def kaynaklar():
     }
     
     kaynaklar = conn.execute('''
-        SELECT k.id,
-               k.kaynak_adi,
-               k.aciklama,
-               k.aktif,
+        SELECT k.*,
                COUNT(a.id) as aday_sayisi
         FROM kaynaklar k
         LEFT JOIN adaylar a ON k.id = a.kaynak_id
-        GROUP BY k.id, k.kaynak_adi, k.aciklama, k.aktif
+        GROUP BY k.id
         ORDER BY k.kaynak_adi
     ''').fetchall()
     
-    # Manuel girilen diğer kaynaklar
+    # Manuel girilen diÄŸer kaynaklar
     diger_kaynaklar = conn.execute('''
         SELECT kaynak_diger, COUNT(*) as sayi
         FROM adaylar
@@ -3103,8 +3131,8 @@ def kaynak_ekle():
                       (kaynak_adi, aciklama))
         kaynak_id = cursor.lastrowid
         conn.commit()
-        log_islem('EKLEME', 'kaynaklar', kaynak_id, f'{kaynak_adi} kaynağı eklendi')
-        flash(f'Kaynak "{kaynak_adi}" başarıyla eklendi!', 'success')
+        log_islem('EKLEME', 'kaynaklar', kaynak_id, f'{kaynak_adi} kaynaÄŸÄ± eklendi')
+        flash(f'Kaynak "{kaynak_adi}" baÅŸarÄ±yla eklendi!', 'success')
     except sqlite3.IntegrityError:
         flash('Bu kaynak zaten mevcut!', 'danger')
     
@@ -3117,19 +3145,19 @@ def kaynak_sil(kaynak_id):
     """Kaynak sil"""
     conn = get_db()
     
-    # Önce bu kaynağı kullanan aday var mı kontrol et
+    # Ã–nce bu kaynaÄŸÄ± kullanan aday var mÄ± kontrol et
     aday_sayisi = conn.execute('SELECT COUNT(*) as cnt FROM adaylar WHERE kaynak_id = %s', 
                                (kaynak_id,)).fetchone()['cnt']
     
     if aday_sayisi > 0:
-        flash(f'Bu kaynak {aday_sayisi} aday tarafından kullanılıyor, silinemez!', 'danger')
+        flash(f'Bu kaynak {aday_sayisi} aday tarafÄ±ndan kullanÄ±lÄ±yor, silinemez!', 'danger')
     else:
         kaynak = conn.execute('SELECT kaynak_adi FROM kaynaklar WHERE id = %s', (kaynak_id,)).fetchone()
         if kaynak:
             conn.execute('DELETE FROM kaynaklar WHERE id = %s', (kaynak_id,))
             conn.commit()
-            log_islem('SİLME', 'kaynaklar', kaynak_id, f'{kaynak["kaynak_adi"]} kaynağı silindi')
-            flash('Kaynak başarıyla silindi!', 'success')
+            log_islem('SÄ°LME', 'kaynaklar', kaynak_id, f'{kaynak["kaynak_adi"]} kaynaÄŸÄ± silindi')
+            flash('Kaynak baÅŸarÄ±yla silindi!', 'success')
     
     conn.close()
     return redirect(url_for('kaynaklar'))
@@ -3137,7 +3165,7 @@ def kaynak_sil(kaynak_id):
 @app.route('/kaynak/<int:kaynak_id>/toggle', methods=['POST'])
 @admin_required
 def kaynak_toggle(kaynak_id):
-    """Kaynak aktif/pasif durumu değiştir"""
+    """Kaynak aktif/pasif durumu deÄŸiÅŸtir"""
     conn = get_db()
     
     kaynak = conn.execute('SELECT * FROM kaynaklar WHERE id = %s', (kaynak_id,)).fetchone()
@@ -3147,9 +3175,9 @@ def kaynak_toggle(kaynak_id):
         conn.commit()
         
         durum_text = 'aktif' if yeni_durum else 'pasif'
-        log_islem('GÜNCELLEME', 'kaynaklar', kaynak_id, 
-                 f'{kaynak["kaynak_adi"]} kaynağı {durum_text} yapıldı')
-        flash(f'Kaynak {durum_text} yapıldı!', 'success')
+        log_islem('GÃœNCELLEME', 'kaynaklar', kaynak_id, 
+                 f'{kaynak["kaynak_adi"]} kaynaÄŸÄ± {durum_text} yapÄ±ldÄ±')
+        flash(f'Kaynak {durum_text} yapÄ±ldÄ±!', 'success')
     
     conn.close()
     return redirect(url_for('kaynaklar'))   
@@ -3157,7 +3185,7 @@ def kaynak_toggle(kaynak_id):
 @app.route('/calisma-sekilleri')
 @admin_required
 def calisma_sekilleri():
-    """Çalışma şekilleri listesi (Sadece Admin)"""
+    """Ã‡alÄ±ÅŸma ÅŸekilleri listesi (Sadece Admin)"""
     conn = get_db()
     
     stats = {
@@ -3166,13 +3194,11 @@ def calisma_sekilleri():
     }
     
     calisma_sekilleri = conn.execute('''
-        SELECT cs.id,
-               cs.calisma_sekli,
-               cs.aktif,
+        SELECT cs.*,
                COUNT(hk.id) as kadro_sayisi
         FROM calisma_sekilleri cs
         LEFT JOIN hedef_kadrolar hk ON cs.calisma_sekli = hk.calisma_sekli
-        GROUP BY cs.id, cs.calisma_sekli, cs.aktif
+        GROUP BY cs.id
         ORDER BY cs.calisma_sekli
     ''').fetchall()
     
@@ -3185,7 +3211,7 @@ def calisma_sekilleri():
 @app.route('/calisma-sekli/ekle', methods=['POST'])
 @admin_required
 def calisma_sekli_ekle():
-    """Yeni çalışma şekli ekle"""
+    """Yeni Ã§alÄ±ÅŸma ÅŸekli ekle"""
     calisma_sekli = request.form['calisma_sekli']
     aciklama = request.form.get('aciklama', '')
     
@@ -3197,10 +3223,10 @@ def calisma_sekli_ekle():
                       (calisma_sekli, aciklama))
         sekil_id = cursor.lastrowid
         conn.commit()
-        log_islem('EKLEME', 'calisma_sekilleri', sekil_id, f'{calisma_sekli} çalışma şekli eklendi')
-        flash(f'Çalışma şekli "{calisma_sekli}" başarıyla eklendi!', 'success')
+        log_islem('EKLEME', 'calisma_sekilleri', sekil_id, f'{calisma_sekli} Ã§alÄ±ÅŸma ÅŸekli eklendi')
+        flash(f'Ã‡alÄ±ÅŸma ÅŸekli "{calisma_sekli}" baÅŸarÄ±yla eklendi!', 'success')
     except sqlite3.IntegrityError:
-        flash('Bu çalışma şekli zaten mevcut!', 'danger')
+        flash('Bu Ã§alÄ±ÅŸma ÅŸekli zaten mevcut!', 'danger')
     
     conn.close()
     return redirect(url_for('calisma_sekilleri'))
@@ -3208,22 +3234,22 @@ def calisma_sekli_ekle():
 @app.route('/calisma-sekli/<int:sekil_id>/sil', methods=['POST'])
 @admin_required
 def calisma_sekli_sil(sekil_id):
-    """Çalışma şekli sil"""
+    """Ã‡alÄ±ÅŸma ÅŸekli sil"""
     conn = get_db()
     
-    # Önce bu çalışma şeklini kullanan kadro var mı kontrol et
+    # Ã–nce bu Ã§alÄ±ÅŸma ÅŸeklini kullanan kadro var mÄ± kontrol et
     kadro_sayisi = conn.execute('SELECT COUNT(*) as cnt FROM hedef_kadrolar WHERE calisma_sekli = (SELECT calisma_sekli FROM calisma_sekilleri WHERE id = %s)', 
                                 (sekil_id,)).fetchone()['cnt']
     
     if kadro_sayisi > 0:
-        flash(f'Bu çalışma şekli {kadro_sayisi} kadro tarafından kullanılıyor, silinemez!', 'danger')
+        flash(f'Bu Ã§alÄ±ÅŸma ÅŸekli {kadro_sayisi} kadro tarafÄ±ndan kullanÄ±lÄ±yor, silinemez!', 'danger')
     else:
         sekil = conn.execute('SELECT calisma_sekli FROM calisma_sekilleri WHERE id = %s', (sekil_id,)).fetchone()
         if sekil:
             conn.execute('DELETE FROM calisma_sekilleri WHERE id = %s', (sekil_id,))
             conn.commit()
-            log_islem('SİLME', 'calisma_sekilleri', sekil_id, f'{sekil["calisma_sekli"]} çalışma şekli silindi')
-            flash('Çalışma şekli başarıyla silindi!', 'success')
+            log_islem('SÄ°LME', 'calisma_sekilleri', sekil_id, f'{sekil["calisma_sekli"]} Ã§alÄ±ÅŸma ÅŸekli silindi')
+            flash('Ã‡alÄ±ÅŸma ÅŸekli baÅŸarÄ±yla silindi!', 'success')
     
     conn.close()
     return redirect(url_for('calisma_sekilleri'))
@@ -3231,7 +3257,7 @@ def calisma_sekli_sil(sekil_id):
 @app.route('/calisma-sekli/<int:sekil_id>/toggle', methods=['POST'])
 @admin_required
 def calisma_sekli_toggle(sekil_id):
-    """Çalışma şekli aktif/pasif durumu değiştir"""
+    """Ã‡alÄ±ÅŸma ÅŸekli aktif/pasif durumu deÄŸiÅŸtir"""
     conn = get_db()
     
     sekil = conn.execute('SELECT * FROM calisma_sekilleri WHERE id = %s', (sekil_id,)).fetchone()
@@ -3241,9 +3267,9 @@ def calisma_sekli_toggle(sekil_id):
         conn.commit()
         
         durum_text = 'aktif' if yeni_durum else 'pasif'
-        log_islem('GÜNCELLEME', 'calisma_sekilleri', sekil_id, 
-                 f'{sekil["calisma_sekli"]} çalışma şekli {durum_text} yapıldı')
-        flash(f'Çalışma şekli {durum_text} yapıldı!', 'success')
+        log_islem('GÃœNCELLEME', 'calisma_sekilleri', sekil_id, 
+                 f'{sekil["calisma_sekli"]} Ã§alÄ±ÅŸma ÅŸekli {durum_text} yapÄ±ldÄ±')
+        flash(f'Ã‡alÄ±ÅŸma ÅŸekli {durum_text} yapÄ±ldÄ±!', 'success')
     
     conn.close()
     return redirect(url_for('calisma_sekilleri'))    
@@ -3251,10 +3277,10 @@ def calisma_sekli_toggle(sekil_id):
 @app.route('/cikis-kayitlari/excel-export')
 @login_required
 def cikis_kayitlari_excel_export():
-    """Çıkış kayıtlarını Excel'e aktar"""
+    """Ã‡Ä±kÄ±ÅŸ kayÄ±tlarÄ±nÄ± Excel'e aktar"""
     conn = get_db()
     
-    # Çıkış kayıtlarını getir
+    # Ã‡Ä±kÄ±ÅŸ kayÄ±tlarÄ±nÄ± getir
     kayitlar = conn.execute('''
         SELECT ck.*,
                c.ad_soyad,
@@ -3282,12 +3308,12 @@ def cikis_kayitlari_excel_export():
     
     conn.close()
     
-    # Excel workbook oluştur
+    # Excel workbook oluÅŸtur
     wb = Workbook()
     ws = wb.active
-    ws.title = "Çıkış Kayıtları"
+    ws.title = "Ã‡Ä±kÄ±ÅŸ KayÄ±tlarÄ±"
     
-    # Stil tanımlamaları
+    # Stil tanÄ±mlamalarÄ±
     header_font = Font(bold=True, color="FFFFFF", size=11)
     header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
     header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -3302,20 +3328,20 @@ def cikis_kayitlari_excel_export():
         bottom=Side(style='thin')
     )
     
-    # Başlıklar
+    # BaÅŸlÄ±klar
     headers = [
-        'Kayıt ID', 'Ad Soyad', 'TC Kimlik', 'Telefon', 'Email',
-        'Proje', 'Pozisyon', 'Müdürlük', 'Direktörlük',
-        'İl', 'İlçe', 'Mağaza',
-        'İşe Başlama', 'Çıkış Tarihi', 'Çıkış Nedeni',
-        'Liste Durumu', 'Tekrar İşe Alınabilir',
-        'Zimmet Teslim', 'Kıyafet Teslim', 'Anahtar Teslim', 'Kimlik Teslim',
-        'İhbar Tazminat', 'Kıdem Tazminat',
-        'Yönetici Notu', 'İK Notu', 'Genel Değerlendirme',
-        'İşlem Yapan', 'Kayıt Tarihi'
+        'KayÄ±t ID', 'Ad Soyad', 'TC Kimlik', 'Telefon', 'Email',
+        'Proje', 'Pozisyon', 'MÃ¼dÃ¼rlÃ¼k', 'DirektÃ¶rlÃ¼k',
+        'Ä°l', 'Ä°lÃ§e', 'MaÄŸaza',
+        'Ä°ÅŸe BaÅŸlama', 'Ã‡Ä±kÄ±ÅŸ Tarihi', 'Ã‡Ä±kÄ±ÅŸ Nedeni',
+        'Liste Durumu', 'Tekrar Ä°ÅŸe AlÄ±nabilir',
+        'Zimmet Teslim', 'KÄ±yafet Teslim', 'Anahtar Teslim', 'Kimlik Teslim',
+        'Ä°hbar Tazminat', 'KÄ±dem Tazminat',
+        'YÃ¶netici Notu', 'Ä°K Notu', 'Genel DeÄŸerlendirme',
+        'Ä°ÅŸlem Yapan', 'KayÄ±t Tarihi'
     ]
     
-    # Başlık satırını yaz
+    # BaÅŸlÄ±k satÄ±rÄ±nÄ± yaz
     for col_num, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col_num)
         cell.value = header
@@ -3324,7 +3350,7 @@ def cikis_kayitlari_excel_export():
         cell.alignment = header_alignment
         cell.border = border
     
-    # Veri satırlarını yaz
+    # Veri satÄ±rlarÄ±nÄ± yaz
     for row_num, kayit in enumerate(kayitlar, 2):
         # Temel bilgiler
         ws.cell(row=row_num, column=1, value=kayit['id']).alignment = center_alignment
@@ -3333,7 +3359,7 @@ def cikis_kayitlari_excel_export():
         ws.cell(row=row_num, column=4, value=kayit['telefon'] or '-').alignment = center_alignment
         ws.cell(row=row_num, column=5, value=kayit['email'] or '-').alignment = cell_alignment
         
-        # İş bilgileri
+        # Ä°ÅŸ bilgileri
         ws.cell(row=row_num, column=6, value=kayit['proje_adi'] or '-').alignment = cell_alignment
         ws.cell(row=row_num, column=7, value=kayit['pozisyon_adi'] or '-').alignment = cell_alignment
         ws.cell(row=row_num, column=8, value=kayit['mudurluk_adi'] or '-').alignment = cell_alignment
@@ -3348,10 +3374,10 @@ def cikis_kayitlari_excel_export():
         ws.cell(row=row_num, column=13, value=kayit['ise_baslama_tarihi'] or '-').alignment = center_alignment
         ws.cell(row=row_num, column=14, value=kayit['cikis_tarihi']).alignment = center_alignment
         
-        # Çıkış bilgileri
+        # Ã‡Ä±kÄ±ÅŸ bilgileri
         ws.cell(row=row_num, column=15, value=kayit['cikis_nedeni']).alignment = cell_alignment
         ws.cell(row=row_num, column=16, value=kayit['liste_durumu']).alignment = center_alignment
-        ws.cell(row=row_num, column=17, value='Evet' if kayit['tekrar_ise_alinabilir'] else 'Hayır').alignment = center_alignment
+        ws.cell(row=row_num, column=17, value='Evet' if kayit['tekrar_ise_alinabilir'] else 'HayÄ±r').alignment = center_alignment
         
         # Checklist
         ws.cell(row=row_num, column=18, value='âœ“' if kayit['zimmet_teslim'] else 'âœ—').alignment = center_alignment
@@ -3376,7 +3402,7 @@ def cikis_kayitlari_excel_export():
         for col in range(1, 29):
             ws.cell(row=row_num, column=col).border = border
     
-    # Sütun genişliklerini ayarla
+    # SÃ¼tun geniÅŸliklerini ayarla
     column_widths = {
         'A': 10, 'B': 25, 'C': 15, 'D': 15, 'E': 30,
         'F': 20, 'G': 20, 'H': 20, 'I': 20,
@@ -3392,17 +3418,17 @@ def cikis_kayitlari_excel_export():
     for col, width in column_widths.items():
         ws.column_dimensions[col].width = width
     
-    # Satır yüksekliğini ayarla
-    ws.row_dimensions[1].height = 40  # Başlık
+    # SatÄ±r yÃ¼ksekliÄŸini ayarla
+    ws.row_dimensions[1].height = 40  # BaÅŸlÄ±k
     for row in range(2, len(kayitlar) + 2):
         ws.row_dimensions[row].height = 30
     
-    # Excel dosyasını memory'ye kaydet
+    # Excel dosyasÄ±nÄ± memory'ye kaydet
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
     
-    # Dosya adı
+    # Dosya adÄ±
     from datetime import datetime
     filename = f"Cikis_Kayitlari_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     
