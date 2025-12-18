@@ -1,0 +1,65 @@
+{% extends "basvuru/base_public.html" %}
+
+{% block title %}Başvuru Tamamlandı{% endblock %}
+
+{% block progress %}
+<div class="progress-steps">
+    <div class="step completed">
+        <span class="step-number"><i class="bi bi-check"></i></span>
+        <span>KVKK Onay</span>
+    </div>
+    <div class="step-line completed"></div>
+    <div class="step completed">
+        <span class="step-number"><i class="bi bi-check"></i></span>
+        <span>Başvuru Formu</span>
+    </div>
+    <div class="step-line completed"></div>
+    <div class="step active">
+        <span class="step-number"><i class="bi bi-check"></i></span>
+        <span>Tamamlandı</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body p-5 text-center">
+                <div class="mb-4">
+                    <i class="bi bi-check-circle text-success" style="font-size: 5rem;"></i>
+                </div>
+                
+                <h2 class="mb-3">Başvurunuz Alındı!</h2>
+                
+                <p class="lead text-muted mb-4">
+                    Sayın <strong>{{ aday.full_name }}</strong>,<br>
+                    başvurunuz başarıyla tamamlandı.
+                </p>
+                
+                {% if aday.kadro %}
+                <div class="alert alert-light">
+                    <strong>Başvurduğunuz Pozisyon:</strong><br>
+                    {{ aday.kadro.proje.musteri.display_name }} - {{ aday.kadro.pozisyon_adi }}
+                </div>
+                {% endif %}
+                
+                <div class="bg-light rounded p-3 mb-4">
+                    <p class="mb-0">
+                        <i class="bi bi-clock me-2"></i>
+                        Başvurunuz insan kaynakları ekibimiz tarafından değerlendirilecektir. 
+                        Uygun görülmeniz halinde sizinle iletişime geçilecektir.
+                    </p>
+                </div>
+                
+                <div class="text-muted">
+                    <small>
+                        <i class="bi bi-envelope me-1"></i> {{ aday.email }}<br>
+                        <i class="bi bi-telephone me-1"></i> {{ aday.telefon }}
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

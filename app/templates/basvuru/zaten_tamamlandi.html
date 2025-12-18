@@ -1,0 +1,37 @@
+{% extends "basvuru/base_public.html" %}
+
+{% block title %}Başvuru Zaten Tamamlandı{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body p-5 text-center">
+                <div class="mb-4">
+                    <i class="bi bi-check-circle text-success" style="font-size: 5rem;"></i>
+                </div>
+                
+                <h2 class="mb-3">Başvurunuz Zaten Tamamlanmış</h2>
+                
+                <p class="lead text-muted mb-4">
+                    Sayın <strong>{{ aday.full_name }}</strong>,<br>
+                    bu başvurunuz daha önce tamamlanmıştır.
+                </p>
+                
+                {% if aday.basvuru_tarihi %}
+                <div class="alert alert-light">
+                    <strong>Başvuru Tarihi:</strong> {{ aday.basvuru_tarihi.strftime('%d.%m.%Y %H:%M') }}
+                </div>
+                {% endif %}
+                
+                <div class="bg-light rounded p-3">
+                    <p class="mb-0">
+                        Başvurunuz hakkında bilgi almak için lütfen insan kaynakları ekibimiz ile 
+                        iletişime geçin.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,128 @@
+{% extends "basvuru/base_public.html" %}
+
+{% block title %}KVKK Aydınlatma Metni{% endblock %}
+
+{% block progress %}
+<div class="progress-steps">
+    <div class="step active">
+        <span class="step-number">1</span>
+        <span>KVKK Onay</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+        <span class="step-number">2</span>
+        <span>Başvuru Formu</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+        <span class="step-number">3</span>
+        <span>Tamamlandı</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-shield-check me-2"></i>
+                    Kişisel Verilerin Korunması Aydınlatma Metni
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Sayın {{ aday.full_name }},</strong><br>
+                    {% if aday.kadro %}
+                    <strong>{{ aday.kadro.proje.musteri.display_name }}</strong> - 
+                    <strong>{{ aday.kadro.pozisyon_adi }}</strong> pozisyonu için başvuru davetiniz bulunmaktadır.
+                    {% else %}
+                    İş başvurunuz için aşağıdaki aydınlatma metnini okumanız ve onaylamanız gerekmektedir.
+                    {% endif %}
+                </div>
+                
+                <div class="kvkk-text mb-4">
+                    <h5>KİŞİSEL VERİLERİN İŞLENMESİNE İLİŞKİN AYDINLATMA METNİ</h5>
+                    <p><strong>Veri Sorumlusu:</strong> Team Guerilla Promosyon ve Organizasyon Hiz. Tic. A.Ş.</p>
+                    
+                    <h6>1. Kişisel Verilerin Toplanması ve İşlenme Amacı</h6>
+                    <p>Şirketimiz, 6698 sayılı Kişisel Verilerin Korunması Kanunu ("KVKK") kapsamında veri sorumlusu sıfatıyla hareket etmektedir. İş başvurusu sürecinde tarafınızdan alınan kişisel veriler aşağıdaki amaçlarla işlenmektedir:</p>
+                    <ul>
+                        <li>İş başvurunuzun değerlendirilmesi</li>
+                        <li>Pozisyon gereksinimleri ile uygunluğunuzun tespiti</li>
+                        <li>İşe alım süreçlerinin yürütülmesi</li>
+                        <li>İletişim faaliyetlerinin gerçekleştirilmesi</li>
+                        <li>Yasal yükümlülüklerin yerine getirilmesi</li>
+                    </ul>
+                    
+                    <h6>2. İşlenen Kişisel Veriler</h6>
+                    <p>Başvuru sürecinde aşağıdaki kişisel verileriniz işlenecektir:</p>
+                    <ul>
+                        <li><strong>Kimlik Bilgileri:</strong> Ad, soyad, T.C. kimlik numarası, doğum tarihi ve yeri, cinsiyet</li>
+                        <li><strong>İletişim Bilgileri:</strong> Adres, telefon numarası, e-posta adresi</li>
+                        <li><strong>Eğitim Bilgileri:</strong> Öğrenim durumu, mezun olunan okul ve bölüm</li>
+                        <li><strong>Mesleki Deneyim:</strong> İş deneyimi, önceki işverenler, referanslar</li>
+                        <li><strong>Ehliyet Bilgileri:</strong> Ehliyet sınıfı, SRC belgesi durumu</li>
+                        <li><strong>Sağlık Bilgileri:</strong> İşin gerektirdiği sağlık durumu bilgisi</li>
+                        <li><strong>Adli Sicil:</strong> Sabıka kaydı durumu</li>
+                        <li><strong>Görsel Veriler:</strong> Fotoğraf, kimlik belgesi görselleri</li>
+                    </ul>
+                    
+                    <h6>3. Kişisel Verilerin Aktarılması</h6>
+                    <p>Toplanan kişisel verileriniz, yukarıda belirtilen amaçlar doğrultusunda:</p>
+                    <ul>
+                        <li>Müşterilerimize (işe alım yapılması halinde)</li>
+                        <li>Yasal zorunluluk halinde kamu kurum ve kuruluşlarına</li>
+                        <li>Hizmet aldığımız iş ortaklarımıza</li>
+                    </ul>
+                    <p>aktarılabilecektir.</p>
+                    
+                    <h6>4. Kişisel Veri Toplamanın Yöntemi ve Hukuki Sebebi</h6>
+                    <p>Kişisel verileriniz, elektronik ortamda bu başvuru formu aracılığıyla toplanmaktadır. İşlemenin hukuki sebebi, açık rızanız ve sözleşmenin kurulması için gerekli olmasıdır.</p>
+                    
+                    <h6>5. Veri Saklama Süresi</h6>
+                    <p>İşe alınmanız halinde verileriniz özlük dosyanızda saklanacaktır. İşe alınmamanız halinde verileriniz, ileride oluşabilecek pozisyonlar için değerlendirilebilmek amacıyla 2 yıl süreyle saklanacak, bu süre sonunda silinecektir.</p>
+                    
+                    <h6>6. KVKK Kapsamındaki Haklarınız</h6>
+                    <p>KVKK'nın 11. maddesi gereğince aşağıdaki haklara sahipsiniz:</p>
+                    <ul>
+                        <li>Kişisel verilerinizin işlenip işlenmediğini öğrenme</li>
+                        <li>İşlenmişse buna ilişkin bilgi talep etme</li>
+                        <li>İşlenme amacını ve amacına uygun kullanılıp kullanılmadığını öğrenme</li>
+                        <li>Yurt içinde/yurt dışında aktarıldığı üçüncü kişileri bilme</li>
+                        <li>Eksik/yanlış işlenmişse düzeltilmesini isteme</li>
+                        <li>KVKK'nın 7. maddesindeki şartlar çerçevesinde silinmesini/yok edilmesini isteme</li>
+                        <li>Düzeltme ve silme işlemlerinin aktarılan üçüncü kişilere bildirilmesini isteme</li>
+                        <li>İşlenen verilerin münhasıran otomatik sistemler vasıtasıyla analiz edilmesi suretiyle aleyhinize bir sonucun ortaya çıkmasına itiraz etme</li>
+                        <li>Kanuna aykırı işlenmesi sebebiyle zarara uğramanız hâlinde zararın giderilmesini talep etme</li>
+                    </ul>
+                    
+                    <h6>7. İletişim</h6>
+                    <p>Haklarınızı kullanmak için <strong>kvkk@teamguerilla.com</strong> adresine başvurabilirsiniz.</p>
+                    
+                    <p class="mt-3"><small><em>Versiyon: 1.0 - Son güncelleme: Ocak 2024</em></small></p>
+                </div>
+                
+                <form method="POST" action="{{ url_for('basvuru.kvkk_onayla', token=aday.davet_token) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" name="kvkk_onay" id="kvkk_onay" required>
+                        <label class="form-check-label" for="kvkk_onay">
+                            <strong>Yukarıdaki aydınlatma metnini okudum, anladım ve kişisel verilerimin belirtilen amaçlarla işlenmesini kabul ediyorum.</strong>
+                        </label>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-arrow-right me-2"></i>Devam Et
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

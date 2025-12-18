@@ -62,7 +62,7 @@
                 <div class="card border-top-0 rounded-top-0">
                     <div class="card-header bg-white d-flex justify-content-end">
                         {% if has_permission('ik.create') %}
-                        <a href="{{ url_for('proje.kadro_aday_ekle', kadro_id=kadro.id) }}" class="btn btn-success btn-sm">
+                        <a href="{{ url_for('basvuru.aday_davet', kadro_id=kadro.id) }}" class="btn btn-primary btn-sm me-2"><i class="bi bi-send me-1"></i>Aday Davet Et</a><a href="{{ url_for('proje.kadro_aday_ekle', id=kadro.id) }}" class="btn btn-success btn-sm">
                             <i class="bi bi-plus-lg me-1"></i>Aday Ekle
                         </a>
                         {% endif %}
@@ -312,7 +312,7 @@
                     </a>
                     {% endif %}
                     {% if has_permission('ik.create') %}
-                    <a href="{{ url_for('proje.kadro_aday_ekle', kadro_id=kadro.id) }}" class="btn btn-success">
+                    <a href="{{ url_for('proje.kadro_aday_ekle', id=kadro.id) }}" class="btn btn-success">
                         <i class="bi bi-person-plus me-1"></i>Aday Ekle
                     </a>
                     {% endif %}

@@ -61,6 +61,7 @@ def create_app(config_name=None):
     from app.modules.tedarikci.routes import tedarikci_bp
     from app.modules.proje.routes import proje_bp
     from app.modules.api.routes import api_bp
+    from app.modules.basvuru.routes import basvuru_bp
     
     app.register_blueprint(core_bp)
     app.register_blueprint(ik_bp, url_prefix='/ik')
@@ -68,6 +69,8 @@ def create_app(config_name=None):
     app.register_blueprint(tedarikci_bp, url_prefix='/tedarikci')
     app.register_blueprint(proje_bp, url_prefix='/proje')
     app.register_blueprint(api_bp, url_prefix='/api/v1')
+    app.register_blueprint(basvuru_bp, url_prefix='/basvuru')
+    
     
     # Context processors
     @app.context_processor

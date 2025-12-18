@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Aday Davet Et - {{ kadro.pozisyon_adi }} - TG Portal{% endblock %}
+{% block page_title %}Aday Davet Et{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-person-plus me-2"></i>Yeni Aday Davet Et</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Ad <span class="text-danger">*</span></label>
+                            <input type="text" name="ad" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Soyad <span class="text-danger">*</span></label>
+                            <input type="text" name="soyad" class="form-control" required>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Telefon veya E-posta <span class="text-danger">*</span></label>
+                            <input type="text" name="iletisim" class="form-control" required
+                                   placeholder="05XX XXX XX XX veya email@example.com">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Davet Türü</label>
+                            <select name="davet_tipi" class="form-select">
+                                <option value="sms">SMS</option>
+                                <option value="email">E-posta</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('proje.kadro_detay', id=kadro.id) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>İptal
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-send me-1"></i>Davet Gönder
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Toplu Davet -->
+        <div class="card mt-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-people me-2"></i>Toplu Aday Davet</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('basvuru.toplu_davet', kadro_id=kadro.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Kişi Listesi</label>
+                        <textarea name="kisi_listesi" class="form-control" rows="6" 
+                                  placeholder="Her satıra bir kişi: Ad, Soyad, Telefon/Email
+Örnek:
+Ahmet, Yılmaz, 05321234567
+Mehmet, Demir, mehmet@email.com
+Ayşe, Kaya, 05339876543"></textarea>
+                        <small class="text-muted">Her satıra: Ad, Soyad, Telefon/Email (virgülle ayırarak)</small>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Davet Türü</label>
+                            <select name="davet_tipi" class="form-select">
+                                <option value="sms">SMS</option>
+                                <option value="email">E-posta</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i>Toplu Davet Gönder
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Kadro Bilgisi -->
+        <div class="card">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-briefcase me-2"></i>Kadro Bilgisi</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td class="text-muted">Pozisyon</td>
+                        <td class="text-end"><strong>{{ kadro.pozisyon_adi }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Proje</td>
+                        <td class="text-end">{{ kadro.proje.ad }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Müşteri</td>
+                        <td class="text-end">{{ kadro.proje.musteri.display_name }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Lokasyon</td>
+                        <td class="text-end">{{ kadro.il or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Hedef / Mevcut</td>
+                        <td class="text-end">
+                            <span class="badge bg-primary">{{ kadro.mevcut_sayi }} / {{ kadro.hedef_sayi }}</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Eksik</td>
+                        <td class="text-end">
+                            <span class="badge bg-danger">{{ kadro.eksik_sayi }}</span>
+                        </td>
+                    </tr>
+                    {% if kadro.maas_min or kadro.maas_max %}
+                    <tr>
+                        <td class="text-muted">Maaş Aralığı</td>
+                        <td class="text-end">
+                            ₺{{ '{:,.0f}'.format(kadro.maas_min) if kadro.maas_min else '?' }} - 
+                            ₺{{ '{:,.0f}'.format(kadro.maas_max) if kadro.maas_max else '?' }}
+                        </td>
+                    </tr>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+        
+        <!-- Bilgi -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6><i class="bi bi-info-circle me-2"></i>Nasıl Çalışır?</h6>
+                <ol class="small mb-0">
+                    <li>Aday bilgilerini girin</li>
+                    <li>SMS veya E-posta ile davet linki gönderilir</li>
+                    <li>Aday KVKK metnini onaylar</li>
+                    <li>Aday başvuru formunu doldurur</li>
+                    <li>Başvuru sisteme kaydedilir</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

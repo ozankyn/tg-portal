@@ -1,0 +1,390 @@
+{% extends "basvuru/base_public.html" %}
+
+{% block title %}Başvuru Formu{% endblock %}
+
+{% block progress %}
+<div class="progress-steps">
+    <div class="step completed">
+        <span class="step-number"><i class="bi bi-check"></i></span>
+        <span>KVKK Onay</span>
+    </div>
+    <div class="step-line completed"></div>
+    <div class="step active">
+        <span class="step-number">2</span>
+        <span>Başvuru Formu</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+        <span class="step-number">3</span>
+        <span>Tamamlandı</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-person-vcard me-2"></i>
+                    İş Başvuru Formu
+                </h4>
+                {% if kadro %}
+                <small class="text-white-50">{{ kadro.proje.musteri.display_name }} - {{ kadro.pozisyon_adi }}</small>
+                {% endif %}
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <!-- 1. Kişisel Bilgiler -->
+                    <h5 class="section-title"><i class="bi bi-person me-2"></i>Kişisel Bilgiler</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label required">Ad</label>
+                            <input type="text" name="ad" class="form-control" required
+                                   value="{{ aday.ad or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label required">Soyad</label>
+                            <input type="text" name="soyad" class="form-control" required
+                                   value="{{ aday.soyad or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label required">T.C. Kimlik No</label>
+                            <input type="text" name="tc_kimlik" class="form-control" required
+                                   maxlength="11" pattern="[0-9]{11}"
+                                   value="{{ aday.tc_kimlik or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label required">Doğum Tarihi</label>
+                            <input type="date" name="dogum_tarihi" class="form-control" required
+                                   value="{{ aday.dogum_tarihi.strftime('%Y-%m-%d') if aday.dogum_tarihi else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Doğum Yeri</label>
+                            <input type="text" name="dogum_yeri" class="form-control"
+                                   value="{{ aday.dogum_yeri or '' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label required">Cinsiyet</label>
+                            <select name="cinsiyet" class="form-select" required>
+                                <option value="">Seçiniz</option>
+                                <option value="erkek" {{ 'selected' if aday.cinsiyet == 'erkek' else '' }}>Erkek</option>
+                                <option value="kadin" {{ 'selected' if aday.cinsiyet == 'kadin' else '' }}>Kadın</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Medeni Durum</label>
+                            <select name="medeni_durum" class="form-select">
+                                <option value="">Seçiniz</option>
+                                <option value="bekar" {{ 'selected' if aday.medeni_durum == 'bekar' else '' }}>Bekâr</option>
+                                <option value="evli" {{ 'selected' if aday.medeni_durum == 'evli' else '' }}>Evli</option>
+                                <option value="bosanmis" {{ 'selected' if aday.medeni_durum == 'bosanmis' else '' }}>Boşanmış</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- 2. İletişim Bilgileri -->
+                    <h5 class="section-title"><i class="bi bi-telephone me-2"></i>İletişim Bilgileri</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label required">Cep Telefonu</label>
+                            <input type="tel" name="telefon" class="form-control" required
+                                   value="{{ aday.telefon or '' }}" placeholder="05XX XXX XX XX">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label required">E-posta</label>
+                            <input type="email" name="email" class="form-control" required
+                                   value="{{ aday.email or '' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label required">İl</label>
+                            <input type="text" name="il" class="form-control" required
+                                   value="{{ aday.il or '' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">İlçe</label>
+                            <input type="text" name="ilce" class="form-control"
+                                   value="{{ aday.ilce or '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Adres</label>
+                            <textarea name="adres" class="form-control" rows="2">{{ aday.adres or '' }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- 3. Eğitim Bilgileri -->
+                    <h5 class="section-title"><i class="bi bi-mortarboard me-2"></i>Eğitim Bilgileri</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label required">Eğitim Durumu</label>
+                            <select name="egitim_durumu" class="form-select" required>
+                                <option value="">Seçiniz</option>
+                                <option value="ilkokul">İlkokul</option>
+                                <option value="ortaokul">Ortaokul</option>
+                                <option value="lise">Lise</option>
+                                <option value="onlisans">Ön Lisans</option>
+                                <option value="lisans">Lisans</option>
+                                <option value="yukseklisans">Yüksek Lisans</option>
+                                <option value="doktora">Doktora</option>
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Okul Adı</label>
+                            <input type="text" name="okul_adi" class="form-control"
+                                   value="{{ aday.okul_adi or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Bölüm</label>
+                            <input type="text" name="bolum" class="form-control"
+                                   value="{{ aday.bolum or '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Mezuniyet Yılı</label>
+                            <input type="number" name="mezuniyet_yili" class="form-control"
+                                   min="1970" max="2030"
+                                   value="{{ aday.mezuniyet_yili or '' }}">
+                        </div>
+                    </div>
+                    
+                    <!-- 4. Ehliyet Bilgileri -->
+                    <h5 class="section-title"><i class="bi bi-car-front me-2"></i>Ehliyet Bilgileri</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-2">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" name="ehliyet_var" id="ehliyet_var"
+                                       {{ 'checked' if aday.ehliyet_var else '' }}>
+                                <label class="form-check-label" for="ehliyet_var">Ehliyetim Var</label>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Ehliyet Sınıfı</label>
+                            <select name="ehliyet_sinifi" class="form-select">
+                                <option value="">Seçiniz</option>
+                                <option value="A1">A1</option>
+                                <option value="A2">A2</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="C">C</option>
+                                <option value="D">D</option>
+                                <option value="E">E</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Ehliyet Tarihi</label>
+                            <input type="date" name="ehliyet_tarihi" class="form-control"
+                                   value="{{ aday.ehliyet_tarihi.strftime('%Y-%m-%d') if aday.ehliyet_tarihi else '' }}">
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" name="src_belgesi" id="src_belgesi"
+                                       {{ 'checked' if aday.src_belgesi else '' }}>
+                                <label class="form-check-label" for="src_belgesi">SRC Belgem Var</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" name="psikoteknik" id="psikoteknik"
+                                       {{ 'checked' if aday.psikoteknik else '' }}>
+                                <label class="form-check-label" for="psikoteknik">Psikoteknik Belgem Var</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 5. İş Deneyimi -->
+                    <h5 class="section-title"><i class="bi bi-briefcase me-2"></i>İş Deneyimi</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">Toplam Tecrübe (Yıl)</label>
+                            <input type="number" name="toplam_tecrube_yil" class="form-control"
+                                   min="0" max="50"
+                                   value="{{ aday.toplam_tecrube_yil or 0 }}">
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label">Son İş Yeri</label>
+                            <input type="text" name="son_is_yeri" class="form-control"
+                                   value="{{ aday.son_is_yeri or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Son Pozisyon</label>
+                            <input type="text" name="son_pozisyon" class="form-control"
+                                   value="{{ aday.son_pozisyon or '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">İşe Başlangıç</label>
+                            <input type="date" name="son_is_baslangic" class="form-control"
+                                   value="{{ aday.son_is_baslangic.strftime('%Y-%m-%d') if aday.son_is_baslangic else '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">İşten Ayrılış</label>
+                            <input type="date" name="son_is_bitis" class="form-control"
+                                   value="{{ aday.son_is_bitis.strftime('%Y-%m-%d') if aday.son_is_bitis else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Ayrılma Nedeni</label>
+                            <input type="text" name="son_is_ayrilma_nedeni" class="form-control"
+                                   value="{{ aday.son_is_ayrilma_nedeni or '' }}">
+                        </div>
+                    </div>
+                    
+                    <!-- 6. Referans -->
+                    <h5 class="section-title"><i class="bi bi-person-check me-2"></i>Referans Bilgileri</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Referans Ad Soyad</label>
+                            <input type="text" name="referans_ad" class="form-control"
+                                   value="{{ aday.referans_ad or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Referans Telefon</label>
+                            <input type="tel" name="referans_telefon" class="form-control"
+                                   value="{{ aday.referans_telefon or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Yakınlık</label>
+                            <select name="referans_iliski" class="form-select">
+                                <option value="">Seçiniz</option>
+                                <option value="eski_yonetici">Eski Yönetici</option>
+                                <option value="is_arkadasi">İş Arkadaşı</option>
+                                <option value="aile">Aile</option>
+                                <option value="diger">Diğer</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- 7. Ek Bilgiler -->
+                    <h5 class="section-title"><i class="bi bi-info-circle me-2"></i>Ek Bilgiler</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-3">
+                            <label class="form-label">Askerlik Durumu</label>
+                            <select name="askerlik_durumu" class="form-select">
+                                <option value="">Seçiniz</option>
+                                <option value="yapti">Yaptı</option>
+                                <option value="muaf">Muaf</option>
+                                <option value="tecilli">Tecilli</option>
+                                <option value="yapmiyor">Yapmıyor (Kadın)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Tecil Bitiş Tarihi</label>
+                            <input type="date" name="askerlik_tecil_tarihi" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" name="saglik_sorunu" id="saglik_sorunu">
+                                <label class="form-check-label" for="saglik_sorunu">Sağlık Sorunum Var</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" name="sabika_kaydi" id="sabika_kaydi">
+                                <label class="form-check-label" for="sabika_kaydi">Sabıka Kaydım Var</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sağlık Sorunu Açıklaması</label>
+                            <textarea name="saglik_sorunu_aciklama" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sabıka Açıklaması</label>
+                            <textarea name="sabika_aciklama" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- 8. Tercihler -->
+                    <h5 class="section-title"><i class="bi bi-sliders me-2"></i>Tercihler</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Çalışabileceğiniz İller</label>
+                            <input type="text" name="calisabilecegi_iller" class="form-control"
+                                   placeholder="İstanbul, Ankara, İzmir"
+                                   value="{{ aday.calisabilecegi_iller or '' }}">
+                            <small class="text-muted">Virgülle ayırarak yazın</small>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Beklenen Maaş (₺)</label>
+                            <input type="number" name="beklenen_maas" class="form-control"
+                                   min="0" step="1000"
+                                   value="{{ aday.beklenen_maas or '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Ne Zaman Başlayabilirsiniz?</label>
+                            <select name="ne_zaman_baslayabilir" class="form-select">
+                                <option value="">Seçiniz</option>
+                                <option value="hemen">Hemen</option>
+                                <option value="1_hafta">1 Hafta İçinde</option>
+                                <option value="2_hafta">2 Hafta İçinde</option>
+                                <option value="1_ay">1 Ay İçinde</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" name="vardiyali_calisabilir" id="vardiyali" checked>
+                                <label class="form-check-label" for="vardiyali">Vardiyalı Çalışabilirim</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 9. Belgeler -->
+                    <h5 class="section-title"><i class="bi bi-file-earmark-arrow-up me-2"></i>Belgeler</h5>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Lütfen belgelerin net ve okunabilir olduğundan emin olun. Maksimum dosya boyutu: 5MB
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Vesikalık Fotoğraf</label>
+                            <input type="file" name="foto" class="form-control" accept="image/*">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">CV (Özgeçmiş)</label>
+                            <input type="file" name="cv_dosya" class="form-control" accept=".pdf,.doc,.docx">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Kimlik Ön Yüz</label>
+                            <input type="file" name="kimlik_on" class="form-control" accept="image/*">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Kimlik Arka Yüz</label>
+                            <input type="file" name="kimlik_arka" class="form-control" accept="image/*">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ehliyet Fotoğrafı</label>
+                            <input type="file" name="ehliyet_foto" class="form-control" accept="image/*">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Diploma/Mezuniyet Belgesi</label>
+                            <input type="file" name="diploma_foto" class="form-control" accept="image/*,.pdf">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">SRC Belgesi</label>
+                            <input type="file" name="src_foto" class="form-control" accept="image/*,.pdf">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">İkametgah Belgesi</label>
+                            <input type="file" name="ikametgah" class="form-control" accept="image/*,.pdf">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Adli Sicil Belgesi</label>
+                            <input type="file" name="adli_sicil" class="form-control" accept="image/*,.pdf">
+                        </div>
+                    </div>
+                    
+                    <!-- Gönder -->
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-send me-2"></i>Başvuruyu Gönder
+                        </button>
+                        <small class="text-muted text-center">
+                            <i class="bi bi-shield-check me-1"></i>
+                            Bilgileriniz KVKK kapsamında güvenle saklanmaktadır.
+                        </small>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
