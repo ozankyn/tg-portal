@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Araç Ata - {{ proje.ad }} - TG Portal{% endblock %}
+{% block page_title %}Araç Ata{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-truck me-2"></i>Projeye Araç Ata</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    <strong>{{ proje.ad }}</strong> projesine atanacak araçları seçin.
+                </p>
+                
+                {% if musait_araclar %}
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="50">
+                                        <input type="checkbox" class="form-check-input" id="selectAll">
+                                    </th>
+                                    <th>Plaka</th>
+                                    <th>Araç</th>
+                                    <th>Şoför</th>
+                                    <th>Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for a in musait_araclar %}
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input arac-checkbox" 
+                                               name="arac_ids" value="{{ a.id }}">
+                                    </td>
+                                    <td><strong>{{ a.plaka }}</strong></td>
+                                    <td>{{ a.marka }} {{ a.model }}</td>
+                                    <td>{{ a.sofor.full_name if a.sofor else '-' }}</td>
+                                    <td>
+                                        {% if a.durum.value == 'aktif' %}
+                                        <span class="badge bg-success">Aktif</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ a.durum.value }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mt-4">
+                        <a href="{{ url_for('proje.proje_detay', id=proje.id) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>İptal
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>Seçilenleri Ata
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-inbox fs-1 d-block mb-2 text-muted"></i>
+                    <p class="text-muted">Atanabilecek müsait araç bulunamadı.</p>
+                    <a href="{{ url_for('proje.proje_detay', id=proje.id) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Geri Dön
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Proje Bilgisi</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td class="text-muted">Proje</td>
+                        <td class="text-end"><strong>{{ proje.ad }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Müşteri</td>
+                        <td class="text-end">{{ proje.musteri.display_name }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Mevcut Araç</td>
+                        <td class="text-end"><span class="badge bg-primary">{{ proje.araclar|length }}</span></td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('selectAll').addEventListener('change', function() {
+    document.querySelectorAll('.arac-checkbox').forEach(cb => cb.checked = this.checked);
+});
+</script>
+{% endblock %}

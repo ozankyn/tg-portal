@@ -1,330 +1,426 @@
-#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-SQLite'dan PostgreSQL'e veri aktarım script'i
-Bu script hr_system.db'deki tüm verileri PostgreSQL'e aktarır.
+TG Portal - Seed Data
+Başlangıç verileri: roller, yetkiler, admin kullanıcı
 """
 
-import json
-import os
+from app import db
+from app.models.core import User, Role, Permission
+from app.models.ik import Departman, Pozisyon
+from app.models.tedarikci import Tedarikci
+from app.models.base import TedarikciTipi
 
-def load_seed_data():
-    """JSON dosyasından verileri yükle"""
-    # Script ile aynı dizinde hr_data.json olmalı
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    json_path = os.path.join(script_dir, 'hr_data.json')
-    
-    if not os.path.exists(json_path):
-        print(f"❌ {json_path} bulunamadı!")
-        return None
-    
-    with open(json_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
 
-def seed_from_sqlite_data(conn, cursor):
-    """SQLite'dan alınan verileri PostgreSQL'e aktar"""
-    
-    data = load_seed_data()
-    if not data:
-        print("⚠️ Veri dosyası bulunamadı, varsayılan veriler kullanılacak")
-        return
-    
-    print("\n" + "="*50)
-    print("SQLite'dan PostgreSQL'e veri aktarımı başlıyor...")
-    print("="*50 + "\n")
-    
-    # 1. KULLANICILAR
-    print("👤 Kullanıcılar aktarılıyor...")
-    for user in data.get('users', []):
-        try:
-            cursor.execute('''
-                INSERT INTO users (id, username, password_hash, email, full_name, role, aktif)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (username) DO NOTHING
-            ''', (user['id'], user['username'], user['password_hash'], 
-                  user.get('email'), user.get('full_name'), user.get('role', 'user'), 
-                  bool(user.get('aktif', 1))))
-        except Exception as e:
-            print(f"  ⚠️ Kullanıcı hatası: {e}")
-    conn.commit()
-    print(f"  ✅ {len(data.get('users', []))} kullanıcı aktarıldı")
-    
-    # 2. MÜŞTERİLER
-    print("🏢 Müşteriler aktarılıyor...")
-    for m in data.get('musteriler', []):
-        try:
-            cursor.execute('''
-                INSERT INTO musteriler (id, musteri_adi, sektor, yetkili_kisi, telefon, email, adres, logo_yolu, aktif)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (musteri_adi) DO NOTHING
-            ''', (m['id'], m['musteri_adi'], m.get('sektor'), m.get('yetkili_kisi'),
-                  m.get('telefon'), m.get('email'), m.get('adres'), m.get('logo_yolu'),
-                  bool(m.get('aktif', 1))))
-        except Exception as e:
-            print(f"  ⚠️ Müşteri hatası: {e}")
-    conn.commit()
-    print(f"  ✅ {len(data.get('musteriler', []))} müşteri aktarıldı")
-    
-    # 3. PROJELER
-    print("📋 Projeler aktarılıyor...")
-    for p in data.get('projeler', []):
-        try:
-            cursor.execute('''
-                INSERT INTO projeler (id, proje_adi, aciklama, musteri_id, aktif)
-                VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT DO NOTHING
-            ''', (p['id'], p['proje_adi'], p.get('aciklama'), p.get('musteri_id'),
-                  bool(p.get('aktif', 1))))
-        except Exception as e:
-            print(f"  ⚠️ Proje hatası: {e}")
-    conn.commit()
-    print(f"  ✅ {len(data.get('projeler', []))} proje aktarıldı")
-    
-    # 4. MÜDÜRLÜKLER
-    print("🏛️ Müdürlükler aktarılıyor...")
-    for m in data.get('mudurluker', []):
-        try:
-            cursor.execute('''
-                INSERT INTO mudurluker (id, mudurluk_adi, aktif)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (mudurluk_adi) DO NOTHING
-            ''', (m['id'], m['mudurluk_adi'], bool(m.get('aktif', 1))))
-        except Exception as e:
-            print(f"  ⚠️ Müdürlük hatası: {e}")
-    conn.commit()
-    print(f"  ✅ {len(data.get('mudurluker', []))} müdürlük aktarıldı")
-    
-    # 5. DİREKTÖRLÜKLER
-    print("🏛️ Direktörlükler aktarılıyor...")
-    for d in data.get('direktorlukler', []):
-        try:
-            cursor.execute('''
-                INSERT INTO direktorlukler (id, direktorluk_adi, aktif)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (direktorluk_adi) DO NOTHING
-            ''', (d['id'], d['direktorluk_adi'], bool(d.get('aktif', 1))))
-        except Exception as e:
-            print(f"  ⚠️ Direktörlük hatası: {e}")
-    conn.commit()
-    print(f"  ✅ {len(data.get('direktorlukler', []))} direktörlük aktarıldı")
-    
-    # 6. İLLER
-    print("🗺️ İller aktarılıyor...")
-    for il in data.get('iller', []):
-        try:
-            cursor.execute('''
-                INSERT INTO iller (id, il_adi, aktif)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (il_adi) DO NOTHING
-            ''', (il['id'], il['il_adi'], bool(il.get('aktif', 1))))
-        except Exception as e:
-            print(f"  ⚠️ İl hatası: {e}")
-    conn.commit()
-    print(f"  ✅ {len(data.get('iller', []))} il aktarıldı")
-    
-    # 7. İLÇELER
-    print("🗺️ İlçeler aktarılıyor...")
-    for ilce in data.get('ilceler', []):
-        try:
-            cursor.execute('''
-                INSERT INTO ilceler (id, il_id, ilce_adi, aktif)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT DO NOTHING
-            ''', (ilce['id'], ilce['il_id'], ilce['ilce_adi'], bool(ilce.get('aktif', 1))))
-        except Exception as e:
-            pass  # Çok fazla ilçe var, hataları sessizce geç
-    conn.commit()
-    print(f"  ✅ {len(data.get('ilceler', []))} ilçe aktarıldı")
-    
-    # 8. KAYNAKLAR
-    print("📌 Kaynaklar aktarılıyor...")
-    for k in data.get('kaynaklar', []):
-        try:
-            cursor.execute('''
-                INSERT INTO kaynaklar (id, kaynak_adi, aciklama, aktif)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (kaynak_adi) DO NOTHING
-            ''', (k['id'], k['kaynak_adi'], k.get('aciklama'), bool(k.get('aktif', 1))))
-        except Exception as e:
-            print(f"  ⚠️ Kaynak hatası: {e}")
-    conn.commit()
-    print(f"  ✅ {len(data.get('kaynaklar', []))} kaynak aktarıldı")
-    
-    # 9. ÇALIŞMA ŞEKİLLERİ
-    print("⏰ Çalışma şekilleri aktarılıyor...")
-    for c in data.get('calisma_sekilleri', []):
-        try:
-            cursor.execute('''
-                INSERT INTO calisma_sekilleri (id, calisma_sekli, aktif)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (calisma_sekli) DO NOTHING
-            ''', (c['id'], c['calisma_sekli'], bool(c.get('aktif', 1))))
-        except Exception as e:
-            print(f"  ⚠️ Çalışma şekli hatası: {e}")
-    conn.commit()
-    print(f"  ✅ {len(data.get('calisma_sekilleri', []))} çalışma şekli aktarıldı")
-    
-    # 10. ÇIKIŞ NEDENLERİ
-    print("🚪 Çıkış nedenleri aktarılıyor...")
-    for c in data.get('cikis_nedenleri', []):
-        try:
-            cursor.execute('''
-                INSERT INTO cikis_nedenleri (id, neden, aktif)
-                VALUES (%s, %s, %s)
-                ON CONFLICT (neden) DO NOTHING
-            ''', (c['id'], c['neden'], bool(c.get('aktif', 1))))
-        except Exception as e:
-            print(f"  ⚠️ Çıkış nedeni hatası: {e}")
-    conn.commit()
-    print(f"  ✅ {len(data.get('cikis_nedenleri', []))} çıkış nedeni aktarıldı")
-    
-    # 11. EMAIL AYARLARI
-    print("📧 Email ayarları aktarılıyor...")
-    for e in data.get('email_ayarlari', []):
-        try:
-            cursor.execute('''
-                INSERT INTO email_ayarlari (id, ayar_adi, ayar_degeri, aciklama, aktif)
-                VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT (ayar_adi) DO UPDATE SET ayar_degeri = EXCLUDED.ayar_degeri
-            ''', (e['id'], e['ayar_adi'], e.get('ayar_degeri'), e.get('aciklama'),
-                  bool(e.get('aktif', 1))))
-        except Exception as ex:
-            print(f"  ⚠️ Email ayarı hatası: {ex}")
-    conn.commit()
-    print(f"  ✅ {len(data.get('email_ayarlari', []))} email ayarı aktarıldı")
-    
-    # 12. EMAIL ŞABLONLARI
-    print("📝 Email şablonları aktarılıyor...")
-    for s in data.get('email_sablonlari', []):
-        try:
-            cursor.execute('''
-                INSERT INTO email_sablonlari (id, sablon_adi, sablon_konusu, sablon_icerik, aktif)
-                VALUES (%s, %s, %s, %s, %s)
-                ON CONFLICT (sablon_adi) DO UPDATE SET 
-                    sablon_konusu = EXCLUDED.sablon_konusu,
-                    sablon_icerik = EXCLUDED.sablon_icerik
-            ''', (s['id'], s['sablon_adi'], s['sablon_konusu'], s['sablon_icerik'],
-                  bool(s.get('aktif', 1))))
-        except Exception as ex:
-            print(f"  ⚠️ Email şablonu hatası: {ex}")
-    conn.commit()
-    print(f"  ✅ {len(data.get('email_sablonlari', []))} email şablonu aktarıldı")
-    
-    # 13. HEDEF KADROLAR
-    print("👥 Hedef kadrolar aktarılıyor...")
-    for hk in data.get('hedef_kadrolar', []):
-        try:
-            cursor.execute('''
-                INSERT INTO hedef_kadrolar (id, proje_id, pozisyon_adi, calisma_sekli, 
-                    mudurluk_id, direktorluk_id, il_id, ilce_id, magaza_adi, 
-                    hedef_kisi_sayisi, dolu_kisi_sayisi, aracli_durum, durum)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT DO NOTHING
-            ''', (hk['id'], hk['proje_id'], hk['pozisyon_adi'], hk.get('calisma_sekli'),
-                  hk.get('mudurluk_id'), hk.get('direktorluk_id'), hk.get('il_id'),
-                  hk.get('ilce_id'), hk.get('magaza_adi'), hk.get('hedef_kisi_sayisi', 1),
-                  hk.get('dolu_kisi_sayisi', 0), hk.get('aracli_durum'), hk.get('durum', 'Açık')))
-        except Exception as e:
-            print(f"  ⚠️ Kadro hatası: {e}")
-    conn.commit()
-    print(f"  ✅ {len(data.get('hedef_kadrolar', []))} kadro aktarıldı")
-    
-    # 14. ADAYLAR
-    print("👤 Adaylar aktarılıyor...")
-    for a in data.get('adaylar', []):
-        try:
-            # Boş string'leri None'a çevir
-            dogum_tarihi = a.get('dogum_tarihi') if a.get('dogum_tarihi') else None
-            ise_baslama_tarihi = a.get('ise_baslama_tarihi') if a.get('ise_baslama_tarihi') else None
-            
-            cursor.execute('''
-                INSERT INTO adaylar (id, kadro_id, ad_soyad, telefon, email, tc_kimlik,
-                    dogum_tarihi, notlar, kaynak_id, kaynak_diger, durum, ise_baslama_tarihi)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT DO NOTHING
-            ''', (a['id'], a['kadro_id'], a['ad_soyad'], a.get('telefon'), a.get('email'),
-                  a.get('tc_kimlik'), dogum_tarihi, a.get('notlar'),
-                  a.get('kaynak_id') or None, a.get('kaynak_diger'), a.get('durum', 'Aday'),
-                  ise_baslama_tarihi))
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            print(f"  ⚠️ Aday hatası ({a.get('ad_soyad', 'N/A')}): {e}")
-    print(f"  ✅ {len(data.get('adaylar', []))} aday aktarıldı")
-    
-    # 15. ÇALIŞANLAR
-    print("👷 Çalışanlar aktarılıyor...")
-    for c in data.get('calisanlar', []):
-        try:
-            # Boş string'leri None'a çevir (PostgreSQL NULL için)
-            dogum_tarihi = c.get('dogum_tarihi') if c.get('dogum_tarihi') else None
-            cikis_tarihi = c.get('cikis_tarihi') if c.get('cikis_tarihi') else None
-            adres = c.get('adres') if c.get('adres') else None
-            
-            cursor.execute('''
-                INSERT INTO calisanlar (id, aday_id, kadro_id, ad_soyad, telefon, email,
-                    tc_kimlik, dogum_tarihi, adres, ise_baslama_tarihi, cikis_tarihi,
-                    cikis_nedeni, liste_durumu, aracli_durum, aktif)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT DO NOTHING
-            ''', (c['id'], c.get('aday_id') or None, c['kadro_id'], c['ad_soyad'], c.get('telefon'),
-                  c.get('email'), c.get('tc_kimlik'), dogum_tarihi, adres,
-                  c['ise_baslama_tarihi'], cikis_tarihi, c.get('cikis_nedeni'),
-                  c.get('liste_durumu'), c.get('aracli_durum'), bool(c.get('aktif', 1))))
-            conn.commit()  # Her çalışan için ayrı commit
-        except Exception as e:
-            conn.rollback()  # Hata durumunda rollback
-            print(f"  ⚠️ Çalışan hatası ({c.get('ad_soyad', 'N/A')}): {e}")
-    print(f"  ✅ {len(data.get('calisanlar', []))} çalışan aktarıldı")
-    
-    # 16. ÇIKIŞ KAYITLARI
-    print("📋 Çıkış kayıtları aktarılıyor...")
-    for ck in data.get('cikis_kayitlari', []):
-        try:
-            cursor.execute('''
-                INSERT INTO cikis_kayitlari (id, calisan_id, cikis_tarihi, cikis_nedeni,
-                    liste_durumu, tekrar_ise_alinabilir, zimmet_teslim, kiyafet_teslim,
-                    anahtar_teslim, kimlik_teslim, ihbar_tazminat_durumu, kidem_tazminat_durumu,
-                    yonetici_notu, ik_notu, genel_degerlendirme, islem_yapan)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT DO NOTHING
-            ''', (ck['id'], ck['calisan_id'], ck['cikis_tarihi'], ck.get('cikis_nedeni'),
-                  ck.get('liste_durumu'), bool(ck.get('tekrar_ise_alinabilir', 1)),
-                  bool(ck.get('zimmet_teslim', 0)), bool(ck.get('kiyafet_teslim', 0)),
-                  bool(ck.get('anahtar_teslim', 0)), bool(ck.get('kimlik_teslim', 0)),
-                  ck.get('ihbar_tazminat_durumu'), ck.get('kidem_tazminat_durumu'),
-                  ck.get('yonetici_notu'), ck.get('ik_notu'), ck.get('genel_degerlendirme'),
-                  ck.get('islem_yapan')))
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            print(f"  ⚠️ Çıkış kaydı hatası: {e}")
-    print(f"  ✅ {len(data.get('cikis_kayitlari', []))} çıkış kaydı aktarıldı")
-    
-    # Sequence'ları güncelle (ID çakışması olmaması için)
-    print("\n🔄 Sequence'lar güncelleniyor...")
-    tables_with_id = [
-        'users', 'musteriler', 'projeler', 'mudurluker', 'direktorlukler',
-        'iller', 'ilceler', 'kaynaklar', 'calisma_sekilleri', 'cikis_nedenleri',
-        'email_ayarlari', 'email_sablonlari', 'hedef_kadrolar', 'adaylar',
-        'calisanlar', 'cikis_kayitlari'
+def seed_permissions():
+    """Yetkileri oluştur"""
+    permissions = [
+        # İK Modülü
+        ('ik.view', 'İK Görüntüleme', 'Çalışan ve aday bilgilerini görüntüleme', 'ik'),
+        ('ik.create', 'İK Ekleme', 'Yeni çalışan ekleme', 'ik'),
+        ('ik.edit', 'İK Düzenleme', 'Çalışan bilgilerini düzenleme', 'ik'),
+        ('ik.delete', 'İK Silme', 'Çalışan kaydı silme', 'ik'),
+        ('ik.ozluk', 'Özlük Bilgileri', 'Hassas özlük bilgilerine erişim', 'ik'),
+        
+        # Filo Modülü
+        ('filo.view', 'Filo Görüntüleme', 'Araç bilgilerini görüntüleme', 'filo'),
+        ('filo.create', 'Araç Ekleme', 'Yeni araç ekleme', 'filo'),
+        ('filo.edit', 'Araç Düzenleme', 'Araç bilgilerini düzenleme', 'filo'),
+        ('filo.delete', 'Araç Silme', 'Araç kaydı silme', 'filo'),
+        ('filo.bakim', 'Bakım Kaydı', 'Bakım ve işlem kaydı ekleme', 'filo'),
+        ('filo.yakit', 'Yakıt Kaydı', 'Yakıt kaydı ekleme', 'filo'),
+        
+        # Tedarikçi Modülü
+        ('tedarikci.view', 'Tedarikçi Görüntüleme', 'Tedarikçi bilgilerini görüntüleme', 'tedarikci'),
+        ('tedarikci.create', 'Tedarikçi Ekleme', 'Yeni tedarikçi ekleme', 'tedarikci'),
+        ('tedarikci.edit', 'Tedarikçi Düzenleme', 'Tedarikçi bilgilerini düzenleme', 'tedarikci'),
+        ('tedarikci.delete', 'Tedarikçi Silme', 'Tedarikçi kaydı silme', 'tedarikci'),
+        
+        # Admin
+        ('admin.users', 'Kullanıcı Yönetimi', 'Kullanıcıları yönetme', 'admin'),
+        ('admin.roles', 'Rol Yönetimi', 'Rolleri yönetme', 'admin'),
     ]
     
-    for table in tables_with_id:
-        try:
-            cursor.execute(f"SELECT setval('{table}_id_seq', COALESCE((SELECT MAX(id) FROM {table}), 1))")
-        except:
-            pass
-    conn.commit()
+    for code, name, description, module in permissions:
+        if not Permission.query.filter_by(code=code).first():
+            perm = Permission(code=code, name=name, description=description, module=module)
+            db.session.add(perm)
     
-    print("\n" + "="*50)
-    print("✅ Veri aktarımı tamamlandı!")
-    print("="*50 + "\n")
+    db.session.commit()
+    print(f"✓ {len(permissions)} yetki oluşturuldu")
 
+
+def seed_roles():
+    """Rolleri oluştur"""
+    roles_data = [
+        {
+            'name': 'admin',
+            'display_name': 'Sistem Yöneticisi',
+            'description': 'Tüm yetkilere sahip',
+            'is_system': True,
+            'permissions': ['*']  # Tüm yetkiler
+        },
+        {
+            'name': 'ik_yonetici',
+            'display_name': 'İK Yöneticisi',
+            'description': 'İK modülü tam yetki',
+            'is_system': True,
+            'permissions': ['ik.view', 'ik.create', 'ik.edit', 'ik.delete', 'ik.ozluk', 'tedarikci.view']
+        },
+        {
+            'name': 'filo_yonetici',
+            'display_name': 'Filo Yöneticisi',
+            'description': 'Filo modülü tam yetki',
+            'is_system': True,
+            'permissions': ['filo.view', 'filo.create', 'filo.edit', 'filo.delete', 'filo.bakim', 'filo.yakit', 'tedarikci.view', 'tedarikci.create', 'tedarikci.edit']
+        },
+        {
+            'name': 'muhasebe',
+            'display_name': 'Muhasebe',
+            'description': 'Görüntüleme ve tedarikçi yönetimi',
+            'is_system': False,
+            'permissions': ['ik.view', 'filo.view', 'tedarikci.view', 'tedarikci.create', 'tedarikci.edit']
+        },
+        {
+            'name': 'viewer',
+            'display_name': 'Görüntüleyici',
+            'description': 'Sadece görüntüleme',
+            'is_system': False,
+            'permissions': ['ik.view', 'filo.view', 'tedarikci.view']
+        }
+    ]
+    
+    for role_data in roles_data:
+        role = Role.query.filter_by(name=role_data['name']).first()
+        if not role:
+            role = Role(
+                name=role_data['name'],
+                display_name=role_data['display_name'],
+                description=role_data['description'],
+                is_system=role_data['is_system']
+            )
+            db.session.add(role)
+            db.session.flush()
+        
+        # Yetkileri ekle
+        for perm_code in role_data['permissions']:
+            if perm_code == '*':
+                continue  # Admin için özel işlem
+            perm = Permission.query.filter_by(code=perm_code).first()
+            if perm and perm not in role.permissions:
+                role.permissions.append(perm)
+    
+    db.session.commit()
+    print(f"✓ {len(roles_data)} rol oluşturuldu")
+
+
+def seed_admin_user():
+    """Admin kullanıcı oluştur"""
+    admin = User.query.filter_by(email='admin@teamguerilla.com').first()
+    if not admin:
+        admin = User(
+            email='admin@teamguerilla.com',
+            ad='Admin',
+            soyad='User',
+            is_admin=True,
+            is_active=True
+        )
+        admin.set_password('admin123')
+        
+        # Admin rolü ekle
+        admin_role = Role.query.filter_by(name='admin').first()
+        if admin_role:
+            admin.roles.append(admin_role)
+        
+        db.session.add(admin)
+        db.session.commit()
+        print("✓ Admin kullanıcı oluşturuldu: admin@teamguerilla.com / admin123")
+    else:
+        print("→ Admin kullanıcı zaten mevcut")
+
+
+def seed_departmanlar():
+    """Örnek departmanlar"""
+    departmanlar = [
+        ('Yönetim', 'YON'),
+        ('İnsan Kaynakları', 'IK'),
+        ('Satış', 'SAT'),
+        ('Operasyon', 'OPR'),
+        ('Muhasebe', 'MUH'),
+        ('Bilgi Teknolojileri', 'BT'),
+    ]
+    
+    for ad, kod in departmanlar:
+        if not Departman.query.filter_by(kod=kod).first():
+            dept = Departman(ad=ad, kod=kod, aktif=True)
+            db.session.add(dept)
+    
+    db.session.commit()
+    print(f"✓ {len(departmanlar)} departman oluşturuldu")
+
+
+def seed_pozisyonlar():
+    """Örnek pozisyonlar"""
+    pozisyonlar = [
+        'Genel Müdür',
+        'Müdür',
+        'Şef',
+        'Uzman',
+        'Asistan',
+        'Stajyer',
+        'Saha Personeli',
+        'Şoför',
+    ]
+    
+    for ad in pozisyonlar:
+        if not Pozisyon.query.filter_by(ad=ad).first():
+            poz = Pozisyon(ad=ad, aktif=True)
+            db.session.add(poz)
+    
+    db.session.commit()
+    print(f"✓ {len(pozisyonlar)} pozisyon oluşturuldu")
+
+
+def seed_ornek_tedarikciler():
+    """Örnek tedarikçiler"""
+    tedarikciler = [
+        {
+            'unvan': 'Petrol Ofisi A.Ş.',
+            'kisa_ad': 'PO',
+            'tip': TedarikciTipi.YAKIT,
+            'telefon': '444 7 888',
+            'il': 'İstanbul',
+            'aktif': True
+        },
+        {
+            'unvan': 'Ford Yetkili Servisi',
+            'kisa_ad': 'Ford Servis',
+            'tip': TedarikciTipi.SERVIS,
+            'telefon': '0212 555 1234',
+            'il': 'İstanbul',
+            'ilce': 'Maslak',
+            'aktif': True
+        },
+        {
+            'unvan': 'Axa Sigorta A.Ş.',
+            'kisa_ad': 'Axa',
+            'tip': TedarikciTipi.SIGORTA,
+            'telefon': '444 0 292',
+            'il': 'İstanbul',
+            'aktif': True
+        },
+    ]
+    
+    for t_data in tedarikciler:
+        if not Tedarikci.query.filter_by(unvan=t_data['unvan']).first():
+            tedarikci = Tedarikci(**t_data)
+            db.session.add(tedarikci)
+    
+    db.session.commit()
+    print(f"✓ {len(tedarikciler)} örnek tedarikçi oluşturuldu")
+
+
+def seed_all():
+    """Tüm seed verilerini yükle"""
+    print("\n🌱 Seed verileri yükleniyor...\n")
+    
+    seed_permissions()
+    seed_roles()
+    seed_admin_user()
+    seed_departmanlar()
+    seed_pozisyonlar()
+    seed_ornek_tedarikciler()
+    seed_projeler()
+    seed_ornek_araclar()
+    
+    print("\n✅ Tüm seed verileri yüklendi!\n")
+
+
+def seed_projeler():
+    """Örnek müşteri, proje ve kadro verileri"""
+    from app.models.proje import Musteri, Proje, HedefKadro
+    from datetime import date, timedelta
+    
+    print("  Projeler seed ediliyor...")
+    
+    # Müşteriler
+    musteriler = [
+        {
+            'ad': 'Migros Ticaret A.Ş.',
+            'kisa_ad': 'Migros',
+            'vergi_no': '1234567890',
+            'il': 'İstanbul',
+            'telefon': '0212 555 1234',
+            'yetkili_ad': 'Ahmet Yılmaz',
+            'yetkili_telefon': '0532 555 1234',
+            'yetkili_email': 'ahmet.yilmaz@migros.com.tr'
+        },
+        {
+            'ad': 'Anadolu Efes Biracılık ve Malt Sanayi A.Ş.',
+            'kisa_ad': 'Efes',
+            'vergi_no': '2345678901',
+            'il': 'İstanbul',
+            'telefon': '0216 555 5678',
+            'yetkili_ad': 'Mehmet Demir',
+            'yetkili_telefon': '0533 555 5678',
+            'yetkili_email': 'mehmet.demir@efes.com.tr'
+        },
+        {
+            'ad': 'Coca-Cola İçecek A.Ş.',
+            'kisa_ad': 'CCI',
+            'vergi_no': '3456789012',
+            'il': 'İstanbul',
+            'telefon': '0212 555 9012',
+            'yetkili_ad': 'Ayşe Kaya',
+            'yetkili_telefon': '0534 555 9012',
+            'yetkili_email': 'ayse.kaya@cci.com.tr'
+        }
+    ]
+    
+    musteri_objs = []
+    for m in musteriler:
+        if not Musteri.query.filter_by(kisa_ad=m['kisa_ad']).first():
+            musteri = Musteri(**m, aktif=True)
+            db.session.add(musteri)
+            musteri_objs.append(musteri)
+    
+    db.session.flush()
+    
+    # Projeler
+    if musteri_objs:
+        projeler = [
+            {
+                'musteri': 'Migros',
+                'ad': 'Migros Saha Satış Ekibi 2024',
+                'kod': 'MIG-2024-01',
+                'baslangic_tarihi': date.today() - timedelta(days=60),
+                'bitis_tarihi': date.today() + timedelta(days=300),
+                'butce': 2500000
+            },
+            {
+                'musteri': 'Efes',
+                'ad': 'Efes Merchandising Projesi',
+                'kod': 'EFS-2024-01',
+                'baslangic_tarihi': date.today() - timedelta(days=30),
+                'bitis_tarihi': date.today() + timedelta(days=335),
+                'butce': 1800000
+            },
+            {
+                'musteri': 'CCI',
+                'ad': 'CCI Market Aktivasyon',
+                'kod': 'CCI-2024-01',
+                'baslangic_tarihi': date.today(),
+                'bitis_tarihi': date.today() + timedelta(days=180),
+                'butce': 1200000
+            }
+        ]
+        
+        proje_objs = []
+        for p in projeler:
+            musteri = Musteri.query.filter_by(kisa_ad=p['musteri']).first()
+            if musteri and not Proje.query.filter_by(kod=p['kod']).first():
+                proje = Proje(
+                    musteri_id=musteri.id,
+                    ad=p['ad'],
+                    kod=p['kod'],
+                    baslangic_tarihi=p['baslangic_tarihi'],
+                    bitis_tarihi=p['bitis_tarihi'],
+                    butce=p['butce'],
+                    aktif=True
+                )
+                db.session.add(proje)
+                proje_objs.append(proje)
+        
+        db.session.flush()
+        
+        # Kadrolar
+        kadrolar = [
+            # Migros
+            {'proje': 'MIG-2024-01', 'pozisyon': 'Saha Satış Temsilcisi', 'il': 'İstanbul', 'hedef': 15, 'oncelik': 2, 'maas_min': 25000, 'maas_max': 35000},
+            {'proje': 'MIG-2024-01', 'pozisyon': 'Saha Satış Temsilcisi', 'il': 'Ankara', 'hedef': 8, 'oncelik': 3, 'maas_min': 22000, 'maas_max': 30000},
+            {'proje': 'MIG-2024-01', 'pozisyon': 'Saha Satış Temsilcisi', 'il': 'İzmir', 'hedef': 6, 'oncelik': 4, 'maas_min': 22000, 'maas_max': 30000},
+            {'proje': 'MIG-2024-01', 'pozisyon': 'Bölge Yöneticisi', 'il': 'İstanbul', 'hedef': 2, 'oncelik': 1, 'maas_min': 45000, 'maas_max': 60000},
+            
+            # Efes
+            {'proje': 'EFS-2024-01', 'pozisyon': 'Merchandiser', 'il': 'İstanbul', 'hedef': 20, 'oncelik': 2, 'maas_min': 20000, 'maas_max': 28000},
+            {'proje': 'EFS-2024-01', 'pozisyon': 'Merchandiser', 'il': 'Antalya', 'hedef': 10, 'oncelik': 3, 'maas_min': 18000, 'maas_max': 25000},
+            {'proje': 'EFS-2024-01', 'pozisyon': 'Takım Lideri', 'il': 'İstanbul', 'hedef': 3, 'oncelik': 2, 'maas_min': 35000, 'maas_max': 45000},
+            
+            # CCI
+            {'proje': 'CCI-2024-01', 'pozisyon': 'Aktivasyon Uzmanı', 'il': 'İstanbul', 'hedef': 12, 'oncelik': 3, 'maas_min': 23000, 'maas_max': 32000},
+            {'proje': 'CCI-2024-01', 'pozisyon': 'Aktivasyon Uzmanı', 'il': 'Bursa', 'hedef': 5, 'oncelik': 5, 'maas_min': 20000, 'maas_max': 28000},
+        ]
+        
+        for k in kadrolar:
+            proje = Proje.query.filter_by(kod=k['proje']).first()
+            if proje:
+                existing = HedefKadro.query.filter_by(
+                    proje_id=proje.id,
+                    pozisyon_adi=k['pozisyon'],
+                    il=k['il']
+                ).first()
+                if not existing:
+                    kadro = HedefKadro(
+                        proje_id=proje.id,
+                        pozisyon_adi=k['pozisyon'],
+                        il=k['il'],
+                        hedef_sayi=k['hedef'],
+                        oncelik=k['oncelik'],
+                        maas_min=k['maas_min'],
+                        maas_max=k['maas_max'],
+                        ehliyet_gerekli=True,
+                        ehliyet_sinifi='B',
+                        aktif=True
+                    )
+                    db.session.add(kadro)
+    
+    db.session.commit()
+    print("  ✓ Projeler seed edildi")
+
+
+def seed_ornek_araclar():
+    """Örnek araç verileri"""
+    from app.models.filo import Arac
+    from app.models.proje import Proje
+    from app.models.base import AracDurumu, YakitTipi
+    
+    print("  Araçlar seed ediliyor...")
+    
+    # Projeleri al
+    migros_proje = Proje.query.filter_by(kod='MIG-2024-01').first()
+    efes_proje = Proje.query.filter_by(kod='EFS-2024-01').first()
+    
+    araclar = [
+        {'plaka': '34TG001', 'marka': 'Ford', 'model': 'Transit Courier', 'yil': 2023, 'km': 15000, 'proje': migros_proje},
+        {'plaka': '34TG002', 'marka': 'Ford', 'model': 'Transit Courier', 'yil': 2023, 'km': 18500, 'proje': migros_proje},
+        {'plaka': '34TG003', 'marka': 'Fiat', 'model': 'Doblo', 'yil': 2022, 'km': 32000, 'proje': migros_proje},
+        {'plaka': '34TG004', 'marka': 'Renault', 'model': 'Kangoo', 'yil': 2022, 'km': 28000, 'proje': efes_proje},
+        {'plaka': '34TG005', 'marka': 'Renault', 'model': 'Kangoo', 'yil': 2022, 'km': 31000, 'proje': efes_proje},
+        {'plaka': '34TG006', 'marka': 'Volkswagen', 'model': 'Caddy', 'yil': 2023, 'km': 12000, 'proje': None},
+        {'plaka': '34TG007', 'marka': 'Volkswagen', 'model': 'Caddy', 'yil': 2023, 'km': 8500, 'proje': None},
+        {'plaka': '06TG001', 'marka': 'Ford', 'model': 'Transit Courier', 'yil': 2022, 'km': 45000, 'proje': migros_proje},
+        {'plaka': '35TG001', 'marka': 'Fiat', 'model': 'Doblo', 'yil': 2021, 'km': 62000, 'proje': None},
+    ]
+    
+    for a in araclar:
+        if not Arac.query.filter_by(plaka=a['plaka']).first():
+            arac = Arac(
+                plaka=a['plaka'],
+                marka=a['marka'],
+                model=a['model'],
+                model_yili=a['yil'],
+                km=a['km'],
+                yakit_tipi=YakitTipi.DIZEL,
+                durum=AracDurumu.AKTIF,
+                sahiplik_tipi='sirket',
+                proje_id=a['proje'].id if a['proje'] else None
+            )
+            db.session.add(arac)
+    
+    db.session.commit()
+    print("  ✓ Araçlar seed edildi")
 
 if __name__ == '__main__':
-    # Test için doğrudan çalıştır
-    from database import get_db
-    conn = get_db()
-    cursor = conn.cursor()
-    seed_from_sqlite_data(conn, cursor)
-    conn.close()
+    from app import create_app
+    app = create_app()
+    with app.app_context():
+        seed_all()

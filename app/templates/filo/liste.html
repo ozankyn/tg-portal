@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Araçlar - TG Portal{% endblock %}
+{% block page_title %}Araçlar{% endblock %}
+
+{% block content %}
+<!-- Filtreler -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control" placeholder="Plaka, marka ara..."
+                       value="{{ request.args.get('search', '') }}">
+            </div>
+            <div class="col-md-2">
+                <select name="durum" class="form-select">
+                    <option value="">Tüm Durumlar</option>
+                    {% for d in durumlar %}
+                    <option value="{{ d.value }}" {% if request.args.get('durum') == d.value %}selected{% endif %}>
+                        {{ d.value|replace('_', ' ')|title }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="proje_id" class="form-select">
+                    <option value="">Tüm Projeler</option>
+                    {% for p in projeler %}
+                    <option value="{{ p.id }}" {% if request.args.get('proje_id', type=int) == p.id %}selected{% endif %}>
+                        {{ p.ad }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search me-1"></i>Ara
+                </button>
+            </div>
+            <div class="col-md-2">
+                {% if has_permission('filo.create') %}
+                <a href="{{ url_for('filo.ekle') }}" class="btn btn-success w-100">
+                    <i class="bi bi-plus-lg me-1"></i>Yeni Araç
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Liste -->
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Plaka</th>
+                        <th>Araç</th>
+                        <th>Proje</th>
+                        <th>Şoför</th>
+                        <th>KM</th>
+                        <th>Durum</th>
+                        <th width="100"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for arac in araclar %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('filo.detay', id=arac.id) }}" class="text-decoration-none fw-bold">
+                                {{ arac.plaka }}
+                            </a>
+                        </td>
+                        <td>
+                            {{ arac.marka }} {{ arac.model }}
+                            {% if arac.model_yili %}
+                            <br><small class="text-muted">{{ arac.model_yili }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if arac.proje %}
+                            <a href="{{ url_for('proje.proje_detay', id=arac.proje_id) }}" class="text-decoration-none">
+                                {{ arac.proje.ad }}
+                            </a>
+                            <br><small class="text-muted">{{ arac.proje.musteri.display_name }}</small>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if arac.atanan_calisan %}
+                            {{ arac.atanan_calisan.full_name }}
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ '{:,.0f}'.format(arac.km) if arac.km else '-' }}</td>
+                        <td>
+                            {% if arac.durum.value == 'aktif' %}
+                            <span class="badge bg-success">Aktif</span>
+                            {% elif arac.durum.value == 'bakimda' %}
+                            <span class="badge bg-warning">Bakımda</span>
+                            {% elif arac.durum.value == 'arizali' %}
+                            <span class="badge bg-danger">Arızalı</span>
+                            {% elif arac.durum.value == 'satildi' %}
+                            <span class="badge bg-secondary">Satıldı</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ arac.durum.value }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('filo.detay', id=arac.id) }}" class="btn btn-outline-primary" title="Detay">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if has_permission('filo.edit') %}
+                                <a href="{{ url_for('filo.duzenle', id=arac.id) }}" class="btn btn-outline-secondary" title="Düzenle">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            Kayıt bulunamadı
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    {% if pagination.pages > 1 %}
+    <div class="card-footer bg-white">
+        <nav>
+            <ul class="pagination pagination-sm mb-0 justify-content-center">
+                {% for page in pagination.iter_pages() %}
+                {% if page %}
+                <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('filo.liste', page=page, search=request.args.get('search', ''), durum=request.args.get('durum', ''), proje_id=request.args.get('proje_id', '')) }}">{{ page }}</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

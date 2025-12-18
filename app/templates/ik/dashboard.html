@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}İK Dashboard - TG Portal{% endblock %}
+{% block page_title %}İK Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card stat-card primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Aktif Çalışan</h6>
+                        <h3 class="mb-0">{{ aktif_calisan }}</h3>
+                    </div>
+                    <div class="text-primary opacity-50">
+                        <i class="bi bi-people fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card stat-card warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Bekleyen Aday</h6>
+                        <h3 class="mb-0">{{ bekleyen_aday }}</h3>
+                    </div>
+                    <div class="text-warning opacity-50">
+                        <i class="bi bi-person-plus fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card stat-card danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Bekleyen İzin</h6>
+                        <h3 class="mb-0">{{ bekleyen_izin }}</h3>
+                    </div>
+                    <div class="text-danger opacity-50">
+                        <i class="bi bi-calendar-x fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3 mb-3">
+        <div class="card stat-card success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Departman</h6>
+                        <h3 class="mb-0">{{ departman_stats|length }}</h3>
+                    </div>
+                    <div class="text-success opacity-50">
+                        <i class="bi bi-building fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Departman Dağılımı</h6>
+            </div>
+            <div class="card-body">
+                {% if departman_stats %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Departman</th>
+                                <th class="text-end">Kişi</th>
+                                <th width="40%"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set max_count = departman_stats|map(attribute=1)|max %}
+                            {% for dept_ad, count in departman_stats %}
+                            <tr>
+                                <td>{{ dept_ad }}</td>
+                                <td class="text-end">{{ count }}</td>
+                                <td>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-primary" style="width: {{ (count / max_count * 100)|int }}%"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0">Henüz veri yok</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Hızlı Erişim</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    {% if has_permission('ik.create') %}
+                    <div class="col-6">
+                        <a href="{{ url_for('ik.ekle') }}" class="btn btn-outline-primary w-100 py-3">
+                            <i class="bi bi-person-plus d-block fs-3 mb-1"></i>
+                            Çalışan Ekle
+                        </a>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="col-6">
+                        <a href="{{ url_for('ik.liste') }}" class="btn btn-outline-secondary w-100 py-3">
+                            <i class="bi bi-people d-block fs-3 mb-1"></i>
+                            Çalışan Listesi
+                        </a>
+                    </div>
+                    
+                    <div class="col-6">
+                        <a href="{{ url_for('ik.aday_liste') }}" class="btn btn-outline-warning w-100 py-3">
+                            <i class="bi bi-person-badge d-block fs-3 mb-1"></i>
+                            Adaylar
+                        </a>
+                    </div>
+                    
+                    <div class="col-6">
+                        <a href="{{ url_for('ik.izin_liste') }}" class="btn btn-outline-info w-100 py-3">
+                            <i class="bi bi-calendar-check d-block fs-3 mb-1"></i>
+                            İzin Talepleri
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

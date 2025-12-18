@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}{{ musteri.display_name }} - TG Portal{% endblock %}
+{% block page_title %}{{ musteri.display_name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Temel Bilgiler -->
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-building me-2"></i>Müşteri Bilgileri</h6>
+                {% if musteri.aktif %}
+                <span class="badge bg-success">Aktif</span>
+                {% else %}
+                <span class="badge bg-secondary">Pasif</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Şirket Adı</label>
+                        <div class="fw-bold">{{ musteri.ad }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="text-muted small">Kısa Ad</label>
+                        <div>{{ musteri.kisa_ad or '-' }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="text-muted small">Aktif Proje</label>
+                        <div><span class="badge bg-primary">{{ musteri.aktif_proje_sayisi }}</span></div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="text-muted small">Vergi No</label>
+                        <div>{{ musteri.vergi_no or '-' }}</div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="text-muted small">Vergi Dairesi</label>
+                        <div>{{ musteri.vergi_dairesi or '-' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- İletişim -->
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-telephone me-2"></i>İletişim</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-12 mb-3">
+                        <label class="text-muted small">Adres</label>
+                        <div>{{ musteri.adres or '-' }}</div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="text-muted small">İl / İlçe</label>
+                        <div>{{ musteri.il or '-' }}{% if musteri.ilce %} / {{ musteri.ilce }}{% endif %}</div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="text-muted small">Telefon</label>
+                        <div>
+                            {% if musteri.telefon %}
+                            <a href="tel:{{ musteri.telefon }}">{{ musteri.telefon }}</a>
+                            {% else %}-{% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="text-muted small">Email</label>
+                        <div>
+                            {% if musteri.email %}
+                            <a href="mailto:{{ musteri.email }}">{{ musteri.email }}</a>
+                            {% else %}-{% endif %}
+                        </div>
+                    </div>
+                    {% if musteri.web %}
+                    <div class="col-md-4">
+                        <label class="text-muted small">Web</label>
+                        <div><a href="{{ musteri.web }}" target="_blank">{{ musteri.web }}</a></div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Projeler -->
+        <div class="card">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-folder me-2"></i>Projeler</h6>
+                {% if has_permission('proje.create') %}
+                <a href="{{ url_for('proje.proje_ekle') }}?musteri_id={{ musteri.id }}" class="btn btn-success btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Proje Ekle
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Proje</th>
+                                <th>Kadro</th>
+                                <th>Doluluk</th>
+                                <th>Durum</th>
+                                <th width="80"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in projeler %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('proje.proje_detay', id=p.id) }}" class="text-decoration-none fw-bold">
+                                        {{ p.ad }}
+                                    </a>
+                                    {% if p.kod %}
+                                    <br><small class="text-muted">{{ p.kod }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>{{ p.mevcut_calisan }} / {{ p.toplam_kadro }}</td>
+                                <td>
+                                    <div class="progress" style="height: 6px; width: 60px;">
+                                        <div class="progress-bar {% if p.doluluk_orani >= 80 %}bg-success{% elif p.doluluk_orani >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             style="width: {{ p.doluluk_orani }}%"></div>
+                                    </div>
+                                    <small>{{ p.doluluk_orani }}%</small>
+                                </td>
+                                <td>
+                                    {% if p.aktif %}
+                                    <span class="badge bg-success">Aktif</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Pasif</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('proje.proje_detay', id=p.id) }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    Henüz proje yok
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Aksiyonlar -->
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Aksiyonlar</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if has_permission('proje.edit') %}
+                    <a href="{{ url_for('proje.musteri_duzenle', id=musteri.id) }}" class="btn btn-primary">
+                        <i class="bi bi-pencil me-1"></i>Düzenle
+                    </a>
+                    {% endif %}
+                    {% if has_permission('proje.create') %}
+                    <a href="{{ url_for('proje.proje_ekle') }}?musteri_id={{ musteri.id }}" class="btn btn-success">
+                        <i class="bi bi-folder-plus me-1"></i>Proje Ekle
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('proje.musteri_liste') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Listeye Dön
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Yetkili Kişi -->
+        {% if musteri.yetkili_ad %}
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-person me-2"></i>Yetkili Kişi</h6>
+            </div>
+            <div class="card-body">
+                <div class="fw-bold mb-2">{{ musteri.yetkili_ad }}</div>
+                {% if musteri.yetkili_telefon %}
+                <div class="mb-1">
+                    <i class="bi bi-telephone me-2"></i>
+                    <a href="tel:{{ musteri.yetkili_telefon }}">{{ musteri.yetkili_telefon }}</a>
+                </div>
+                {% endif %}
+                {% if musteri.yetkili_email %}
+                <div>
+                    <i class="bi bi-envelope me-2"></i>
+                    <a href="mailto:{{ musteri.yetkili_email }}">{{ musteri.yetkili_email }}</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Notlar -->
+        {% if musteri.notlar %}
+        <div class="card">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-sticky me-2"></i>Notlar</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ musteri.notlar }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

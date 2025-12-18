@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}İşe Al - {{ aday.full_name }} - TG Portal{% endblock %}
+{% block page_title %}Adayı İşe Al{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-person-check me-2"></i>İşe Alma Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>{{ aday.full_name }}</strong> adayını işe alıyorsunuz. 
+                        Aşağıdaki bilgileri tamamlayın.
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Ad</label>
+                            <input type="text" class="form-control" value="{{ aday.ad }}" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Soyad</label>
+                            <input type="text" class="form-control" value="{{ aday.soyad }}" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sicil No <span class="text-danger">*</span></label>
+                            <input type="text" name="sicil_no" class="form-control" required
+                                   placeholder="TG-001">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">TC Kimlik No</label>
+                            <input type="text" name="tc_kimlik" class="form-control" maxlength="11"
+                                   placeholder="12345678901">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">İşe Başlama Tarihi <span class="text-danger">*</span></label>
+                            <input type="date" name="ise_baslama" class="form-control" required
+                                   value="{{ today.strftime('%Y-%m-%d') if today else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Çalışma Tipi</label>
+                            <select name="calisma_tipi" class="form-select">
+                                <option value="tam_zamanli">Tam Zamanlı</option>
+                                <option value="yari_zamanli">Yarı Zamanlı</option>
+                                <option value="sozlesmeli">Sözleşmeli</option>
+                                <option value="stajyer">Stajyer</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('proje.kadro_detay', id=aday.kadro_id) if aday.kadro_id else url_for('proje.proje_liste') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>İptal
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-lg me-1"></i>İşe Al
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Aday Bilgisi -->
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-person me-2"></i>Aday Bilgisi</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <td class="text-muted">Email</td>
+                        <td class="text-end">{{ aday.email or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Telefon</td>
+                        <td class="text-end">{{ aday.telefon or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Kaynak</td>
+                        <td class="text-end">{{ aday.kaynak or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Başvuru</td>
+                        <td class="text-end">{{ aday.basvuru_tarihi.strftime('%d.%m.%Y') if aday.basvuru_tarihi else '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Kadro Bilgisi -->
+        {% if aday.kadro %}
+        <div class="card">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-briefcase me-2"></i>Kadro Bilgisi</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <td class="text-muted">Pozisyon</td>
+                        <td class="text-end"><strong>{{ aday.kadro.pozisyon_adi }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Proje</td>
+                        <td class="text-end">{{ aday.kadro.proje.ad }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Müşteri</td>
+                        <td class="text-end">{{ aday.kadro.proje.musteri.display_name }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Lokasyon</td>
+                        <td class="text-end">{{ aday.kadro.il or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Maaş Aralığı</td>
+                        <td class="text-end">
+                            {% if aday.kadro.maas_min and aday.kadro.maas_max %}
+                            ₺{{ '{:,.0f}'.format(aday.kadro.maas_min) }} - ₺{{ '{:,.0f}'.format(aday.kadro.maas_max) }}
+                            {% else %}-{% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

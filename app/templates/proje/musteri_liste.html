@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Müşteriler - TG Portal{% endblock %}
+{% block page_title %}Müşteriler{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <div><i class="bi bi-funnel me-2"></i>Filtreler</div>
+        {% if has_permission('proje.create') %}
+        <a href="{{ url_for('proje.musteri_ekle') }}" class="btn btn-primary btn-sm">
+            <i class="bi bi-plus-lg me-1"></i>Yeni Müşteri
+        </a>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Ara</label>
+                <input type="text" name="search" class="form-control" 
+                       value="{{ request.args.get('search', '') }}" placeholder="Müşteri adı...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Durum</label>
+                <select name="aktif" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="1" {% if request.args.get('aktif') == '1' %}selected{% endif %}>Aktif</option>
+                    <option value="0" {% if request.args.get('aktif') == '0' %}selected{% endif %}>Pasif</option>
+                </select>
+            </div>
+            <div class="col-md-5 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search me-1"></i>Filtrele
+                </button>
+                <a href="{{ url_for('proje.musteri_liste') }}" class="btn btn-outline-secondary">Temizle</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Müşteri</th>
+                        <th>Yetkili</th>
+                        <th>İletişim</th>
+                        <th>Proje</th>
+                        <th>Durum</th>
+                        <th width="100"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in musteriler %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('proje.musteri_detay', id=m.id) }}" class="text-decoration-none fw-bold">
+                                {{ m.display_name }}
+                            </a>
+                            {% if m.il %}
+                            <br><small class="text-muted">{{ m.il }}</small>
+                            {% endif %}
+                        </td>
+                        <td>{{ m.yetkili_ad or '-' }}</td>
+                        <td>
+                            {% if m.telefon %}<i class="bi bi-telephone me-1"></i>{{ m.telefon }}<br>{% endif %}
+                            {% if m.email %}<small class="text-muted">{{ m.email }}</small>{% endif %}
+                        </td>
+                        <td><span class="badge bg-secondary">{{ m.aktif_proje_sayisi }}</span></td>
+                        <td>
+                            {% if m.aktif %}
+                            <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Pasif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('proje.musteri_detay', id=m.id) }}" class="btn btn-outline-primary" title="Detay">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                {% if has_permission('proje.edit') %}
+                                <a href="{{ url_for('proje.musteri_duzenle', id=m.id) }}" class="btn btn-outline-warning" title="Düzenle">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Müşteri bulunamadı
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

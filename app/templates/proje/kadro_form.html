@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}{% if kadro %}Kadro Düzenle{% else %}Yeni Kadro{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if kadro %}Kadro Düzenle{% else %}Yeni Kadro - {{ proje.ad }}{% endif %}{% endblock %}
+
+{% block content %}
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Temel Bilgiler -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-person-badge me-2"></i>Kadro Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Pozisyon Adı <span class="text-danger">*</span></label>
+                            <input type="text" name="pozisyon_adi" class="form-control" required
+                                   value="{{ kadro.pozisyon_adi if kadro else '' }}" placeholder="Saha Satış Temsilcisi">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Departman</label>
+                            <input type="text" name="departman" class="form-control"
+                                   value="{{ kadro.departman if kadro else '' }}" placeholder="Satış">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Hedef Sayı <span class="text-danger">*</span></label>
+                            <input type="number" name="hedef_sayi" class="form-control" min="1" required
+                                   value="{{ kadro.hedef_sayi if kadro else 1 }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Öncelik (1-10)</label>
+                            <input type="number" name="oncelik" class="form-control" min="1" max="10"
+                                   value="{{ kadro.oncelik if kadro else 5 }}">
+                            <small class="text-muted">1 = En acil</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lokasyon -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Lokasyon</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">İl</label>
+                            <input type="text" name="il" class="form-control"
+                                   value="{{ kadro.il if kadro else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">İlçe</label>
+                            <input type="text" name="ilce" class="form-control"
+                                   value="{{ kadro.ilce if kadro else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Bölge</label>
+                            <input type="text" name="bolge" class="form-control"
+                                   value="{{ kadro.bolge if kadro else '' }}" placeholder="Marmara">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gereksinimler -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-list-check me-2"></i>Gereksinimler</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Min. Tecrübe (Yıl)</label>
+                            <input type="number" name="min_tecrube_yil" class="form-control" min="0"
+                                   value="{{ kadro.min_tecrube_yil if kadro else 0 }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Eğitim Seviyesi</label>
+                            <select name="egitim_seviyesi" class="form-select">
+                                <option value="">Farketmez</option>
+                                <option value="ilkokul" {% if kadro and kadro.egitim_seviyesi == 'ilkokul' %}selected{% endif %}>İlkokul</option>
+                                <option value="ortaokul" {% if kadro and kadro.egitim_seviyesi == 'ortaokul' %}selected{% endif %}>Ortaokul</option>
+                                <option value="lise" {% if kadro and kadro.egitim_seviyesi == 'lise' %}selected{% endif %}>Lise</option>
+                                <option value="on_lisans" {% if kadro and kadro.egitim_seviyesi == 'on_lisans' %}selected{% endif %}>Ön Lisans</option>
+                                <option value="lisans" {% if kadro and kadro.egitim_seviyesi == 'lisans' %}selected{% endif %}>Lisans</option>
+                                <option value="yuksek_lisans" {% if kadro and kadro.egitim_seviyesi == 'yuksek_lisans' %}selected{% endif %}>Yüksek Lisans</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Cinsiyet Tercihi</label>
+                            <select name="cinsiyet_tercihi" class="form-select">
+                                <option value="">Farketmez</option>
+                                <option value="erkek" {% if kadro and kadro.cinsiyet_tercihi == 'erkek' %}selected{% endif %}>Erkek</option>
+                                <option value="kadin" {% if kadro and kadro.cinsiyet_tercihi == 'kadin' %}selected{% endif %}>Kadın</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Yaş Min</label>
+                            <input type="number" name="yas_min" class="form-control" min="18" max="65"
+                                   value="{{ kadro.yas_min if kadro else '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Yaş Max</label>
+                            <input type="number" name="yas_max" class="form-control" min="18" max="65"
+                                   value="{{ kadro.yas_max if kadro else '' }}">
+                        </div>
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                <input type="checkbox" class="form-check-input" id="ehliyet_gerekli" name="ehliyet_gerekli"
+                                       {% if kadro and kadro.ehliyet_gerekli %}checked{% endif %}>
+                                <label class="form-check-label" for="ehliyet_gerekli">Ehliyet Gerekli</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Ehliyet Sınıfı</label>
+                            <input type="text" name="ehliyet_sinifi" class="form-control"
+                                   value="{{ kadro.ehliyet_sinifi if kadro else '' }}" placeholder="B">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Maaş -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-currency-exchange me-2"></i>Maaş Aralığı</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Minimum (₺)</label>
+                            <input type="number" name="maas_min" class="form-control" step="0.01"
+                                   value="{{ kadro.maas_min if kadro else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Maximum (₺)</label>
+                            <input type="number" name="maas_max" class="form-control" step="0.01"
+                                   value="{{ kadro.maas_max if kadro else '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Durum & Kaydet -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Durum</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" class="form-check-input" id="aktif" name="aktif"
+                               {% if not kadro or kadro.aktif %}checked{% endif %}>
+                        <label class="form-check-label" for="aktif">Aktif</label>
+                    </div>
+                    
+                    <label class="form-label">Notlar</label>
+                    <textarea name="notlar" class="form-control" rows="4">{{ kadro.notlar if kadro else '' }}</textarea>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>
+                            {% if kadro %}Güncelle{% else %}Kaydet{% endif %}
+                        </button>
+                        <a href="{{ url_for('proje.proje_detay', id=proje.id) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i>İptal
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Proje Bilgisi -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-folder me-2"></i>Proje</h6>
+                </div>
+                <div class="card-body">
+                    <strong>{{ proje.ad }}</strong>
+                    <br><small class="text-muted">{{ proje.musteri.display_name }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

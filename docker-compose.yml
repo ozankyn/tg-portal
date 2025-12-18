@@ -3,6 +3,7 @@ version: '3.8'
 services:
   web:
     build: .
+    container_name: tg-portal-web
     ports:
       - "5001:5000"
     volumes:
@@ -10,22 +11,21 @@ services:
       - uploads_data:/app/uploads
     environment:
       - FLASK_ENV=development
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
       - DATABASE_URL=postgresql://tgportal:tgportal123@db:5432/tgportal
       - REDIS_URL=redis://redis:6379/0
-      - SEED_DATA=true
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_started
     restart: unless-stopped
-    command: >
-      sh -c "python -c 'from database import init_db, seed_sample_data; init_db(); seed_sample_data()' && 
-             python -c 'from app import app; print(\"App loaded:\", app)' &&
-             gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 120 --reload 'app:app'"
+    networks:
+      - tg-network
 
   db:
     image: postgres:15-alpine
+    container_name: tg-portal-db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -34,22 +34,31 @@ services:
       - POSTGRES_DB=tgportal
     ports:
       - "5432:5432"
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U tgportal -d tgportal"]
+      test: ["CMD-SHELL", "pg_isready -U tgportal"]
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+    networks:
+      - tg-network
 
   redis:
     image: redis:7-alpine
+    container_name: tg-portal-redis
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     restart: unless-stopped
+    networks:
+      - tg-network
 
 volumes:
   postgres_data:
   redis_data:
   uploads_data:
+
+networks:
+  tg-network:
+    driver: bridge

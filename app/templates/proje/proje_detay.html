@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}{{ proje.ad }} - TG Portal{% endblock %}
+{% block page_title %}{{ proje.ad }}{% endblock %}
+
+{% block content %}
+<!-- İstatistikler -->
+<div class="row mb-4">
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <h3 class="mb-0">{{ stats.toplam_kadro }}</h3>
+                <small class="text-muted">Hedef Kadro</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <h3 class="mb-0 text-success">{{ stats.mevcut_calisan }}</h3>
+                <small class="text-muted">Mevcut Çalışan</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <h3 class="mb-0 text-primary">{{ stats.arac_sayisi }}</h3>
+                <small class="text-muted">Araç</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body text-center">
+                <h3 class="mb-0 text-warning">{{ stats.bekleyen_aday }}</h3>
+                <small class="text-muted">Bekleyen Aday</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Proje Bilgileri -->
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-folder me-2"></i>Proje Bilgileri</h6>
+                {% if proje.aktif %}
+                <span class="badge bg-success">Aktif</span>
+                {% else %}
+                <span class="badge bg-secondary">Pasif</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="text-muted small">Müşteri</label>
+                        <div class="fw-bold">
+                            <a href="{{ url_for('proje.musteri_detay', id=proje.musteri_id) }}" class="text-decoration-none">
+                                {{ proje.musteri.display_name }}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="text-muted small">Proje Kodu</label>
+                        <div>{{ proje.kod or '-' }}</div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label class="text-muted small">Doluluk Oranı</label>
+                        <div>
+                            <div class="progress mb-1" style="height: 8px;">
+                                <div class="progress-bar {% if stats.doluluk_orani >= 80 %}bg-success{% elif stats.doluluk_orani >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                     style="width: {{ stats.doluluk_orani }}%"></div>
+                            </div>
+                            <strong>{{ stats.doluluk_orani }}%</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="text-muted small">Başlangıç</label>
+                        <div>{{ proje.baslangic_tarihi.strftime('%d.%m.%Y') if proje.baslangic_tarihi else '-' }}</div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="text-muted small">Bitiş</label>
+                        <div>{{ proje.bitis_tarihi.strftime('%d.%m.%Y') if proje.bitis_tarihi else '-' }}</div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="text-muted small">Bütçe</label>
+                        <div>{% if proje.butce %}₺{{ '{:,.0f}'.format(proje.butce) }}{% else %}-{% endif %}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="projeTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="kadrolar-tab" data-bs-toggle="tab" data-bs-target="#kadrolar" type="button">
+                    <i class="bi bi-people me-1"></i>Kadrolar <span class="badge bg-secondary">{{ kadrolar|length }}</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="araclar-tab" data-bs-toggle="tab" data-bs-target="#araclar" type="button">
+                    <i class="bi bi-truck me-1"></i>Araçlar <span class="badge bg-secondary">{{ araclar|length }}</span>
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content" id="projeTabsContent">
+            <!-- Kadrolar Tab -->
+            <div class="tab-pane fade show active" id="kadrolar" role="tabpanel">
+                <div class="card border-top-0 rounded-top-0">
+                    <div class="card-header bg-white d-flex justify-content-end">
+                        {% if has_permission('proje.edit') %}
+                        <a href="{{ url_for('proje.kadro_ekle', proje_id=proje.id) }}" class="btn btn-success btn-sm">
+                            <i class="bi bi-plus-lg me-1"></i>Kadro Ekle
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Pozisyon</th>
+                                        <th>Lokasyon</th>
+                                        <th>Kadro</th>
+                                        <th>Aday</th>
+                                        <th>Öncelik</th>
+                                        <th width="80"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for k in kadrolar %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('proje.kadro_detay', id=k.id) }}" class="text-decoration-none fw-bold">
+                                                {{ k.pozisyon_adi }}
+                                            </a>
+                                            {% if k.departman %}
+                                            <br><small class="text-muted">{{ k.departman }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ k.il or '-' }}{% if k.ilce %} / {{ k.ilce }}{% endif %}</td>
+                                        <td>
+                                            <span class="fw-bold {% if k.eksik_sayi > 0 %}text-danger{% else %}text-success{% endif %}">
+                                                {{ k.mevcut_sayi }}
+                                            </span> / {{ k.hedef_sayi }}
+                                        </td>
+                                        <td>
+                                            {% if k.bekleyen_aday_sayisi > 0 %}
+                                            <span class="badge bg-warning">{{ k.bekleyen_aday_sayisi }}</span>
+                                            {% else %}
+                                            <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if k.oncelik <= 3 %}
+                                            <span class="badge bg-danger">Acil</span>
+                                            {% elif k.oncelik <= 5 %}
+                                            <span class="badge bg-warning">Normal</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Düşük</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('proje.kadro_detay', id=k.id) }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            Henüz kadro tanımlanmamış
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Araçlar Tab -->
+            <div class="tab-pane fade" id="araclar" role="tabpanel">
+                <div class="card border-top-0 rounded-top-0">
+                    <div class="card-header bg-white d-flex justify-content-end">
+                        {% if has_permission('filo.edit') %}
+                        <a href="{{ url_for('proje.arac_ata', proje_id=proje.id) }}" class="btn btn-success btn-sm">
+                            <i class="bi bi-plus-lg me-1"></i>Araç Ata
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Plaka</th>
+                                        <th>Araç</th>
+                                        <th>Şoför</th>
+                                        <th>KM</th>
+                                        <th>Durum</th>
+                                        <th width="80"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for a in araclar %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('filo.detay', id=a.id) }}" class="text-decoration-none fw-bold">
+                                                {{ a.plaka }}
+                                            </a>
+                                        </td>
+                                        <td>{{ a.marka }} {{ a.model }}</td>
+                                        <td>{{ a.sofor.full_name if a.sofor else '-' }}</td>
+                                        <td>{{ '{:,.0f}'.format(a.kilometre) if a.kilometre else '-' }}</td>
+                                        <td>
+                                            {% if a.durum.value == 'aktif' %}
+                                            <span class="badge bg-success">Aktif</span>
+                                            {% elif a.durum.value == 'bakimda' %}
+                                            <span class="badge bg-warning">Bakımda</span>
+                                            {% elif a.durum.value == 'arizali' %}
+                                            <span class="badge bg-danger">Arızalı</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">{{ a.durum.value }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('filo.detay', id=a.id) }}" class="btn btn-outline-primary" title="Detay">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                {% if has_permission('filo.edit') %}
+                                                <button type="button" class="btn btn-outline-danger" title="Projeden Çıkar"
+                                                        onclick="if(confirm('Bu aracı projeden çıkarmak istediğinize emin misiniz?')) location.href='{{ url_for('proje.arac_cikar', proje_id=proje.id, arac_id=a.id) }}'">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            Projeye atanmış araç yok
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Aksiyonlar -->
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Aksiyonlar</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if has_permission('proje.edit') %}
+                    <a href="{{ url_for('proje.proje_duzenle', id=proje.id) }}" class="btn btn-primary">
+                        <i class="bi bi-pencil me-1"></i>Düzenle
+                    </a>
+                    <a href="{{ url_for('proje.kadro_ekle', proje_id=proje.id) }}" class="btn btn-success">
+                        <i class="bi bi-people me-1"></i>Kadro Ekle
+                    </a>
+                    {% endif %}
+                    {% if has_permission('filo.edit') %}
+                    <a href="{{ url_for('proje.arac_ata', proje_id=proje.id) }}" class="btn btn-info">
+                        <i class="bi bi-truck me-1"></i>Araç Ata
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('proje.musteri_detay', id=proje.musteri_id) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-building me-1"></i>Müşteri Detay
+                    </a>
+                    <a href="{{ url_for('proje.proje_liste') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Listeye Dön
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notlar -->
+        {% if proje.notlar %}
+        <div class="card">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-sticky me-2"></i>Notlar</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-0">{{ proje.notlar }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}İzin Talepleri - TG Portal{% endblock %}
+{% block page_title %}İzin Talepleri{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <div><i class="bi bi-funnel me-2"></i>Filtreler</div>
+    </div>
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Durum</label>
+                <select name="durum" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="beklemede" {% if request.args.get('durum') == 'beklemede' %}selected{% endif %}>Beklemede</option>
+                    <option value="onaylandi" {% if request.args.get('durum') == 'onaylandi' %}selected{% endif %}>Onaylandı</option>
+                    <option value="reddedildi" {% if request.args.get('durum') == 'reddedildi' %}selected{% endif %}>Reddedildi</option>
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="bi bi-search me-1"></i>Filtrele
+                </button>
+                <a href="{{ url_for('ik.izin_liste') }}" class="btn btn-outline-secondary">Temizle</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Çalışan</th>
+                        <th>İzin Tipi</th>
+                        <th>Başlangıç</th>
+                        <th>Bitiş</th>
+                        <th>Gün</th>
+                        <th>Durum</th>
+                        <th width="120"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for izin in izinler %}
+                    <tr>
+                        <td>
+                            <strong>{{ izin.calisan.full_name }}</strong>
+                            <br><small class="text-muted">{{ izin.calisan.departman.ad if izin.calisan.departman else '' }}</small>
+                        </td>
+                        <td>{{ izin.izin_tipi.replace('_', ' ').title() if izin.izin_tipi else '-' }}</td>
+                        <td>{{ izin.baslangic.strftime('%d.%m.%Y') }}</td>
+                        <td>{{ izin.bitis.strftime('%d.%m.%Y') }}</td>
+                        <td>{{ izin.gun_sayisi or '-' }}</td>
+                        <td>
+                            {% if izin.durum == 'beklemede' %}
+                            <span class="badge bg-warning">Beklemede</span>
+                            {% elif izin.durum == 'onaylandi' %}
+                            <span class="badge bg-success">Onaylandı</span>
+                            {% else %}
+                            <span class="badge bg-danger">Reddedildi</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if izin.durum == 'beklemede' and has_permission('ik.edit') %}
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-success" title="Onayla">
+                                    <i class="bi bi-check-lg"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" title="Reddet">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            İzin talebi bulunamadı
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    {% if pagination.pages > 1 %}
+    <div class="card-footer bg-white">
+        <nav>
+            <ul class="pagination pagination-sm mb-0 justify-content-center">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('ik.izin_liste', page=pagination.prev_num, **request.args) }}">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for p in pagination.iter_pages() %}
+                {% if p %}
+                <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('ik.izin_liste', page=p, **request.args) }}">{{ p }}</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('ik.izin_liste', page=pagination.next_num, **request.args) }}">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

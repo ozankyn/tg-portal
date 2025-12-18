@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TG Portal{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Select2 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --sidebar-width: 250px;
+        }
+        body {
+            min-height: 100vh;
+        }
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding-top: 1rem;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.7);
+            padding: 0.75rem 1.25rem;
+            border-radius: 0;
+            transition: all 0.2s;
+        }
+        .sidebar .nav-link:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+        }
+        .sidebar .nav-link.active {
+            color: #fff;
+            background: rgba(255,255,255,0.15);
+            border-left: 3px solid #0d6efd;
+        }
+        .sidebar .nav-link i {
+            width: 24px;
+        }
+        .sidebar-brand {
+            color: #fff;
+            font-size: 1.25rem;
+            font-weight: 600;
+            padding: 1rem 1.25rem;
+            text-decoration: none;
+            display: block;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 1rem;
+        }
+        .sidebar-section {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+            padding: 1rem 1.25rem 0.5rem;
+            letter-spacing: 0.5px;
+        }
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            background: #f8f9fa;
+        }
+        .topbar {
+            background: #fff;
+            padding: 0.75rem 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .content-wrapper {
+            padding: 1.5rem;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+        }
+        .stat-card {
+            border-left: 4px solid;
+        }
+        .stat-card.primary { border-left-color: #0d6efd; }
+        .stat-card.success { border-left-color: #198754; }
+        .stat-card.warning { border-left-color: #ffc107; }
+        .stat-card.danger { border-left-color: #dc3545; }
+        .table th {
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-status {
+            font-size: 0.75rem;
+            padding: 0.35rem 0.65rem;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <a href="{{ url_for('core.dashboard') }}" class="sidebar-brand">
+            <i class="bi bi-grid-3x3-gap-fill me-2"></i>TG Portal
+        </a>
+        
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint == 'core.dashboard' %}active{% endif %}" href="{{ url_for('core.dashboard') }}">
+                    <i class="bi bi-speedometer2 me-2"></i>Dashboard
+                </a>
+            </li>
+            
+            {% if has_permission('proje.view') %}
+            <li class="sidebar-section">Proje Yönetimi</li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'proje' and 'musteri' not in request.path %}active{% endif %}" href="{{ url_for('proje.proje_liste') }}">
+                    <i class="bi bi-folder me-2"></i>Projeler
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'musteri' in request.path %}active{% endif %}" href="{{ url_for('proje.musteri_liste') }}">
+                    <i class="bi bi-buildings me-2"></i>Müşteriler
+                </a>
+            </li>
+            {% endif %}
+            
+            {% if has_permission('ik.view') %}
+            <li class="sidebar-section">İnsan Kaynakları</li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'ik' %}active{% endif %}" href="{{ url_for('ik.liste') }}">
+                    <i class="bi bi-people me-2"></i>Çalışanlar
+                </a>
+            </li>
+            {% endif %}
+            
+            {% if has_permission('filo.view') %}
+            <li class="sidebar-section">Filo Yönetimi</li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'filo' %}active{% endif %}" href="{{ url_for('filo.liste') }}">
+                    <i class="bi bi-truck me-2"></i>Araçlar
+                </a>
+            </li>
+            {% endif %}
+            
+            {% if has_permission('tedarikci.view') %}
+            <li class="sidebar-section">Tedarik</li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.blueprint == 'tedarikci' %}active{% endif %}" href="{{ url_for('tedarikci.liste') }}">
+                    <i class="bi bi-building me-2"></i>Tedarikçiler
+                </a>
+            </li>
+            {% endif %}
+            
+            {% if current_user.is_admin %}
+            <li class="sidebar-section">Yönetim</li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.endpoint and 'admin' in request.endpoint %}active{% endif %}" href="{{ url_for('core.admin_kullanicilar') }}">
+                    <i class="bi bi-gear me-2"></i>Ayarlar
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <div>
+                <h5 class="mb-0">{% block page_title %}Dashboard{% endblock %}</h5>
+            </div>
+            <div class="d-flex align-items-center">
+                <div class="dropdown">
+                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
+                        <span class="me-2">{{ current_user.full_name }}</span>
+                        <i class="bi bi-person-circle fs-4"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{{ url_for('core.profil') }}"><i class="bi bi-person me-2"></i>Profil</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{{ url_for('core.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Çıkış</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="content-wrapper">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <script>
+        // Select2 global config
+        $.fn.select2.defaults.set('theme', 'bootstrap-5');
+        $.fn.select2.defaults.set('language', 'tr');
+        
+        // Initialize Select2
+        $(document).ready(function() {
+            $('.select2').select2();
+        });
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

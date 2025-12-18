@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block title %}{% if musteri %}Müşteri Düzenle{% else %}Yeni Müşteri{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if musteri %}Müşteri Düzenle{% else %}Yeni Müşteri{% endif %}{% endblock %}
+
+{% block content %}
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Temel Bilgiler -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-building me-2"></i>Temel Bilgiler</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Şirket Adı <span class="text-danger">*</span></label>
+                            <input type="text" name="ad" class="form-control" required
+                                   value="{{ musteri.ad if musteri else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Kısa Ad</label>
+                            <input type="text" name="kisa_ad" class="form-control"
+                                   value="{{ musteri.kisa_ad if musteri else '' }}" placeholder="Migros">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Vergi No</label>
+                            <input type="text" name="vergi_no" class="form-control" maxlength="11"
+                                   value="{{ musteri.vergi_no if musteri else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Vergi Dairesi</label>
+                            <input type="text" name="vergi_dairesi" class="form-control"
+                                   value="{{ musteri.vergi_dairesi if musteri else '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- İletişim -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-telephone me-2"></i>İletişim</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Adres</label>
+                            <textarea name="adres" class="form-control" rows="2">{{ musteri.adres if musteri else '' }}</textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">İl</label>
+                            <input type="text" name="il" class="form-control"
+                                   value="{{ musteri.il if musteri else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">İlçe</label>
+                            <input type="text" name="ilce" class="form-control"
+                                   value="{{ musteri.ilce if musteri else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Telefon</label>
+                            <input type="tel" name="telefon" class="form-control"
+                                   value="{{ musteri.telefon if musteri else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control"
+                                   value="{{ musteri.email if musteri else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Web</label>
+                            <input type="url" name="web" class="form-control"
+                                   value="{{ musteri.web if musteri else '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Yetkili -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-person me-2"></i>Yetkili Kişi</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Ad Soyad</label>
+                            <input type="text" name="yetkili_ad" class="form-control"
+                                   value="{{ musteri.yetkili_ad if musteri else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Telefon</label>
+                            <input type="tel" name="yetkili_telefon" class="form-control"
+                                   value="{{ musteri.yetkili_telefon if musteri else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="yetkili_email" class="form-control"
+                                   value="{{ musteri.yetkili_email if musteri else '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Durum -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Durum</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" class="form-check-input" id="aktif" name="aktif"
+                               {% if not musteri or musteri.aktif %}checked{% endif %}>
+                        <label class="form-check-label" for="aktif">Aktif</label>
+                    </div>
+                    
+                    <label class="form-label">Notlar</label>
+                    <textarea name="notlar" class="form-control" rows="4">{{ musteri.notlar if musteri else '' }}</textarea>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>
+                            {% if musteri %}Güncelle{% else %}Kaydet{% endif %}
+                        </button>
+                        <a href="{{ url_for('proje.musteri_liste') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i>İptal
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

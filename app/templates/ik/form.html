@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}{% if calisan %}Çalışan Düzenle{% else %}Yeni Çalışan{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if calisan %}Çalışan Düzenle{% else %}Yeni Çalışan{% endif %}{% endblock %}
+
+{% block content %}
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Kişisel Bilgiler -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-person me-2"></i>Kişisel Bilgiler</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Sicil No</label>
+                            <input type="text" name="sicil_no" class="form-control"
+                                   value="{{ calisan.sicil_no if calisan else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ad <span class="text-danger">*</span></label>
+                            <input type="text" name="ad" class="form-control" required
+                                   value="{{ calisan.ad if calisan else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Soyad <span class="text-danger">*</span></label>
+                            <input type="text" name="soyad" class="form-control" required
+                                   value="{{ calisan.soyad if calisan else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">TC Kimlik No</label>
+                            <input type="text" name="tc_kimlik" class="form-control" maxlength="11"
+                                   value="{{ calisan.tc_kimlik if calisan else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Doğum Tarihi</label>
+                            <input type="date" name="dogum_tarihi" class="form-control"
+                                   value="{{ calisan.dogum_tarihi.strftime('%Y-%m-%d') if calisan and calisan.dogum_tarihi else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Cinsiyet</label>
+                            <select name="cinsiyet" class="form-select">
+                                <option value="">Seçiniz</option>
+                                <option value="erkek" {% if calisan and calisan.cinsiyet == 'erkek' %}selected{% endif %}>Erkek</option>
+                                <option value="kadin" {% if calisan and calisan.cinsiyet == 'kadin' %}selected{% endif %}>Kadın</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- İletişim Bilgileri -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-telephone me-2"></i>İletişim Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control"
+                                   value="{{ calisan.email if calisan else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Telefon</label>
+                            <input type="tel" name="telefon" class="form-control"
+                                   value="{{ calisan.telefon if calisan else '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Adres</label>
+                            <textarea name="adres" class="form-control" rows="2">{{ calisan.adres if calisan else '' }}</textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">İl</label>
+                            <input type="text" name="il" class="form-control"
+                                   value="{{ calisan.il if calisan else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">İlçe</label>
+                            <input type="text" name="ilce" class="form-control"
+                                   value="{{ calisan.ilce if calisan else '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- İş Bilgileri -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-briefcase me-2"></i>İş Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Departman</label>
+                            <select name="departman_id" class="form-select select2">
+                                <option value="">Seçiniz</option>
+                                {% for d in departmanlar %}
+                                <option value="{{ d.id }}" {% if calisan and calisan.departman_id == d.id %}selected{% endif %}>
+                                    {{ d.ad }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Pozisyon</label>
+                            <select name="pozisyon_id" class="form-select select2">
+                                <option value="">Seçiniz</option>
+                                {% for p in pozisyonlar %}
+                                <option value="{{ p.id }}" {% if calisan and calisan.pozisyon_id == p.id %}selected{% endif %}>
+                                    {{ p.ad }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">İşe Başlama Tarihi</label>
+                            <input type="date" name="ise_baslama" class="form-control"
+                                   value="{{ calisan.ise_baslama.strftime('%Y-%m-%d') if calisan and calisan.ise_baslama else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Çalışma Tipi</label>
+                            <select name="calisma_tipi" class="form-select">
+                                <option value="">Seçiniz</option>
+                                <option value="tam_zamanli" {% if calisan and calisan.calisma_tipi == 'tam_zamanli' %}selected{% endif %}>Tam Zamanlı</option>
+                                <option value="yari_zamanli" {% if calisan and calisan.calisma_tipi == 'yari_zamanli' %}selected{% endif %}>Yarı Zamanlı</option>
+                                <option value="stajyer" {% if calisan and calisan.calisma_tipi == 'stajyer' %}selected{% endif %}>Stajyer</option>
+                                <option value="sozlesmeli" {% if calisan and calisan.calisma_tipi == 'sozlesmeli' %}selected{% endif %}>Sözleşmeli</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Durum</label>
+                            <select name="durum" class="form-select">
+                                {% for d in durumlar %}
+                                <option value="{{ d.value }}" {% if calisan and calisan.durum == d %}selected{% endif %}>
+                                    {{ d.value.replace('_', ' ').title() }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Acil Durum -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Acil Durum İletişim</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Ad Soyad</label>
+                            <input type="text" name="acil_kisi_ad" class="form-control"
+                                   value="{{ calisan.acil_kisi_ad if calisan else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Telefon</label>
+                            <input type="tel" name="acil_kisi_telefon" class="form-control"
+                                   value="{{ calisan.acil_kisi_telefon if calisan else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Yakınlık</label>
+                            <input type="text" name="acil_kisi_yakinlik" class="form-control" placeholder="örn: Eş, Anne, Kardeş"
+                                   value="{{ calisan.acil_kisi_yakinlik if calisan else '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Kaydet -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>
+                            {% if calisan %}Güncelle{% else %}Kaydet{% endif %}
+                        </button>
+                        <a href="{{ url_for('ik.liste') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i>İptal
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notlar -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-sticky me-2"></i>Notlar</h6>
+                </div>
+                <div class="card-body">
+                    <textarea name="notlar" class="form-control" rows="4">{{ calisan.notlar if calisan else '' }}</textarea>
+                </div>
+            </div>
+            
+            {% if calisan %}
+            <!-- Bilgi -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <strong>Kıdem:</strong> {{ calisan.kidem_yili }} yıl<br><br>
+                        <strong>Oluşturulma:</strong><br>
+                        {{ calisan.created_at.strftime('%d.%m.%Y %H:%M') }}<br><br>
+                        <strong>Son Güncelleme:</strong><br>
+                        {{ calisan.updated_at.strftime('%d.%m.%Y %H:%M') }}
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block title %}{% if tedarikci %}Tedarikçi Düzenle{% else %}Yeni Tedarikçi{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if tedarikci %}Tedarikçi Düzenle{% else %}Yeni Tedarikçi{% endif %}{% endblock %}
+
+{% block content %}
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Temel Bilgiler -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-building me-2"></i>Temel Bilgiler</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Şirket Unvanı <span class="text-danger">*</span></label>
+                            <input type="text" name="unvan" class="form-control" required
+                                   value="{{ tedarikci.unvan if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Kısa Ad</label>
+                            <input type="text" name="kisa_ad" class="form-control"
+                                   value="{{ tedarikci.kisa_ad if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Vergi No</label>
+                            <input type="text" name="vergi_no" class="form-control" maxlength="11"
+                                   value="{{ tedarikci.vergi_no if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Vergi Dairesi</label>
+                            <input type="text" name="vergi_dairesi" class="form-control"
+                                   value="{{ tedarikci.vergi_dairesi if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Tip</label>
+                            <select name="tip" class="form-select">
+                                {% for tip in tipler %}
+                                <option value="{{ tip.value }}" 
+                                    {% if tedarikci and tedarikci.tip == tip %}selected{% endif %}>
+                                    {{ tip.value.replace('_', ' ').title() }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- İletişim Bilgileri -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-telephone me-2"></i>İletişim Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Adres</label>
+                            <textarea name="adres" class="form-control" rows="2">{{ tedarikci.adres if tedarikci else '' }}</textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">İl</label>
+                            <input type="text" name="il" class="form-control"
+                                   value="{{ tedarikci.il if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">İlçe</label>
+                            <input type="text" name="ilce" class="form-control"
+                                   value="{{ tedarikci.ilce if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Telefon</label>
+                            <input type="tel" name="telefon" class="form-control"
+                                   value="{{ tedarikci.telefon if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Telefon 2</label>
+                            <input type="tel" name="telefon_2" class="form-control"
+                                   value="{{ tedarikci.telefon_2 if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="email" class="form-control"
+                                   value="{{ tedarikci.email if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Web</label>
+                            <input type="url" name="web" class="form-control"
+                                   value="{{ tedarikci.web if tedarikci else '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Yetkili Kişi -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-person me-2"></i>Yetkili Kişi</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Ad Soyad</label>
+                            <input type="text" name="yetkili_adi" class="form-control"
+                                   value="{{ tedarikci.yetkili_adi if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Unvan</label>
+                            <input type="text" name="yetkili_unvan" class="form-control"
+                                   value="{{ tedarikci.yetkili_unvan if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Telefon</label>
+                            <input type="tel" name="yetkili_telefon" class="form-control"
+                                   value="{{ tedarikci.yetkili_telefon if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" name="yetkili_email" class="form-control"
+                                   value="{{ tedarikci.yetkili_email if tedarikci else '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Banka Bilgileri -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-bank me-2"></i>Banka Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Banka Adı</label>
+                            <input type="text" name="banka_adi" class="form-control"
+                                   value="{{ tedarikci.banka_adi if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">IBAN</label>
+                            <input type="text" name="iban" class="form-control" maxlength="34"
+                                   value="{{ tedarikci.iban if tedarikci else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ödeme Vadesi (Gün)</label>
+                            <input type="number" name="odeme_vade" class="form-control"
+                                   value="{{ tedarikci.odeme_vade if tedarikci else 30 }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ödeme Yöntemi</label>
+                            <select name="odeme_yontemi" class="form-select">
+                                <option value="">Seçiniz</option>
+                                <option value="havale" {% if tedarikci and tedarikci.odeme_yontemi == 'havale' %}selected{% endif %}>Havale/EFT</option>
+                                <option value="cek" {% if tedarikci and tedarikci.odeme_yontemi == 'cek' %}selected{% endif %}>Çek</option>
+                                <option value="kredi_karti" {% if tedarikci and tedarikci.odeme_yontemi == 'kredi_karti' %}selected{% endif %}>Kredi Kartı</option>
+                                <option value="nakit" {% if tedarikci and tedarikci.odeme_yontemi == 'nakit' %}selected{% endif %}>Nakit</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Durum & Kaydet -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Durum</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-check form-switch mb-3">
+                        <input type="checkbox" class="form-check-input" id="aktif" name="aktif"
+                               {% if not tedarikci or tedarikci.aktif %}checked{% endif %}>
+                        <label class="form-check-label" for="aktif">Aktif</label>
+                    </div>
+                    
+                    <label class="form-label">Notlar</label>
+                    <textarea name="notlar" class="form-control" rows="4">{{ tedarikci.notlar if tedarikci else '' }}</textarea>
+                </div>
+                <div class="card-footer bg-white">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i>
+                            {% if tedarikci %}Güncelle{% else %}Kaydet{% endif %}
+                        </button>
+                        <a href="{{ url_for('tedarikci.liste') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg me-1"></i>İptal
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            {% if tedarikci %}
+            <!-- Bilgi -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <strong>Oluşturulma:</strong><br>
+                        {{ tedarikci.created_at.strftime('%d.%m.%Y %H:%M') }}<br><br>
+                        <strong>Son Güncelleme:</strong><br>
+                        {{ tedarikci.updated_at.strftime('%d.%m.%Y %H:%M') }}
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</form>
+{% endblock %}

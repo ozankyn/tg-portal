@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Profil - TG Portal{% endblock %}
+{% block page_title %}Profilim{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-person me-2"></i>Kişisel Bilgiler</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Ad</label>
+                            <input type="text" name="ad" class="form-control" value="{{ current_user.ad }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Soyad</label>
+                            <input type="text" name="soyad" class="form-control" value="{{ current_user.soyad }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" value="{{ current_user.email }}" disabled>
+                            <small class="text-muted">Email değiştirilemez</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Telefon</label>
+                            <input type="tel" name="telefon" class="form-control" value="{{ current_user.telefon or '' }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0"><i class="bi bi-key me-2"></i>Şifre Değiştir</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Mevcut Şifre</label>
+                            <input type="password" name="current_password" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Yeni Şifre</label>
+                            <input type="password" name="new_password" class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Yeni Şifre (Tekrar)</label>
+                            <input type="password" name="new_password_confirm" class="form-control">
+                        </div>
+                    </div>
+                    <small class="text-muted">Şifrenizi değiştirmek istemiyorsanız boş bırakın.</small>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg me-1"></i>Kaydet
+            </button>
+        </form>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Hesap Bilgileri</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Roller:</strong></p>
+                <ul class="list-unstyled mb-3">
+                    {% for role in current_user.roles %}
+                    <li><span class="badge bg-primary">{{ role.display_name }}</span></li>
+                    {% else %}
+                    <li class="text-muted">Rol atanmamış</li>
+                    {% endfor %}
+                </ul>
+                
+                <p><strong>Son Giriş:</strong><br>
+                {{ current_user.last_login.strftime('%d.%m.%Y %H:%M') if current_user.last_login else 'Bilinmiyor' }}</p>
+                
+                <p><strong>Kayıt Tarihi:</strong><br>
+                {{ current_user.created_at.strftime('%d.%m.%Y') }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
