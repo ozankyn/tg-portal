@@ -38,6 +38,11 @@ def create_app(config_name=None):
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, '..', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
     
+    # Twilio SMS
+    app.config['TWILIO_ACCOUNT_SID'] = os.environ.get('TWILIO_ACCOUNT_SID', '')
+    app.config['TWILIO_AUTH_TOKEN'] = os.environ.get('TWILIO_AUTH_TOKEN', '')
+    app.config['TWILIO_PHONE_NUMBER'] = os.environ.get('TWILIO_PHONE_NUMBER', '')
+    
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
@@ -62,6 +67,7 @@ def create_app(config_name=None):
     from app.modules.proje.routes import proje_bp
     from app.modules.api.routes import api_bp
     from app.modules.basvuru.routes import basvuru_bp
+    from app.modules.kariyer.routes import kariyer_bp
     
     app.register_blueprint(core_bp)
     app.register_blueprint(ik_bp, url_prefix='/ik')
@@ -70,6 +76,7 @@ def create_app(config_name=None):
     app.register_blueprint(proje_bp, url_prefix='/proje')
     app.register_blueprint(api_bp, url_prefix='/api/v1')
     app.register_blueprint(basvuru_bp, url_prefix='/basvuru')
+    app.register_blueprint(kariyer_bp, url_prefix='/kariyer')
     
     
     # Context processors

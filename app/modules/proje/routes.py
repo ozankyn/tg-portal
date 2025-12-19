@@ -268,7 +268,8 @@ def kadro_ekle(proje_id):
             maas_min=request.form.get('maas_min') or None,
             maas_max=request.form.get('maas_max') or None,
             notlar=request.form.get('notlar'),
-            aktif=request.form.get('aktif') == 'on'
+            aktif=request.form.get('aktif') == 'on',
+            sms_dogrulama_zorunlu=request.form.get('sms_dogrulama_zorunlu') == 'on'
         )
         db.session.add(kadro)
         db.session.commit()
@@ -320,6 +321,7 @@ def kadro_duzenle(id):
         kadro.maas_max = request.form.get('maas_max') or None
         kadro.notlar = request.form.get('notlar')
         kadro.aktif = request.form.get('aktif') == 'on'
+        kadro.sms_dogrulama_zorunlu = request.form.get('sms_dogrulama_zorunlu') == 'on'
         
         db.session.commit()
         flash('Kadro başarıyla güncellendi.', 'success')

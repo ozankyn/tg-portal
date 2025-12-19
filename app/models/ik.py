@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 TG Portal - İK (Human Resources) Models
+Güncelleme: davet_eden_id ve kaynak zenginleştirmesi eklendi
 """
 
 from datetime import datetime, date, timedelta
@@ -129,6 +130,22 @@ class Calisan(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
         }
 
 
+# Kaynak türleri - zenginleştirilmiş
+KAYNAK_TURLERI = [
+    ('sms_davet', 'SMS ile Davet'),
+    ('email_davet', 'E-posta ile Davet'),
+    ('acik_basvuru', 'Açık Başvuru (Kariyer Sayfası)'),
+    ('kariyer_net', 'Kariyer.net'),
+    ('linkedin', 'LinkedIn'),
+    ('indeed', 'Indeed'),
+    ('referans', 'Çalışan Referansı'),
+    ('is_kurumu', 'İŞKUR'),
+    ('sosyal_medya', 'Sosyal Medya'),
+    ('ilan', 'İlan (Gazete vb.)'),
+    ('diger', 'Diğer'),
+]
+
+
 class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     """İş başvuru adayları - KVKK Uyumlu"""
     __tablename__ = 'adaylar'
@@ -144,19 +161,39 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     # ==================== Başvuru Bilgileri ====================
     pozisyon_id = db.Column(db.Integer, db.ForeignKey('pozisyonlar.id'))
     kadro_id = db.Column(db.Integer, db.ForeignKey('hedef_kadrolar.id'))
-    kaynak = db.Column(db.String(50))  # kariyer_net, linkedin, referans, website, sms_davet, email_davet
+    kaynak = db.Column(db.String(50))  # KAYNAK_TURLERI'nden biri
+    
+    # ==================== Davet Eden Takibi (YENİ) ====================
+    davet_eden_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # Kim daveti gönderdi
+    davet_eden = db.relationship('User', backref='davet_ettigi_adaylar', foreign_keys=[davet_eden_id])
     
     # ==================== Davet ve Doğrulama ====================
     davet_token = db.Column(db.String(64), unique=True, index=True)  # Benzersiz başvuru linki
     davet_token_expires = db.Column(db.DateTime)  # Token geçerlilik süresi (72 saat)
     davet_gonderim_tarihi = db.Column(db.DateTime)  # SMS/Email gönderim zamanı
     davet_tipi = db.Column(db.String(10))  # 'sms' veya 'email'
+
+    # ==================== Telefon Doğrulama (OTP) ====================
+    telefon_dogrulandi = db.Column(db.Boolean, default=False)
+    telefon_dogrulama_kodu = db.Column(db.String(6))
+    telefon_dogrulama_kodu_expires = db.Column(db.DateTime)
+    telefon_dogrulama_tarihi = db.Column(db.DateTime)
+    telefon_dogrulama_ip = db.Column(db.String(45))
+    telefon_dogrulama_deneme = db.Column(db.Integer, default=0)
     
     # ==================== KVKK Onay ====================
     kvkk_onay = db.Column(db.Boolean, default=False)
     kvkk_onay_tarihi = db.Column(db.DateTime)
     kvkk_onay_ip = db.Column(db.String(45))  # IPv6 için 45 karakter
     aydinlatma_metni_versiyonu = db.Column(db.String(10), default='1.0')  # Hangi versiyon onaylandı
+
+    # ==================== Telefon Doğrulama (OTP) ====================
+    telefon_dogrulandi = db.Column(db.Boolean, default=False)
+    telefon_dogrulama_kodu = db.Column(db.String(6))  # 6 haneli kod
+    telefon_dogrulama_kodu_expires = db.Column(db.DateTime)  # Kod geçerlilik süresi (5 dk)
+    telefon_dogrulama_tarihi = db.Column(db.DateTime)
+    telefon_dogrulama_ip = db.Column(db.String(45))
+    telefon_dogrulama_deneme = db.Column(db.Integer, default=0)  # Yanlış deneme sayısı (max 3)
     
     # ==================== Başvuru Durumu ====================
     basvuru_tamamlandi = db.Column(db.Boolean, default=False)
@@ -289,6 +326,12 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
         return renk_map.get(self.durum, 'secondary')
     
     @property
+    def kaynak_text(self):
+        """Kaynak türünü okunabilir text olarak döndür"""
+        kaynak_map = dict(KAYNAK_TURLERI)
+        return kaynak_map.get(self.kaynak, self.kaynak or '-')
+    
+    @property
     def yas(self):
         """Yaş hesapla"""
         if not self.dogum_tarihi:
@@ -303,6 +346,43 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
         self.davet_token_expires = datetime.utcnow() + timedelta(hours=72)
         return self.davet_token
     
+    def generate_otp(self):
+        '''6 haneli doğrulama kodu oluştur'''
+        import random
+        from datetime import datetime, timedelta
+        
+        self.telefon_dogrulama_kodu = str(random.randint(100000, 999999))
+        self.telefon_dogrulama_kodu_expires = datetime.utcnow() + timedelta(minutes=5)
+        self.telefon_dogrulama_deneme = 0
+        return self.telefon_dogrulama_kodu
+    
+    @property
+    def is_otp_valid(self):
+        '''OTP hala geçerli mi?'''
+        if not self.telefon_dogrulama_kodu or not self.telefon_dogrulama_kodu_expires:
+            return False
+        return datetime.utcnow() < self.telefon_dogrulama_kodu_expires
+    
+    def verify_otp(self, kod):
+        '''OTP doğrula'''
+        from datetime import datetime
+        
+        if not self.is_otp_valid:
+            return False, 'Doğrulama kodunun süresi dolmuş'
+        
+        if self.telefon_dogrulama_deneme >= 3:
+            return False, 'Çok fazla yanlış deneme. Lütfen yeni kod isteyin.'
+        
+        if self.telefon_dogrulama_kodu != kod:
+            self.telefon_dogrulama_deneme += 1
+            return False, f'Yanlış kod. {3 - self.telefon_dogrulama_deneme} deneme hakkınız kaldı.'
+        
+        # Başarılı
+        self.telefon_dogrulandi = True
+        self.telefon_dogrulama_tarihi = datetime.utcnow()
+        self.telefon_dogrulama_kodu = None  # Kodu temizle
+        return True, 'Telefon doğrulandı'
+    
     def to_dict(self):
         """API için dict döndür"""
         return {
@@ -314,9 +394,49 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
             'telefon': self.telefon,
             'durum': self.durum,
             'durum_text': self.basvuru_durumu_text,
+            'kaynak': self.kaynak,
+            'kaynak_text': self.kaynak_text,
             'kvkk_onay': self.kvkk_onay,
-            'basvuru_tamamlandi': self.basvuru_tamamlandi
+            'basvuru_tamamlandi': self.basvuru_tamamlandi,
+            'davet_eden': self.davet_eden.full_name if self.davet_eden else None
         }
+    
+    def generate_otp(self):
+        """6 haneli doğrulama kodu oluştur"""
+        import random
+        from datetime import datetime, timedelta
+        
+        self.telefon_dogrulama_kodu = str(random.randint(100000, 999999))
+        self.telefon_dogrulama_kodu_expires = datetime.utcnow() + timedelta(minutes=5)
+        self.telefon_dogrulama_deneme = 0
+        return self.telefon_dogrulama_kodu
+    
+    @property
+    def is_otp_valid(self):
+        """OTP hala geçerli mi?"""
+        if not self.telefon_dogrulama_kodu or not self.telefon_dogrulama_kodu_expires:
+            return False
+        from datetime import datetime
+        return datetime.utcnow() < self.telefon_dogrulama_kodu_expires
+    
+    def verify_otp(self, kod):
+        """OTP doğrula"""
+        from datetime import datetime
+        
+        if not self.is_otp_valid:
+            return False, 'Doğrulama kodunun süresi dolmuş'
+        
+        if self.telefon_dogrulama_deneme >= 3:
+            return False, 'Çok fazla yanlış deneme. Lütfen yeni kod isteyin.'
+        
+        if self.telefon_dogrulama_kodu != kod:
+            self.telefon_dogrulama_deneme += 1
+            return False, f'Yanlış kod. {3 - self.telefon_dogrulama_deneme} deneme hakkınız kaldı.'
+        
+        self.telefon_dogrulandi = True
+        self.telefon_dogrulama_tarihi = datetime.utcnow()
+        self.telefon_dogrulama_kodu = None
+        return True, 'Telefon doğrulandı'
 
 
 class Izin(db.Model, TimestampMixin):

@@ -170,6 +170,9 @@ class HedefKadro(db.Model, TimestampMixin, SoftDeleteMixin):
     proje = db.relationship('Proje', back_populates='kadrolar')
     adaylar = db.relationship('Aday', backref='kadro', lazy='dynamic')
     calisanlar = db.relationship('Calisan', backref='kadro', lazy='dynamic')
+
+    # SMS Doğrulama Ayarı
+    sms_dogrulama_zorunlu = db.Column(db.Boolean, default=False)
     
     @property
     def mevcut_sayi(self):

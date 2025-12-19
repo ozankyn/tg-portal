@@ -1,0 +1,157 @@
+{% extends "basvuru/base_public.html" %}
+
+{% block title %}Telefon Doğrulama{% endblock %}
+
+{% block progress %}
+<div class="progress-steps">
+    <div class="step completed">
+        <span class="step-number"><i class="bi bi-check"></i></span>
+        <span>KVKK Onay</span>
+    </div>
+    <div class="step-line completed"></div>
+    <div class="step active">
+        <span class="step-number">2</span>
+        <span>Telefon Doğrulama</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+        <span class="step-number">3</span>
+        <span>Başvuru Formu</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step">
+        <span class="step-number">4</span>
+        <span>Tamamlandı</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header text-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-phone me-2"></i>
+                    Telefon Doğrulama
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                {% if aday.kadro %}
+                <div class="alert alert-info mb-4">
+                    <i class="bi bi-briefcase me-2"></i>
+                    <strong>{{ aday.kadro.proje.musteri.display_name }}</strong> - 
+                    <strong>{{ aday.kadro.pozisyon_adi }}</strong>
+                </div>
+                {% endif %}
+                
+                <p class="text-center text-muted mb-4">
+                    Başvurunuzu tamamlamak için cep telefonu numaranızı doğrulamanız gerekmektedir.
+                </p>
+                
+                {% if not aday.telefon_dogrulama_kodu or not aday.is_otp_valid %}
+                <!-- Telefon Girişi ve Kod Gönderme -->
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="send_code">
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Cep Telefonu</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text">🇹🇷 +90</span>
+                            <input type="tel" name="telefon" class="form-control" 
+                                   placeholder="5XX XXX XX XX" 
+                                   value="{{ aday.telefon[1:] if aday.telefon and aday.telefon.startswith('0') else (aday.telefon[3:] if aday.telefon and aday.telefon.startswith('+90') else aday.telefon or '') }}"
+                                   pattern="[0-9]{10}"
+                                   maxlength="10"
+                                   required>
+                        </div>
+                        <small class="text-muted">Başında 0 olmadan 10 haneli numaranızı girin</small>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-send me-2"></i>Doğrulama Kodu Gönder
+                        </button>
+                    </div>
+                </form>
+                
+                {% else %}
+                <!-- Kod Doğrulama -->
+                <div class="text-center mb-4">
+                    <div class="bg-light rounded p-3 mb-3">
+                        <i class="bi bi-telephone-fill text-success me-2"></i>
+                        <strong>{{ aday.telefon }}</strong>
+                    </div>
+                    <p class="text-muted small">
+                        <i class="bi bi-clock me-1"></i>
+                        Kod 5 dakika içinde geçerlidir
+                    </p>
+                </div>
+                
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="verify_code">
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Doğrulama Kodu</label>
+                        <input type="text" name="kod" class="form-control form-control-lg text-center" 
+                               placeholder="000000"
+                               pattern="[0-9]{6}"
+                               maxlength="6"
+                               style="font-size: 2rem; letter-spacing: 0.5rem; font-weight: bold;"
+                               autofocus
+                               required>
+                        <small class="text-muted">SMS ile gelen 6 haneli kodu girin</small>
+                    </div>
+                    
+                    {% if aday.telefon_dogrulama_deneme and aday.telefon_dogrulama_deneme > 0 %}
+                    <div class="alert alert-warning small">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        {{ 3 - aday.telefon_dogrulama_deneme }} deneme hakkınız kaldı
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-lg me-2"></i>Doğrula
+                        </button>
+                    </div>
+                </form>
+                
+                <hr>
+                
+                <div class="text-center">
+                    <p class="text-muted small mb-2">Kod gelmedi mi?</p>
+                    <a href="{{ url_for('basvuru.kod_tekrar_gonder', token=aday.davet_token) }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-repeat me-1"></i>Tekrar Gönder
+                    </a>
+                </div>
+                {% endif %}
+                
+            </div>
+        </div>
+        
+        <div class="text-center mt-3">
+            <small class="text-muted">
+                <i class="bi bi-shield-check me-1"></i>
+                Bilgileriniz güvenle korunmaktadır
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Otomatik telefon formatı
+document.querySelector('input[name="telefon"]')?.addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').substring(0, 10);
+});
+
+// Otomatik kod formatı
+document.querySelector('input[name="kod"]')?.addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').substring(0, 6);
+});
+</script>
+{% endblock %}

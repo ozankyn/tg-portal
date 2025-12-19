@@ -2,6 +2,7 @@
 """
 TG Portal - Public Başvuru Routes
 Aday başvuru sistemi - Login gerektirmez
+Güncelleme: davet_eden_id takibi eklendi
 """
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
@@ -260,7 +261,8 @@ def aday_davet(kadro_id):
             pozisyon_id=kadro.pozisyon_id if hasattr(kadro, 'pozisyon_id') else None,
             davet_tipi=davet_tipi,
             kaynak=f'{davet_tipi}_davet',
-            durum='davet_gonderildi'
+            durum='davet_gonderildi',
+            davet_eden_id=current_user.id  # *** YENİ: Daveti gönderen kullanıcı ***
         )
         
         if davet_tipi == 'email':
@@ -325,7 +327,8 @@ def toplu_davet(kadro_id):
                     kadro_id=kadro_id,
                     davet_tipi=davet_tipi,
                     kaynak=f'{davet_tipi}_davet',
-                    durum='davet_gonderildi'
+                    durum='davet_gonderildi',
+                    davet_eden_id=current_user.id  # *** YENİ: Daveti gönderen kullanıcı ***
                 )
                 
                 if davet_tipi == 'email':
@@ -371,6 +374,7 @@ def davet_tekrar(aday_id):
     aday.generate_token()
     aday.davet_gonderim_tarihi = datetime.utcnow()
     aday.durum = 'davet_gonderildi'
+    aday.davet_eden_id = current_user.id  # *** YENİ: Tekrar gönderen de kaydedilsin ***
     
     db.session.commit()
     
@@ -392,3 +396,112 @@ def davet_tekrar(aday_id):
     if aday.kadro_id:
         return redirect(url_for('proje.kadro_detay', id=aday.kadro_id))
     return redirect(url_for('ik.aday_liste'))
+
+
+# ==================== SMS Doğrulama ====================
+
+def send_otp_sms(aday):
+    """SMS ile OTP kodu gönder"""
+    try:
+        from twilio.rest import Client
+        
+        account_sid = current_app.config.get('TWILIO_ACCOUNT_SID')
+        auth_token = current_app.config.get('TWILIO_AUTH_TOKEN')
+        from_number = current_app.config.get('TWILIO_PHONE_NUMBER')
+        
+        if not all([account_sid, auth_token, from_number]):
+            return {'success': False, 'error': 'SMS servisi yapılandırılmamış'}
+        
+        client = Client(account_sid, auth_token)
+        
+        telefon = aday.telefon.replace(' ', '').replace('-', '')
+        if telefon.startswith('0'):
+            telefon = '+90' + telefon[1:]
+        elif not telefon.startswith('+'):
+            telefon = '+90' + telefon
+        
+        kod = aday.generate_otp()
+        mesaj = f"Team Guerilla is basvuru dogrulama kodunuz: {kod} - Bu kod 5 dakika gecerlidir."
+        
+        message = client.messages.create(body=mesaj, from_=from_number, to=telefon)
+        return {'success': True, 'message_sid': message.sid}
+        
+    except Exception as e:
+        current_app.logger.error(f"OTP SMS hatası: {str(e)}")
+        return {'success': False, 'error': str(e)}
+
+
+@basvuru_bp.route('/<token>/telefon-dogrula', methods=['GET', 'POST'])
+def telefon_dogrula(token):
+    """Telefon doğrulama sayfası"""
+    aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first_or_404()
+    
+    if not aday.is_token_valid:
+        return render_template('basvuru/token_expired.html', aday=aday)
+    
+    if not aday.kvkk_onay:
+        flash('Önce KVKK onayı vermeniz gerekmektedir.', 'warning')
+        return redirect(url_for('basvuru.basvuru_giris', token=token))
+    
+    if aday.telefon_dogrulandi:
+        return redirect(url_for('basvuru.basvuru_form', token=token))
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'send_code':
+            telefon = request.form.get('telefon')
+            if telefon:
+                if not telefon.startswith('0') and not telefon.startswith('+'):
+                    telefon = '0' + telefon
+                aday.telefon = telefon
+            
+            if not aday.telefon:
+                flash('Telefon numarası gereklidir.', 'danger')
+                return redirect(url_for('basvuru.telefon_dogrula', token=token))
+            
+            result = send_otp_sms(aday)
+            db.session.commit()
+            
+            if result['success']:
+                flash('Doğrulama kodu telefonunuza gönderildi.', 'success')
+            else:
+                flash(f'SMS gönderilemedi: {result.get("error")}', 'danger')
+        
+        elif action == 'verify_code':
+            kod = request.form.get('kod')
+            if not kod:
+                flash('Doğrulama kodunu giriniz.', 'warning')
+                return redirect(url_for('basvuru.telefon_dogrula', token=token))
+            
+            success, message = aday.verify_otp(kod)
+            aday.telefon_dogrulama_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+            db.session.commit()
+            
+            if success:
+                flash('Telefonunuz doğrulandı!', 'success')
+                return redirect(url_for('basvuru.basvuru_form', token=token))
+            else:
+                flash(message, 'danger')
+    
+    return render_template('basvuru/telefon_dogrula.html', aday=aday)
+
+
+@basvuru_bp.route('/<token>/kod-tekrar')
+def kod_tekrar_gonder(token):
+    """Doğrulama kodunu tekrar gönder"""
+    aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first_or_404()
+    
+    if not aday.is_token_valid:
+        flash('Başvuru linkinizin süresi dolmuş.', 'danger')
+        return redirect(url_for('basvuru.basvuru_giris', token=token))
+    
+    result = send_otp_sms(aday)
+    db.session.commit()
+    
+    if result['success']:
+        flash('Yeni doğrulama kodu gönderildi.', 'success')
+    else:
+        flash(f'SMS gönderilemedi: {result.get("error")}', 'danger')
+    
+    return redirect(url_for('basvuru.telefon_dogrula', token=token))

@@ -43,9 +43,6 @@ class Arac(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     atanan_calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'))
     atama_tarihi = db.Column(db.Date)
     
-    # Proje
-    proje_id = db.Column(db.Integer, db.ForeignKey('projeler.id'))
-    
     # Durum
     durum = db.Column(db.Enum(AracDurumu), default=AracDurumu.AKTIF)
     konum = db.Column(db.String(200))  # Son bilinen konum
@@ -57,6 +54,8 @@ class Arac(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     yakit_kayitlari = db.relationship('YakitKayit', backref='arac', lazy='dynamic')
     sigortalar = db.relationship('Sigorta', backref='arac', lazy='dynamic')
     muayeneler = db.relationship('Muayene', backref='arac', lazy='dynamic')
+    proje_id = db.Column(db.Integer, db.ForeignKey('projeler.id'))
+
     
     def __repr__(self):
         return f'<Arac {self.plaka}>'
@@ -64,16 +63,6 @@ class Arac(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     @property
     def display_name(self):
         return f'{self.plaka} - {self.marka} {self.model}'
-    
-    @property
-    def kilometre(self):
-        """km alias"""
-        return self.km
-    
-    @property
-    def sofor(self):
-        """atanan_calisan alias"""
-        return self.atanan_calisan
     
     @property
     def aktif_sigorta(self):
@@ -137,6 +126,7 @@ class FiloIslem(db.Model, TimestampMixin, AuditMixin):
     
     # İlişkiler
     tedarikci = db.relationship('Tedarikci', back_populates='filo_islemleri')
+    
     
     def __repr__(self):
         return f'<FiloIslem {self.islem_tipi} {self.arac_id}>'

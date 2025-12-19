@@ -159,6 +159,16 @@
                                {% if not kadro or kadro.aktif %}checked{% endif %}>
                         <label class="form-check-label" for="aktif">Aktif</label>
                     </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-check mt-4">
+                        <input type="checkbox" class="form-check-input" id="sms_dogrulama_zorunlu" name="sms_dogrulama_zorunlu"
+                               {% if kadro and kadro.sms_dogrulama_zorunlu %}checked{% endif %}>
+                        <label class="form-check-label" for="sms_dogrulama_zorunlu">
+                            <i class="bi bi-phone me-1"></i>SMS Doğrulama Zorunlu
+                        </label>
+                        <small class="d-block text-muted">Başvuruda telefon doğrulaması istenir</small>
+                    </div>
                     
                     <label class="form-label">Notlar</label>
                     <textarea name="notlar" class="form-control" rows="4">{{ kadro.notlar if kadro else '' }}</textarea>
