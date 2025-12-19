@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Evrak Tipleri - TG Portal{% endblock %}
+{% block page_title %}Evrak Tipleri{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Tanımlı Evrak Tipleri</h6>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#evrakTipiModal">
+                    <i class="bi bi-plus-lg me-1"></i> Yeni Ekle
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="50">Sıra</th>
+                                <th>Evrak Adı</th>
+                                <th>Kod</th>
+                                <th>Kategori</th>
+                                <th>Zorunlu</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for evrak in evrak_tipleri %}
+                            <tr>
+                                <td>{{ evrak.sira }}</td>
+                                <td>
+                                    <strong>{{ evrak.ad }}</strong>
+                                    {% if evrak.aciklama %}
+                                    <div class="small text-muted">{{ evrak.aciklama }}</div>
+                                    {% endif %}
+                                </td>
+                                <td><code>{{ evrak.kod }}</code></td>
+                                <td>
+                                    {% set kategori_labels = {
+                                        'kimlik': 'Kimlik',
+                                        'egitim': 'Eğitim',
+                                        'saglik': 'Sağlık',
+                                        'sgk': 'SGK',
+                                        'sozlesme': 'Sözleşme',
+                                        'diger': 'Diğer'
+                                    } %}
+                                    <span class="badge bg-light text-dark">{{ kategori_labels.get(evrak.kategori, evrak.kategori) }}</span>
+                                </td>
+                                <td>
+                                    {% if evrak.zorunlu %}
+                                    <span class="badge bg-danger">Zorunlu</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Opsiyonel</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if evrak.aktif %}
+                                    <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
+                                    {% else %}
+                                    <span class="text-muted"><i class="bi bi-x-circle"></i></span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    Henüz evrak tipi tanımlanmamış
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">
+                    Evrak tipleri, adaylardan toplanacak belgeleri tanımlar. 
+                    <strong>Zorunlu</strong> olarak işaretlenen evraklar tamamlanmadan aday çalışana dönüştürülemez.
+                </p>
+                
+                <h6 class="small text-uppercase text-muted mb-2">Kategoriler</h6>
+                <ul class="list-unstyled small">
+                    <li><span class="badge bg-light text-dark me-2">Kimlik</span> Nüfus, ikametgah vb.</li>
+                    <li><span class="badge bg-light text-dark me-2">Eğitim</span> Diploma, transkript</li>
+                    <li><span class="badge bg-light text-dark me-2">Sağlık</span> Sağlık raporu</li>
+                    <li><span class="badge bg-light text-dark me-2">SGK</span> SGK belgeleri</li>
+                    <li><span class="badge bg-light text-dark me-2">Sözleşme</span> İş sözleşmesi, KVKK</li>
+                    <li><span class="badge bg-light text-dark me-2">Diğer</span> CV, referans vb.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Yeni Evrak Tipi Modal -->
+<div class="modal fade" id="evrakTipiModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('ik.evrak_tipi_ekle') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Yeni Evrak Tipi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Evrak Adı *</label>
+                        <input type="text" name="ad" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Kod *</label>
+                        <input type="text" name="kod" class="form-control" required placeholder="NUFUS, DIPLOMA vb.">
+                        <div class="form-text">Benzersiz, büyük harf, Türkçe karakter içermemeli</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Kategori</label>
+                        <select name="kategori" class="form-select">
+                            <option value="kimlik">Kimlik</option>
+                            <option value="egitim">Eğitim</option>
+                            <option value="saglik">Sağlık</option>
+                            <option value="sgk">SGK</option>
+                            <option value="sozlesme">Sözleşme</option>
+                            <option value="diger">Diğer</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Sıra</label>
+                        <input type="number" name="sira" class="form-control" value="0">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea name="aciklama" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" name="zorunlu" class="form-check-input" id="zorunluCheck">
+                        <label class="form-check-label" for="zorunluCheck">Zorunlu Evrak</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Zimmet Transfer - TG Portal{% endblock %}
+{% block page_title %}Zimmet Transfer{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-arrow-left-right me-2"></i>Zimmet Transfer Formu</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="alert alert-warning mb-4">
+                        <strong>{{ zimmet.tanim }}</strong> zimmeti 
+                        <strong>{{ zimmet.calisan.full_name }}</strong> çalışanından başka bir çalışana transfer edilecek.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Yeni Çalışan *</label>
+                        <select name="yeni_calisan_id" class="form-select select2" required>
+                            <option value="">Seçiniz</option>
+                            {% for calisan in calisanlar %}
+                            <option value="{{ calisan.id }}">
+                                {{ calisan.full_name }} {% if calisan.departman %}({{ calisan.departman.ad }}){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Transfer Tarihi *</label>
+                        <input type="date" name="transfer_tarihi" class="form-control" required>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-arrow-left-right me-1"></i> Transfer Et
+                    </button>
+                    <a href="{{ url_for('ik.zimmet_detay', id=zimmet.id) }}" class="btn btn-secondary">İptal</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

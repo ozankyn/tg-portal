@@ -424,3 +424,45 @@ if __name__ == '__main__':
     app = create_app()
     with app.app_context():
         seed_all()
+
+
+# -*- coding: utf-8 -*-
+"""
+TG Portal - Seed Data Eklemeleri
+Bu fonksiyonu mevcut seed_data.py dosyasına ekleyin
+"""
+
+def seed_evrak_tipleri():
+    """Standart evrak tiplerini ekle"""
+    from app import db
+    from app.models.ik import EvrakTipi
+    
+    evraklar = [
+        {'kod': 'NUFUS', 'ad': 'Nüfus Cüzdanı Fotokopisi', 'kategori': 'kimlik', 'zorunlu': True, 'sira': 1},
+        {'kod': 'VESIKALIK', 'ad': 'Vesikalık Fotoğraf (2 adet)', 'kategori': 'kimlik', 'zorunlu': True, 'sira': 2},
+        {'kod': 'IKAMETGAH', 'ad': 'İkametgah Belgesi', 'kategori': 'kimlik', 'zorunlu': True, 'sira': 3},
+        {'kod': 'ADLISICIL', 'ad': 'Adli Sicil Kaydı', 'kategori': 'kimlik', 'zorunlu': True, 'sira': 4},
+        {'kod': 'DIPLOMA', 'ad': 'Diploma / Mezuniyet Belgesi', 'kategori': 'egitim', 'zorunlu': True, 'sira': 5},
+        {'kod': 'TRANSKRIPT', 'ad': 'Transkript', 'kategori': 'egitim', 'zorunlu': False, 'sira': 6},
+        {'kod': 'SGK_ISEYERI', 'ad': 'SGK İşe Giriş Bildirgesi', 'kategori': 'sgk', 'zorunlu': True, 'sira': 7},
+        {'kod': 'SAGLIK', 'ad': 'Sağlık Raporu', 'kategori': 'saglik', 'zorunlu': True, 'sira': 8},
+        {'kod': 'ASKERLIK', 'ad': 'Askerlik Durum Belgesi', 'kategori': 'diger', 'zorunlu': False, 'sira': 9, 'aciklama': 'Erkek adaylar için'},
+        {'kod': 'EHLIYET', 'ad': 'Ehliyet Fotokopisi', 'kategori': 'diger', 'zorunlu': False, 'sira': 10},
+        {'kod': 'BANKA', 'ad': 'Banka Hesap Bilgileri / IBAN', 'kategori': 'diger', 'zorunlu': True, 'sira': 11},
+        {'kod': 'CV', 'ad': 'Özgeçmiş (CV)', 'kategori': 'diger', 'zorunlu': False, 'sira': 12},
+        {'kod': 'REFERANS', 'ad': 'Referans Mektubu', 'kategori': 'diger', 'zorunlu': False, 'sira': 13},
+        {'kod': 'ISSOZLESMESI', 'ad': 'İmzalı İş Sözleşmesi', 'kategori': 'sozlesme', 'zorunlu': True, 'sira': 14},
+        {'kod': 'KVKK', 'ad': 'KVKK Aydınlatma Metni (İmzalı)', 'kategori': 'sozlesme', 'zorunlu': True, 'sira': 15},
+    ]
+    
+    for e in evraklar:
+        if not EvrakTipi.query.filter_by(kod=e['kod']).first():
+            evrak = EvrakTipi(**e)
+            db.session.add(evrak)
+    
+    db.session.commit()
+    print(f'✓ {len(evraklar)} evrak tipi eklendi/kontrol edildi')
+
+
+# Mevcut seed_all() fonksiyonuna ekle:
+# seed_evrak_tipleri()

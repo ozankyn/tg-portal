@@ -463,3 +463,347 @@ class Izin(db.Model, TimestampMixin):
     
     def __repr__(self):
         return f'<Izin {self.calisan_id} {self.izin_tipi}>'
+
+
+# -*- coding: utf-8 -*-
+"""
+TG Portal - İK Models Eklentileri
+Bu dosyayı mevcut app/models/ik.py dosyasının SONUNA ekleyin
+"""
+
+# ============================================================
+# EVRAK YÖNETİMİ
+# ============================================================
+
+class EvrakTipi(db.Model, TimestampMixin):
+    """Evrak tipi tanımları"""
+    __tablename__ = 'evrak_tipleri'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ad = db.Column(db.String(100), nullable=False)  # Nüfus Cüzdanı, Diploma, vb.
+    kod = db.Column(db.String(20), unique=True)  # NUFUS, DIPLOMA, SGK, vb.
+    aciklama = db.Column(db.Text)
+    zorunlu = db.Column(db.Boolean, default=False)  # İşe alım için zorunlu mu?
+    kategori = db.Column(db.String(50))  # kimlik, egitim, saglik, sozlesme, diger
+    gecerlilik_suresi = db.Column(db.Integer)  # Gün cinsinden, null = süresiz
+    sira = db.Column(db.Integer, default=0)  # Görüntüleme sırası
+    aktif = db.Column(db.Boolean, default=True)
+    
+    evraklar = db.relationship('AdayEvrak', backref='evrak_tipi', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<EvrakTipi {self.ad}>'
+
+
+class AdayEvrak(db.Model, TimestampMixin):
+    """Aday evrak yüklemeleri"""
+    __tablename__ = 'aday_evraklar'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    aday_id = db.Column(db.Integer, db.ForeignKey('adaylar.id'), nullable=False)
+    evrak_tipi_id = db.Column(db.Integer, db.ForeignKey('evrak_tipleri.id'), nullable=False)
+    
+    # Dosya bilgileri
+    dosya_adi = db.Column(db.String(255))
+    dosya_yolu = db.Column(db.String(500))
+    dosya_boyut = db.Column(db.Integer)  # bytes
+    mime_type = db.Column(db.String(100))
+    
+    # Onay durumu
+    durum = db.Column(db.String(20), default='yuklendi')  # yuklendi, onaylandi, reddedildi
+    red_sebebi = db.Column(db.Text)
+    
+    # İzleme
+    yukleyen_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    onaylayan_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    onay_tarihi = db.Column(db.DateTime)
+    
+    gecerlilik_bitis = db.Column(db.Date)  # Evrak geçerlilik bitiş tarihi
+    
+    # İlişkiler
+    aday = db.relationship('Aday', backref=db.backref('evraklar', lazy='dynamic'))
+    yukleyen = db.relationship('User', foreign_keys=[yukleyen_id], backref='yuklenen_evraklar')
+    onaylayan = db.relationship('User', foreign_keys=[onaylayan_id], backref='onaylanan_evraklar')
+    
+    def __repr__(self):
+        return f'<AdayEvrak {self.aday_id}-{self.evrak_tipi_id}>'
+    
+    @property
+    def durum_renk(self):
+        renk_map = {
+            'yuklendi': 'warning',
+            'onaylandi': 'success',
+            'reddedildi': 'danger'
+        }
+        return renk_map.get(self.durum, 'secondary')
+    
+    @property
+    def durum_text(self):
+        text_map = {
+            'yuklendi': 'Onay Bekliyor',
+            'onaylandi': 'Onaylandı',
+            'reddedildi': 'Reddedildi'
+        }
+        return text_map.get(self.durum, self.durum)
+
+
+class CalisanEvrak(db.Model, TimestampMixin):
+    """Çalışan evrakları"""
+    __tablename__ = 'calisan_evraklar'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'), nullable=False)
+    evrak_tipi_id = db.Column(db.Integer, db.ForeignKey('evrak_tipleri.id'), nullable=False)
+    
+    dosya_adi = db.Column(db.String(255))
+    dosya_yolu = db.Column(db.String(500))
+    dosya_boyut = db.Column(db.Integer)
+    mime_type = db.Column(db.String(100))
+    
+    gecerlilik_bitis = db.Column(db.Date)
+    
+    # İlişkiler
+    calisan = db.relationship('Calisan', backref=db.backref('evraklar', lazy='dynamic'))
+    evrak_tipi = db.relationship('EvrakTipi')
+    
+    def __repr__(self):
+        return f'<CalisanEvrak {self.calisan_id}-{self.evrak_tipi_id}>'
+
+
+# ============================================================
+# İŞTEN ÇIKIŞ YÖNETİMİ
+# ============================================================
+
+class IstenCikis(db.Model, TimestampMixin):
+    """İşten çıkış süreç takibi"""
+    __tablename__ = 'isten_cikislar'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'), nullable=False)
+    
+    # Tarihler
+    talep_tarihi = db.Column(db.Date, default=date.today)
+    planlanan_cikis_tarihi = db.Column(db.Date, nullable=False)
+    gerceklesen_cikis_tarihi = db.Column(db.Date)
+    
+    # Çıkış bilgileri
+    cikis_tipi = db.Column(db.String(30))  # istifa, fesih, anlasmali, emeklilik, vefat, sozlesme_bitti
+    cikis_sebebi = db.Column(db.String(100))
+    detay_notu = db.Column(db.Text)
+    
+    # Checklist
+    zimmet_teslim = db.Column(db.Boolean, default=False)
+    zimmet_notu = db.Column(db.Text)
+    
+    sgk_cikis_bildirimi = db.Column(db.Boolean, default=False)
+    sgk_bildirim_tarihi = db.Column(db.Date)
+    
+    # Tazminatlar
+    kidem_tazminati = db.Column(db.Numeric(12, 2))
+    ihbar_tazminati = db.Column(db.Numeric(12, 2))
+    
+    # Çıkış mülakatı
+    cikis_mulakati_yapildi = db.Column(db.Boolean, default=False)
+    cikis_mulakat_notu = db.Column(db.Text)
+    
+    # Durum
+    durum = db.Column(db.String(20), default='basladi')  # basladi, devam_ediyor, tamamlandi, iptal
+    
+    olusturan_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    # İlişkiler
+    calisan = db.relationship('Calisan', backref=db.backref('cikis_kayitlari', lazy='dynamic'))
+    olusturan = db.relationship('User', backref='olusturulan_cikislar')
+    
+    def __repr__(self):
+        return f'<IstenCikis {self.calisan_id}>'
+    
+    @property
+    def durum_renk(self):
+        renk_map = {
+            'basladi': 'info',
+            'devam_ediyor': 'warning',
+            'tamamlandi': 'success',
+            'iptal': 'secondary'
+        }
+        return renk_map.get(self.durum, 'secondary')
+    
+    @property
+    def tamamlanma_yuzdesi(self):
+        """Checklist tamamlanma yüzdesi"""
+        items = [self.zimmet_teslim, self.sgk_cikis_bildirimi, self.cikis_mulakati_yapildi]
+        return int((sum(items) / len(items)) * 100)
+
+
+# ============================================================
+# ADAY MODELİNE EVRAK HELPER'LARI EKLENMELİ
+# Mevcut Aday class'ına şu property'leri ekleyin:
+# ============================================================
+
+"""
+# Aday class'ına eklenecek property'ler:
+
+@property
+def evrak_tamamlanma_orani(self):
+    '''Zorunlu evrakların tamamlanma yüzdesi'''
+    zorunlu_evraklar = EvrakTipi.query.filter_by(zorunlu=True, aktif=True).count()
+    if zorunlu_evraklar == 0:
+        return 100
+    yuklenen = self.evraklar.join(EvrakTipi).filter(
+        EvrakTipi.zorunlu == True,
+        AdayEvrak.durum == 'onaylandi'
+    ).count()
+    return int((yuklenen / zorunlu_evraklar) * 100)
+
+@property
+def eksik_evraklar(self):
+    '''Eksik zorunlu evrak listesi'''
+    zorunlu_tipler = EvrakTipi.query.filter_by(zorunlu=True, aktif=True).all()
+    yuklenen_tipler = [e.evrak_tipi_id for e in self.evraklar.filter(
+        AdayEvrak.durum.in_(['yuklendi', 'onaylandi'])
+    ).all()]
+    return [t for t in zorunlu_tipler if t.id not in yuklenen_tipler]
+
+@property
+def ise_alim_hazir(self):
+    '''Tüm zorunlu evraklar tamamlandı mı?'''
+    return len(self.eksik_evraklar) == 0 and self.kvkk_onay
+"""
+
+# ============================================================
+# ZİMMET / ENVANTER YÖNETİMİ
+# ============================================================
+
+class ZimmetTipi(db.Model, TimestampMixin):
+    """Zimmet tipi tanımları"""
+    __tablename__ = 'zimmet_tipleri'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ad = db.Column(db.String(100), nullable=False)  # Laptop, Telefon, Araç Anahtarı
+    kod = db.Column(db.String(20), unique=True)  # LAPTOP, TELEFON, ANAHTAR
+    kategori = db.Column(db.String(50))  # elektronik, arac, ofis, diger
+    aciklama = db.Column(db.Text)
+    seri_no_zorunlu = db.Column(db.Boolean, default=False)  # Seri numarası zorunlu mu?
+    iade_zorunlu = db.Column(db.Boolean, default=True)  # İşten çıkışta iade zorunlu mu?
+    aktif = db.Column(db.Boolean, default=True)
+    
+    zimmetler = db.relationship('Zimmet', backref='zimmet_tipi', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<ZimmetTipi {self.ad}>'
+
+
+class Zimmet(db.Model, TimestampMixin, SoftDeleteMixin):
+    """Zimmet kayıtları"""
+    __tablename__ = 'zimmetler'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'), nullable=False)
+    zimmet_tipi_id = db.Column(db.Integer, db.ForeignKey('zimmet_tipleri.id'), nullable=False)
+    
+    # Zimmet detayları
+    tanim = db.Column(db.String(255))  # "MacBook Pro 14", "iPhone 13 Pro" vb.
+    seri_no = db.Column(db.String(100))
+    demirbas_no = db.Column(db.String(50))  # Şirket demirbaş numarası
+    marka = db.Column(db.String(100))
+    model = db.Column(db.String(100))
+    
+    # Teslim bilgileri
+    teslim_tarihi = db.Column(db.Date, nullable=False)
+    teslim_eden_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    teslim_notu = db.Column(db.Text)
+    
+    # İade bilgileri
+    iade_tarihi = db.Column(db.Date)
+    iade_alan_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    iade_notu = db.Column(db.Text)
+    iade_durumu = db.Column(db.String(50))  # saglam, hasarli, kayip
+    
+    # Durum
+    durum = db.Column(db.String(20), default='teslim_edildi')  # teslim_edildi, iade_edildi, kayip, hasarli
+    
+    # Değer bilgisi (opsiyonel)
+    deger = db.Column(db.Numeric(12, 2))  # TL cinsinden değer
+    
+    # İlişkiler
+    calisan = db.relationship('Calisan', backref=db.backref('zimmetler', lazy='dynamic'))
+    teslim_eden = db.relationship('User', foreign_keys=[teslim_eden_id], backref='teslim_edilen_zimmetler')
+    iade_alan = db.relationship('User', foreign_keys=[iade_alan_id], backref='iade_alinan_zimmetler')
+    
+    def __repr__(self):
+        return f'<Zimmet {self.id} - {self.tanim}>'
+    
+    @property
+    def durum_text(self):
+        durum_map = {
+            'teslim_edildi': 'Teslim Edildi',
+            'iade_edildi': 'İade Edildi',
+            'kayip': 'Kayıp',
+            'hasarli': 'Hasarlı'
+        }
+        return durum_map.get(self.durum, self.durum)
+    
+    @property
+    def durum_renk(self):
+        renk_map = {
+            'teslim_edildi': 'primary',
+            'iade_edildi': 'success',
+            'kayip': 'danger',
+            'hasarli': 'warning'
+        }
+        return renk_map.get(self.durum, 'secondary')
+    
+    @property
+    def aktif_mi(self):
+        """Zimmet hala çalışanda mı?"""
+        return self.durum == 'teslim_edildi' and self.iade_tarihi is None
+
+
+class ZimmetLog(db.Model, TimestampMixin):
+    """Zimmet hareket geçmişi"""
+    __tablename__ = 'zimmet_loglar'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    zimmet_id = db.Column(db.Integer, db.ForeignKey('zimmetler.id'), nullable=False)
+    islem = db.Column(db.String(50))  # teslim, iade, transfer, hasar_bildirimi, kayip_bildirimi
+    aciklama = db.Column(db.Text)
+    islem_yapan_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    # Transfer için
+    eski_calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'))
+    yeni_calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'))
+    
+    # İlişkiler
+    zimmet = db.relationship('Zimmet', backref=db.backref('loglar', lazy='dynamic', order_by='ZimmetLog.created_at.desc()'))
+    islem_yapan = db.relationship('User', foreign_keys=[islem_yapan_id])
+    eski_calisan = db.relationship('Calisan', foreign_keys=[eski_calisan_id])
+    yeni_calisan = db.relationship('Calisan', foreign_keys=[yeni_calisan_id])
+
+
+# ============================================================
+# CALISAN MODELİNE EKLENECEK PROPERTY'LER
+# Mevcut Calisan class'ına şu property'leri ekleyin:
+# ============================================================
+
+"""
+# Calisan class'ına eklenecek property'ler:
+
+@property
+def aktif_zimmetler(self):
+    '''Çalışanda bulunan aktif zimmetler'''
+    return self.zimmetler.filter(
+        Zimmet.durum == 'teslim_edildi',
+        Zimmet.iade_tarihi == None,
+        Zimmet.is_deleted == False
+    ).all()
+
+@property
+def aktif_zimmet_sayisi(self):
+    '''Aktif zimmet sayısı'''
+    return len(self.aktif_zimmetler)
+
+@property
+def zimmet_iade_bekliyor(self):
+    '''İade bekleyen zimmet var mı?'''
+    return self.aktif_zimmet_sayisi > 0
+"""

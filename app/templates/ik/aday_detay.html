@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}{{ aday.full_name }} - Aday Detay{% endblock %}
+{% block page_title %}Aday Detay{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Sol Kolon - Aday Bilgileri -->
+    <div class="col-lg-4">
+        <!-- Profil Kartı -->
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                    <i class="bi bi-person fs-1 text-white"></i>
+                </div>
+                <h5 class="mb-1">{{ aday.full_name }}</h5>
+                <p class="text-muted mb-2">{{ aday.pozisyon.ad if aday.pozisyon else '-' }}</p>
+                <span class="badge bg-{{ aday.durum_renk }}">{{ aday.basvuru_durumu_text }}</span>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted"><i class="bi bi-telephone me-2"></i>Telefon</span>
+                    <span>{{ aday.telefon or '-' }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted"><i class="bi bi-envelope me-2"></i>E-posta</span>
+                    <span>{{ aday.email or '-' }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted"><i class="bi bi-geo-alt me-2"></i>Konum</span>
+                    <span>{{ aday.il or '-' }}{% if aday.ilce %} / {{ aday.ilce }}{% endif %}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted"><i class="bi bi-calendar me-2"></i>Kaynak</span>
+                    <span>{{ aday.kaynak_text }}</span>
+                </li>
+                {% if aday.davet_eden %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted"><i class="bi bi-person-badge me-2"></i>Davet Eden</span>
+                    <span>{{ aday.davet_eden.full_name }}</span>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+        
+        <!-- Durum Değiştirme -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-arrow-repeat me-2"></i>Durum Değiştir</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('ik.aday_durum_degistir', id=aday.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <select name="durum" class="form-select">
+                            <option value="davet_gonderildi" {{ 'selected' if aday.durum == 'davet_gonderildi' }}>📧 Davet Gönderildi</option>
+                            <option value="kvkk_bekleniyor" {{ 'selected' if aday.durum == 'kvkk_bekleniyor' }}>📋 KVKK Bekleniyor</option>
+                            <option value="form_bekleniyor" {{ 'selected' if aday.durum == 'form_bekleniyor' }}>📝 Form Bekleniyor</option>
+                            <option value="basvurdu" {{ 'selected' if aday.durum == 'basvurdu' }}>✅ Başvurdu</option>
+                            <option value="degerlendiriliyor" {{ 'selected' if aday.durum == 'degerlendiriliyor' }}>🔍 Değerlendiriliyor</option>
+                            <option value="mulakat" {{ 'selected' if aday.durum == 'mulakat' }}>💬 Mülakat</option>
+                            <option value="teklif" {{ 'selected' if aday.durum == 'teklif' }}>📝 Teklif</option>
+                            <option value="ise_alindi" {{ 'selected' if aday.durum == 'ise_alindi' }}>🎉 İşe Alındı</option>
+                            <option value="red" {{ 'selected' if aday.durum == 'red' }}>❌ Reddedildi</option>
+                            <option value="iptal" {{ 'selected' if aday.durum == 'iptal' }}>⛔ İptal</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <textarea name="degerlendirme_notu" class="form-control" rows="2" placeholder="Not ekleyin...">{{ aday.degerlendirme_notu or '' }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-lg me-1"></i> Güncelle
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Aksiyonlar -->
+        <div class="card">
+            <div class="card-body">
+                {% if ise_alim_hazir and aday.durum not in ['ise_alindi', 'red', 'iptal'] %}
+                <a href="{{ url_for('ik.aday_calisana_donustur', id=aday.id) }}" class="btn btn-success w-100 mb-2">
+                    <i class="bi bi-person-check me-2"></i>Çalışana Dönüştür
+                </a>
+                {% elif not ise_alim_hazir and aday.durum not in ['ise_alindi', 'red', 'iptal'] %}
+                <button class="btn btn-secondary w-100 mb-2" disabled title="Tüm zorunlu evraklar onaylanmalı ve KVKK onayı alınmalı">
+                    <i class="bi bi-person-check me-2"></i>Çalışana Dönüştür
+                </button>
+                <small class="text-muted d-block text-center">
+                    {% if eksik_evraklar %}Eksik evrak: {{ eksik_evraklar|length }}{% endif %}
+                    {% if not aday.kvkk_onay %} | KVKK onayı yok{% endif %}
+                </small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sağ Kolon - Evraklar ve Detaylar -->
+    <div class="col-lg-8">
+        <!-- Evrak Durumu -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-folder me-2"></i>Evrak Durumu</h6>
+                <span class="badge bg-{{ 'success' if evrak_tamamlanma == 100 else 'warning' }}">
+                    %{{ evrak_tamamlanma }} Tamamlandı
+                </span>
+            </div>
+            <div class="card-body">
+                <!-- Progress Bar -->
+                <div class="progress mb-4" style="height: 10px;">
+                    <div class="progress-bar bg-{{ 'success' if evrak_tamamlanma == 100 else 'warning' }}" 
+                         style="width: {{ evrak_tamamlanma }}%"></div>
+                </div>
+                
+                <!-- Evrak Listesi -->
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Evrak Tipi</th>
+                                <th>Durum</th>
+                                <th>Yükleme Tarihi</th>
+                                <th class="text-end">İşlem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for evrak_tipi in evrak_tipleri %}
+                            {% set yuklenen = aday.evraklar.filter_by(evrak_tipi_id=evrak_tipi.id).first() %}
+                            <tr>
+                                <td>
+                                    {{ evrak_tipi.ad }}
+                                    {% if evrak_tipi.zorunlu %}
+                                    <span class="badge bg-danger ms-1">Zorunlu</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if yuklenen %}
+                                        <span class="badge bg-{{ yuklenen.durum_renk }}">{{ yuklenen.durum_text }}</span>
+                                    {% else %}
+                                        <span class="text-muted"><i class="bi bi-dash-circle"></i> Yüklenmedi</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ yuklenen.created_at.strftime('%d.%m.%Y %H:%M') if yuklenen else '-' }}
+                                </td>
+                                <td class="text-end">
+                                    {% if yuklenen %}
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('ik.evrak_indir', id=yuklenen.id) }}" class="btn btn-outline-primary" title="İndir">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                        {% if yuklenen.durum == 'yuklendi' %}
+                                        <button class="btn btn-outline-success" onclick="evrakOnayla({{ yuklenen.id }})" title="Onayla">
+                                            <i class="bi bi-check"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" onclick="evrakReddet({{ yuklenen.id }})" title="Reddet">
+                                            <i class="bi bi-x"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                    {% else %}
+                                    <button class="btn btn-sm btn-outline-primary" onclick="evrakYukle({{ evrak_tipi.id }}, '{{ evrak_tipi.ad }}')">
+                                        <i class="bi bi-upload"></i> Yükle
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Kişisel Bilgiler -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-person me-2"></i>Kişisel Bilgiler</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td class="text-muted" width="40%">TC Kimlik No</td>
+                                <td>{{ aday.tc_kimlik or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Doğum Tarihi</td>
+                                <td>{{ aday.dogum_tarihi.strftime('%d.%m.%Y') if aday.dogum_tarihi else '-' }} {% if aday.yas %}({{ aday.yas }} yaş){% endif %}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Cinsiyet</td>
+                                <td>{{ aday.cinsiyet or '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Ehliyet</td>
+                                <td>{{ aday.ehliyet_sinifi or '-' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td class="text-muted" width="40%">KVKK Onay</td>
+                                <td>
+                                    {% if aday.kvkk_onay %}
+                                    <span class="text-success"><i class="bi bi-check-circle-fill"></i> Onaylandı</span>
+                                    <small class="text-muted d-block">{{ aday.kvkk_onay_tarihi.strftime('%d.%m.%Y %H:%M') if aday.kvkk_onay_tarihi else '' }}</small>
+                                    {% else %}
+                                    <span class="text-warning"><i class="bi bi-clock-fill"></i> Bekliyor</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Telefon Doğrulama</td>
+                                <td>
+                                    {% if aday.telefon_dogrulandi %}
+                                    <span class="text-success"><i class="bi bi-check-circle-fill"></i> Doğrulandı</span>
+                                    {% else %}
+                                    <span class="text-warning"><i class="bi bi-clock-fill"></i> Bekliyor</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Askerlik</td>
+                                <td>{{ aday.askerlik_durumu or '-' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Değerlendirme -->
+        {% if aday.degerlendirme_notu or aday.mulakat_notu %}
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-chat-text me-2"></i>Değerlendirme Notları</h6>
+            </div>
+            <div class="card-body">
+                {% if aday.degerlendirme_notu %}
+                <div class="mb-3">
+                    <strong>Değerlendirme:</strong>
+                    <p class="mb-0 text-muted">{{ aday.degerlendirme_notu }}</p>
+                </div>
+                {% endif %}
+                {% if aday.mulakat_notu %}
+                <div>
+                    <strong>Mülakat Notu:</strong>
+                    <p class="mb-0 text-muted">{{ aday.mulakat_notu }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Evrak Yükleme Modal -->
+<div class="modal fade" id="evrakYukleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('ik.aday_evrak_yukle', id=aday.id) }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="evrak_tipi_id" id="evrakTipiId">
+                <div class="modal-header">
+                    <h5 class="modal-title">Evrak Yükle - <span id="evrakTipiAd"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Dosya Seçin</label>
+                        <input type="file" name="dosya" class="form-control" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
+                        <div class="form-text">PDF, JPG, PNG, DOC, DOCX - Max 16MB</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload me-1"></i> Yükle
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function evrakYukle(tipiId, tipiAd) {
+    document.getElementById('evrakTipiId').value = tipiId;
+    document.getElementById('evrakTipiAd').textContent = tipiAd;
+    new bootstrap.Modal(document.getElementById('evrakYukleModal')).show();
+}
+
+function evrakOnayla(id) {
+    if (confirm('Bu evrakı onaylamak istediğinize emin misiniz?')) {
+        fetch('/ik/evrak/' + id + '/onayla', { 
+            method: 'POST', 
+            headers: {'X-CSRFToken': '{{ csrf_token() }}'}
+        }).then(response => response.json())
+          .then(data => {
+              if(data.success) location.reload();
+          });
+    }
+}
+
+function evrakReddet(id) {
+    const sebep = prompt('Red sebebi:');
+    if (sebep !== null) {
+        fetch('/ik/evrak/' + id + '/reddet', { 
+            method: 'POST', 
+            headers: {
+                'Content-Type': 'application/json', 
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({sebep: sebep})
+        }).then(response => response.json())
+          .then(data => {
+              if(data.success) location.reload();
+          });
+    }
+}
+</script>
+{% endblock %}

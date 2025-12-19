@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Zimmet İade - TG Portal{% endblock %}
+{% block page_title %}Zimmet İade{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-box-arrow-in-left me-2"></i>Zimmet İade Formu</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="alert alert-info mb-4">
+                        <strong>{{ zimmet.tanim }}</strong> zimmetini 
+                        <strong>{{ zimmet.calisan.full_name }}</strong> çalışanından iade alıyorsunuz.
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">İade Tarihi *</label>
+                        <input type="date" name="iade_tarihi" class="form-control" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Zimmet Durumu *</label>
+                        <select name="iade_durumu" class="form-select" required>
+                            <option value="saglam">Sağlam / Çalışır Durumda</option>
+                            <option value="hasarli">Hasarlı</option>
+                            <option value="arizali">Arızalı</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Not</label>
+                        <textarea name="iade_notu" class="form-control" rows="3" placeholder="İade ile ilgili notlar..."></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-lg me-1"></i> İade Al
+                    </button>
+                    <a href="{{ url_for('ik.zimmet_detay', id=zimmet.id) }}" class="btn btn-secondary">İptal</a>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Zimmet Bilgileri</h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Tip</span>
+                    <span>{{ zimmet.zimmet_tipi.ad }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Marka/Model</span>
+                    <span>{{ zimmet.marka or '' }} {{ zimmet.model or '' }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Seri No</span>
+                    <code>{{ zimmet.seri_no or '-' }}</code>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Teslim Tarihi</span>
+                    <span>{{ zimmet.teslim_tarihi.strftime('%d.%m.%Y') }}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

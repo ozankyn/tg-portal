@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}İşten Çıkışlar - TG Portal{% endblock %}
+{% block page_title %}İşten Çıkışlar{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">İşten Çıkış Kayıtları</h6>
+            <div class="btn-group btn-group-sm">
+                <a href="{{ url_for('ik.isten_cikis_liste') }}" class="btn btn-outline-secondary {{ 'active' if not request.args.get('durum') }}">Tümü</a>
+                <a href="{{ url_for('ik.isten_cikis_liste', durum='basladi') }}" class="btn btn-outline-secondary {{ 'active' if request.args.get('durum') == 'basladi' }}">Başladı</a>
+                <a href="{{ url_for('ik.isten_cikis_liste', durum='devam_ediyor') }}" class="btn btn-outline-secondary {{ 'active' if request.args.get('durum') == 'devam_ediyor' }}">Devam Ediyor</a>
+                <a href="{{ url_for('ik.isten_cikis_liste', durum='tamamlandi') }}" class="btn btn-outline-secondary {{ 'active' if request.args.get('durum') == 'tamamlandi' }}">Tamamlandı</a>
+            </div>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Çalışan</th>
+                        <th>Çıkış Tipi</th>
+                        <th>Planlanan Tarih</th>
+                        <th>İlerleme</th>
+                        <th>Durum</th>
+                        <th class="text-end">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cikis in cikislar %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('ik.detay', id=cikis.calisan_id) }}" class="text-decoration-none fw-semibold">
+                                {{ cikis.calisan.full_name }}
+                            </a>
+                            <div class="small text-muted">{{ cikis.calisan.pozisyon.ad if cikis.calisan.pozisyon else '-' }}</div>
+                        </td>
+                        <td>{{ cikis.cikis_tipi|title }}</td>
+                        <td>{{ cikis.planlanan_cikis_tarihi.strftime('%d.%m.%Y') }}</td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="progress progress-sm flex-grow-1 me-2" style="width: 60px; height: 6px;">
+                                    <div class="progress-bar bg-{{ 'success' if cikis.tamamlanma_yuzdesi == 100 else 'warning' }}" 
+                                         style="width: {{ cikis.tamamlanma_yuzdesi }}%"></div>
+                                </div>
+                                <small>%{{ cikis.tamamlanma_yuzdesi }}</small>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ cikis.durum_renk }}">{{ cikis.durum|title }}</span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('ik.isten_cikis_detay', id=cikis.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            İşten çıkış kaydı bulunmuyor
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if pagination.pages > 1 %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% for p in pagination.iter_pages() %}
+        {% if p %}
+        <li class="page-item {{ 'active' if p == pagination.page }}">
+            <a class="page-link" href="{{ url_for('ik.isten_cikis_liste', page=p, durum=request.args.get('durum')) }}">{{ p }}</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">...</span></li>
+        {% endif %}
+        {% endfor %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}{% if zimmet %}Zimmet Düzenle{% else %}Yeni Zimmet{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if zimmet %}Zimmet Düzenle{% else %}Yeni Zimmet Ekle{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="row g-3">
+                        <!-- Çalışan Seçimi -->
+                        <div class="col-md-6">
+                            <label class="form-label">Çalışan *</label>
+                            <select name="calisan_id" class="form-select select2" required>
+                                <option value="">Seçiniz</option>
+                                {% for calisan in calisanlar %}
+                                <option value="{{ calisan.id }}" {{ 'selected' if secili_calisan_id == calisan.id or (zimmet and zimmet.calisan_id == calisan.id) }}>
+                                    {{ calisan.full_name }} {% if calisan.departman %}({{ calisan.departman.ad }}){% endif %}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Zimmet Tipi -->
+                        <div class="col-md-6">
+                            <label class="form-label">Zimmet Tipi *</label>
+                            <select name="zimmet_tipi_id" class="form-select" required>
+                                <option value="">Seçiniz</option>
+                                {% for tip in zimmet_tipleri %}
+                                <option value="{{ tip.id }}" {{ 'selected' if zimmet and zimmet.zimmet_tipi_id == tip.id }}>
+                                    {{ tip.ad }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Tanım -->
+                        <div class="col-12">
+                            <label class="form-label">Tanım *</label>
+                            <input type="text" name="tanim" class="form-control" required
+                                   placeholder="Örn: MacBook Pro 14 M3, iPhone 15 Pro Max"
+                                   value="{{ zimmet.tanim if zimmet else '' }}">
+                        </div>
+                        
+                        <!-- Marka / Model -->
+                        <div class="col-md-6">
+                            <label class="form-label">Marka</label>
+                            <input type="text" name="marka" class="form-control" placeholder="Apple, Samsung, HP..."
+                                   value="{{ zimmet.marka if zimmet else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Model</label>
+                            <input type="text" name="model" class="form-control" placeholder="Model numarası"
+                                   value="{{ zimmet.model if zimmet else '' }}">
+                        </div>
+                        
+                        <!-- Seri No / Demirbaş No -->
+                        <div class="col-md-6">
+                            <label class="form-label">Seri Numarası</label>
+                            <input type="text" name="seri_no" class="form-control" placeholder="Üretici seri numarası"
+                                   value="{{ zimmet.seri_no if zimmet else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Demirbaş No</label>
+                            <input type="text" name="demirbas_no" class="form-control" placeholder="Şirket demirbaş numarası"
+                                   value="{{ zimmet.demirbas_no if zimmet else '' }}">
+                        </div>
+                        
+                        <!-- Teslim Tarihi / Değer -->
+                        <div class="col-md-6">
+                            <label class="form-label">Teslim Tarihi *</label>
+                            <input type="date" name="teslim_tarihi" class="form-control" required
+                                   value="{{ zimmet.teslim_tarihi.strftime('%Y-%m-%d') if zimmet else '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Değer (₺)</label>
+                            <input type="number" name="deger" class="form-control" step="0.01" placeholder="0.00"
+                                   value="{{ zimmet.deger if zimmet else '' }}">
+                        </div>
+                        
+                        <!-- Not -->
+                        <div class="col-12">
+                            <label class="form-label">Teslim Notu</label>
+                            <textarea name="teslim_notu" class="form-control" rows="2" 
+                                      placeholder="Ek bilgiler...">{{ zimmet.teslim_notu if zimmet else '' }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> {{ 'Güncelle' if zimmet else 'Kaydet' }}
+                        </button>
+                        <a href="{{ url_for('ik.zimmet_liste') }}" class="btn btn-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">
+                    Zimmet, şirket tarafından çalışana teslim edilen malzemedir. 
+                    Bilgisayar, telefon, araç anahtarı, giriş kartı gibi malzemeler zimmet olarak takip edilir.
+                </p>
+                <ul class="small text-muted mb-0">
+                    <li>Seri numarası elektronik cihazlar için önemlidir</li>
+                    <li>Demirbaş numarası şirket içi takip için kullanılır</li>
+                    <li>Değer bilgisi sigorta ve envanter için gereklidir</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

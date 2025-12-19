@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block title %}{{ calisan.full_name }} - Zimmetler{% endblock %}
+{% block page_title %}Çalışan Zimmetleri{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h5 class="mb-1">{{ calisan.full_name }}</h5>
+        <span class="text-muted">{{ calisan.pozisyon.ad if calisan.pozisyon else '' }}</span>
+    </div>
+    <a href="{{ url_for('ik.zimmet_ekle', calisan_id=calisan.id) }}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Zimmet Ekle
+    </a>
+</div>
+
+<!-- Aktif Zimmetler -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-box-seam me-2"></i>Aktif Zimmetler ({{ aktif_zimmetler|length }})</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Zimmet</th>
+                        <th>Tip</th>
+                        <th>Seri No</th>
+                        <th>Teslim Tarihi</th>
+                        <th class="text-end">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for zimmet in aktif_zimmetler %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('ik.zimmet_detay', id=zimmet.id) }}" class="text-decoration-none fw-semibold">
+                                {{ zimmet.tanim }}
+                            </a>
+                            <div class="small text-muted">{{ zimmet.marka }} {{ zimmet.model }}</div>
+                        </td>
+                        <td><span class="badge bg-light text-dark">{{ zimmet.zimmet_tipi.ad }}</span></td>
+                        <td><code>{{ zimmet.seri_no or '-' }}</code></td>
+                        <td>{{ zimmet.teslim_tarihi.strftime('%d.%m.%Y') }}</td>
+                        <td class="text-end">
+                            <a href="{{ url_for('ik.zimmet_iade', id=zimmet.id) }}" class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-box-arrow-in-left"></i> İade Al
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">Aktif zimmet bulunmuyor</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Geçmiş Zimmetler -->
+{% if gecmis_zimmetler %}
+<div class="card">
+    <div class="card-header">
+        <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Geçmiş Zimmetler</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Zimmet</th>
+                        <th>Teslim</th>
+                        <th>İade</th>
+                        <th>Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for zimmet in gecmis_zimmetler %}
+                    <tr>
+                        <td>{{ zimmet.tanim }}</td>
+                        <td>{{ zimmet.teslim_tarihi.strftime('%d.%m.%Y') }}</td>
+                        <td>{{ zimmet.iade_tarihi.strftime('%d.%m.%Y') if zimmet.iade_tarihi else '-' }}</td>
+                        <td><span class="badge bg-{{ zimmet.durum_renk }}">{{ zimmet.durum_text }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

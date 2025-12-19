@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}Zimmet Tipleri - TG Portal{% endblock %}
+{% block page_title %}Zimmet Tipleri{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Tanımlı Zimmet Tipleri</h6>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#tipModal">
+                    <i class="bi bi-plus-lg me-1"></i> Yeni Ekle
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tip Adı</th>
+                                <th>Kod</th>
+                                <th>Kategori</th>
+                                <th>Seri No</th>
+                                <th>İade Zorunlu</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tip in zimmet_tipleri %}
+                            <tr>
+                                <td>
+                                    <strong>{{ tip.ad }}</strong>
+                                    {% if tip.aciklama %}
+                                    <div class="small text-muted">{{ tip.aciklama }}</div>
+                                    {% endif %}
+                                </td>
+                                <td><code>{{ tip.kod }}</code></td>
+                                <td><span class="badge bg-light text-dark">{{ tip.kategori or '-' }}</span></td>
+                                <td>
+                                    {% if tip.seri_no_zorunlu %}
+                                    <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
+                                    {% else %}
+                                    <span class="text-muted"><i class="bi bi-dash"></i></span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if tip.iade_zorunlu %}
+                                    <span class="badge bg-danger">Zorunlu</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Opsiyonel</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if tip.aktif %}
+                                    <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
+                                    {% else %}
+                                    <span class="text-muted"><i class="bi bi-x-circle"></i></span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">Zimmet tipi tanımlanmamış</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">
+                    Zimmet tipleri, şirket envanterindeki malzeme kategorilerini tanımlar.
+                </p>
+                <h6 class="small text-uppercase text-muted mb-2">Örnek Kategoriler</h6>
+                <ul class="list-unstyled small">
+                    <li><span class="badge bg-light text-dark me-2">elektronik</span> Bilgisayar, telefon</li>
+                    <li><span class="badge bg-light text-dark me-2">arac</span> Araç anahtarı, HGS</li>
+                    <li><span class="badge bg-light text-dark me-2">ofis</span> Masa, sandalye</li>
+                    <li><span class="badge bg-light text-dark me-2">guvenlik</span> Giriş kartı, anahtar</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Yeni Tip Modal -->
+<div class="modal fade" id="tipModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('ik.zimmet_tipi_ekle') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Yeni Zimmet Tipi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Tip Adı *</label>
+                        <input type="text" name="ad" class="form-control" required placeholder="Laptop, Telefon vb.">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Kod *</label>
+                        <input type="text" name="kod" class="form-control" required placeholder="LAPTOP, TELEFON vb.">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Kategori</label>
+                        <select name="kategori" class="form-select">
+                            <option value="elektronik">Elektronik</option>
+                            <option value="arac">Araç</option>
+                            <option value="ofis">Ofis</option>
+                            <option value="guvenlik">Güvenlik</option>
+                            <option value="diger">Diğer</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea name="aciklama" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input type="checkbox" name="seri_no_zorunlu" class="form-check-input" id="seriCheck">
+                        <label class="form-check-label" for="seriCheck">Seri Numarası Zorunlu</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" name="iade_zorunlu" class="form-check-input" id="iadeCheck" checked>
+                        <label class="form-check-label" for="iadeCheck">İşten Çıkışta İade Zorunlu</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

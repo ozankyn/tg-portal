@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Zimmet Detay - {{ zimmet.tanim }}{% endblock %}
+{% block page_title %}Zimmet Detay{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Sol Kolon - Zimmet Bilgileri -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <div class="rounded-circle bg-{{ zimmet.durum_renk }} d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                    <i class="bi bi-box-seam fs-1 text-white"></i>
+                </div>
+                <h5 class="mb-1">{{ zimmet.tanim }}</h5>
+                <p class="text-muted mb-2">{{ zimmet.zimmet_tipi.ad }}</p>
+                <span class="badge bg-{{ zimmet.durum_renk }} fs-6">{{ zimmet.durum_text }}</span>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Çalışan</span>
+                    <a href="{{ url_for('ik.detay', id=zimmet.calisan_id) }}">{{ zimmet.calisan.full_name }}</a>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Marka</span>
+                    <span>{{ zimmet.marka or '-' }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Model</span>
+                    <span>{{ zimmet.model or '-' }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Seri No</span>
+                    <code>{{ zimmet.seri_no or '-' }}</code>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Demirbaş No</span>
+                    <code>{{ zimmet.demirbas_no or '-' }}</code>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Değer</span>
+                    <span>{% if zimmet.deger %}₺{{ '{:,.2f}'.format(zimmet.deger) }}{% else %}-{% endif %}</span>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Aksiyonlar -->
+        {% if zimmet.durum == 'teslim_edildi' %}
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>İşlemler</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('ik.zimmet_iade', id=zimmet.id) }}" class="btn btn-success">
+                        <i class="bi bi-box-arrow-in-left me-2"></i>İade Al
+                    </a>
+                    <a href="{{ url_for('ik.zimmet_transfer', id=zimmet.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left-right me-2"></i>Transfer Et
+                    </a>
+                    <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#kayipModal">
+                        <i class="bi bi-exclamation-triangle me-2"></i>Kayıp Bildir
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sağ Kolon - Tarihler ve Log -->
+    <div class="col-lg-8">
+        <!-- Teslim/İade Bilgileri -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Teslim Bilgileri</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted small text-uppercase">Teslim</h6>
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td class="text-muted" width="40%">Tarih</td>
+                                <td>{{ zimmet.teslim_tarihi.strftime('%d.%m.%Y') }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Teslim Eden</td>
+                                <td>{{ zimmet.teslim_eden.full_name if zimmet.teslim_eden else '-' }}</td>
+                            </tr>
+                            {% if zimmet.teslim_notu %}
+                            <tr>
+                                <td class="text-muted">Not</td>
+                                <td>{{ zimmet.teslim_notu }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    {% if zimmet.iade_tarihi %}
+                    <div class="col-md-6">
+                        <h6 class="text-muted small text-uppercase">İade</h6>
+                        <table class="table table-sm table-borderless">
+                            <tr>
+                                <td class="text-muted" width="40%">Tarih</td>
+                                <td>{{ zimmet.iade_tarihi.strftime('%d.%m.%Y') }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">İade Alan</td>
+                                <td>{{ zimmet.iade_alan.full_name if zimmet.iade_alan else '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted">Durum</td>
+                                <td>
+                                    {% if zimmet.iade_durumu == 'saglam' %}
+                                    <span class="badge bg-success">Sağlam</span>
+                                    {% elif zimmet.iade_durumu == 'hasarli' %}
+                                    <span class="badge bg-warning">Hasarlı</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ zimmet.iade_durumu }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if zimmet.iade_notu %}
+                            <tr>
+                                <td class="text-muted">Not</td>
+                                <td>{{ zimmet.iade_notu }}</td>
+                            </tr>
+                            {% endif %}
+                        </table>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Hareket Geçmişi -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Hareket Geçmişi</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for log in loglar %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="badge bg-{{ 'success' if log.islem == 'teslim' else 'info' if log.islem == 'iade' else 'warning' if log.islem == 'transfer' else 'danger' }} me-2">
+                                    {{ log.islem|title }}
+                                </span>
+                                <span class="text-muted">{{ log.aciklama }}</span>
+                            </div>
+                            <small class="text-muted">
+                                {{ log.created_at.strftime('%d.%m.%Y %H:%M') }}
+                            </small>
+                        </div>
+                        <small class="text-muted">
+                            <i class="bi bi-person"></i> {{ log.islem_yapan.full_name if log.islem_yapan else '-' }}
+                        </small>
+                    </div>
+                    {% else %}
+                    <div class="list-group-item text-center text-muted py-4">
+                        Hareket kaydı bulunmuyor
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Kayıp Modal -->
+<div class="modal fade" id="kayipModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('ik.zimmet_kayip_bildir', id=zimmet.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Kayıp Bildirimi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Bu işlem geri alınamaz. Zimmet kayıp olarak işaretlenecektir.
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea name="aciklama" class="form-control" rows="3" placeholder="Kayıp detayları..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-danger">Kayıp Olarak İşaretle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

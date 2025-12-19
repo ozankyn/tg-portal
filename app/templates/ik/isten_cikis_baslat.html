@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}İşten Çıkış Başlat - {{ calisan.full_name }}{% endblock %}
+{% block page_title %}İşten Çıkış Başlat{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-box-arrow-right me-2"></i>İşten Çıkış Bilgileri</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="alert alert-warning mb-4">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>{{ calisan.full_name }}</strong> için işten çıkış süreci başlatılacak.
+                        Bu işlem çalışanın durumunu "Askıya Alındı" olarak değiştirecektir.
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Planlanan Çıkış Tarihi *</label>
+                            <input type="date" name="planlanan_cikis_tarihi" class="form-control" required>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Çıkış Tipi *</label>
+                            <select name="cikis_tipi" class="form-select" required>
+                                <option value="">Seçiniz</option>
+                                <option value="istifa">İstifa</option>
+                                <option value="fesih">İşveren Feshi</option>
+                                <option value="anlasmali">Anlaşmalı Fesih</option>
+                                <option value="emeklilik">Emeklilik</option>
+                                <option value="sozlesme_bitti">Sözleşme Bitimi</option>
+                                <option value="vefat">Vefat</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Çıkış Sebebi</label>
+                            <input type="text" name="cikis_sebebi" class="form-control" placeholder="Kısa açıklama">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Detay Notu</label>
+                            <textarea name="detay_notu" class="form-control" rows="3" placeholder="Ek bilgiler..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-box-arrow-right me-2"></i>Çıkış Sürecini Başlat
+                        </button>
+                        <a href="{{ url_for('ik.detay', id=calisan.id) }}" class="btn btn-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-person me-2"></i>Çalışan Bilgileri</h6>
+            </div>
+            <div class="card-body text-center">
+                <div class="rounded-circle bg-primary d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-person fs-3 text-white"></i>
+                </div>
+                <h5>{{ calisan.full_name }}</h5>
+                <p class="text-muted mb-0">{{ calisan.pozisyon.ad if calisan.pozisyon else '-' }}</p>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Sicil No</span>
+                    <strong>{{ calisan.sicil_no or '-' }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>İşe Giriş</span>
+                    <span>{{ calisan.ise_baslama.strftime('%d.%m.%Y') if calisan.ise_baslama else '-' }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Kıdem</span>
+                    <span>{{ calisan.kidem_yili }} yıl</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Departman</span>
+                    <span>{{ calisan.departman.ad if calisan.departman else '-' }}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
