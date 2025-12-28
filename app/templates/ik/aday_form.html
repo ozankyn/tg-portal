@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}{% if aday %}Aday Düzenle{% else %}Yeni Aday{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if aday %}Aday Düzenle{% else %}Yeni Aday Ekle{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="row g-3">
+                        <!-- Kişisel Bilgiler -->
+                        <div class="col-12">
+                            <h6 class="text-muted text-uppercase small mb-3">
+                                <i class="bi bi-person me-2"></i>Kişisel Bilgiler
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Ad *</label>
+                            <input type="text" name="ad" class="form-control" required
+                                   value="{{ aday.ad if aday else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Soyad *</label>
+                            <input type="text" name="soyad" class="form-control" required
+                                   value="{{ aday.soyad if aday else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">TC Kimlik No</label>
+                            <input type="text" name="tc_kimlik" class="form-control" maxlength="11"
+                                   pattern="[0-9]{11}" title="11 haneli TC Kimlik numarası"
+                                   value="{{ aday.tc_kimlik if aday else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Doğum Tarihi</label>
+                            <input type="date" name="dogum_tarihi" class="form-control"
+                                   value="{{ aday.dogum_tarihi.strftime('%Y-%m-%d') if aday and aday.dogum_tarihi else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Cinsiyet</label>
+                            <select name="cinsiyet" class="form-select">
+                                <option value="">Seçiniz</option>
+                                <option value="erkek" {{ 'selected' if aday and aday.cinsiyet == 'erkek' }}>Erkek</option>
+                                <option value="kadin" {{ 'selected' if aday and aday.cinsiyet == 'kadin' }}>Kadın</option>
+                            </select>
+                        </div>
+                        
+                        <!-- İletişim Bilgileri -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-muted text-uppercase small mb-3">
+                                <i class="bi bi-telephone me-2"></i>İletişim Bilgileri
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Telefon *</label>
+                            <input type="tel" name="telefon" class="form-control" required
+                                   placeholder="5XX XXX XX XX"
+                                   value="{{ aday.telefon if aday else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">E-posta</label>
+                            <input type="email" name="email" class="form-control"
+                                   value="{{ aday.email if aday else '' }}">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Adres</label>
+                            <textarea name="adres" class="form-control" rows="2">{{ aday.adres if aday else '' }}</textarea>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">İl</label>
+                            <input type="text" name="il" class="form-control"
+                                   value="{{ aday.il if aday else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">İlçe</label>
+                            <input type="text" name="ilce" class="form-control"
+                                   value="{{ aday.ilce if aday else '' }}">
+                        </div>
+                        
+                        <!-- Başvuru Bilgileri -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-muted text-uppercase small mb-3">
+                                <i class="bi bi-briefcase me-2"></i>Başvuru Bilgileri
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Pozisyon</label>
+                            <select name="pozisyon_id" class="form-select">
+                                <option value="">Seçiniz</option>
+                                {% for pozisyon in pozisyonlar %}
+                                <option value="{{ pozisyon.id }}" {{ 'selected' if aday and aday.pozisyon_id == pozisyon.id }}>
+                                    {{ pozisyon.ad }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Kaynak</label>
+                            <select name="kaynak" class="form-select">
+                                <option value="manuel" {{ 'selected' if not aday or aday.kaynak == 'manuel' }}>Manuel Giriş</option>
+                                <option value="referans" {{ 'selected' if aday and aday.kaynak == 'referans' }}>Referans</option>
+                                <option value="kariyer_sitesi" {{ 'selected' if aday and aday.kaynak == 'kariyer_sitesi' }}>Kariyer Sitesi</option>
+                                <option value="sosyal_medya" {{ 'selected' if aday and aday.kaynak == 'sosyal_medya' }}>Sosyal Medya</option>
+                                <option value="ilan" {{ 'selected' if aday and aday.kaynak == 'ilan' }}>İlan</option>
+                                <option value="sirket_web" {{ 'selected' if aday and aday.kaynak == 'sirket_web' }}>Şirket Web Sitesi</option>
+                                <option value="sms_davet" {{ 'selected' if aday and aday.kaynak == 'sms_davet' }}>SMS Davet</option>
+                                <option value="diger" {{ 'selected' if aday and aday.kaynak == 'diger' }}>Diğer</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Değerlendirme Notu</label>
+                            <textarea name="degerlendirme_notu" class="form-control" rows="3"
+                                      placeholder="Aday hakkında notlar...">{{ aday.degerlendirme_notu if aday else '' }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> {{ 'Güncelle' if aday else 'Kaydet' }}
+                        </button>
+                        <a href="{{ url_for('ik.aday_liste') }}" class="btn btn-secondary">İptal</a>
+                        {% if aday %}
+                        <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-eye me-1"></i> Detaya Dön
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">
+                    {% if aday %}
+                    Aday bilgilerini güncelleyebilirsiniz. Evrak yükleme ve durum değişikliği için detay sayfasını kullanın.
+                    {% else %}
+                    Manuel aday kaydı oluşturuyorsunuz. Bu durumda KVKK onayı alınmış kabul edilir.
+                    {% endif %}
+                </p>
+                <ul class="small text-muted mb-0">
+                    <li>Telefon numarası benzersiz olmalıdır</li>
+                    <li>TC Kimlik 11 haneli olmalıdır</li>
+                    {% if not aday %}
+                    <li>SMS ile davet için "Kadro" modülünü kullanın</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+        
+        {% if aday %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Aday Bilgileri</h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Başvuru Tarihi</span>
+                    <span>{{ aday.basvuru_tarihi.strftime('%d.%m.%Y') if aday.basvuru_tarihi else '-' }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Durum</span>
+                    {% set durum_renkler = {
+                        'davet_gonderildi': 'secondary',
+                        'kvkk_bekliyor': 'warning',
+                        'basvurdu': 'primary',
+                        'degerlendiriliyor': 'info',
+                        'mulakat': 'info',
+                        'teklif': 'warning',
+                        'ise_alindi': 'success',
+                        'red': 'danger',
+                        'iptal': 'dark'
+                    } %}
+                    <span class="badge bg-{{ durum_renkler.get(aday.durum, 'secondary') }}">
+                        {{ aday.durum|replace('_', ' ')|title }}
+                    </span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">KVKK Onayı</span>
+                    {% if aday.kvkk_onay %}
+                    <span class="text-success"><i class="bi bi-check-circle-fill"></i> Onaylandı</span>
+                    {% else %}
+                    <span class="text-warning"><i class="bi bi-exclamation-circle"></i> Bekleniyor</span>
+                    {% endif %}
+                </li>
+                {% if aday.kadro %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Kadro</span>
+                    <span>{{ aday.kadro.pozisyon_adi }}</span>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

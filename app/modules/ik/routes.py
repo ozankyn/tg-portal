@@ -294,6 +294,51 @@ def aday_liste():
                           stats=stats)
 
 
+@ik_bp.route('/aday/<int:id>/duzenle', methods=['GET', 'POST'])
+@login_required
+@permission_required('ik.edit')
+def aday_duzenle(id):
+    """Aday düzenle"""
+    aday = Aday.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        telefon = request.form.get('telefon', '').strip()
+        if telefon:
+            existing = Aday.query.filter(
+                Aday.telefon == telefon,
+                Aday.id != id,
+                Aday.is_deleted == False
+            ).first()
+            if existing:
+                flash('Bu telefon numarası başka bir adayda kayıtlı.', 'danger')
+                return redirect(url_for('ik.aday_duzenle', id=id))
+        
+        aday.ad = request.form.get('ad', '').strip()
+        aday.soyad = request.form.get('soyad', '').strip()
+        aday.telefon = telefon
+        aday.email = request.form.get('email', '').strip() or None
+        aday.tc_kimlik = request.form.get('tc_kimlik', '').strip() or None
+        aday.dogum_tarihi = datetime.strptime(request.form.get('dogum_tarihi'), '%Y-%m-%d').date() if request.form.get('dogum_tarihi') else None
+        aday.cinsiyet = request.form.get('cinsiyet') or None
+        aday.adres = request.form.get('adres', '').strip() or None
+        aday.il = request.form.get('il', '').strip() or None
+        aday.ilce = request.form.get('ilce', '').strip() or None
+        aday.pozisyon_id = int(request.form.get('pozisyon_id')) if request.form.get('pozisyon_id') else None
+        aday.kaynak = request.form.get('kaynak') or aday.kaynak
+        aday.degerlendirme_notu = request.form.get('degerlendirme_notu', '').strip() or None
+        aday.updated_by = current_user.id
+        
+        db.session.commit()
+        
+        flash('Aday bilgileri güncellendi.', 'success')
+        return redirect(url_for('ik.aday_detay', id=id))
+    
+    pozisyonlar = Pozisyon.query.filter_by(aktif=True).order_by(Pozisyon.ad).all()
+    
+    return render_template('ik/aday_form.html',
+                          aday=aday,
+                          pozisyonlar=pozisyonlar)
+
 @ik_bp.route('/aday/<int:id>')
 @login_required
 @permission_required('ik.view')
@@ -1043,4 +1088,54 @@ def calisan_zimmetler(id):
                           calisan=calisan,
                           aktif_zimmetler=aktif_zimmetler,
                           gecmis_zimmetler=gecmis_zimmetler)
+
+
+# ============================================================
+# ADAY EKLE (Manuel - İK Panelinden)
+# ============================================================
+
+@ik_bp.route('/aday/ekle', methods=['GET', 'POST'])
+@login_required
+@permission_required('ik.create')
+def aday_ekle():
+    """Yeni aday ekle (manuel)"""
+    if request.method == 'POST':
+        # Telefon kontrolü
+        telefon = request.form.get('telefon', '').strip()
+        if telefon and Aday.query.filter_by(telefon=telefon, is_deleted=False).first():
+            flash('Bu telefon numarası zaten kayıtlı.', 'danger')
+            return redirect(url_for('ik.aday_ekle'))
+        
+        aday = Aday(
+            ad=request.form.get('ad', '').strip(),
+            soyad=request.form.get('soyad', '').strip(),
+            telefon=telefon,
+            email=request.form.get('email', '').strip() or None,
+            tc_kimlik=request.form.get('tc_kimlik', '').strip() or None,
+            dogum_tarihi=datetime.strptime(request.form.get('dogum_tarihi'), '%Y-%m-%d').date() if request.form.get('dogum_tarihi') else None,
+            cinsiyet=request.form.get('cinsiyet') or None,
+            adres=request.form.get('adres', '').strip() or None,
+            il=request.form.get('il', '').strip() or None,
+            ilce=request.form.get('ilce', '').strip() or None,
+            pozisyon_id=int(request.form.get('pozisyon_id')) if request.form.get('pozisyon_id') else None,
+            kaynak=request.form.get('kaynak', 'manuel'),
+            durum='basvurdu',
+            basvuru_tarihi=date.today(),
+            kvkk_onay=True,  # Manuel girişte KVKK zaten alınmış kabul edilir
+            kvkk_onay_tarihi=datetime.utcnow(),
+            created_by=current_user.id
+        )
+        
+        db.session.add(aday)
+        db.session.commit()
+        
+        flash(f'{aday.full_name} adayı oluşturuldu.', 'success')
+        return redirect(url_for('ik.aday_detay', id=aday.id))
+    
+    pozisyonlar = Pozisyon.query.filter_by(aktif=True).order_by(Pozisyon.ad).all()
+    
+    return render_template('ik/aday_form.html',
+                          aday=None,
+                          pozisyonlar=pozisyonlar)
+
 
