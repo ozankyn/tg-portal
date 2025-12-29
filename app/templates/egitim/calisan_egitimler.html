@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}{{ calisan.full_name }} - Eğitim Geçmişi - TG Portal{% endblock %}
+{% block page_title %}Eğitim Geçmişi{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Çalışan Bilgi -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="avatar-lg bg-primary bg-opacity-10 rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width:80px;height:80px;">
+                    <i class="bi bi-person fs-1 text-primary"></i>
+                </div>
+                <h5>{{ calisan.full_name }}</h5>
+                <p class="text-muted mb-2">{{ calisan.pozisyon.ad if calisan.pozisyon else '-' }}</p>
+                <span class="badge bg-secondary">{{ calisan.departman.ad if calisan.departman else '-' }}</span>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Toplam Eğitim</span>
+                    <span class="badge bg-primary">{{ egitim_kayitlari|length }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Başarılı</span>
+                    <span class="badge bg-success">{{ egitim_kayitlari|selectattr('durum', 'equalto', 'gecti')|list|length }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Zorunlu Eksik</span>
+                    <span class="badge bg-danger">{{ zorunlu_egitimler|rejectattr('tamamlandi')|list|length }}</span>
+                </li>
+            </ul>
+            <div class="card-footer">
+                <a href="{{ url_for('ik.detay', id=calisan.id) }}" class="btn btn-outline-secondary btn-sm w-100">
+                    <i class="bi bi-arrow-left me-1"></i> Çalışan Profili
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Eğitim Geçmişi -->
+    <div class="col-lg-8">
+        <!-- Zorunlu Eğitimler -->
+        {% if zorunlu_egitimler %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-shield-check me-2"></i>Zorunlu Eğitim Durumu</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Eğitim</th>
+                                <th>Durum</th>
+                                <th>Geçerlilik</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ze in zorunlu_egitimler %}
+                            <tr>
+                                <td>{{ ze.egitim_tipi.ad }}</td>
+                                <td>
+                                    {% if ze.tamamlandi %}
+                                    <span class="badge bg-success"><i class="bi bi-check"></i> Tamamlandı</span>
+                                    {% else %}
+                                    <span class="badge bg-danger"><i class="bi bi-x"></i> Eksik</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if ze.son_gecerlilik %}
+                                        {% if ze.gecerli_mi %}
+                                        <span class="text-success">{{ ze.son_gecerlilik.strftime('%d.%m.%Y') }}</span>
+                                        {% else %}
+                                        <span class="text-danger">Süresi doldu</span>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="text-muted">Süresiz</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Eğitim Geçmişi -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-mortarboard me-2"></i>Eğitim Geçmişi</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if egitim_kayitlari %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Eğitim</th>
+                                <th>Tarih</th>
+                                <th>Durum</th>
+                                <th>Puan</th>
+                                <th>Sertifika</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for k in egitim_kayitlari %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('egitim.detay', id=k.egitim_id) }}" class="text-decoration-none">
+                                        {{ k.egitim.baslik }}
+                                    </a>
+                                    <small class="text-muted d-block">{{ k.egitim.egitim_tipi.ad }}</small>
+                                </td>
+                                <td>{{ k.egitim.baslangic_tarihi.strftime('%d.%m.%Y') }}</td>
+                                <td><span class="badge bg-{{ k.durum_renk }}">{{ k.durum_text }}</span></td>
+                                <td>{{ k.puan if k.puan else '-' }}</td>
+                                <td>
+                                    {% if k.sertifika_tarihi %}
+                                    <i class="bi bi-award text-success"></i>
+                                    {% if k.sertifika_gecerlilik %}
+                                    <small class="{% if not k.sertifika_gecerli_mi %}text-danger{% else %}text-muted{% endif %}">
+                                        {{ k.sertifika_gecerlilik.strftime('%d.%m.%Y') }}
+                                    </small>
+                                    {% endif %}
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-mortarboard fs-1 d-block mb-2"></i>
+                    Henüz eğitim kaydı yok
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

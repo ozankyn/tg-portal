@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}{% if egitim %}Eğitim Düzenle{% else %}Yeni Eğitim{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if egitim %}Eğitim Düzenle{% else %}Yeni Eğitim Planla{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="row g-3">
+                        <!-- Temel Bilgiler -->
+                        <div class="col-12">
+                            <h6 class="text-muted text-uppercase small mb-3">
+                                <i class="bi bi-mortarboard me-2"></i>Eğitim Bilgileri
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Eğitim Tipi *</label>
+                            <select name="egitim_tipi_id" class="form-select" required>
+                                <option value="">Seçiniz</option>
+                                {% for tip in egitim_tipleri %}
+                                <option value="{{ tip.id }}" {{ 'selected' if egitim and egitim.egitim_tipi_id == tip.id }}>
+                                    {{ tip.ad }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Proje</label>
+                            <select name="proje_id" class="form-select">
+                                <option value="">Genel Eğitim (Proje Bağımsız)</option>
+                                {% for proje in projeler %}
+                                <option value="{{ proje.id }}" {{ 'selected' if egitim and egitim.proje_id == proje.id }}>
+                                    {{ proje.musteri.display_name }} - {{ proje.ad }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Başlık *</label>
+                            <input type="text" name="baslik" class="form-control" required
+                                   placeholder="Örn: Migros Ürün Eğitimi - Ocak 2025"
+                                   value="{{ egitim.baslik if egitim else '' }}">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Açıklama</label>
+                            <textarea name="aciklama" class="form-control" rows="3"
+                                      placeholder="Eğitim içeriği, hedefler...">{{ egitim.aciklama if egitim else '' }}</textarea>
+                        </div>
+                        
+                        <!-- Tarih ve Süre -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-muted text-uppercase small mb-3">
+                                <i class="bi bi-calendar me-2"></i>Tarih ve Süre
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Başlangıç *</label>
+                            <input type="datetime-local" name="baslangic_tarihi" class="form-control" required
+                                   value="{{ egitim.baslangic_tarihi.strftime('%Y-%m-%dT%H:%M') if egitim and egitim.baslangic_tarihi else '' }}">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Bitiş</label>
+                            <input type="datetime-local" name="bitis_tarihi" class="form-control"
+                                   value="{{ egitim.bitis_tarihi.strftime('%Y-%m-%dT%H:%M') if egitim and egitim.bitis_tarihi else '' }}">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Süre (Saat)</label>
+                            <input type="number" name="sure_saat" class="form-control" step="0.5" min="0.5"
+                                   value="{{ egitim.sure_saat if egitim else '' }}">
+                        </div>
+                        
+                        <!-- Lokasyon -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-muted text-uppercase small mb-3">
+                                <i class="bi bi-geo-alt me-2"></i>Lokasyon
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Lokasyon Tipi</label>
+                            <select name="lokasyon_tipi" class="form-select" id="lokasyonTipi">
+                                <option value="yuz_yuze" {{ 'selected' if not egitim or egitim.lokasyon_tipi == 'yuz_yuze' }}>Yüz Yüze</option>
+                                <option value="online" {{ 'selected' if egitim and egitim.lokasyon_tipi == 'online' }}>Online</option>
+                                <option value="hibrit" {{ 'selected' if egitim and egitim.lokasyon_tipi == 'hibrit' }}>Hibrit</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-8">
+                            <label class="form-label">Lokasyon / Link</label>
+                            <input type="text" name="lokasyon" class="form-control" id="lokasyonInput"
+                                   placeholder="Adres veya online meeting linki"
+                                   value="{{ egitim.lokasyon if egitim else '' }}">
+                        </div>
+                        
+                        <!-- Eğitmen -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-muted text-uppercase small mb-3">
+                                <i class="bi bi-person-badge me-2"></i>Eğitmen
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Eğitmen Tipi</label>
+                            <select name="egitmen_tipi" class="form-select" id="egitmenTipi" onchange="toggleEgitmenFields()">
+                                <option value="">Seçiniz</option>
+                                <option value="ic" {{ 'selected' if egitim and egitim.egitmen_tipi == 'ic' }}>İç Eğitmen</option>
+                                <option value="dis" {{ 'selected' if egitim and egitim.egitmen_tipi == 'dis' }}>Dış Eğitmen</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-8" id="icEgitmenDiv" style="{{ 'display:none' if not egitim or egitim.egitmen_tipi != 'ic' }}">
+                            <label class="form-label">İç Eğitmen</label>
+                            <select name="egitmen_id" class="form-select">
+                                <option value="">Seçiniz</option>
+                                {% for egitmen in egitmenler %}
+                                <option value="{{ egitmen.id }}" {{ 'selected' if egitim and egitim.egitmen_id == egitmen.id }}>
+                                    {{ egitmen.full_name }} - {{ egitmen.pozisyon.ad if egitmen.pozisyon else '' }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-4" id="disEgitmenAd" style="{{ 'display:none' if not egitim or egitim.egitmen_tipi != 'dis' }}">
+                            <label class="form-label">Eğitmen Adı</label>
+                            <input type="text" name="dis_egitmen_ad" class="form-control"
+                                   value="{{ egitim.dis_egitmen_ad if egitim else '' }}">
+                        </div>
+                        
+                        <div class="col-md-4" id="disEgitmenKurum" style="{{ 'display:none' if not egitim or egitim.egitmen_tipi != 'dis' }}">
+                            <label class="form-label">Kurum</label>
+                            <input type="text" name="dis_egitmen_kurum" class="form-control"
+                                   value="{{ egitim.dis_egitmen_kurum if egitim else '' }}">
+                        </div>
+                        
+                        <!-- Kapasite ve Maliyet -->
+                        <div class="col-12 mt-4">
+                            <h6 class="text-muted text-uppercase small mb-3">
+                                <i class="bi bi-sliders me-2"></i>Kapasite ve Maliyet
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Kontenjan</label>
+                            <input type="number" name="kontenjan" class="form-control" min="1"
+                                   value="{{ egitim.kontenjan if egitim else '' }}">
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Min. Katılımcı</label>
+                            <input type="number" name="min_katilimci" class="form-control" min="1"
+                                   value="{{ egitim.min_katilimci if egitim else '' }}">
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Maliyet (₺)</label>
+                            <input type="number" name="maliyet" class="form-control" step="0.01" min="0"
+                                   value="{{ egitim.maliyet if egitim else '' }}">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Notlar</label>
+                            <textarea name="notlar" class="form-control" rows="2">{{ egitim.notlar if egitim else '' }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> {{ 'Güncelle' if egitim else 'Kaydet' }}
+                        </button>
+                        <a href="{{ url_for('egitim.liste') }}" class="btn btn-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">
+                    Eğitim planlandıktan sonra katılımcı ekleyebilir ve materyal yükleyebilirsiniz.
+                </p>
+                <ul class="small text-muted mb-0">
+                    <li>Proje bazlı eğitimlerde proje çalışanlarını toplu ekleyebilirsiniz</li>
+                    <li>Online eğitimlerde meeting linkini lokasyon alanına girebilirsiniz</li>
+                    <li>Sertifika gerektiren eğitimlerde eğitim tipi ayarlarından geçerlilik süresi belirleyebilirsiniz</li>
+                </ul>
+            </div>
+        </div>
+        
+        {% if egitim %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Durum</h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Durum</span>
+                    <span class="badge bg-{{ egitim.durum_renk }}">{{ egitim.durum|replace('_', ' ')|title }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Katılımcı</span>
+                    <span>{{ egitim.katilimci_sayisi }}{% if egitim.kontenjan %} / {{ egitim.kontenjan }}{% endif %}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span class="text-muted">Oluşturulma</span>
+                    <span>{{ egitim.created_at.strftime('%d.%m.%Y') }}</span>
+                </li>
+            </ul>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleEgitmenFields() {
+    const tip = document.getElementById('egitmenTipi').value;
+    document.getElementById('icEgitmenDiv').style.display = tip === 'ic' ? 'block' : 'none';
+    document.getElementById('disEgitmenAd').style.display = tip === 'dis' ? 'block' : 'none';
+    document.getElementById('disEgitmenKurum').style.display = tip === 'dis' ? 'block' : 'none';
+}
+
+document.getElementById('lokasyonTipi').addEventListener('change', function() {
+    const input = document.getElementById('lokasyonInput');
+    if (this.value === 'online') {
+        input.placeholder = 'Meeting linki (Zoom, Teams, vb.)';
+    } else {
+        input.placeholder = 'Adres';
+    }
+});
+</script>
+{% endblock %}

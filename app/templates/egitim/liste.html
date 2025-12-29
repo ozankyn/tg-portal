@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Eğitimler - TG Portal{% endblock %}
+{% block page_title %}Eğitim Listesi{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex gap-2 flex-wrap">
+                <!-- Durum Filtresi -->
+                <select class="form-select form-select-sm" style="width: auto;" onchange="applyFilter('durum', this.value)">
+                    <option value="">Tüm Durumlar</option>
+                    <option value="planli" {{ 'selected' if request.args.get('durum') == 'planli' }}>Planlı</option>
+                    <option value="devam_ediyor" {{ 'selected' if request.args.get('durum') == 'devam_ediyor' }}>Devam Ediyor</option>
+                    <option value="tamamlandi" {{ 'selected' if request.args.get('durum') == 'tamamlandi' }}>Tamamlandı</option>
+                    <option value="iptal" {{ 'selected' if request.args.get('durum') == 'iptal' }}>İptal</option>
+                </select>
+                
+                <!-- Tip Filtresi -->
+                <select class="form-select form-select-sm" style="width: auto;" onchange="applyFilter('tip_id', this.value)">
+                    <option value="">Tüm Tipler</option>
+                    {% for tip in egitim_tipleri %}
+                    <option value="{{ tip.id }}" {{ 'selected' if request.args.get('tip_id')|int == tip.id }}>{{ tip.ad }}</option>
+                    {% endfor %}
+                </select>
+                
+                <!-- Tarih Filtresi -->
+                <select class="form-select form-select-sm" style="width: auto;" onchange="applyFilter('tarih', this.value)">
+                    <option value="">Tüm Tarihler</option>
+                    <option value="bugun" {{ 'selected' if request.args.get('tarih') == 'bugun' }}>Bugün</option>
+                    <option value="gelecek" {{ 'selected' if request.args.get('tarih') == 'gelecek' }}>Gelecek</option>
+                    <option value="gecmis" {{ 'selected' if request.args.get('tarih') == 'gecmis' }}>Geçmiş</option>
+                </select>
+                
+                <!-- Proje Filtresi -->
+                <select class="form-select form-select-sm" style="width: auto;" onchange="applyFilter('proje_id', this.value)">
+                    <option value="">Tüm Projeler</option>
+                    {% for proje in projeler %}
+                    <option value="{{ proje.id }}" {{ 'selected' if request.args.get('proje_id')|int == proje.id }}>{{ proje.musteri.display_name }} - {{ proje.ad }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <a href="{{ url_for('egitim.ekle') }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-plus-lg me-1"></i> Yeni Eğitim
+            </a>
+        </div>
+    </div>
+    
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Eğitim</th>
+                        <th>Tip</th>
+                        <th>Proje</th>
+                        <th>Tarih</th>
+                        <th>Lokasyon</th>
+                        <th>Eğitmen</th>
+                        <th>Katılımcı</th>
+                        <th>Durum</th>
+                        <th class="text-end">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for egitim in egitimler %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('egitim.detay', id=egitim.id) }}" class="text-decoration-none fw-semibold">
+                                {{ egitim.baslik }}
+                            </a>
+                        </td>
+                        <td><span class="badge bg-secondary">{{ egitim.egitim_tipi.ad }}</span></td>
+                        <td>
+                            {% if egitim.proje %}
+                            <small>{{ egitim.proje.musteri.display_name }}</small>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>{{ egitim.baslangic_tarihi.strftime('%d.%m.%Y') }}</div>
+                            <div class="small text-muted">{{ egitim.baslangic_tarihi.strftime('%H:%M') }}</div>
+                        </td>
+                        <td>
+                            {% if egitim.lokasyon_tipi == 'online' %}
+                            <i class="bi bi-camera-video text-info" title="Online"></i>
+                            {% elif egitim.lokasyon_tipi == 'hibrit' %}
+                            <i class="bi bi-diagram-3 text-warning" title="Hibrit"></i>
+                            {% else %}
+                            <i class="bi bi-geo-alt text-primary" title="Yüz yüze"></i>
+                            {% endif %}
+                            <small class="text-muted">{{ egitim.lokasyon|truncate(20) if egitim.lokasyon else '' }}</small>
+                        </td>
+                        <td>
+                            {% if egitim.egitmen_tipi == 'ic' and egitim.egitmen %}
+                            {{ egitim.egitmen.full_name }}
+                            {% elif egitim.dis_egitmen_ad %}
+                            {{ egitim.dis_egitmen_ad }}
+                            <small class="text-muted">(Dış)</small>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-dark">
+                                {{ egitim.katilimci_sayisi }}{% if egitim.kontenjan %}/{{ egitim.kontenjan }}{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ egitim.durum_renk }}">
+                                {{ egitim.durum|replace('_', ' ')|title }}
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('egitim.detay', id=egitim.id) }}" class="btn btn-outline-secondary" title="Detay">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('egitim.duzenle', id=egitim.id) }}" class="btn btn-outline-secondary" title="Düzenle">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">
+                            Eğitim bulunamadı
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if pagination.pages > 1 %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% for p in pagination.iter_pages() %}
+        {% if p %}
+        <li class="page-item {{ 'active' if p == pagination.page }}">
+            <a class="page-link" href="{{ url_for('egitim.liste', page=p, **request.args) }}">{{ p }}</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">...</span></li>
+        {% endif %}
+        {% endfor %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function applyFilter(key, value) {
+    const url = new URL(window.location);
+    if (value) url.searchParams.set(key, value);
+    else url.searchParams.delete(key);
+    url.searchParams.delete('page');
+    window.location = url;
+}
+</script>
+{% endblock %}

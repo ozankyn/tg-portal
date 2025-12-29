@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Zorunlu Eğitim Takibi - TG Portal{% endblock %}
+{% block page_title %}Zorunlu Eğitim Takibi{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Eksik Eğitimler -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Eksik Zorunlu Eğitimler ({{ eksik_egitimler|length }})</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if eksik_egitimler %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Çalışan</th>
+                                <th>Eğitim</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for calisan, zorunlu in eksik_egitimler %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('ik.detay', id=calisan.id) }}" class="text-decoration-none">
+                                        {{ calisan.full_name }}
+                                    </a>
+                                    <small class="text-muted d-block">{{ calisan.departman.ad if calisan.departman else '' }}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-danger">{{ zorunlu.egitim_tipi.ad }}</span>
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('egitim.liste', tip_id=zorunlu.egitim_tipi_id, tarih='gelecek') }}" 
+                                       class="btn btn-sm btn-outline-primary" title="Eğitime Ata">
+                                        <i class="bi bi-plus-lg"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-check-circle fs-1 text-success d-block mb-2"></i>
+                    Eksik zorunlu eğitim yok
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Yenileme Gerekli -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header bg-warning">
+                <h6 class="mb-0"><i class="bi bi-clock me-2"></i>Yenileme Gerekli - 30 Gün İçinde ({{ yenileme_gerekli|length }})</h6>
+            </div>
+            <div class="card-body p-0">
+                {% if yenileme_gerekli %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Çalışan</th>
+                                <th>Eğitim</th>
+                                <th>Bitiş</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for calisan, zorunlu in yenileme_gerekli %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('ik.detay', id=calisan.id) }}" class="text-decoration-none">
+                                        {{ calisan.full_name }}
+                                    </a>
+                                </td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">{{ zorunlu.egitim_tipi.ad }}</span>
+                                </td>
+                                <td>
+                                    {% set kalan_gun = (zorunlu.son_gecerlilik - today()).days %}
+                                    <span class="{% if kalan_gun <= 7 %}text-danger fw-bold{% else %}text-warning{% endif %}">
+                                        {{ zorunlu.son_gecerlilik.strftime('%d.%m.%Y') }}
+                                    </span>
+                                    <small class="text-muted d-block">{{ kalan_gun }} gün kaldı</small>
+                                </td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('egitim.liste', tip_id=zorunlu.egitim_tipi_id, tarih='gelecek') }}" 
+                                       class="btn btn-sm btn-outline-warning" title="Eğitime Ata">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-calendar-check fs-1 text-success d-block mb-2"></i>
+                    Yenileme gereken eğitim yok
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Özet -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Zorunlu Eğitimler:</h6>
+                        <p class="text-muted small">
+                            Pozisyon veya kadro bazlı tanımlanan zorunlu eğitimler, çalışan işe başladığında otomatik olarak atanır.
+                            Tamamlanmayan eğitimler bu listede görüntülenir.
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Yenileme Takibi:</h6>
+                        <p class="text-muted small">
+                            Geçerlilik süresi olan eğitimlerde (İSG, KVKK vb.) süre dolmadan 30 gün önce hatırlatma yapılır.
+                            Süresi dolan eğitimler eksik eğitimler listesine düşer.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
