@@ -77,6 +77,8 @@ def create_app(config_name=None):
     app.register_blueprint(api_bp, url_prefix='/api/v1')
     app.register_blueprint(basvuru_bp, url_prefix='/basvuru')
     app.register_blueprint(kariyer_bp, url_prefix='/kariyer')
+    from app.modules.egitim.routes import egitim_bp
+    app.register_blueprint(egitim_bp, url_prefix="/egitim")
     
     
     # Context processors

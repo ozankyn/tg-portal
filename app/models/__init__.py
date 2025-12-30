@@ -3,7 +3,6 @@
 TG Portal - Models Package
 Import order matters for SQLAlchemy relationships!
 """
-
 # Base'i önce import et
 from app.models.base import (
     TimestampMixin, 
@@ -14,10 +13,8 @@ from app.models.base import (
     YakitTipi,
     IslemTipi
 )
-
 # Core models
 from app.models.core import User, Role, Permission, AuditLog
-
 # İK models
 from app.models.ik import (
     Departman,
@@ -26,13 +23,10 @@ from app.models.ik import (
     Aday,
     Izin
 )
-
 # Tedarikçi
 from app.models.tedarikci import Tedarikci
-
 # Proje models (Filo'dan önce import edilmeli!)
 from app.models.proje import Musteri, Proje, HedefKadro
-
 # Filo models (Proje'den sonra)
 from app.models.filo import (
     Arac,
@@ -41,6 +35,15 @@ from app.models.filo import (
     Sigorta,
     Muayene,
     Kaza
+)
+# Egitim models
+from app.models.egitim import (
+    EgitimTipi,
+    Egitim,
+    EgitimKatilimci,
+    EgitimMateryali,
+    CalisanZorunluEgitim,
+    PozisyonZorunluEgitim
 )
 
 __all__ = [
@@ -76,4 +79,11 @@ __all__ = [
     'Sigorta',
     'Muayene',
     'Kaza',
+    # Egitim
+    'EgitimTipi',
+    'Egitim',
+    'EgitimKatilimci',
+    'EgitimMateryali',
+    'CalisanZorunluEgitim',
+    'PozisyonZorunluEgitim',
 ]

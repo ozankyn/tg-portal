@@ -22,10 +22,29 @@ from app.utils import permission_required, paginate_query
 
 egitim_bp = Blueprint('egitim', __name__)
 
-ALLOWED_EXTENSIONS = {'pdf', 'ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx', 'mp4', 'jpg', 'png'}
+ALLOWED_EXTENSIONS = {
+    'pdf': 'dokuman',
+    'ppt': 'sunum',
+    'pptx': 'sunum',
+    'doc': 'dokuman',
+    'docx': 'dokuman',
+    'xls': 'dokuman',
+    'xlsx': 'dokuman',
+    'mp4': 'video',
+    'webm': 'video',
+    'jpg': 'gorsel',
+    'jpeg': 'gorsel',
+    'png': 'gorsel',
+    'gif': 'gorsel'
+}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def get_materyal_tipi(filename):
+    ext = filename.rsplit('.', 1)[1].lower()
+    return ALLOWED_EXTENSIONS.get(ext, 'dokuman')
+
 
 
 # ============================================================
@@ -581,3 +600,167 @@ def rapor():
                           toplam_katilimci=toplam_katilimci,
                           basarili_katilimci=basarili_katilimci,
                           basari_orani=basari_orani)
+
+# ============================================================
+# MATERYAL YÜKLEME
+# ============================================================
+
+@egitim_bp.route('/<int:id>/materyal/yukle', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def materyal_yukle(id):
+    """Eğitime materyal yükle"""
+    egitim = Egitim.query.get_or_404(id)
+    
+    # Harici link mi?
+    if request.form.get('harici_link'):
+        materyal = EgitimMateryali(
+            egitim_id=id,
+            ad=request.form.get('ad', 'Harici İçerik').strip(),
+            aciklama=request.form.get('aciklama', '').strip() or None,
+            materyal_tipi=request.form.get('materyal_tipi', 'link'),
+            harici_link=request.form.get('harici_link').strip(),
+            yukleyen_id=current_user.id
+        )
+        db.session.add(materyal)
+        db.session.commit()
+        flash('Harici link eklendi.', 'success')
+        return redirect(url_for('egitim.detay', id=id))
+    
+    # Dosya yükleme
+    if 'dosya' not in request.files:
+        flash('Dosya seçilmedi.', 'danger')
+        return redirect(url_for('egitim.detay', id=id))
+    
+    dosya = request.files['dosya']
+    
+    if dosya.filename == '':
+        flash('Dosya seçilmedi.', 'danger')
+        return redirect(url_for('egitim.detay', id=id))
+    
+    if dosya and allowed_file(dosya.filename):
+        filename = secure_filename(dosya.filename)
+        # Benzersiz isim oluştur
+        import uuid
+        unique_filename = f"{uuid.uuid4().hex}_{filename}"
+        
+        # Upload klasörü
+        upload_folder = os.path.join(current_app.config.get('UPLOAD_FOLDER', 'uploads'), 'egitim', str(id))
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        filepath = os.path.join(upload_folder, unique_filename)
+        dosya.save(filepath)
+        
+        # Dosya boyutu
+        file_size = os.path.getsize(filepath)
+        
+        materyal = EgitimMateryali(
+            egitim_id=id,
+            ad=request.form.get('ad', filename).strip(),
+            aciklama=request.form.get('aciklama', '').strip() or None,
+            materyal_tipi=get_materyal_tipi(filename),
+            dosya_adi=filename,
+            dosya_yolu=filepath,
+            dosya_boyut=file_size,
+            mime_type=dosya.content_type,
+            yukleyen_id=current_user.id
+        )
+        db.session.add(materyal)
+        db.session.commit()
+        
+        flash(f'"{filename}" yüklendi.', 'success')
+    else:
+        flash('Desteklenmeyen dosya formatı.', 'danger')
+    
+    return redirect(url_for('egitim.detay', id=id))
+
+
+# ============================================================
+# MATERYAL GÖRÜNTÜLEME
+# ============================================================
+
+@egitim_bp.route('/materyal/<int:id>/goruntule')
+@login_required
+@permission_required('egitim.view')
+def materyal_goruntule(id):
+    """Materyali görüntüle"""
+    materyal = EgitimMateryali.query.get_or_404(id)
+    
+    return render_template('egitim/materyal_goruntule.html', materyal=materyal)
+
+
+@egitim_bp.route('/materyal/<int:id>/indir')
+@login_required
+@permission_required('egitim.view')
+def materyal_indir(id):
+    """Materyali indir"""
+    materyal = EgitimMateryali.query.get_or_404(id)
+    
+    if not materyal.dosya_yolu or not os.path.exists(materyal.dosya_yolu):
+        flash('Dosya bulunamadı.', 'danger')
+        return redirect(url_for('egitim.detay', id=materyal.egitim_id))
+    
+    return send_file(
+        materyal.dosya_yolu,
+        download_name=materyal.dosya_adi,
+        as_attachment=True
+    )
+
+
+@egitim_bp.route('/materyal/<int:id>/embed')
+@login_required
+@permission_required('egitim.view')
+def materyal_embed(id):
+    """Materyal embed (iframe için)"""
+    materyal = EgitimMateryali.query.get_or_404(id)
+    
+    if not materyal.dosya_yolu or not os.path.exists(materyal.dosya_yolu):
+        return "Dosya bulunamadı", 404
+    
+    return send_file(
+        materyal.dosya_yolu,
+        mimetype=materyal.mime_type
+    )
+
+
+# ============================================================
+# MATERYAL SİL
+# ============================================================
+
+@egitim_bp.route('/materyal/<int:id>/sil', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def materyal_sil(id):
+    """Materyali sil"""
+    materyal = EgitimMateryali.query.get_or_404(id)
+    egitim_id = materyal.egitim_id
+    
+    # Dosyayı da sil
+    if materyal.dosya_yolu and os.path.exists(materyal.dosya_yolu):
+        os.remove(materyal.dosya_yolu)
+    
+    db.session.delete(materyal)
+    db.session.commit()
+    
+    flash('Materyal silindi.', 'success')
+    return redirect(url_for('egitim.detay', id=egitim_id))
+
+
+# ============================================================
+# MATERYAL SIRALAMA
+# ============================================================
+
+@egitim_bp.route('/<int:id>/materyal/sirala', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def materyal_sirala(id):
+    """Materyal sırasını güncelle (AJAX)"""
+    siralama = request.json.get('siralama', [])
+    
+    for index, materyal_id in enumerate(siralama):
+        materyal = EgitimMateryali.query.get(materyal_id)
+        if materyal and materyal.egitim_id == id:
+            materyal.sira = index
+    
+    db.session.commit()
+    return jsonify({'success': True})
