@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block title %}Masraf #{{ masraf.id }} - TG Portal{% endblock %}
+{% block page_title %}Masraf Detayı{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Sol: Masraf Bilgileri -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">{{ masraf.baslik }}</h6>
+                <span class="badge bg-{{ masraf.durum_renk }} fs-6">{{ masraf.durum_text }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Tarih</label>
+                        <p class="mb-0 fw-semibold">{{ masraf.masraf_tarihi.strftime('%d %B %Y') }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Kategori</label>
+                        <p class="mb-0">
+                            {% if masraf.kategori %}
+                            <span class="badge bg-{{ masraf.kategori.renk }}">
+                                <i class="{{ masraf.kategori.ikon }} me-1"></i>{{ masraf.kategori.ad }}
+                            </span>
+                            {% else %}
+                            <span class="text-muted">Belirtilmemiş</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    
+                    {% if masraf.proje %}
+                    <div class="col-md-6">
+                        <label class="text-muted small">Proje</label>
+                        <p class="mb-0">{{ masraf.proje.ad }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="col-md-6">
+                        <label class="text-muted small">Çalışan</label>
+                        <p class="mb-0">{{ masraf.calisan.ad_soyad }}</p>
+                    </div>
+                    
+                    {% if masraf.aciklama %}
+                    <div class="col-12">
+                        <label class="text-muted small">Açıklama</label>
+                        <p class="mb-0">{{ masraf.aciklama }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tutar Bilgileri -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">Tutar Bilgileri</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <small class="text-muted d-block">Tutar (KDV Hariç)</small>
+                            <span class="fs-5 fw-semibold">
+                                {% if masraf.para_birimi == 'TRY' %}₺{% elif masraf.para_birimi == 'USD' %}${% elif masraf.para_birimi == 'EUR' %}€{% endif %}{{ "%.2f"|format(masraf.tutar) }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3">
+                            <small class="text-muted d-block">KDV (%{{ masraf.kdv_orani }})</small>
+                            <span class="fs-5 fw-semibold">
+                                {% if masraf.para_birimi == 'TRY' %}₺{% elif masraf.para_birimi == 'USD' %}${% elif masraf.para_birimi == 'EUR' %}€{% endif %}{{ "%.2f"|format(masraf.kdv_tutari) }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 bg-light">
+                            <small class="text-muted d-block">Toplam</small>
+                            <span class="fs-4 fw-bold text-primary">
+                                {% if masraf.para_birimi == 'TRY' %}₺{% elif masraf.para_birimi == 'USD' %}${% elif masraf.para_birimi == 'EUR' %}€{% endif %}{{ "%.2f"|format(masraf.toplam_tutar) }}
+                            </span>
+                            {% if masraf.para_birimi != 'TRY' %}
+                            <small class="text-muted d-block">₺{{ "%.2f"|format(masraf.tl_karsiligi) }} (Kur: {{ masraf.kur }})</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Fatura/Fiş Bilgileri -->
+        {% if masraf.firma_adi or masraf.fatura_no %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">Fatura/Fiş Bilgileri</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% if masraf.firma_adi %}
+                    <div class="col-md-6">
+                        <label class="text-muted small">Firma</label>
+                        <p class="mb-0 fw-semibold">{{ masraf.firma_adi }}</p>
+                    </div>
+                    {% endif %}
+                    {% if masraf.fatura_no %}
+                    <div class="col-md-6">
+                        <label class="text-muted small">Fatura/Fiş No</label>
+                        <p class="mb-0">{{ masraf.fatura_no }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Onay Timeline (varsa) -->
+        {% if masraf.onay_talebi %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Onay Durumu</h6>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('onay.talep_detay', id=masraf.onay_talebi.id) }}" class="btn btn-outline-primary">
+                    <i class="bi bi-eye me-2"></i>Onay Detayını Görüntüle
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Sağ: Dosya ve İşlemler -->
+    <div class="col-lg-4">
+        <!-- Dosya -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Fatura/Fiş Görseli</h6>
+            </div>
+            <div class="card-body text-center">
+                {% if masraf.dosya_yolu %}
+                    {% if masraf.dosya_tipi and 'image' in masraf.dosya_tipi %}
+                    <img src="{{ url_for('masraf.dosya_indir', id=masraf.id) }}" 
+                         class="img-fluid rounded mb-3" style="max-height: 400px;">
+                    {% else %}
+                    <div class="p-4 bg-light rounded mb-3">
+                        <i class="bi bi-file-earmark-pdf fs-1 text-danger"></i>
+                        <p class="mb-0 mt-2">{{ masraf.dosya_adi }}</p>
+                    </div>
+                    {% endif %}
+                    <a href="{{ url_for('masraf.dosya_indir', id=masraf.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-download me-2"></i>İndir
+                    </a>
+                {% else %}
+                <div class="text-muted py-4">
+                    <i class="bi bi-image fs-1 d-block mb-2"></i>
+                    Dosya yüklenmemiş
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- İşlemler -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">İşlemler</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if is_owner and masraf.duzenlenebilir %}
+                    <a href="{{ url_for('masraf.duzenle', id=masraf.id) }}" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil me-2"></i>Düzenle
+                    </a>
+                    {% endif %}
+                    
+                    {% if is_owner and masraf.durum in ['taslak', 'reddedildi'] %}
+                    <form method="POST" action="{{ url_for('masraf.onaya_gonder', id=masraf.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-send me-2"></i>Onaya Gönder
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    {% if is_owner and masraf.durum in ['taslak', 'reddedildi'] %}
+                    <form method="POST" action="{{ url_for('masraf.sil', id=masraf.id) }}"
+                          onsubmit="return confirm('Bu masrafı silmek istediğinize emin misiniz?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-trash me-2"></i>Sil
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('masraf.liste') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Listeye Dön
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Meta Bilgiler -->
+        <div class="card mt-4">
+            <div class="card-body small text-muted">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Oluşturulma:</span>
+                    <span>{{ masraf.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Güncelleme:</span>
+                    <span>{{ masraf.updated_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

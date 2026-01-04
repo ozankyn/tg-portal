@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Masraf Raporları - TG Portal{% endblock %}
+{% block page_title %}Masraf Raporları{% endblock %}
+
+{% block content %}
+<!-- Filtre -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label">Yıl</label>
+                <select name="yil" class="form-select form-select-sm">
+                    {% for y in range(2024, 2027) %}
+                    <option value="{{ y }}" {{ 'selected' if y == yil }}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label">Ay</label>
+                <select name="ay" class="form-select form-select-sm">
+                    <option value="">Tümü</option>
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {{ 'selected' if m == ay }}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-sm">Filtrele</button>
+            </div>
+            <div class="col-auto ms-auto">
+                <a href="{{ url_for('rapor.export_excel', modul='masraf') }}" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-download me-1"></i>Excel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- İstatistikler -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">₺{{ "%.0f"|format(stats.toplam_tutar) }}</h3>
+                <small>Toplam Tutar</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">₺{{ "%.0f"|format(stats.onaylanan) }}</h3>
+                <small>Onaylanan</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">{{ stats.toplam_adet }}</h3>
+                <small>Toplam Fiş</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <h3 class="mb-0">{{ stats.bekleyen }}</h3>
+                <small>Onay Bekleyen</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Kategori Dağılımı -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Kategori Dağılımı</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="kategoriChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Kategori Tablosu -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-table me-2"></i>Kategori Detay</h6>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Kategori</th>
+                            <th class="text-end">Adet</th>
+                            <th class="text-end">Toplam</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ad, toplam, adet in kategori_dagilim %}
+                        <tr>
+                            <td>{{ ad }}</td>
+                            <td class="text-end">{{ adet }}</td>
+                            <td class="text-end">₺{{ "%.2f"|format(toplam or 0) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Aylık Trend -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Aylık Masraf Trendi ({{ yil }})</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="trendChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{{ url_for('rapor.dashboard') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Geri
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Kategori Pie Chart
+new Chart(document.getElementById('kategoriChart'), {
+    type: 'doughnut',
+    data: {
+        labels: [{% for ad, toplam, adet in kategori_dagilim %}'{{ ad }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for ad, toplam, adet in kategori_dagilim %}{{ toplam or 0 }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0', '#6f42c1', '#fd7e14']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'right' }
+        }
+    }
+});
+
+// Aylık Trend Line Chart
+const aylar = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+const trendData = {};
+{% for ay, toplam in aylik_trend %}
+trendData[{{ ay }}] = {{ toplam or 0 }};
+{% endfor %}
+
+new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+        labels: aylar,
+        datasets: [{
+            label: 'Masraf (₺)',
+            data: aylar.map((_, i) => trendData[i+1] || 0),
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            fill: true,
+            tension: 0.3
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Ayarlar - TG Portal{% endblock %}
+{% block page_title %}Ayarlar{% endblock %}
+
+{% block content %}
+<!-- İstatistikler -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card primary">
+            <div class="card-body text-center">
+                <i class="bi bi-people fs-1 text-primary opacity-50"></i>
+                <h3 class="mb-0 mt-2">{{ stats.kullanici }}</h3>
+                <small class="text-muted">Aktif Kullanıcı</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card success">
+            <div class="card-body text-center">
+                <i class="bi bi-shield-check fs-1 text-success opacity-50"></i>
+                <h3 class="mb-0 mt-2">{{ stats.rol }}</h3>
+                <small class="text-muted">Tanımlı Rol</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card warning">
+            <div class="card-body text-center">
+                <i class="bi bi-key fs-1 text-warning opacity-50"></i>
+                <h3 class="mb-0 mt-2">{{ stats.yetki }}</h3>
+                <small class="text-muted">Tanımlı Yetki</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card info">
+            <div class="card-body text-center">
+                <i class="bi bi-gear fs-1 text-info opacity-50"></i>
+                <h3 class="mb-0 mt-2">{{ stats.ayar }}</h3>
+                <small class="text-muted">Sistem Ayarı</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Menü Kartları -->
+<div class="row g-4">
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-sliders fs-1 text-primary mb-3"></i>
+                <h5>Sistem Ayarları</h5>
+                <p class="text-muted small">Genel ayarlar, e-posta, bildirim ve güvenlik konfigürasyonu</p>
+                <a href="{{ url_for('ayarlar.sistem') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-gear me-1"></i>Düzenle
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-people fs-1 text-success mb-3"></i>
+                <h5>Kullanıcı Yönetimi</h5>
+                <p class="text-muted small">Kullanıcı ekleme, düzenleme, rol ve bireysel yetki atama</p>
+                <a href="{{ url_for('ayarlar.kullanici_liste') }}" class="btn btn-outline-success">
+                    <i class="bi bi-person-gear me-1"></i>Yönet
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-shield-lock fs-1 text-warning mb-3"></i>
+                <h5>Rol Yönetimi</h5>
+                <p class="text-muted small">Roller ve yetki grupları tanımlama</p>
+                <a href="{{ url_for('ayarlar.rol_liste') }}" class="btn btn-outline-warning">
+                    <i class="bi bi-person-badge me-1"></i>Yönet
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-key fs-1 text-info mb-3"></i>
+                <h5>Yetkiler</h5>
+                <p class="text-muted small">Sistem yetkileri tanımlama ve yönetme</p>
+                <a href="{{ url_for('ayarlar.yetki_liste') }}" class="btn btn-outline-info">
+                    <i class="bi bi-list-check me-1"></i>Görüntüle
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="bi bi-clock-history fs-1 text-secondary mb-3"></i>
+                <h5>Aktivite Logları</h5>
+                <p class="text-muted small">Kullanıcı işlemleri ve sistem logları</p>
+                <a href="{{ url_for('ayarlar.log_liste') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-journal-text me-1"></i>Görüntüle
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100 border-dashed">
+            <div class="card-body text-center">
+                <i class="bi bi-download fs-1 text-muted mb-3"></i>
+                <h5 class="text-muted">Hızlı Kurulum</h5>
+                <p class="text-muted small">Varsayılan yetkileri ve rolleri yükle</p>
+                <div class="btn-group">
+                    <a href="{{ url_for('ayarlar.varsayilan_yetkiler') }}" class="btn btn-sm btn-outline-primary"
+                       onclick="return confirm('Varsayılan yetkiler eklensin mi?')">
+                        Yetkiler
+                    </a>
+                    <a href="{{ url_for('ayarlar.varsayilan_roller') }}" class="btn btn-sm btn-outline-success"
+                       onclick="return confirm('Varsayılan roller eklensin mi?')">
+                        Roller
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

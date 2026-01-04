@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Tip Düzenle' if tip else 'Yeni Sözleşme Tipi' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'Tip Düzenle' if tip else 'Yeni Sözleşme Tipi' }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Tip Adı *</label>
+                        <input type="text" name="ad" class="form-control" required
+                               value="{{ tip.ad if tip else '' }}"
+                               placeholder="Örn: Müşteri Sözleşmesi">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Kod</label>
+                        <input type="text" name="kod" class="form-control"
+                               value="{{ tip.kod if tip else '' }}"
+                               placeholder="Örn: MUSTERI">
+                        <div class="form-text">Benzersiz kısa kod (otomatik büyük harfe çevrilir)</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea name="aciklama" class="form-control" rows="2">{{ tip.aciklama if tip else '' }}</textarea>
+                    </div>
+                    
+                    <hr>
+                    <h6 class="mb-3">Uyarı Günleri</h6>
+                    <p class="text-muted small">Sözleşme bitiş tarihinden kaç gün önce uyarı verilsin?</p>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">1. Uyarı</label>
+                            <div class="input-group">
+                                <input type="number" name="uyari_gun_1" class="form-control" min="1"
+                                       value="{{ tip.uyari_gun_1 if tip else 30 }}">
+                                <span class="input-group-text">gün</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">2. Uyarı</label>
+                            <div class="input-group">
+                                <input type="number" name="uyari_gun_2" class="form-control" min="1"
+                                       value="{{ tip.uyari_gun_2 if tip else 15 }}">
+                                <span class="input-group-text">gün</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">3. Uyarı</label>
+                            <div class="input-group">
+                                <input type="number" name="uyari_gun_3" class="form-control" min="1"
+                                       value="{{ tip.uyari_gun_3 if tip else 7 }}">
+                                <span class="input-group-text">gün</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 mt-3">
+                        <label class="form-label">Sıra</label>
+                        <input type="number" name="sira" class="form-control" style="max-width: 100px;"
+                               value="{{ tip.sira if tip else 0 }}">
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-2"></i>{{ 'Güncelle' if tip else 'Kaydet' }}
+                        </button>
+                        <a href="{{ url_for('sozlesme.tip_liste') }}" class="btn btn-outline-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

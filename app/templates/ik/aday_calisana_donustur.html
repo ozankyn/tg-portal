@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Çalışana Dönüştür - {{ aday.full_name }} - TG Portal{% endblock %}
+{% block page_title %}Adayı Çalışana Dönüştür{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Sol: Aday Bilgileri -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="bi bi-person me-2"></i>Aday Bilgileri</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted">Ad Soyad</td>
+                        <td><strong>{{ aday.full_name }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">TC Kimlik</td>
+                        <td>{{ aday.tc_kimlik or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Telefon</td>
+                        <td>{{ aday.telefon or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">E-posta</td>
+                        <td>{{ aday.email or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Doğum Tarihi</td>
+                        <td>{{ aday.dogum_tarihi.strftime('%d.%m.%Y') if aday.dogum_tarihi else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">İl/İlçe</td>
+                        <td>{{ aday.il or '' }} {{ ('/ ' + aday.ilce) if aday.ilce else '' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Pozisyon</td>
+                        <td>{{ aday.pozisyon.ad if aday.pozisyon else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Başvuru Tarihi</td>
+                        <td>{{ aday.basvuru_tarihi.strftime('%d.%m.%Y') if aday.basvuru_tarihi else '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">KVKK Onayı</td>
+                        <td>
+                            {% if aday.kvkk_onay %}
+                            <span class="badge bg-success">Onaylı</span>
+                            {% else %}
+                            <span class="badge bg-danger">Onay Yok</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Evraklar -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-folder me-2"></i>Onaylı Evraklar</h6>
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    {% for evrak in aday.evraklar.filter_by(durum='onaylandi').all() %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="bi bi-file-earmark-check text-success me-2"></i>
+                            {{ evrak.evrak_tipi.ad if evrak.evrak_tipi else evrak.dosya_adi }}
+                        </span>
+                        <span class="badge bg-success">Onaylı</span>
+                    </li>
+                    {% else %}
+                    <li class="list-group-item text-muted text-center">Onaylı evrak yok</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sağ: Çalışan Bilgileri Formu -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="bi bi-person-check me-2"></i>Çalışan Kaydı Oluştur</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Aday bilgileri otomatik olarak aktarılacaktır. Aşağıdaki ek bilgileri doldurun.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Sicil No *</label>
+                                <input type="text" name="sicil_no" class="form-control" required
+                                       placeholder="Örn: TG-2024-001">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">İşe Başlama Tarihi *</label>
+                                <input type="date" name="ise_baslama" class="form-control" required
+                                       value="{{ now().strftime('%Y-%m-%d') if now else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Departman</label>
+                                <select name="departman_id" class="form-select">
+                                    <option value="">Seçin...</option>
+                                    {% for dept in departmanlar %}
+                                    <option value="{{ dept.id }}">{{ dept.ad }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Pozisyon</label>
+                                <select name="pozisyon_id" class="form-select">
+                                    <option value="">Seçin...</option>
+                                    {% for poz in pozisyonlar %}
+                                    <option value="{{ poz.id }}" {{ 'selected' if aday.pozisyon_id == poz.id }}>{{ poz.ad }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Çalışma Tipi</label>
+                                <select name="calisma_tipi" class="form-select">
+                                    <option value="tam_zamanli">Tam Zamanlı</option>
+                                    <option value="yari_zamanli">Yarı Zamanlı</option>
+                                    <option value="stajyer">Stajyer</option>
+                                    <option value="sozlesmeli">Sözleşmeli</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-person-check me-1"></i>Çalışan Olarak Kaydet
+                        </button>
+                        <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="btn btn-outline-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

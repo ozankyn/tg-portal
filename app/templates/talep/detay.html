@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}{{ talep.talep_no }} - TG Portal{% endblock %}
+{% block page_title %}Talep Detayı{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Sol: Talep Bilgileri ve Yorumlar -->
+    <div class="col-lg-8">
+        <!-- Başlık -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <code class="fs-6">{{ talep.talep_no }}</code>
+                    <span class="badge bg-{{ talep.kategori.renk }} ms-2">{{ talep.kategori.ad }}</span>
+                </div>
+                <div>
+                    <span class="badge bg-{{ talep.oncelik_renk }} me-1">{{ talep.oncelik_text }}</span>
+                    <span class="badge bg-{{ talep.durum_renk }} fs-6">{{ talep.durum_text }}</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <h5 class="mb-3">{{ talep.konu }}</h5>
+                <p class="mb-3" style="white-space: pre-wrap;">{{ talep.aciklama }}</p>
+                
+                {% if talep.dosya_yolu %}
+                <div class="mt-3">
+                    <a href="{{ url_for('talep.dosya_indir', id=talep.id) }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-paperclip me-1"></i>{{ talep.dosya_adi }}
+                    </a>
+                </div>
+                {% endif %}
+                
+                <hr>
+                
+                <div class="row small text-muted">
+                    <div class="col-md-4">
+                        <i class="bi bi-person me-1"></i>
+                        <strong>Talep Eden:</strong> {{ talep.olusturan.full_name }}
+                    </div>
+                    <div class="col-md-4">
+                        <i class="bi bi-calendar me-1"></i>
+                        <strong>Tarih:</strong> {{ talep.created_at.strftime('%d.%m.%Y %H:%M') }}
+                    </div>
+                    <div class="col-md-4">
+                        <i class="bi bi-person-check me-1"></i>
+                        <strong>Atanan:</strong> {{ talep.atanan.full_name if talep.atanan else '-' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Yorumlar -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Yorumlar ({{ yorumlar|length }})</h6>
+            </div>
+            <div class="card-body">
+                {% if yorumlar %}
+                <div class="timeline">
+                    {% for yorum in yorumlar %}
+                    <div class="mb-4 pb-3 {{ 'border-start border-3 border-warning ps-3' if yorum.dahili else 'border-start border-3 border-primary ps-3' if yorum.yazan_id != talep.olusturan_id else 'border-start border-3 border-secondary ps-3' }}">
+                        <div class="d-flex justify-content-between mb-1">
+                            <div>
+                                <strong>{{ yorum.yazan.full_name }}</strong>
+                                {% if yorum.dahili %}
+                                <span class="badge bg-warning text-dark ms-1">Dahili Not</span>
+                                {% endif %}
+                                {% if yorum.tip == 'durum_degisikligi' %}
+                                <span class="badge bg-info ms-1">Sistem</span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">{{ yorum.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                        </div>
+                        <p class="mb-1" style="white-space: pre-wrap;">{{ yorum.icerik }}</p>
+                        {% if yorum.dosya_yolu %}
+                        <a href="{{ url_for('talep.yorum_dosya_indir', id=yorum.id) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-paperclip me-1"></i>{{ yorum.dosya_adi }}
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-muted text-center mb-0">Henüz yorum yok</p>
+                {% endif %}
+                
+                <!-- Yorum Ekle -->
+                {% if talep.acik_mi %}
+                <hr>
+                <form method="POST" action="{{ url_for('talep.yorum_ekle', id=talep.id) }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <label class="form-label">Yorum Ekle</label>
+                        <textarea name="icerik" class="form-control" rows="3" required
+                                  placeholder="Yanıtınızı yazın..."></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <input type="file" name="dosya" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-6 text-end">
+                            {% if is_destek %}
+                            <div class="form-check form-check-inline">
+                                <input type="checkbox" name="dahili" class="form-check-input" id="dahiliCheck">
+                                <label class="form-check-label" for="dahiliCheck">Dahili not</label>
+                            </div>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send me-1"></i>Gönder
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sağ: İşlemler -->
+    <div class="col-lg-4">
+        {% if is_destek %}
+        <!-- Durum Değiştir -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">Durum Değiştir</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('talep.durum_degistir', id=talep.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <select name="durum" class="form-select">
+                            <option value="acik" {{ 'selected' if talep.durum == 'acik' }}>Açık</option>
+                            <option value="atandi" {{ 'selected' if talep.durum == 'atandi' }}>Atandı</option>
+                            <option value="devam_ediyor" {{ 'selected' if talep.durum == 'devam_ediyor' }}>Devam Ediyor</option>
+                            <option value="beklemede" {{ 'selected' if talep.durum == 'beklemede' }}>Beklemede</option>
+                            <option value="cozuldu" {{ 'selected' if talep.durum == 'cozuldu' }}>Çözüldü</option>
+                            <option value="kapatildi" {{ 'selected' if talep.durum == 'kapatildi' }}>Kapatıldı</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="cozumNotuDiv" style="display:none;">
+                        <label class="form-label">Çözüm Notu</label>
+                        <textarea name="cozum_notu" class="form-control" rows="2">{{ talep.cozum_notu or '' }}</textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Güncelle</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Atama -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">Atama</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('talep.ata', id=talep.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-3">
+                        <select name="atanan_id" class="form-select">
+                            <option value="">Atanmadı</option>
+                            {% for u in destek_ekibi %}
+                            <option value="{{ u.id }}" {{ 'selected' if talep.atanan_id == u.id }}>{{ u.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-outline-primary w-100">Ata</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Öncelik -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">Öncelik</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('talep.oncelik_degistir', id=talep.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="oncelik" value="dusuk" id="onc1" {{ 'checked' if talep.oncelik == 'dusuk' }}>
+                        <label class="btn btn-outline-secondary" for="onc1">Düşük</label>
+                        
+                        <input type="radio" class="btn-check" name="oncelik" value="normal" id="onc2" {{ 'checked' if talep.oncelik == 'normal' }}>
+                        <label class="btn btn-outline-info" for="onc2">Normal</label>
+                        
+                        <input type="radio" class="btn-check" name="oncelik" value="yuksek" id="onc3" {{ 'checked' if talep.oncelik == 'yuksek' }}>
+                        <label class="btn btn-outline-warning" for="onc3">Yüksek</label>
+                        
+                        <input type="radio" class="btn-check" name="oncelik" value="kritik" id="onc4" {{ 'checked' if talep.oncelik == 'kritik' }}>
+                        <label class="btn btn-outline-danger" for="onc4">Kritik</label>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-link w-100 mt-2">Kaydet</button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Bilgiler -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Bilgiler</h6>
+            </div>
+            <div class="card-body small">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Oluşturulma:</span>
+                    <span>{{ talep.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                </div>
+                {% if talep.atanma_tarihi %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Atanma:</span>
+                    <span>{{ talep.atanma_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
+                </div>
+                {% endif %}
+                {% if talep.ilk_yanit_tarihi %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">İlk Yanıt:</span>
+                    <span>{{ talep.ilk_yanit_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
+                </div>
+                {% endif %}
+                {% if talep.cozum_tarihi %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Çözüm:</span>
+                    <span>{{ talep.cozum_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
+                </div>
+                {% endif %}
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Geçen Süre:</span>
+                    <span class="{{ 'text-danger' if talep.sla_asim else '' }}">{{ talep.sure_gecti }} saat</span>
+                </div>
+                {% if talep.kategori %}
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted">SLA Çözüm:</span>
+                    <span>{{ talep.kategori.sla_cozum }} saat</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Geri Dön -->
+        <div class="mt-4">
+            <a href="{{ url_for('talep.liste') }}" class="btn btn-outline-secondary w-100">
+                <i class="bi bi-arrow-left me-2"></i>Listeye Dön
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    $('select[name="durum"]').change(function() {
+        if ($(this).val() == 'cozuldu') {
+            $('#cozumNotuDiv').show();
+        } else {
+            $('#cozumNotuDiv').hide();
+        }
+    });
+    
+    if ($('select[name="durum"]').val() == 'cozuldu') {
+        $('#cozumNotuDiv').show();
+    }
+});
+</script>
+{% endblock %}

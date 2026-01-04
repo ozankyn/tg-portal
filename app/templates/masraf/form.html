@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Masraf Düzenle' if masraf else 'Yeni Masraf' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'Masraf Düzenle' if masraf else 'Yeni Masraf' }}{% endblock %}
+
+{% block content %}
+<form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="row g-4">
+        <!-- Sol: Ana Bilgiler -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Masraf Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Açıklama *</label>
+                            <input type="text" name="baslik" class="form-control" required
+                                   value="{{ masraf.baslik if masraf else '' }}"
+                                   placeholder="Örn: Müşteri ziyareti taksi ücreti">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Tarih *</label>
+                            <input type="date" name="masraf_tarihi" class="form-control" required
+                                   value="{{ masraf.masraf_tarihi.strftime('%Y-%m-%d') if masraf else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Kategori *</label>
+                            <select name="kategori_id" class="form-select" id="kategoriSelect" required>
+                                <option value="">Seçin...</option>
+                                {% for k in kategoriler %}
+                                <option value="{{ k.id }}" 
+                                        data-fatura-zorunlu="{{ 'true' if k.fatura_zorunlu else 'false' }}"
+                                        {{ 'selected' if (masraf and masraf.kategori_id == k.id) or request.args.get('kategori_id')|int == k.id }}>
+                                    {{ k.ad }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <div id="faturaUyari" class="form-text text-warning" style="display:none;">
+                                <i class="bi bi-exclamation-triangle me-1"></i>Bu kategori için fatura/fiş zorunludur
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Proje (Opsiyonel)</label>
+                            <select name="proje_id" class="form-select select2">
+                                <option value="">Proje Yok</option>
+                                {% for p in projeler %}
+                                <option value="{{ p.id }}" {{ 'selected' if masraf and masraf.proje_id == p.id }}>
+                                    {{ p.ad }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Detaylı Açıklama</label>
+                            <textarea name="aciklama" class="form-control" rows="2"
+                                      placeholder="İsteğe bağlı ek detaylar...">{{ masraf.aciklama if masraf else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tutar Bilgileri -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Tutar Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Tutar (KDV Hariç) *</label>
+                            <div class="input-group">
+                                <input type="text" name="tutar" class="form-control" required id="tutarInput"
+                                       value="{{ masraf.tutar if masraf else '' }}" placeholder="0.00">
+                                <select name="para_birimi" class="form-select" style="max-width: 80px;" id="paraBirimiSelect">
+                                    <option value="TRY" {{ 'selected' if not masraf or masraf.para_birimi == 'TRY' }}>₺</option>
+                                    <option value="USD" {{ 'selected' if masraf and masraf.para_birimi == 'USD' }}>$</option>
+                                    <option value="EUR" {{ 'selected' if masraf and masraf.para_birimi == 'EUR' }}>€</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">KDV Oranı</label>
+                            <select name="kdv_orani" class="form-select" id="kdvOraniSelect">
+                                <option value="20" {{ 'selected' if not masraf or masraf.kdv_orani == 20 }}>%20</option>
+                                <option value="10" {{ 'selected' if masraf and masraf.kdv_orani == 10 }}>%10</option>
+                                <option value="1" {{ 'selected' if masraf and masraf.kdv_orani == 1 }}>%1</option>
+                                <option value="0" {{ 'selected' if masraf and masraf.kdv_orani == 0 }}>%0 (KDV Yok)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2" id="kurDiv" style="display:none;">
+                            <label class="form-label">Kur</label>
+                            <input type="text" name="kur" class="form-control" id="kurInput"
+                                   value="{{ masraf.kur if masraf else '' }}" placeholder="1.0000">
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Toplam</label>
+                            <div class="form-control bg-light" id="toplamGosterge">
+                                ₺0.00
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Fatura/Fiş Bilgileri -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Fatura/Fiş Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Firma Adı</label>
+                            <input type="text" name="firma_adi" class="form-control"
+                                   value="{{ masraf.firma_adi if masraf else '' }}"
+                                   placeholder="Faturayı kesen firma">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Fatura/Fiş No</label>
+                            <input type="text" name="fatura_no" class="form-control"
+                                   value="{{ masraf.fatura_no if masraf else '' }}"
+                                   placeholder="Fatura numarası">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sağ: Dosya Yükleme -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Fatura/Fiş Görseli</h6>
+                </div>
+                <div class="card-body">
+                    {% if masraf and masraf.dosya_yolu %}
+                    <div class="mb-3 p-3 bg-light rounded text-center">
+                        <i class="bi bi-file-earmark-check fs-1 text-success"></i>
+                        <p class="mb-1 small">{{ masraf.dosya_adi }}</p>
+                        <a href="{{ url_for('masraf.dosya_indir', id=masraf.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-download me-1"></i>İndir
+                        </a>
+                    </div>
+                    <hr>
+                    <p class="small text-muted mb-2">Yeni dosya yüklerseniz mevcut dosya değiştirilecektir:</p>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <input type="file" name="dosya" class="form-control" id="dosyaInput"
+                               accept=".pdf,.jpg,.jpeg,.png,.gif">
+                        <div class="form-text">
+                            PDF, JPG, PNG (Max 10MB)
+                        </div>
+                    </div>
+                    
+                    <!-- Önizleme -->
+                    <div id="dosyaOnizleme" class="text-center" style="display:none;">
+                        <img id="onizlemeImg" src="" class="img-fluid rounded mb-2" style="max-height: 300px;">
+                        <p id="onizlemeDosyaAdi" class="small text-muted"></p>
+                    </div>
+                    
+                    <!-- Faz 2: OCR Butonu (şimdilik gizli) -->
+                    <div id="ocrButonDiv" style="display:none;" class="mt-3">
+                        <button type="button" class="btn btn-outline-info w-100" id="ocrButon" disabled>
+                            <i class="bi bi-eye me-2"></i>Fişi Oku (OCR)
+                        </button>
+                        <div class="form-text">Yapay zeka ile fişi otomatik okuyun</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kaydet Butonları -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-2"></i>{{ 'Güncelle' if masraf else 'Kaydet' }}
+                        </button>
+                        <a href="{{ url_for('masraf.dashboard') }}" class="btn btn-outline-secondary">
+                            İptal
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Kategori değişince fatura zorunluluğu kontrolü
+    $('#kategoriSelect').change(function() {
+        var selected = $(this).find('option:selected');
+        var faturaZorunlu = selected.data('fatura-zorunlu') === true;
+        $('#faturaUyari').toggle(faturaZorunlu);
+    }).trigger('change');
+    
+    // Para birimi değişince kur alanını göster
+    $('#paraBirimiSelect').change(function() {
+        var isTRY = $(this).val() === 'TRY';
+        $('#kurDiv').toggle(!isTRY);
+        hesaplaToplam();
+    }).trigger('change');
+    
+    // Tutar/KDV değişince toplam hesapla
+    $('#tutarInput, #kdvOraniSelect, #kurInput').on('input change', hesaplaToplam);
+    
+    function hesaplaToplam() {
+        var tutar = parseFloat($('#tutarInput').val().replace(',', '.')) || 0;
+        var kdvOrani = parseInt($('#kdvOraniSelect').val()) || 0;
+        var kur = parseFloat($('#kurInput').val().replace(',', '.')) || 1;
+        var paraBirimi = $('#paraBirimiSelect').val();
+        
+        var kdv = tutar * kdvOrani / 100;
+        var toplam = tutar + kdv;
+        var tlKarsiligi = paraBirimi !== 'TRY' ? toplam * kur : toplam;
+        
+        var sembol = paraBirimi === 'USD' ? '$' : paraBirimi === 'EUR' ? '€' : '₺';
+        var gosterge = sembol + toplam.toFixed(2);
+        
+        if (paraBirimi !== 'TRY') {
+            gosterge += ' (₺' + tlKarsiligi.toFixed(2) + ')';
+        }
+        
+        $('#toplamGosterge').text(gosterge);
+    }
+    
+    hesaplaToplam();
+    
+    // Dosya önizleme
+    $('#dosyaInput').change(function() {
+        var file = this.files[0];
+        if (file) {
+            $('#onizlemeDosyaAdi').text(file.name);
+            
+            if (file.type.startsWith('image/')) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#onizlemeImg').attr('src', e.target.result);
+                    $('#dosyaOnizleme').show();
+                    // Faz 2: OCR butonunu göster
+                    // $('#ocrButonDiv').show();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                $('#onizlemeImg').attr('src', '');
+                $('#dosyaOnizleme').show();
+            }
+        } else {
+            $('#dosyaOnizleme').hide();
+            // $('#ocrButonDiv').hide();
+        }
+    });
+});
+</script>
+{% endblock %}

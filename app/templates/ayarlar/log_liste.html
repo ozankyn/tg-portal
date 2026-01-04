@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}Aktivite Logları - TG Portal{% endblock %}
+{% block page_title %}Aktivite Logları{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <form method="GET" class="row g-2">
+            <div class="col-auto">
+                <select name="eylem" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tüm Eylemler</option>
+                    <option value="login" {{ 'selected' if request.args.get('eylem') == 'login' }}>Giriş</option>
+                    <option value="logout" {{ 'selected' if request.args.get('eylem') == 'logout' }}>Çıkış</option>
+                    <option value="create" {{ 'selected' if request.args.get('eylem') == 'create' }}>Oluşturma</option>
+                    <option value="update" {{ 'selected' if request.args.get('eylem') == 'update' }}>Güncelleme</option>
+                    <option value="delete" {{ 'selected' if request.args.get('eylem') == 'delete' }}>Silme</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <select name="modul" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tüm Modüller</option>
+                    <option value="ik" {{ 'selected' if request.args.get('modul') == 'ik' }}>İK</option>
+                    <option value="masraf" {{ 'selected' if request.args.get('modul') == 'masraf' }}>Masraf</option>
+                    <option value="sozlesme" {{ 'selected' if request.args.get('modul') == 'sozlesme' }}>Sözleşme</option>
+                    <option value="talep" {{ 'selected' if request.args.get('modul') == 'talep' }}>Talep</option>
+                    <option value="satinalma" {{ 'selected' if request.args.get('modul') == 'satinalma' }}>Satın Alma</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <select name="kullanici_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tüm Kullanıcılar</option>
+                    {% for u in kullanicilar %}
+                    <option value="{{ u.id }}" {{ 'selected' if request.args.get('kullanici_id')|int == u.id }}>{{ u.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Kullanıcı</th>
+                        <th>Eylem</th>
+                        <th>Modül</th>
+                        <th>Açıklama</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in loglar %}
+                    <tr>
+                        <td class="text-nowrap">{{ log.tarih.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td>{{ log.kullanici.full_name if log.kullanici else '-' }}</td>
+                        <td>
+                            {% if log.eylem == 'login' %}
+                            <span class="badge bg-success">Giriş</span>
+                            {% elif log.eylem == 'logout' %}
+                            <span class="badge bg-secondary">Çıkış</span>
+                            {% elif log.eylem == 'create' %}
+                            <span class="badge bg-primary">Oluşturma</span>
+                            {% elif log.eylem == 'update' %}
+                            <span class="badge bg-info">Güncelleme</span>
+                            {% elif log.eylem == 'delete' %}
+                            <span class="badge bg-danger">Silme</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ log.eylem }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ log.modul or '-' }}</td>
+                        <td>{{ log.aciklama or '-' }}</td>
+                        <td><small class="text-muted">{{ log.ip_adresi or '-' }}</small></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">Log kaydı bulunamadı</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if pagination.pages > 1 %}
+        <div class="card-footer">
+            <nav>
+                <ul class="pagination pagination-sm mb-0 justify-content-center">
+                    {% for p in pagination.iter_pages() %}
+                    {% if p %}
+                    <li class="page-item {{ 'active' if p == pagination.page }}">
+                        <a class="page-link" href="{{ url_for('ayarlar.log_liste', page=p, eylem=request.args.get('eylem'), modul=request.args.get('modul'), kullanici_id=request.args.get('kullanici_id')) }}">{{ p }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ url_for('ayarlar.dashboard') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Geri
+    </a>
+</div>
+{% endblock %}

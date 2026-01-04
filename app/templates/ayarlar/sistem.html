@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Sistem Ayarları - TG Portal{% endblock %}
+{% block page_title %}Sistem Ayarları{% endblock %}
+
+{% block content %}
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="row g-4">
+        <!-- Genel Ayarlar -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Genel Ayarlar</h6>
+                </div>
+                <div class="card-body">
+                    {% for ayar in genel %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ ayar.aciklama or ayar.anahtar }}</label>
+                        {% if ayar.tip == 'boolean' %}
+                        <select name="{{ ayar.anahtar }}" class="form-select">
+                            <option value="true" {{ 'selected' if ayar.deger == 'true' }}>Evet</option>
+                            <option value="false" {{ 'selected' if ayar.deger != 'true' }}>Hayır</option>
+                        </select>
+                        {% elif ayar.tip == 'number' %}
+                        <input type="number" name="{{ ayar.anahtar }}" class="form-control" value="{{ ayar.deger }}">
+                        {% else %}
+                        <input type="text" name="{{ ayar.anahtar }}" class="form-control" value="{{ ayar.deger }}">
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- E-posta Ayarları -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="bi bi-envelope me-2"></i>E-posta Ayarları</h6>
+                </div>
+                <div class="card-body">
+                    {% for ayar in email %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ ayar.aciklama or ayar.anahtar }}</label>
+                        {% if ayar.tip == 'boolean' %}
+                        <select name="{{ ayar.anahtar }}" class="form-select">
+                            <option value="true" {{ 'selected' if ayar.deger == 'true' }}>Evet</option>
+                            <option value="false" {{ 'selected' if ayar.deger != 'true' }}>Hayır</option>
+                        </select>
+                        {% elif ayar.tip == 'password' %}
+                        <input type="password" name="{{ ayar.anahtar }}" class="form-control" value="{{ ayar.deger }}" placeholder="••••••">
+                        {% elif ayar.tip == 'number' %}
+                        <input type="number" name="{{ ayar.anahtar }}" class="form-control" value="{{ ayar.deger }}">
+                        {% else %}
+                        <input type="text" name="{{ ayar.anahtar }}" class="form-control" value="{{ ayar.deger }}">
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bildirim Ayarları -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0"><i class="bi bi-bell me-2"></i>Bildirim Ayarları</h6>
+                </div>
+                <div class="card-body">
+                    {% for ayar in bildirim %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ ayar.aciklama or ayar.anahtar }}</label>
+                        <select name="{{ ayar.anahtar }}" class="form-select">
+                            <option value="true" {{ 'selected' if ayar.deger == 'true' }}>Aktif</option>
+                            <option value="false" {{ 'selected' if ayar.deger != 'true' }}>Pasif</option>
+                        </select>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Güvenlik Ayarları -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Güvenlik Ayarları</h6>
+                </div>
+                <div class="card-body">
+                    {% for ayar in guvenlik %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ ayar.aciklama or ayar.anahtar }}</label>
+                        <input type="number" name="{{ ayar.anahtar }}" class="form-control" value="{{ ayar.deger }}">
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-4 d-flex gap-2">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>Kaydet
+        </button>
+        <a href="{{ url_for('ayarlar.varsayilan_yukle') }}" class="btn btn-outline-secondary"
+           onclick="return confirm('Varsayılan ayarlar yüklensin mi?')">
+            <i class="bi bi-arrow-clockwise me-1"></i>Varsayılanları Yükle
+        </a>
+        <a href="{{ url_for('ayarlar.dashboard') }}" class="btn btn-outline-secondary">Geri</a>
+    </div>
+</form>
+{% endblock %}

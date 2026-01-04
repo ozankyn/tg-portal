@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Sözleşme Düzenle' if sozlesme else 'Yeni Sözleşme' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'Sözleşme Düzenle' if sozlesme else 'Yeni Sözleşme' }}{% endblock %}
+
+{% block content %}
+<form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="row g-4">
+        <!-- Sol: Ana Bilgiler -->
+        <div class="col-lg-8">
+            <!-- Temel Bilgiler -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Sözleşme Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Sözleşme Adı *</label>
+                            <input type="text" name="baslik" class="form-control" required
+                                   value="{{ sozlesme.baslik if sozlesme else '' }}"
+                                   placeholder="Örn: 2024 Yılı Hizmet Sözleşmesi">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Sözleşme No</label>
+                            <input type="text" name="sozlesme_no" class="form-control"
+                                   value="{{ sozlesme.sozlesme_no if sozlesme else '' }}"
+                                   placeholder="Örn: SZL-2024-001">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Sözleşme Tipi *</label>
+                            <select name="tip_id" class="form-select" required>
+                                <option value="">Seçin...</option>
+                                {% for t in tipler %}
+                                <option value="{{ t.id }}" {{ 'selected' if sozlesme and sozlesme.tip_id == t.id }}>{{ t.ad }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Sorumlu Kişi</label>
+                            <select name="sorumlu_id" class="form-select select2">
+                                <option value="">Seçin...</option>
+                                {% for c in calisanlar %}
+                                <option value="{{ c.id }}" {{ 'selected' if sozlesme and sozlesme.sorumlu_id == c.id }}>{{ c.ad_soyad }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Açıklama</label>
+                            <textarea name="aciklama" class="form-control" rows="2">{{ sozlesme.aciklama if sozlesme else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Taraf Bilgileri -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Taraf Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Taraf Tipi *</label>
+                            <select name="taraf_tipi" class="form-select" id="tarafTipi" required>
+                                <option value="musteri" {{ 'selected' if sozlesme and sozlesme.musteri_id }}>Müşteri</option>
+                                <option value="tedarikci" {{ 'selected' if sozlesme and sozlesme.tedarikci_id }}>Tedarikçi</option>
+                                <option value="diger" {{ 'selected' if sozlesme and sozlesme.diger_taraf }}>Diğer</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-8" id="musteriDiv">
+                            <label class="form-label">Müşteri</label>
+                            <select name="musteri_id" class="form-select select2" id="musteriSelect">
+                                <option value="">Seçin...</option>
+                                {% for m in musteriler %}
+                                <option value="{{ m.id }}" {{ 'selected' if sozlesme and sozlesme.musteri_id == m.id }}>{{ m.ad }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-8" id="tedarikciDiv" style="display:none;">
+                            <label class="form-label">Tedarikçi</label>
+                            <select name="tedarikci_id" class="form-select select2" id="tedarikciSelect">
+                                <option value="">Seçin...</option>
+                                {% for t in tedarikciler %}
+                                <option value="{{ t.id }}" {{ 'selected' if sozlesme and sozlesme.tedarikci_id == t.id }}>{{ t.ad }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-8" id="digerDiv" style="display:none;">
+                            <label class="form-label">Taraf Adı</label>
+                            <input type="text" name="diger_taraf" class="form-control" id="digerInput"
+                                   value="{{ sozlesme.diger_taraf if sozlesme else '' }}"
+                                   placeholder="Şirket veya kişi adı">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tarih ve Süre -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Tarih ve Süre</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Başlangıç Tarihi *</label>
+                            <input type="date" name="baslangic_tarihi" class="form-control" required
+                                   value="{{ sozlesme.baslangic_tarihi.strftime('%Y-%m-%d') if sozlesme else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Bitiş Tarihi *</label>
+                            <input type="date" name="bitis_tarihi" class="form-control" required
+                                   value="{{ sozlesme.bitis_tarihi.strftime('%Y-%m-%d') if sozlesme else '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">İmza Tarihi</label>
+                            <input type="date" name="imza_tarihi" class="form-control"
+                                   value="{{ sozlesme.imza_tarihi.strftime('%Y-%m-%d') if sozlesme and sozlesme.imza_tarihi else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input type="checkbox" name="otomatik_yenileme" class="form-check-input" id="otomatikYenileme"
+                                       {{ 'checked' if sozlesme and sozlesme.otomatik_yenileme }}>
+                                <label class="form-check-label" for="otomatikYenileme">
+                                    Otomatik Yenileme
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Yenileme Süresi (Ay)</label>
+                            <input type="number" name="yenileme_suresi_ay" class="form-control" min="1" max="120"
+                                   value="{{ sozlesme.yenileme_suresi_ay if sozlesme else 12 }}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Tutar Bilgileri -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Tutar Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Tutar</label>
+                            <div class="input-group">
+                                <input type="text" name="tutar" class="form-control"
+                                       value="{{ sozlesme.tutar if sozlesme else '' }}" placeholder="0.00">
+                                <select name="para_birimi" class="form-select" style="max-width: 80px;">
+                                    <option value="TRY" {{ 'selected' if not sozlesme or sozlesme.para_birimi == 'TRY' }}>₺</option>
+                                    <option value="USD" {{ 'selected' if sozlesme and sozlesme.para_birimi == 'USD' }}>$</option>
+                                    <option value="EUR" {{ 'selected' if sozlesme and sozlesme.para_birimi == 'EUR' }}>€</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Ödeme Periyodu</label>
+                            <select name="odeme_periyodu" class="form-select">
+                                <option value="">Seçin...</option>
+                                <option value="tek_seferlik" {{ 'selected' if sozlesme and sozlesme.odeme_periyodu == 'tek_seferlik' }}>Tek Seferlik</option>
+                                <option value="aylik" {{ 'selected' if sozlesme and sozlesme.odeme_periyodu == 'aylik' }}>Aylık</option>
+                                <option value="yillik" {{ 'selected' if sozlesme and sozlesme.odeme_periyodu == 'yillik' }}>Yıllık</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="form-check mt-2">
+                                <input type="checkbox" name="kdv_dahil" class="form-check-input" id="kdvDahil"
+                                       {{ 'checked' if not sozlesme or sozlesme.kdv_dahil }}>
+                                <label class="form-check-label" for="kdvDahil">KDV Dahil</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Özel Şartlar -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">Özel Şartlar ve Notlar</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Özel Şartlar</label>
+                            <textarea name="ozel_sartlar" class="form-control" rows="3"
+                                      placeholder="Sözleşmeye özgü özel şartlar...">{{ sozlesme.ozel_sartlar if sozlesme else '' }}</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Notlar</label>
+                            <textarea name="notlar" class="form-control" rows="2"
+                                      placeholder="Dahili notlar...">{{ sozlesme.notlar if sozlesme else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sağ: Dosya ve Kaydet -->
+        <div class="col-lg-4">
+            <!-- Dosya Yükleme -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Sözleşme Dosyası</h6>
+                </div>
+                <div class="card-body">
+                    {% if sozlesme and sozlesme.dosya_yolu %}
+                    <div class="mb-3 p-3 bg-light rounded text-center">
+                        <i class="bi bi-file-earmark-pdf fs-1 text-danger"></i>
+                        <p class="mb-1 small">{{ sozlesme.dosya_adi }}</p>
+                        <a href="{{ url_for('sozlesme.dosya_indir', id=sozlesme.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-download me-1"></i>İndir
+                        </a>
+                    </div>
+                    <hr>
+                    <p class="small text-muted mb-2">Yeni dosya yükleyin:</p>
+                    {% endif %}
+                    
+                    <input type="file" name="dosya" class="form-control" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                    <div class="form-text">PDF, DOC, DOCX, JPG, PNG</div>
+                </div>
+            </div>
+            
+            <!-- Kaydet -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-2"></i>{{ 'Güncelle' if sozlesme else 'Kaydet' }}
+                        </button>
+                        <a href="{{ url_for('sozlesme.dashboard') }}" class="btn btn-outline-secondary">
+                            İptal
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    function showTarafDiv() {
+        var tip = $('#tarafTipi').val();
+        $('#musteriDiv, #tedarikciDiv, #digerDiv').hide();
+        
+        if (tip === 'musteri') {
+            $('#musteriDiv').show();
+        } else if (tip === 'tedarikci') {
+            $('#tedarikciDiv').show();
+        } else {
+            $('#digerDiv').show();
+        }
+    }
+    
+    $('#tarafTipi').change(showTarafDiv);
+    showTarafDiv();
+});
+</script>
+{% endblock %}

@@ -22,6 +22,12 @@ role_permissions = db.Table('role_permissions',
     db.Column('permission_id', db.Integer, db.ForeignKey('permissions.id'), primary_key=True)
 )
 
+# Many-to-Many: User <-> Permission (Bireysel Claims)
+user_claims = db.Table('user_claims',
+    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('permission_id', db.Integer, db.ForeignKey('permissions.id'), primary_key=True)
+)
+
 
 class User(db.Model, UserMixin, TimestampMixin, SoftDeleteMixin):
     """Kullanıcı modeli"""
@@ -45,6 +51,9 @@ class User(db.Model, UserMixin, TimestampMixin, SoftDeleteMixin):
     # İlişkiler
     roles = db.relationship('Role', secondary=user_roles, backref=db.backref('users', lazy='dynamic'))
     
+    # Bireysel yetkiler (Claims)
+    claims = db.relationship('Permission', secondary=user_claims, backref=db.backref('users_direct', lazy='dynamic'))
+    
     # Çalışan ile ilişki (opsiyonel)
     calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'), nullable=True)
     calisan = db.relationship('Calisan', backref='user_account', foreign_keys=[calisan_id])
@@ -64,19 +73,35 @@ class User(db.Model, UserMixin, TimestampMixin, SoftDeleteMixin):
     
     def has_permission(self, permission_code):
         """Kullanıcının belirli bir yetkisi var mı kontrol eder"""
+        # Admin her şeye erişir
         if self.is_admin:
             return True
+        
+        # Önce bireysel claims kontrol et
+        for claim in self.claims:
+            if claim.code == permission_code:
+                return True
+            # Wildcard desteği
+            if claim.code.endswith('.*'):
+                module = claim.code[:-2]
+                if permission_code.startswith(module + '.'):
+                    return True
+            if claim.code == '*':
+                return True
+        
+        # Sonra rol yetkilerini kontrol et
         for role in self.roles:
             for perm in role.permissions:
-                # Wildcard desteği: filo.* tüm filo yetkilerini kapsar
                 if perm.code == permission_code:
                     return True
+                # Wildcard desteği: filo.* tüm filo yetkilerini kapsar
                 if perm.code.endswith('.*'):
                     module = perm.code[:-2]
                     if permission_code.startswith(module + '.'):
                         return True
                 if perm.code == '*':  # Full access
                     return True
+        
         return False
     
     def has_module_access(self, module):
@@ -90,10 +115,39 @@ class User(db.Model, UserMixin, TimestampMixin, SoftDeleteMixin):
         if self.is_admin:
             return ['*']
         perms = set()
+        
+        # Rol yetkilerini ekle
+        for role in self.roles:
+            for perm in role.permissions:
+                perms.add(perm.code)
+        
+        # Bireysel claims ekle
+        for claim in self.claims:
+            perms.add(claim.code)
+        
+        return list(perms)
+    
+    def get_role_permissions(self):
+        """Sadece rollerden gelen yetkileri döndürür"""
+        perms = set()
         for role in self.roles:
             for perm in role.permissions:
                 perms.add(perm.code)
         return list(perms)
+    
+    def get_claims(self):
+        """Sadece bireysel claims döndürür"""
+        return [c.code for c in self.claims]
+    
+    def add_claim(self, permission):
+        """Kullanıcıya bireysel yetki ekle"""
+        if permission not in self.claims:
+            self.claims.append(permission)
+    
+    def remove_claim(self, permission):
+        """Kullanıcıdan bireysel yetki kaldır"""
+        if permission in self.claims:
+            self.claims.remove(permission)
     
     def to_dict(self):
         return {
@@ -105,6 +159,7 @@ class User(db.Model, UserMixin, TimestampMixin, SoftDeleteMixin):
             'is_active': self.is_active,
             'is_admin': self.is_admin,
             'roles': [r.name for r in self.roles],
+            'claims': self.get_claims(),
             'permissions': self.get_permissions()
         }
 

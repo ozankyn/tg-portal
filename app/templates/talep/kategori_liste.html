@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Talep Kategorileri - TG Portal{% endblock %}
+{% block page_title %}Talep Kategorileri{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Kategoriler</h6>
+        <a href="{{ url_for('talep.kategori_ekle') }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Yeni Kategori
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th></th>
+                        <th>Kategori</th>
+                        <th>Kod</th>
+                        <th>Varsayılan Atanan</th>
+                        <th>SLA Yanıt</th>
+                        <th>SLA Çözüm</th>
+                        <th>Talep Sayısı</th>
+                        <th>Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for k in kategoriler %}
+                    <tr>
+                        <td><i class="{{ k.ikon }} text-{{ k.renk }}"></i></td>
+                        <td class="fw-semibold">{{ k.ad }}</td>
+                        <td><code>{{ k.kod or '-' }}</code></td>
+                        <td>{{ k.varsayilan_atanan.full_name if k.varsayilan_atanan else '-' }}</td>
+                        <td>{{ k.sla_cevap }} saat</td>
+                        <td>{{ k.sla_cozum }} saat</td>
+                        <td>{{ k.talepler|length }}</td>
+                        <td>
+                            {% if k.aktif %}
+                            <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Pasif</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

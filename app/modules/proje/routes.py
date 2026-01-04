@@ -238,6 +238,33 @@ def proje_duzenle(id):
     musteriler = Musteri.query.filter_by(is_deleted=False, aktif=True).order_by(Musteri.ad).all()
     return render_template('proje/proje_form.html', proje=proje, musteriler=musteriler)
 
+# ==================== KADRO LİSTESİ ====================
+@proje_bp.route('/kadrolar')
+@login_required
+@permission_required('proje.view')
+def kadro_liste():
+    """Tüm kadroların listesi"""
+    page = request.args.get('page', 1, type=int)
+    proje_id = request.args.get('proje_id', type=int)
+    q = request.args.get('q', '').strip()
+    
+    query = HedefKadro.query.filter_by(is_deleted=False)
+    
+    if proje_id:
+        query = query.filter_by(proje_id=proje_id)
+    
+    if q:
+        query = query.filter(HedefKadro.pozisyon_adi.ilike(f'%{q}%'))
+    
+    query = query.order_by(HedefKadro.oncelik, HedefKadro.pozisyon_adi)
+    pagination = query.paginate(page=page, per_page=20, error_out=False)
+    
+    projeler = Proje.query.filter_by(is_deleted=False, durum='aktif').order_by(Proje.ad).all()
+    
+    return render_template('proje/kadro_liste.html',
+                          kadrolar=pagination.items,
+                          pagination=pagination,
+                          projeler=projeler)
 
 # ==================== KADRO ====================
 

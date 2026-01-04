@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Sözleşme Tipleri - TG Portal{% endblock %}
+{% block page_title %}Sözleşme Tipleri{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Sözleşme Tipleri</h6>
+        <a href="{{ url_for('sozlesme.tip_ekle') }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Yeni Tip
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tip</th>
+                        <th>Kod</th>
+                        <th>Uyarı Günleri</th>
+                        <th>Sözleşme Sayısı</th>
+                        <th>Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tip in tipler %}
+                    <tr>
+                        <td class="fw-semibold">{{ tip.ad }}</td>
+                        <td><code>{{ tip.kod or '-' }}</code></td>
+                        <td>
+                            <span class="badge bg-info">{{ tip.uyari_gun_1 }}</span>
+                            <span class="badge bg-warning">{{ tip.uyari_gun_2 }}</span>
+                            <span class="badge bg-danger">{{ tip.uyari_gun_3 }}</span>
+                            gün
+                        </td>
+                        <td>{{ tip.sozlesmeler.count() }}</td>
+                        <td>
+                            {% if tip.aktif %}
+                            <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Pasif</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

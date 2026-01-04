@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}İK Raporları - TG Portal{% endblock %}
+{% block page_title %}İK Raporları{% endblock %}
+
+{% block content %}
+<!-- İstatistikler -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ stats.toplam }}</h2>
+                <small>Toplam Çalışan</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ stats.aktif }}</h2>
+                <small>Aktif</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ stats.izinli }}</h2>
+                <small>İzinli</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-secondary text-white">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ stats.ayrildi }}</h2>
+                <small>Ayrılan</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Departman Dağılımı -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Departman Dağılımı</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="departmanChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Departman Tablosu -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-table me-2"></i>Departman Detay</h6>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Departman</th>
+                            <th class="text-end">Çalışan</th>
+                            <th class="text-end">%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dept, sayi in departman_dagilim %}
+                        <tr>
+                            <td>{{ dept }}</td>
+                            <td class="text-end">{{ sayi }}</td>
+                            <td class="text-end">{{ "%.1f"|format(sayi / stats.aktif * 100) if stats.aktif else 0 }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Aylık İşe Alım -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Aylık İşe Alım (Son 12 Ay)</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="iseAlimChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{{ url_for('rapor.dashboard') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Geri
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Departman Pie Chart
+new Chart(document.getElementById('departmanChart'), {
+    type: 'doughnut',
+    data: {
+        labels: [{% for dept, sayi in departman_dagilim %}'{{ dept }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for dept, sayi in departman_dagilim %}{{ sayi }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0', '#6f42c1', '#fd7e14', '#20c997']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'right' }
+        }
+    }
+});
+
+// İşe Alım Bar Chart
+new Chart(document.getElementById('iseAlimChart'), {
+    type: 'bar',
+    data: {
+        labels: [{% for yil, ay, sayi in aylik_ise_alim %}'{{ ay }}/{{ yil }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            label: 'İşe Alınan',
+            data: [{% for yil, ay, sayi in aylik_ise_alim %}{{ sayi }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: '#0d6efd'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+{% endblock %}

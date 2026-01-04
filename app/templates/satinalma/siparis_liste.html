@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Siparişler - TG Portal{% endblock %}
+{% block page_title %}Siparişler{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <form method="GET" class="row g-2">
+                    <div class="col-auto">
+                        <select name="durum" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">Tüm Durumlar</option>
+                            <option value="siparis_verildi" {{ 'selected' if request.args.get('durum') == 'siparis_verildi' }}>Sipariş Verildi</option>
+                            <option value="kismen_teslim" {{ 'selected' if request.args.get('durum') == 'kismen_teslim' }}>Kısmen Teslim</option>
+                            <option value="teslim_alindi" {{ 'selected' if request.args.get('durum') == 'teslim_alindi' }}>Teslim Alındı</option>
+                            <option value="iptal" {{ 'selected' if request.args.get('durum') == 'iptal' }}>İptal</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body p-0">
+        {% if siparisler %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Sipariş No</th>
+                        <th>Talep</th>
+                        <th>Tedarikçi</th>
+                        <th>Tarih</th>
+                        <th>Beklenen Teslimat</th>
+                        <th>Tutar</th>
+                        <th>Durum</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for siparis in siparisler %}
+                    <tr>
+                        <td><code>{{ siparis.siparis_no }}</code></td>
+                        <td>
+                            <a href="{{ url_for('satinalma.talep_detay', id=siparis.talep_id) }}">
+                                {{ siparis.talep.baslik|truncate(25) }}
+                            </a>
+                        </td>
+                        <td>{{ siparis.tedarikci.unvan|truncate(25) }}</td>
+                        <td>{{ siparis.siparis_tarihi.strftime('%d.%m.%Y') }}</td>
+                        <td>{{ siparis.beklenen_teslimat.strftime('%d.%m.%Y') if siparis.beklenen_teslimat else '-' }}</td>
+                        <td><strong>₺{{ "%.2f"|format(siparis.toplam_tutar) }}</strong></td>
+                        <td><span class="badge bg-{{ siparis.durum_renk }}">{{ siparis.durum_text }}</span></td>
+                        <td>
+                            <a href="{{ url_for('satinalma.siparis_detay', id=siparis.id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if pagination.pages > 1 %}
+        <div class="card-footer">
+            <nav>
+                <ul class="pagination pagination-sm mb-0 justify-content-center">
+                    {% for p in pagination.iter_pages() %}
+                    {% if p %}
+                    <li class="page-item {{ 'active' if p == pagination.page }}">
+                        <a class="page-link" href="{{ url_for('satinalma.siparis_liste', page=p, durum=request.args.get('durum')) }}">{{ p }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-box-seam fs-1 d-block mb-2"></i>
+            Sipariş bulunamadı
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

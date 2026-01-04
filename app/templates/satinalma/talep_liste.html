@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Satın Alma Talepleri - TG Portal{% endblock %}
+{% block page_title %}Satın Alma Talepleri{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <form method="GET" class="row g-2">
+                    <div class="col-auto">
+                        <select name="durum" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">Tüm Durumlar</option>
+                            <option value="taslak" {{ 'selected' if request.args.get('durum') == 'taslak' }}>Taslak</option>
+                            <option value="onay_bekliyor" {{ 'selected' if request.args.get('durum') == 'onay_bekliyor' }}>Onay Bekliyor</option>
+                            <option value="onaylandi" {{ 'selected' if request.args.get('durum') == 'onaylandi' }}>Onaylandı</option>
+                            <option value="teklif_asamasinda" {{ 'selected' if request.args.get('durum') == 'teklif_asamasinda' }}>Teklif Aşamasında</option>
+                            <option value="siparis_verildi" {{ 'selected' if request.args.get('durum') == 'siparis_verildi' }}>Sipariş Verildi</option>
+                            <option value="tamamlandi" {{ 'selected' if request.args.get('durum') == 'tamamlandi' }}>Tamamlandı</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select name="kategori_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">Tüm Kategoriler</option>
+                            {% for k in kategoriler %}
+                            <option value="{{ k.id }}" {{ 'selected' if request.args.get('kategori_id')|int == k.id }}>{{ k.ad }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{{ url_for('satinalma.talep_ekle') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Yeni Talep
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body p-0">
+        {% if talepler %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Talep No</th>
+                        <th>Başlık</th>
+                        <th>Kategori</th>
+                        <th>Talep Eden</th>
+                        <th>Tarih</th>
+                        <th>Öncelik</th>
+                        <th>Tahmini Tutar</th>
+                        <th>Durum</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for talep in talepler %}
+                    <tr>
+                        <td><code>{{ talep.talep_no }}</code></td>
+                        <td>
+                            <a href="{{ url_for('satinalma.talep_detay', id=talep.id) }}" class="text-decoration-none">
+                                {{ talep.baslik|truncate(30) }}
+                            </a>
+                        </td>
+                        <td>{{ talep.kategori.ad if talep.kategori else '-' }}</td>
+                        <td>{{ talep.talep_eden.full_name }}</td>
+                        <td>{{ talep.talep_tarihi.strftime('%d.%m.%Y') }}</td>
+                        <td><span class="badge bg-{{ talep.oncelik_renk }}">{{ talep.oncelik_text }}</span></td>
+                        <td>
+                            {% if talep.tahmini_tutar %}
+                            ₺{{ "%.2f"|format(talep.tahmini_tutar) }}
+                            {% else %}-{% endif %}
+                        </td>
+                        <td><span class="badge bg-{{ talep.durum_renk }}">{{ talep.durum_text }}</span></td>
+                        <td>
+                            <a href="{{ url_for('satinalma.talep_detay', id=talep.id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if pagination.pages > 1 %}
+        <div class="card-footer">
+            <nav>
+                <ul class="pagination pagination-sm mb-0 justify-content-center">
+                    {% for p in pagination.iter_pages() %}
+                    {% if p %}
+                    <li class="page-item {{ 'active' if p == pagination.page }}">
+                        <a class="page-link" href="{{ url_for('satinalma.talep_liste', page=p, durum=request.args.get('durum'), kategori_id=request.args.get('kategori_id')) }}">{{ p }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+            Talep bulunamadı
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

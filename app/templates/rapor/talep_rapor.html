@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+
+{% block title %}Talep Raporları - TG Portal{% endblock %}
+{% block page_title %}Talep Raporları{% endblock %}
+
+{% block content %}
+<!-- Filtre -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label">Yıl</label>
+                <select name="yil" class="form-select form-select-sm">
+                    {% for y in range(2024, 2027) %}
+                    <option value="{{ y }}" {{ 'selected' if y == yil }}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <label class="form-label">Ay</label>
+                <select name="ay" class="form-select form-select-sm">
+                    <option value="">Tümü</option>
+                    {% for m in range(1, 13) %}
+                    <option value="{{ m }}" {{ 'selected' if m == ay }}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-sm">Filtrele</button>
+            </div>
+            <div class="col-auto ms-auto">
+                <a href="{{ url_for('rapor.export_excel', modul='talep') }}" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-download me-1"></i>Excel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- İstatistikler -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ stats.toplam }}</h2>
+                <small>Toplam Talep</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ stats.acik }}</h2>
+                <small>Açık</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ stats.cozuldu }}</h2>
+                <small>Çözüldü</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-secondary text-white">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ stats.kapatildi }}</h2>
+                <small>Kapatıldı</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Kategori Dağılımı -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Kategori Dağılımı</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="kategoriChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Öncelik Dağılımı -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Öncelik Dağılımı</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="oncelikChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Aylık Trend -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Aylık Talep Trendi ({{ yil }})</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="trendChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tablolar -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Kategori Detay</h6>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Kategori</th>
+                            <th class="text-end">Adet</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ad, adet in kategori_dagilim %}
+                        <tr>
+                            <td>{{ ad }}</td>
+                            <td class="text-end">{{ adet }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">Öncelik Detay</h6>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Öncelik</th>
+                            <th class="text-end">Adet</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for oncelik, adet in oncelik_dagilim %}
+                        <tr>
+                            <td>
+                                {% if oncelik == 'kritik' %}<span class="badge bg-danger">Kritik</span>
+                                {% elif oncelik == 'yuksek' %}<span class="badge bg-warning">Yüksek</span>
+                                {% elif oncelik == 'normal' %}<span class="badge bg-info">Normal</span>
+                                {% else %}<span class="badge bg-secondary">Düşük</span>{% endif %}
+                            </td>
+                            <td class="text-end">{{ adet }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{{ url_for('rapor.dashboard') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Geri
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Kategori Chart
+new Chart(document.getElementById('kategoriChart'), {
+    type: 'doughnut',
+    data: {
+        labels: [{% for ad, adet in kategori_dagilim %}'{{ ad }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for ad, adet in kategori_dagilim %}{{ adet }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0', '#6f42c1']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'right' } }
+    }
+});
+
+// Öncelik Chart
+const oncelikLabels = {'dusuk': 'Düşük', 'normal': 'Normal', 'yuksek': 'Yüksek', 'kritik': 'Kritik'};
+const oncelikColors = {'dusuk': '#6c757d', 'normal': '#0dcaf0', 'yuksek': '#ffc107', 'kritik': '#dc3545'};
+
+new Chart(document.getElementById('oncelikChart'), {
+    type: 'bar',
+    data: {
+        labels: [{% for oncelik, adet in oncelik_dagilim %}oncelikLabels['{{ oncelik }}']{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for oncelik, adet in oncelik_dagilim %}{{ adet }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: [{% for oncelik, adet in oncelik_dagilim %}oncelikColors['{{ oncelik }}']{% if not loop.last %},{% endif %}{% endfor %}]
+        }]
+    },
+    options: {
+        responsive: true,
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: { x: { beginAtZero: true } }
+    }
+});
+
+// Aylık Trend
+const aylar = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+const trendData = {};
+{% for ay, toplam in aylik_trend %}
+trendData[{{ ay }}] = {{ toplam }};
+{% endfor %}
+
+new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+        labels: aylar,
+        datasets: [{
+            label: 'Talep Sayısı',
+            data: aylar.map((_, i) => trendData[i+1] || 0),
+            borderColor: '#dc3545',
+            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+            fill: true,
+            tension: 0.3
+        }]
+    },
+    options: {
+        responsive: true,
+        scales: { y: { beginAtZero: true } }
+    }
+});
+</script>
+{% endblock %}

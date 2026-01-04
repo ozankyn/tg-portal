@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Sınava Başla - {{ test.baslik }}{% endblock %}
+{% block page_title %}Sınava Başla{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header text-center">
+                <h5 class="mb-0">{{ test.baslik }}</h5>
+            </div>
+            <div class="card-body">
+                {% if test.aciklama %}
+                <p class="text-muted">{{ test.aciklama }}</p>
+                <hr>
+                {% endif %}
+                
+                <div class="row text-center mb-4">
+                    <div class="col-4">
+                        <div class="fs-2 fw-bold text-primary">{{ test.soru_sayisi }}</div>
+                        <div class="text-muted small">Soru</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fs-2 fw-bold text-warning">{{ test.sure_dakika or '∞' }}</div>
+                        <div class="text-muted small">Dakika</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fs-2 fw-bold text-success">%{{ test.gecme_puani }}</div>
+                        <div class="text-muted small">Geçme</div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <h6><i class="bi bi-info-circle me-2"></i>Sınav Kuralları</h6>
+                    <ul class="mb-0 small">
+                        {% if test.sure_dakika %}
+                        <li>Sınav süresi <strong>{{ test.sure_dakika }} dakika</strong>dır. Süre dolduğunda sınav otomatik biter.</li>
+                        {% else %}
+                        <li>Bu sınav için süre limiti yoktur.</li>
+                        {% endif %}
+                        <li>Toplam <strong>{{ test.soru_sayisi }}</strong> soru cevaplanacaktır.</li>
+                        <li>Geçmek için en az <strong>%{{ test.gecme_puani }}</strong> başarı gereklidir.</li>
+                        {% if test.tekrar_hak %}
+                        <li>Başarısız olursanız <strong>{{ test.tekrar_hak }}</strong> tekrar hakkınız var.</li>
+                        {% endif %}
+                        {% if test.soru_karistir %}
+                        <li>Sorular karışık sırada gösterilecektir.</li>
+                        {% endif %}
+                    </ul>
+                </div>
+                
+                <form method="POST" class="text-center">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-play-circle me-2"></i> Sınava Başla
+                    </button>
+                </form>
+                
+                <p class="text-muted text-center small mt-3 mb-0">
+                    Başla butonuna tıkladığınızda süre başlayacaktır.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Kullanıcı Düzenle' if user else 'Yeni Kullanıcı' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'Kullanıcı Düzenle' if user else 'Yeni Kullanıcı' }}{% endblock %}
+
+{% block content %}
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="row">
+        <!-- Sol: Temel Bilgiler -->
+        <div class="col-lg-5">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-person me-2"></i>Kullanıcı Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">E-posta *</label>
+                        <input type="email" name="email" class="form-control" required
+                               value="{{ user.email if user else '' }}">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Ad *</label>
+                                <input type="text" name="ad" class="form-control" required
+                                       value="{{ user.ad if user else '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Soyad *</label>
+                                <input type="text" name="soyad" class="form-control" required
+                                       value="{{ user.soyad if user else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ 'Yeni Şifre' if user else 'Şifre *' }}</label>
+                        <input type="password" name="password" class="form-control"
+                               {{ '' if user else 'required' }} minlength="6">
+                        {% if user %}
+                        <div class="form-text">Boş bırakırsanız şifre değişmez</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Rol</label>
+                        <select name="role_id" class="form-select">
+                            <option value="">Rol seçin...</option>
+                            {% for rol in roller %}
+                            <option value="{{ rol.id }}" {{ 'selected' if user and rol in user.roles }}>
+                                {{ rol.display_name or rol.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Rol, kullanıcıya toplu yetki atar</div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input type="checkbox" name="is_active" class="form-check-input" id="isActive"
+                                       {{ 'checked' if not user or user.is_active }}>
+                                <label class="form-check-label" for="isActive">Aktif</label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check">
+                                <input type="checkbox" name="is_admin" class="form-check-input" id="isAdmin"
+                                       {{ 'checked' if user and user.is_admin }}>
+                                <label class="form-check-label text-danger" for="isAdmin">
+                                    <strong>Süper Admin</strong>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i>{{ 'Güncelle' if user else 'Kaydet' }}
+                </button>
+                <a href="{{ url_for('ayarlar.kullanici_liste') }}" class="btn btn-outline-secondary">İptal</a>
+            </div>
+        </div>
+        
+        <!-- Sağ: Bireysel Yetkiler (Claims) -->
+        <div class="col-lg-7">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="bi bi-key me-2"></i>Bireysel Yetkiler (Claims)</h6>
+                    <small class="text-muted">Rol dışında ek yetkiler</small>
+                </div>
+                <div class="card-body">
+                    {% if yetki_gruplari %}
+                    <div class="row g-3">
+                        {% for modul, yetkiler in yetki_gruplari.items() %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="border rounded p-2">
+                                <strong class="text-uppercase text-primary d-block mb-2" style="font-size: 0.75rem;">
+                                    {{ modul }}
+                                </strong>
+                                {% for yetki in yetkiler %}
+                                <div class="form-check">
+                                    <input type="checkbox" name="claims[]" value="{{ yetki.id }}"
+                                           class="form-check-input" id="claim{{ yetki.id }}"
+                                           {{ 'checked' if user and yetki in user.claims }}>
+                                    <label class="form-check-label small" for="claim{{ yetki.id }}">
+                                        {{ yetki.code.split('.')[1] if '.' in yetki.code else yetki.code }}
+                                        {% if yetki.name %}
+                                        <span class="text-muted d-block" style="font-size: 0.7rem;">{{ yetki.name }}</span>
+                                        {% endif %}
+                                    </label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <p>Henüz yetki tanımlanmamış.</p>
+                        <a href="{{ url_for('ayarlar.varsayilan_yetkiler') }}" class="btn btn-sm btn-outline-primary">
+                            Varsayılan Yetkileri Yükle
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if user and user.roles %}
+            <div class="card mt-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Rolden Gelen Yetkiler</h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        {% for rol in user.roles %}
+                        <strong>{{ rol.display_name or rol.name }}:</strong>
+                        {% for perm in rol.permissions %}
+                        <span class="badge bg-secondary">{{ perm.code }}</span>
+                        {% endfor %}
+                        {% endfor %}
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</form>
+{% endblock %}

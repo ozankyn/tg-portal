@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}{% if soru %}Soru Düzenle{% else %}Yeni Soru{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if soru %}Soru Düzenle{% else %}Yeni Soru Ekle{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" id="soruForm">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <!-- Soru Metni -->
+                    <div class="mb-4">
+                        <label class="form-label">Soru *</label>
+                        <textarea name="soru_metni" class="form-control" rows="3" required
+                                  placeholder="Soru metnini yazın...">{{ soru.soru_metni if soru else '' }}</textarea>
+                    </div>
+                    
+                    <!-- Soru Tipi ve Ayarlar -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Soru Tipi</label>
+                            <select name="soru_tipi" class="form-select" id="soruTipi" onchange="updateSecenekler()">
+                                <option value="coktan_secmeli" {{ 'selected' if not soru or soru.soru_tipi == 'coktan_secmeli' }}>Çoktan Seçmeli</option>
+                                <option value="dogru_yanlis" {{ 'selected' if soru and soru.soru_tipi == 'dogru_yanlis' }}>Doğru/Yanlış</option>
+                                <option value="coklu_secim" {{ 'selected' if soru and soru.soru_tipi == 'coklu_secim' }}>Çoklu Seçim</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Zorluk</label>
+                            <select name="zorluk" class="form-select">
+                                <option value="1" {{ 'selected' if not soru or soru.zorluk == 1 }}>Kolay</option>
+                                <option value="2" {{ 'selected' if soru and soru.zorluk == 2 }}>Orta</option>
+                                <option value="3" {{ 'selected' if soru and soru.zorluk == 3 }}>Zor</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Puan</label>
+                            <input type="number" name="puan" class="form-control" min="1" 
+                                   value="{{ soru.puan if soru else 10 }}">
+                        </div>
+                    </div>
+                    
+                    <!-- Kategori ve Eğitim Tipi -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label">Eğitim Tipi</label>
+                            <select name="egitim_tipi_id" class="form-select">
+                                <option value="">Genel</option>
+                                {% for tip in egitim_tipleri %}
+                                <option value="{{ tip.id }}" {{ 'selected' if soru and soru.egitim_tipi_id == tip.id }}>{{ tip.ad }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Kategori</label>
+                            <select name="kategori_id" class="form-select">
+                                <option value="">Kategorisiz</option>
+                                {% for kat in kategoriler %}
+                                <option value="{{ kat.id }}" {{ 'selected' if soru and soru.kategori_id == kat.id }}>{{ kat.ad }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Seçenekler -->
+                    <div class="mb-4">
+                        <label class="form-label d-flex justify-content-between align-items-center">
+                            <span>Seçenekler *</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addSecenek()" id="addSecenekBtn">
+                                <i class="bi bi-plus-lg me-1"></i> Seçenek Ekle
+                            </button>
+                        </label>
+                        
+                        <div id="seceneklerContainer">
+                            {% if soru %}
+                                {% for secenek in soru.secenekler %}
+                                <div class="input-group mb-2 secenek-row">
+                                    <div class="input-group-text">
+                                        <input type="{{ 'checkbox' if soru.soru_tipi == 'coklu_secim' else 'radio' }}" 
+                                               name="dogru_secenek" value="{{ loop.index0 }}"
+                                               class="form-check-input mt-0 dogru-check"
+                                               {{ 'checked' if secenek.dogru }}>
+                                    </div>
+                                    <input type="text" name="secenek_metni" class="form-control" 
+                                           value="{{ secenek.secenek_metni }}" placeholder="Seçenek metni">
+                                    <button type="button" class="btn btn-outline-danger" onclick="removeSecenek(this)">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <!-- Default 4 seçenek -->
+                                <div class="input-group mb-2 secenek-row">
+                                    <div class="input-group-text">
+                                        <input type="radio" name="dogru_secenek" value="0" class="form-check-input mt-0 dogru-check">
+                                    </div>
+                                    <input type="text" name="secenek_metni" class="form-control" placeholder="A şıkkı">
+                                    <button type="button" class="btn btn-outline-danger" onclick="removeSecenek(this)"><i class="bi bi-x"></i></button>
+                                </div>
+                                <div class="input-group mb-2 secenek-row">
+                                    <div class="input-group-text">
+                                        <input type="radio" name="dogru_secenek" value="1" class="form-check-input mt-0 dogru-check">
+                                    </div>
+                                    <input type="text" name="secenek_metni" class="form-control" placeholder="B şıkkı">
+                                    <button type="button" class="btn btn-outline-danger" onclick="removeSecenek(this)"><i class="bi bi-x"></i></button>
+                                </div>
+                                <div class="input-group mb-2 secenek-row">
+                                    <div class="input-group-text">
+                                        <input type="radio" name="dogru_secenek" value="2" class="form-check-input mt-0 dogru-check">
+                                    </div>
+                                    <input type="text" name="secenek_metni" class="form-control" placeholder="C şıkkı">
+                                    <button type="button" class="btn btn-outline-danger" onclick="removeSecenek(this)"><i class="bi bi-x"></i></button>
+                                </div>
+                                <div class="input-group mb-2 secenek-row">
+                                    <div class="input-group-text">
+                                        <input type="radio" name="dogru_secenek" value="3" class="form-check-input mt-0 dogru-check">
+                                    </div>
+                                    <input type="text" name="secenek_metni" class="form-control" placeholder="D şıkkı">
+                                    <button type="button" class="btn btn-outline-danger" onclick="removeSecenek(this)"><i class="bi bi-x"></i></button>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Doğru cevabı işaretlemek için sol taraftaki radio/checkbox'ı seçin
+                        </small>
+                    </div>
+                    
+                    <!-- Açıklama -->
+                    <div class="mb-4">
+                        <label class="form-label">Cevap Açıklaması <small class="text-muted">(opsiyonel)</small></label>
+                        <textarea name="aciklama" class="form-control" rows="2"
+                                  placeholder="Doğru cevabın açıklaması (test sonunda gösterilir)">{{ soru.aciklama if soru else '' }}</textarea>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> {{ 'Güncelle' if soru else 'Kaydet' }}
+                        </button>
+                        <a href="{{ url_for('egitim.soru_liste') }}" class="btn btn-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
+            </div>
+            <div class="card-body">
+                <h6>Soru Tipleri:</h6>
+                <ul class="small text-muted mb-3">
+                    <li><strong>Çoktan Seçmeli:</strong> Tek doğru cevap</li>
+                    <li><strong>Doğru/Yanlış:</strong> İki seçenekli</li>
+                    <li><strong>Çoklu Seçim:</strong> Birden fazla doğru</li>
+                </ul>
+                
+                <h6>Zorluk Seviyeleri:</h6>
+                <ul class="small text-muted mb-0">
+                    <li><span class="badge bg-success">Kolay</span> Temel bilgi</li>
+                    <li><span class="badge bg-warning">Orta</span> Anlama gerektiren</li>
+                    <li><span class="badge bg-danger">Zor</span> Uygulama/analiz</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let secenekIndex = document.querySelectorAll('.secenek-row').length;
+
+function updateSecenekler() {
+    const tip = document.getElementById('soruTipi').value;
+    const container = document.getElementById('seceneklerContainer');
+    
+    if (tip === 'dogru_yanlis') {
+        // Doğru/Yanlış için sadece 2 seçenek
+        container.innerHTML = `
+            <div class="input-group mb-2 secenek-row">
+                <div class="input-group-text">
+                    <input type="radio" name="dogru_secenek" value="0" class="form-check-input mt-0 dogru-check">
+                </div>
+                <input type="text" name="secenek_metni" class="form-control" value="Doğru" readonly>
+            </div>
+            <div class="input-group mb-2 secenek-row">
+                <div class="input-group-text">
+                    <input type="radio" name="dogru_secenek" value="1" class="form-check-input mt-0 dogru-check">
+                </div>
+                <input type="text" name="secenek_metni" class="form-control" value="Yanlış" readonly>
+            </div>
+        `;
+        document.getElementById('addSecenekBtn').style.display = 'none';
+        secenekIndex = 2;
+    } else {
+        document.getElementById('addSecenekBtn').style.display = 'inline-block';
+        
+        // Input tipini güncelle
+        const inputType = tip === 'coklu_secim' ? 'checkbox' : 'radio';
+        document.querySelectorAll('.dogru-check').forEach(el => {
+            el.type = inputType;
+        });
+    }
+}
+
+function addSecenek() {
+    const container = document.getElementById('seceneklerContainer');
+    const tip = document.getElementById('soruTipi').value;
+    const inputType = tip === 'coklu_secim' ? 'checkbox' : 'radio';
+    
+    const html = `
+        <div class="input-group mb-2 secenek-row">
+            <div class="input-group-text">
+                <input type="${inputType}" name="dogru_secenek" value="${secenekIndex}" class="form-check-input mt-0 dogru-check">
+            </div>
+            <input type="text" name="secenek_metni" class="form-control" placeholder="Yeni seçenek">
+            <button type="button" class="btn btn-outline-danger" onclick="removeSecenek(this)"><i class="bi bi-x"></i></button>
+        </div>
+    `;
+    container.insertAdjacentHTML('beforeend', html);
+    secenekIndex++;
+}
+
+function removeSecenek(btn) {
+    const rows = document.querySelectorAll('.secenek-row');
+    if (rows.length <= 2) {
+        alert('En az 2 seçenek olmalı!');
+        return;
+    }
+    btn.closest('.secenek-row').remove();
+    reindexSecenekler();
+}
+
+function reindexSecenekler() {
+    document.querySelectorAll('.secenek-row').forEach((row, index) => {
+        row.querySelector('.dogru-check').value = index;
+    });
+    secenekIndex = document.querySelectorAll('.secenek-row').length;
+}
+
+// Sayfa yüklendiğinde
+document.addEventListener('DOMContentLoaded', function() {
+    updateSecenekler();
+});
+</script>
+{% endblock %}

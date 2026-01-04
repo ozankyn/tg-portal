@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Masraflarım - TG Portal{% endblock %}
+{% block page_title %}Masraflarım{% endblock %}
+
+{% block content %}
+<!-- Özet Kartları -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Bu Ay Toplam</h6>
+                        <h3 class="mb-0">₺{{ "%.2f"|format(ozet.toplam) }}</h3>
+                    </div>
+                    <div class="fs-1 text-primary opacity-25">
+                        <i class="bi bi-wallet2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Onay Bekleyen</h6>
+                        <h3 class="mb-0">₺{{ "%.2f"|format(ozet.onay_bekleyen) }}</h3>
+                    </div>
+                    <div class="fs-1 text-warning opacity-25">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Onaylanan</h6>
+                        <h3 class="mb-0">₺{{ "%.2f"|format(ozet.onaylanan) }}</h3>
+                    </div>
+                    <div class="fs-1 text-success opacity-25">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Ödenen</h6>
+                        <h3 class="mb-0">₺{{ "%.2f"|format(ozet.odenen) }}</h3>
+                    </div>
+                    <div class="fs-1 text-info opacity-25">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Sol: Hızlı Masraf Ekle -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Hızlı Masraf Ekle</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% for kategori in kategoriler[:6] %}
+                    <a href="{{ url_for('masraf.ekle') }}?kategori_id={{ kategori.id }}" 
+                       class="btn btn-outline-{{ kategori.renk }} text-start">
+                        <i class="{{ kategori.ikon }} me-2"></i>{{ kategori.ad }}
+                    </a>
+                    {% endfor %}
+                </div>
+                <hr>
+                <a href="{{ url_for('masraf.ekle') }}" class="btn btn-primary w-100">
+                    <i class="bi bi-plus-lg me-2"></i>Yeni Masraf
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sağ: Son Masraflar -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Son Masraflarım</h6>
+                <a href="{{ url_for('masraf.liste') }}" class="btn btn-sm btn-outline-primary">
+                    Tümünü Gör
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if son_masraflar %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Açıklama</th>
+                                <th>Kategori</th>
+                                <th class="text-end">Tutar</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for masraf in son_masraflar %}
+                            <tr onclick="window.location='{{ url_for('masraf.detay', id=masraf.id) }}'" style="cursor:pointer">
+                                <td>{{ masraf.masraf_tarihi.strftime('%d.%m.%Y') }}</td>
+                                <td>{{ masraf.baslik|truncate(30) }}</td>
+                                <td>
+                                    {% if masraf.kategori %}
+                                    <span class="badge bg-{{ masraf.kategori.renk }}">
+                                        <i class="{{ masraf.kategori.ikon }} me-1"></i>{{ masraf.kategori.ad }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end fw-semibold">
+                                    {% if masraf.para_birimi == 'TRY' %}₺{% elif masraf.para_birimi == 'USD' %}${% elif masraf.para_birimi == 'EUR' %}€{% endif %}{{ "%.2f"|format(masraf.toplam_tutar) }}
+                                </td>
+                                <td><span class="badge bg-{{ masraf.durum_renk }}">{{ masraf.durum_text }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="bi bi-receipt fs-1 d-block mb-2"></i>
+                    Henüz masraf kaydınız yok
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

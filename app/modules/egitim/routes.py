@@ -3,17 +3,21 @@
 TG Portal - Eğitim Routes
 Eğitim yönetimi, katılımcı takibi
 """
-
 from datetime import datetime, date
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app, send_file
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import os
+import random
 
 from app import db
 from app.models.egitim import (
     EgitimTipi, Egitim, EgitimKatilimci, EgitimMateryali,
     CalisanZorunluEgitim, PozisyonZorunluEgitim
+)
+from app.models.quiz import (
+    SoruKategorisi, Soru, SoruSecenegi,
+    Test, TestSorusu, TestSonuc, TestCevap
 )
 from app.models.ik import Calisan, Pozisyon
 from app.models.proje import Proje, HedefKadro
@@ -764,3 +768,593 @@ def materyal_sirala(id):
     
     db.session.commit()
     return jsonify({'success': True})
+
+# ============================================================
+# SORU BANKASI YÖNETİMİ
+# ============================================================
+
+@egitim_bp.route('/sorular')
+@login_required
+@permission_required('egitim.view')
+def soru_liste():
+    """Soru bankası listesi"""
+    page = request.args.get('page', 1, type=int)
+    kategori_id = request.args.get('kategori_id', type=int)
+    egitim_tipi_id = request.args.get('egitim_tipi_id', type=int)
+    zorluk = request.args.get('zorluk', type=int)
+    soru_tipi = request.args.get('soru_tipi')
+    
+    query = Soru.query.filter_by(is_deleted=False)
+    
+    if kategori_id:
+        query = query.filter(Soru.kategori_id == kategori_id)
+    if egitim_tipi_id:
+        query = query.filter(Soru.egitim_tipi_id == egitim_tipi_id)
+    if zorluk:
+        query = query.filter(Soru.zorluk == zorluk)
+    if soru_tipi:
+        query = query.filter(Soru.soru_tipi == soru_tipi)
+    
+    query = query.order_by(Soru.created_at.desc())
+    pagination = paginate_query(query, page, 20)
+    
+    kategoriler = SoruKategorisi.query.filter_by(aktif=True).order_by(SoruKategorisi.ad).all()
+    egitim_tipleri = EgitimTipi.query.filter_by(aktif=True).order_by(EgitimTipi.ad).all()
+    
+    return render_template('egitim/soru_liste.html',
+                          sorular=pagination.items,
+                          pagination=pagination,
+                          kategoriler=kategoriler,
+                          egitim_tipleri=egitim_tipleri)
+
+
+@egitim_bp.route('/soru/ekle', methods=['GET', 'POST'])
+@login_required
+@permission_required('egitim.edit')
+def soru_ekle():
+    """Yeni soru ekle"""
+    if request.method == 'POST':
+        soru = Soru(
+            soru_metni=request.form.get('soru_metni', '').strip(),
+            soru_tipi=request.form.get('soru_tipi', 'coktan_secmeli'),
+            kategori_id=int(request.form['kategori_id']) if request.form.get('kategori_id') else None,
+            egitim_tipi_id=int(request.form['egitim_tipi_id']) if request.form.get('egitim_tipi_id') else None,
+            zorluk=int(request.form.get('zorluk', 1)),
+            puan=int(request.form.get('puan', 10)),
+            aciklama=request.form.get('aciklama', '').strip() or None,
+            olusturan_id=current_user.id
+        )
+        db.session.add(soru)
+        db.session.flush()  # ID al
+        
+        # Seçenekleri ekle
+        secenek_metinleri = request.form.getlist('secenek_metni')
+        dogru_secenekler = request.form.getlist('dogru_secenek')
+        
+        for i, metin in enumerate(secenek_metinleri):
+            if metin.strip():
+                secenek = SoruSecenegi(
+                    soru_id=soru.id,
+                    secenek_metni=metin.strip(),
+                    dogru=str(i) in dogru_secenekler,
+                    sira=i
+                )
+                db.session.add(secenek)
+        
+        db.session.commit()
+        flash('Soru eklendi.', 'success')
+        return redirect(url_for('egitim.soru_liste'))
+    
+    kategoriler = SoruKategorisi.query.filter_by(aktif=True).order_by(SoruKategorisi.ad).all()
+    egitim_tipleri = EgitimTipi.query.filter_by(aktif=True).order_by(EgitimTipi.ad).all()
+    
+    return render_template('egitim/soru_form.html',
+                          soru=None,
+                          kategoriler=kategoriler,
+                          egitim_tipleri=egitim_tipleri)
+
+
+@egitim_bp.route('/soru/<int:id>/duzenle', methods=['GET', 'POST'])
+@login_required
+@permission_required('egitim.edit')
+def soru_duzenle(id):
+    """Soru düzenle"""
+    soru = Soru.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        soru.soru_metni = request.form.get('soru_metni', '').strip()
+        soru.soru_tipi = request.form.get('soru_tipi', 'coktan_secmeli')
+        soru.kategori_id = int(request.form['kategori_id']) if request.form.get('kategori_id') else None
+        soru.egitim_tipi_id = int(request.form['egitim_tipi_id']) if request.form.get('egitim_tipi_id') else None
+        soru.zorluk = int(request.form.get('zorluk', 1))
+        soru.puan = int(request.form.get('puan', 10))
+        soru.aciklama = request.form.get('aciklama', '').strip() or None
+        
+        # Mevcut seçenekleri sil
+        SoruSecenegi.query.filter_by(soru_id=soru.id).delete()
+        
+        # Yeni seçenekleri ekle
+        secenek_metinleri = request.form.getlist('secenek_metni')
+        dogru_secenekler = request.form.getlist('dogru_secenek')
+        
+        for i, metin in enumerate(secenek_metinleri):
+            if metin.strip():
+                secenek = SoruSecenegi(
+                    soru_id=soru.id,
+                    secenek_metni=metin.strip(),
+                    dogru=str(i) in dogru_secenekler,
+                    sira=i
+                )
+                db.session.add(secenek)
+        
+        db.session.commit()
+        flash('Soru güncellendi.', 'success')
+        return redirect(url_for('egitim.soru_liste'))
+    
+    kategoriler = SoruKategorisi.query.filter_by(aktif=True).order_by(SoruKategorisi.ad).all()
+    egitim_tipleri = EgitimTipi.query.filter_by(aktif=True).order_by(EgitimTipi.ad).all()
+    
+    return render_template('egitim/soru_form.html',
+                          soru=soru,
+                          kategoriler=kategoriler,
+                          egitim_tipleri=egitim_tipleri)
+
+
+@egitim_bp.route('/soru/<int:id>/sil', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def soru_sil(id):
+    """Soru sil (soft delete)"""
+    soru = Soru.query.get_or_404(id)
+    soru.is_deleted = True
+    soru.deleted_at = datetime.utcnow()
+    db.session.commit()
+    
+    flash('Soru silindi.', 'success')
+    return redirect(url_for('egitim.soru_liste'))
+
+
+# ============================================================
+# SORU KATEGORİLERİ
+# ============================================================
+
+@egitim_bp.route('/soru-kategorileri')
+@login_required
+@permission_required('egitim.view')
+def soru_kategori_liste():
+    """Soru kategorileri"""
+    kategoriler = SoruKategorisi.query.order_by(SoruKategorisi.sira, SoruKategorisi.ad).all()
+    return render_template('egitim/soru_kategori_liste.html', kategoriler=kategoriler)
+
+
+@egitim_bp.route('/soru-kategori/ekle', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def soru_kategori_ekle():
+    """Yeni kategori ekle"""
+    kategori = SoruKategorisi(
+        ad=request.form.get('ad'),
+        aciklama=request.form.get('aciklama'),
+        ust_kategori_id=int(request.form['ust_kategori_id']) if request.form.get('ust_kategori_id') else None
+    )
+    db.session.add(kategori)
+    db.session.commit()
+    
+    flash('Kategori eklendi.', 'success')
+    return redirect(url_for('egitim.soru_kategori_liste'))
+
+
+# ============================================================
+# TEST YÖNETİMİ
+# ============================================================
+
+@egitim_bp.route('/testler')
+@login_required
+@permission_required('egitim.view')
+def test_liste():
+    """Test listesi"""
+    page = request.args.get('page', 1, type=int)
+    egitim_id = request.args.get('egitim_id', type=int)
+    aktif = request.args.get('aktif')
+    
+    query = Test.query.filter_by(is_deleted=False)
+    
+    if egitim_id:
+        query = query.filter(Test.egitim_id == egitim_id)
+    if aktif == '1':
+        query = query.filter(Test.aktif == True)
+    elif aktif == '0':
+        query = query.filter(Test.aktif == False)
+    
+    query = query.order_by(Test.created_at.desc())
+    pagination = paginate_query(query, page, 20)
+    
+    return render_template('egitim/test_liste.html',
+                          testler=pagination.items,
+                          pagination=pagination)
+
+
+@egitim_bp.route('/test/ekle', methods=['GET', 'POST'])
+@login_required
+@permission_required('egitim.edit')
+def test_ekle():
+    """Yeni test oluştur"""
+    if request.method == 'POST':
+        test = Test(
+            baslik=request.form.get('baslik', '').strip(),
+            aciklama=request.form.get('aciklama', '').strip() or None,
+            egitim_id=int(request.form['egitim_id']) if request.form.get('egitim_id') else None,
+            egitim_tipi_id=int(request.form['egitim_tipi_id']) if request.form.get('egitim_tipi_id') else None,
+            sure_dakika=int(request.form['sure_dakika']) if request.form.get('sure_dakika') else None,
+            gecme_puani=int(request.form.get('gecme_puani', 70)),
+            soru_karistir=request.form.get('soru_karistir') == 'on',
+            secenek_karistir=request.form.get('secenek_karistir') == 'on',
+            sonucu_goster=request.form.get('sonucu_goster') == 'on',
+            dogru_cevaplari_goster=request.form.get('dogru_cevaplari_goster') == 'on',
+            tekrar_hak=int(request.form['tekrar_hak']) if request.form.get('tekrar_hak') else None,
+            aktif=request.form.get('aktif') == 'on',
+            olusturan_id=current_user.id
+        )
+        
+        # Tarihler
+        if request.form.get('baslangic_tarihi'):
+            test.baslangic_tarihi = datetime.strptime(request.form['baslangic_tarihi'], '%Y-%m-%dT%H:%M')
+        if request.form.get('bitis_tarihi'):
+            test.bitis_tarihi = datetime.strptime(request.form['bitis_tarihi'], '%Y-%m-%dT%H:%M')
+        
+        db.session.add(test)
+        db.session.commit()
+        
+        flash('Test oluşturuldu. Şimdi soru ekleyebilirsiniz.', 'success')
+        return redirect(url_for('egitim.test_detay', id=test.id))
+    
+    egitimler = Egitim.query.filter_by(is_deleted=False).order_by(Egitim.baslangic_tarihi.desc()).all()
+    egitim_tipleri = EgitimTipi.query.filter_by(aktif=True).order_by(EgitimTipi.ad).all()
+    
+    return render_template('egitim/test_form.html',
+                          test=None,
+                          egitimler=egitimler,
+                          egitim_tipleri=egitim_tipleri)
+
+
+@egitim_bp.route('/test/<int:id>')
+@login_required
+@permission_required('egitim.view')
+def test_detay(id):
+    """Test detay - sorular ve sonuçlar"""
+    test = Test.query.get_or_404(id)
+    
+    # Test soruları
+    test_sorulari = test.test_sorulari.order_by(TestSorusu.sira).all()
+    
+    # Eklenebilecek sorular
+    mevcut_soru_ids = [ts.soru_id for ts in test_sorulari]
+    eklenebilir_sorular = Soru.query.filter(
+        Soru.is_deleted == False,
+        Soru.aktif == True,
+        ~Soru.id.in_(mevcut_soru_ids) if mevcut_soru_ids else True
+    )
+    
+    # Eğitim tipi filtresi
+    if test.egitim_tipi_id:
+        eklenebilir_sorular = eklenebilir_sorular.filter(
+            db.or_(Soru.egitim_tipi_id == test.egitim_tipi_id, Soru.egitim_tipi_id == None)
+        )
+    
+    eklenebilir_sorular = eklenebilir_sorular.order_by(Soru.created_at.desc()).limit(100).all()
+    
+    # Son sonuçlar
+    son_sonuclar = test.sonuclar.filter_by(tamamlandi=True).order_by(TestSonuc.bitis_zamani.desc()).limit(10).all()
+    
+    return render_template('egitim/test_detay.html',
+                          test=test,
+                          test_sorulari=test_sorulari,
+                          eklenebilir_sorular=eklenebilir_sorular,
+                          son_sonuclar=son_sonuclar)
+
+
+@egitim_bp.route('/test/<int:id>/soru-ekle', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def test_soru_ekle(id):
+    """Teste soru ekle"""
+    test = Test.query.get_or_404(id)
+    
+    soru_ids = request.form.getlist('soru_ids')
+    
+    # Mevcut max sıra
+    max_sira = db.session.query(db.func.max(TestSorusu.sira)).filter_by(test_id=id).scalar() or 0
+    
+    eklenen = 0
+    for soru_id in soru_ids:
+        # Zaten var mı?
+        mevcut = TestSorusu.query.filter_by(test_id=id, soru_id=int(soru_id)).first()
+        if not mevcut:
+            max_sira += 1
+            ts = TestSorusu(
+                test_id=id,
+                soru_id=int(soru_id),
+                sira=max_sira
+            )
+            db.session.add(ts)
+            eklenen += 1
+    
+    db.session.commit()
+    flash(f'{eklenen} soru eklendi.', 'success')
+    return redirect(url_for('egitim.test_detay', id=id))
+
+
+@egitim_bp.route('/test/<int:id>/soru-cikar/<int:soru_id>', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def test_soru_cikar(id, soru_id):
+    """Testten soru çıkar"""
+    ts = TestSorusu.query.filter_by(test_id=id, soru_id=soru_id).first_or_404()
+    db.session.delete(ts)
+    db.session.commit()
+    
+    flash('Soru testten çıkarıldı.', 'success')
+    return redirect(url_for('egitim.test_detay', id=id))
+
+
+@egitim_bp.route('/test/<int:id>/soru-sirala', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def test_soru_sirala(id):
+    """Test sorularını sırala (AJAX)"""
+    siralama = request.json.get('siralama', [])
+    
+    for index, ts_id in enumerate(siralama):
+        ts = TestSorusu.query.get(ts_id)
+        if ts and ts.test_id == id:
+            ts.sira = index
+    
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+# ============================================================
+# TEST ÇÖZME
+# ============================================================
+
+@egitim_bp.route('/test/<int:id>/baslat', methods=['GET', 'POST'])
+@login_required
+def test_baslat(id):
+    """Testi başlat"""
+    test = Test.query.get_or_404(id)
+    
+    # Kullanıcının çalışan kaydını bul
+    calisan = Calisan.query.filter_by(user_id=current_user.id, is_deleted=False).first()
+    if not calisan:
+        flash('Çalışan kaydınız bulunamadı.', 'danger')
+        return redirect(url_for('egitim.test_liste'))
+    
+    # Çözebilir mi kontrol
+    cozebilir, mesaj = test.kullanici_cozebilir_mi(calisan.id)
+    if not cozebilir:
+        flash(mesaj, 'warning')
+        return redirect(url_for('egitim.test_liste'))
+    
+    # Devam eden sınav var mı?
+    devam_eden = TestSonuc.query.filter_by(
+        test_id=id,
+        calisan_id=calisan.id,
+        tamamlandi=False
+    ).first()
+    
+    if devam_eden:
+        # Süre kontrolü
+        if test.sure_dakika:
+            gecen_sure = (datetime.utcnow() - devam_eden.baslangic_zamani).total_seconds()
+            if gecen_sure > test.sure_dakika * 60:
+                # Süre dolmuş, otomatik bitir
+                devam_eden.tamamlandi = True
+                devam_eden.bitis_zamani = datetime.utcnow()
+                devam_eden.gecen_sure_saniye = int(gecen_sure)
+                _hesapla_sonuc(devam_eden)
+                db.session.commit()
+                flash('Önceki sınavınızın süresi dolmuştu, otomatik değerlendirildi.', 'info')
+            else:
+                # Devam et
+                return redirect(url_for('egitim.test_coz', sonuc_id=devam_eden.id))
+        else:
+            return redirect(url_for('egitim.test_coz', sonuc_id=devam_eden.id))
+    
+    if request.method == 'POST':
+        # Yeni sınav başlat
+        sonuc = TestSonuc(
+            test_id=id,
+            calisan_id=calisan.id,
+            toplam_puan=test.toplam_puan
+        )
+        db.session.add(sonuc)
+        db.session.commit()
+        
+        return redirect(url_for('egitim.test_coz', sonuc_id=sonuc.id))
+    
+    return render_template('egitim/test_baslat.html', test=test)
+
+
+@egitim_bp.route('/test/coz/<int:sonuc_id>', methods=['GET', 'POST'])
+@login_required
+def test_coz(sonuc_id):
+    """Test çözme sayfası"""
+    sonuc = TestSonuc.query.get_or_404(sonuc_id)
+    test = sonuc.test
+    
+    # Yetki kontrolü
+    calisan = Calisan.query.filter_by(user_id=current_user.id, is_deleted=False).first()
+    if not calisan or sonuc.calisan_id != calisan.id:
+        flash('Bu sınava erişim yetkiniz yok.', 'danger')
+        return redirect(url_for('egitim.test_liste'))
+    
+    if sonuc.tamamlandi:
+        return redirect(url_for('egitim.test_sonuc', sonuc_id=sonuc_id))
+    
+    # Süre kontrolü
+    kalan_sure = None
+    if test.sure_dakika:
+        gecen_sure = (datetime.utcnow() - sonuc.baslangic_zamani).total_seconds()
+        kalan_sure = max(0, test.sure_dakika * 60 - int(gecen_sure))
+        
+        if kalan_sure <= 0:
+            # Süre doldu
+            sonuc.tamamlandi = True
+            sonuc.bitis_zamani = datetime.utcnow()
+            sonuc.gecen_sure_saniye = test.sure_dakika * 60
+            _hesapla_sonuc(sonuc)
+            db.session.commit()
+            flash('Süre doldu! Sınavınız otomatik değerlendirildi.', 'warning')
+            return redirect(url_for('egitim.test_sonuc', sonuc_id=sonuc_id))
+    
+    # Soruları al
+    test_sorulari = test.test_sorulari.order_by(TestSorusu.sira).all()
+    
+    if test.soru_karistir:
+        random.shuffle(test_sorulari)
+    
+    # Mevcut cevapları al
+    mevcut_cevaplar = {c.soru_id: c for c in sonuc.cevaplar.all()}
+    
+    if request.method == 'POST':
+        # Cevapları kaydet
+        for ts in test_sorulari:
+            soru = ts.soru
+            cevap_key = f'soru_{soru.id}'
+            
+            if soru.soru_tipi == 'coklu_secim':
+                secilen = request.form.getlist(cevap_key)
+                secilen_ids = [int(s) for s in secilen] if secilen else None
+            else:
+                secilen = request.form.get(cevap_key)
+                secilen_ids = int(secilen) if secilen else None
+            
+            # Mevcut cevabı güncelle veya yeni oluştur
+            cevap = mevcut_cevaplar.get(soru.id)
+            if not cevap:
+                cevap = TestCevap(sonuc_id=sonuc_id, soru_id=soru.id)
+                db.session.add(cevap)
+            
+            if soru.soru_tipi == 'coklu_secim':
+                cevap.secilen_secenekler = secilen_ids
+            else:
+                cevap.secilen_secenek_id = secilen_ids
+        
+        db.session.commit()
+        
+        # Bitir mi?
+        if request.form.get('bitir'):
+            sonuc.tamamlandi = True
+            sonuc.bitis_zamani = datetime.utcnow()
+            sonuc.gecen_sure_saniye = int((sonuc.bitis_zamani - sonuc.baslangic_zamani).total_seconds())
+            _hesapla_sonuc(sonuc)
+            db.session.commit()
+            
+            flash('Sınavınız tamamlandı!', 'success')
+            return redirect(url_for('egitim.test_sonuc', sonuc_id=sonuc_id))
+        
+        flash('Cevaplarınız kaydedildi.', 'info')
+    
+    return render_template('egitim/test_coz.html',
+                          test=test,
+                          sonuc=sonuc,
+                          test_sorulari=test_sorulari,
+                          mevcut_cevaplar=mevcut_cevaplar,
+                          kalan_sure=kalan_sure)
+
+
+def _hesapla_sonuc(sonuc):
+    """Test sonucunu hesapla"""
+    test = sonuc.test
+    
+    dogru = 0
+    yanlis = 0
+    bos = 0
+    alinan_puan = 0
+    
+    for ts in test.test_sorulari.all():
+        soru = ts.soru
+        cevap = sonuc.cevaplar.filter_by(soru_id=soru.id).first()
+        
+        if not cevap or (not cevap.secilen_secenek_id and not cevap.secilen_secenekler):
+            bos += 1
+            if cevap:
+                cevap.dogru = False
+                cevap.alinan_puan = 0
+            continue
+        
+        # Doğru mu kontrol et
+        if soru.soru_tipi == 'coklu_secim':
+            # Çoklu seçim
+            dogru_ids = set(s.id for s in soru.dogru_secenekler)
+            secilen_ids = set(cevap.secilen_secenekler or [])
+            dogru_mu = dogru_ids == secilen_ids
+        else:
+            # Tekli seçim
+            dogru_secenek = soru.dogru_secenek
+            dogru_mu = dogru_secenek and cevap.secilen_secenek_id == dogru_secenek.id
+        
+        cevap.dogru = dogru_mu
+        
+        if dogru_mu:
+            dogru += 1
+            cevap.alinan_puan = ts.puan
+            alinan_puan += ts.puan
+        else:
+            yanlis += 1
+            cevap.alinan_puan = 0
+    
+    sonuc.dogru_sayisi = dogru
+    sonuc.yanlis_sayisi = yanlis
+    sonuc.bos_sayisi = bos
+    sonuc.alinan_puan = alinan_puan
+    sonuc.yuzde = round((alinan_puan / sonuc.toplam_puan * 100), 1) if sonuc.toplam_puan > 0 else 0
+    sonuc.gecti = sonuc.yuzde >= test.gecme_puani
+
+
+@egitim_bp.route('/test/sonuc/<int:sonuc_id>')
+@login_required
+def test_sonuc(sonuc_id):
+    """Test sonuç sayfası"""
+    sonuc = TestSonuc.query.get_or_404(sonuc_id)
+    test = sonuc.test
+    
+    # Yetki kontrolü
+    calisan = Calisan.query.filter_by(user_id=current_user.id, is_deleted=False).first()
+    is_owner = calisan and sonuc.calisan_id == calisan.id
+    is_admin = current_user.has_permission('egitim.edit')
+    
+    if not is_owner and not is_admin:
+        flash('Bu sonuca erişim yetkiniz yok.', 'danger')
+        return redirect(url_for('egitim.test_liste'))
+    
+    # Cevapları al
+    cevaplar = []
+    for ts in test.test_sorulari.order_by(TestSorusu.sira).all():
+        cevap = sonuc.cevaplar.filter_by(soru_id=ts.soru_id).first()
+        cevaplar.append({
+            'soru': ts.soru,
+            'cevap': cevap
+        })
+    
+    return render_template('egitim/test_sonuc.html',
+                          test=test,
+                          sonuc=sonuc,
+                          cevaplar=cevaplar)
+
+
+# ============================================================
+# EĞİTİME BAĞLI TESTLERİ GÖR
+# ============================================================
+
+@egitim_bp.route('/<int:id>/testler')
+@login_required
+@permission_required('egitim.view')
+def egitim_testleri(id):
+    """Eğitime bağlı testler"""
+    egitim = Egitim.query.get_or_404(id)
+    testler = egitim.testler.filter_by(is_deleted=False).all()
+    
+    return render_template('egitim/egitim_testleri.html',
+                          egitim=egitim,
+                          testler=testler)

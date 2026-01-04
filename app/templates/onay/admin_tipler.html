@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Onay Tipleri - TG Portal{% endblock %}
+{% block page_title %}Onay Tipleri{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h6 class="mb-0">Onay Tipleri</h6>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Kod</th>
+                        <th>Ad</th>
+                        <th>Modül</th>
+                        <th>Akış Sayısı</th>
+                        <th>Durum</th>
+                        <th class="text-end">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tip in tipler %}
+                    <tr>
+                        <td><code>{{ tip.kod }}</code></td>
+                        <td>{{ tip.ad }}</td>
+                        <td>
+                            {% if tip.modul %}
+                            <span class="badge bg-secondary">{{ tip.modul }}</span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>{{ tip.akislar.count() }}</td>
+                        <td>
+                            {% if tip.aktif %}
+                            <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Pasif</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('onay.admin_akislar', id=tip.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-diagram-3 me-1"></i> Akışlar
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info mt-4">
+    <i class="bi bi-info-circle me-2"></i>
+    Yeni onay tipi eklemek için veritabanına seed data eklenmeli.
+</div>
+{% endblock %}

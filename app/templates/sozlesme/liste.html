@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Sözleşme Listesi - TG Portal{% endblock %}
+{% block page_title %}Sözleşme Listesi{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <form method="GET" class="row g-2">
+                    <div class="col-auto">
+                        <input type="text" name="q" class="form-control form-control-sm" 
+                               placeholder="Ara..." value="{{ request.args.get('q', '') }}">
+                    </div>
+                    <div class="col-auto">
+                        <select name="durum" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">Tüm Durumlar</option>
+                            <option value="aktif" {{ 'selected' if request.args.get('durum') == 'aktif' }}>Aktif</option>
+                            <option value="sona_erdi" {{ 'selected' if request.args.get('durum') == 'sona_erdi' }}>Sona Erdi</option>
+                            <option value="askida" {{ 'selected' if request.args.get('durum') == 'askida' }}>Askıda</option>
+                            <option value="iptal" {{ 'selected' if request.args.get('durum') == 'iptal' }}>İptal</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select name="tip_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">Tüm Tipler</option>
+                            {% for t in tipler %}
+                            <option value="{{ t.id }}" {{ 'selected' if request.args.get('tip_id')|int == t.id }}>{{ t.ad }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select name="taraf_tipi" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">Tüm Taraflar</option>
+                            <option value="musteri" {{ 'selected' if request.args.get('taraf_tipi') == 'musteri' }}>Müşteri</option>
+                            <option value="tedarikci" {{ 'selected' if request.args.get('taraf_tipi') == 'tedarikci' }}>Tedarikçi</option>
+                            <option value="diger" {{ 'selected' if request.args.get('taraf_tipi') == 'diger' }}>Diğer</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{{ url_for('sozlesme.ekle') }}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-plus-lg me-1"></i>Yeni Sözleşme
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card-body p-0">
+        {% if sozlesmeler %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>No</th>
+                        <th>Sözleşme</th>
+                        <th>Tip</th>
+                        <th>Taraf</th>
+                        <th>Başlangıç</th>
+                        <th>Bitiş</th>
+                        <th>Kalan</th>
+                        <th>Tutar</th>
+                        <th>Durum</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sozlesmeler %}
+                    <tr>
+                        <td><code>{{ s.sozlesme_no or s.id }}</code></td>
+                        <td>
+                            <a href="{{ url_for('sozlesme.detay', id=s.id) }}" class="text-decoration-none fw-semibold">
+                                {{ s.baslik|truncate(30) }}
+                            </a>
+                        </td>
+                        <td><span class="badge bg-secondary">{{ s.tip.ad if s.tip else '-' }}</span></td>
+                        <td>
+                            {{ s.taraf_adi|truncate(20) }}
+                            <small class="text-muted d-block">
+                                {% if s.musteri_id %}Müşteri{% elif s.tedarikci_id %}Tedarikçi{% else %}Diğer{% endif %}
+                            </small>
+                        </td>
+                        <td>{{ s.baslangic_tarihi.strftime('%d.%m.%Y') }}</td>
+                        <td>{{ s.bitis_tarihi.strftime('%d.%m.%Y') }}</td>
+                        <td>
+                            {% if s.durum == 'aktif' %}
+                            <span class="badge bg-{{ s.kalan_gun_renk }}">
+                                {% if s.kalan_gun < 0 %}
+                                {{ s.kalan_gun|abs }} gün geçti
+                                {% else %}
+                                {{ s.kalan_gun }} gün
+                                {% endif %}
+                            </span>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.tutar %}
+                            {% if s.para_birimi == 'TRY' %}₺{% elif s.para_birimi == 'USD' %}${% elif s.para_birimi == 'EUR' %}€{% endif %}{{ "%.2f"|format(s.tutar) }}
+                            {% else %}-{% endif %}
+                        </td>
+                        <td><span class="badge bg-{{ s.durum_renk }}">{{ s.durum_text }}</span></td>
+                        <td>
+                            <a href="{{ url_for('sozlesme.detay', id=s.id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        {% if pagination.pages > 1 %}
+        <div class="card-footer">
+            <nav>
+                <ul class="pagination pagination-sm mb-0 justify-content-center">
+                    {% for p in pagination.iter_pages() %}
+                    {% if p %}
+                    <li class="page-item {{ 'active' if p == pagination.page }}">
+                        <a class="page-link" href="{{ url_for('sozlesme.liste', page=p, durum=request.args.get('durum'), tip_id=request.args.get('tip_id'), taraf_tipi=request.args.get('taraf_tipi'), q=request.args.get('q')) }}">{{ p }}</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-file-earmark-text fs-1 d-block mb-2"></i>
+            Sözleşme bulunamadı
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

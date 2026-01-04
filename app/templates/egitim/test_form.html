@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}{% if test %}Test Düzenle{% else %}Yeni Test{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if test %}Test Düzenle{% else %}Yeni Test Oluştur{% endif %}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Test Başlığı *</label>
+                            <input type="text" name="baslik" class="form-control" required
+                                   value="{{ test.baslik if test else '' }}"
+                                   placeholder="Örn: ISG Temel Eğitimi Sınavı">
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Açıklama</label>
+                            <textarea name="aciklama" class="form-control" rows="2">{{ test.aciklama if test else '' }}</textarea>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Eğitime Bağla</label>
+                            <select name="egitim_id" class="form-select">
+                                <option value="">Bağımsız Test</option>
+                                {% for egitim in egitimler %}
+                                <option value="{{ egitim.id }}" {{ 'selected' if test and test.egitim_id == egitim.id }}>
+                                    {{ egitim.baslik }} ({{ egitim.baslangic_tarihi.strftime('%d.%m.%Y') }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Eğitim Tipi</label>
+                            <select name="egitim_tipi_id" class="form-select">
+                                <option value="">Genel</option>
+                                {% for tip in egitim_tipleri %}
+                                <option value="{{ tip.id }}" {{ 'selected' if test and test.egitim_tipi_id == tip.id }}>{{ tip.ad }}</option>
+                                {% endfor %}
+                            </select>
+                            <small class="text-muted">Bu tipe ait sorular filtrelenir</small>
+                        </div>
+                        
+                        <hr class="my-4">
+                        <h6 class="text-muted text-uppercase small">Sınav Ayarları</h6>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Süre (dakika)</label>
+                            <input type="number" name="sure_dakika" class="form-control" min="1"
+                                   value="{{ test.sure_dakika if test else '' }}"
+                                   placeholder="Boş = Süresiz">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Geçme Puanı (%)</label>
+                            <input type="number" name="gecme_puani" class="form-control" min="0" max="100"
+                                   value="{{ test.gecme_puani if test else 70 }}">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Tekrar Hakkı</label>
+                            <input type="number" name="tekrar_hak" class="form-control" min="1"
+                                   value="{{ test.tekrar_hak if test else 3 }}"
+                                   placeholder="Boş = Sınırsız">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Başlangıç Tarihi</label>
+                            <input type="datetime-local" name="baslangic_tarihi" class="form-control"
+                                   value="{{ test.baslangic_tarihi.strftime('%Y-%m-%dT%H:%M') if test and test.baslangic_tarihi else '' }}">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Bitiş Tarihi</label>
+                            <input type="datetime-local" name="bitis_tarihi" class="form-control"
+                                   value="{{ test.bitis_tarihi.strftime('%Y-%m-%dT%H:%M') if test and test.bitis_tarihi else '' }}">
+                        </div>
+                        
+                        <hr class="my-4">
+                        <h6 class="text-muted text-uppercase small">Görüntüleme Ayarları</h6>
+                        
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" name="soru_karistir" class="form-check-input" id="soruKaristir"
+                                       {{ 'checked' if not test or test.soru_karistir }}>
+                                <label class="form-check-label" for="soruKaristir">Soruları karıştır</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" name="secenek_karistir" class="form-check-input" id="secenekKaristir"
+                                       {{ 'checked' if not test or test.secenek_karistir }}>
+                                <label class="form-check-label" for="secenekKaristir">Seçenekleri karıştır</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" name="sonucu_goster" class="form-check-input" id="sonucuGoster"
+                                       {{ 'checked' if not test or test.sonucu_goster }}>
+                                <label class="form-check-label" for="sonucuGoster">Sonucu göster</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input type="checkbox" name="dogru_cevaplari_goster" class="form-check-input" id="dogruCevap"
+                                       {{ 'checked' if test and test.dogru_cevaplari_goster }}>
+                                <label class="form-check-label" for="dogruCevap">Doğru cevapları göster</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input type="checkbox" name="aktif" class="form-check-input" id="aktif"
+                                       {{ 'checked' if not test or test.aktif }}>
+                                <label class="form-check-label" for="aktif">Test aktif (çözülebilir)</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> {{ 'Güncelle' if test else 'Oluştur' }}
+                        </button>
+                        <a href="{{ url_for('egitim.test_liste') }}" class="btn btn-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
+            </div>
+            <div class="card-body small text-muted">
+                <p>Test oluşturduktan sonra soru bankasından soru ekleyebilirsiniz.</p>
+                <p><strong>Eğitime Bağlama:</strong> Belirli bir eğitime bağlı testler, o eğitimin katılımcıları tarafından çözülebilir.</p>
+                <p><strong>Tekrar Hakkı:</strong> Başarısız olunduğunda kaç kez tekrar denenebileceğini belirler.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

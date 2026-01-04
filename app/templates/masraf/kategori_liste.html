@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}Masraf Kategorileri - TG Portal{% endblock %}
+{% block page_title %}Masraf Kategorileri{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Kategoriler</h6>
+        <a href="{{ url_for('masraf.kategori_ekle') }}" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Yeni Kategori
+        </a>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Kategori</th>
+                        <th>Kod</th>
+                        <th>Fatura Zorunlu</th>
+                        <th>Günlük Limit</th>
+                        <th>Aylık Limit</th>
+                        <th>Durum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for kategori in kategoriler %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-{{ kategori.renk }} me-2">
+                                <i class="{{ kategori.ikon }}"></i>
+                            </span>
+                            {{ kategori.ad }}
+                        </td>
+                        <td><code>{{ kategori.kod or '-' }}</code></td>
+                        <td>
+                            {% if kategori.fatura_zorunlu %}
+                            <span class="text-success"><i class="bi bi-check-circle-fill"></i> Evet</span>
+                            {% else %}
+                            <span class="text-muted">Hayır</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ '₺%.2f'|format(kategori.gunluk_limit) if kategori.gunluk_limit else '-' }}</td>
+                        <td>{{ '₺%.2f'|format(kategori.aylik_limit) if kategori.aylik_limit else '-' }}</td>
+                        <td>
+                            {% if kategori.aktif %}
+                            <span class="badge bg-success">Aktif</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Pasif</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

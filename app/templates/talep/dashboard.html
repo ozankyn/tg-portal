@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Destek Talepleri - TG Portal{% endblock %}
+{% block page_title %}Destek Talepleri{% endblock %}
+
+{% block content %}
+<!-- İstatistikler -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Açık Talepler</h6>
+                        <h3 class="mb-0">{{ stats.acik }}</h3>
+                    </div>
+                    <div class="fs-1 text-danger opacity-25">
+                        <i class="bi bi-exclamation-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Çözülen</h6>
+                        <h3 class="mb-0">{{ stats.cozuldu }}</h3>
+                    </div>
+                    <div class="fs-1 text-success opacity-25">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Toplam</h6>
+                        <h3 class="mb-0">{{ stats.toplam }}</h3>
+                    </div>
+                    <div class="fs-1 text-primary opacity-25">
+                        <i class="bi bi-ticket"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Bugün</h6>
+                        <h3 class="mb-0">{{ stats.bugun }}</h3>
+                    </div>
+                    <div class="fs-1 text-info opacity-25">
+                        <i class="bi bi-calendar-day"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Sol: Hızlı Talep + Kategoriler -->
+    <div class="col-lg-4">
+        <!-- Yeni Talep -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-plus-circle me-2"></i>Yeni Talep Oluştur</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% for kat in kategoriler %}
+                    <a href="{{ url_for('talep.yeni') }}?kategori={{ kat.id }}" class="btn btn-outline-{{ kat.renk }}">
+                        <i class="{{ kat.ikon }} me-2"></i>{{ kat.ad }}
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        {% if is_destek %}
+        <!-- Atanmamış Talepler (Destek için) -->
+        {% if atanmamis %}
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">
+                <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Atanmamış ({{ atanmamis|length }})</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for t in atanmamis[:5] %}
+                    <a href="{{ url_for('talep.detay', id=t.id) }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ t.konu|truncate(25) }}</strong>
+                            <span class="badge bg-{{ t.oncelik_renk }}">{{ t.oncelik_text }}</span>
+                        </div>
+                        <small class="text-muted">{{ t.talep_no }} - {{ t.olusturan.full_name }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Bana Atananlar -->
+        {% if bana_atanan %}
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="bi bi-person-check me-2"></i>Bana Atanan ({{ bana_atanan|length }})</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for t in bana_atanan[:5] %}
+                    <a href="{{ url_for('talep.detay', id=t.id) }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between">
+                            <strong>{{ t.konu|truncate(25) }}</strong>
+                            <span class="badge bg-{{ t.durum_renk }}">{{ t.durum_text }}</span>
+                        </div>
+                        <small class="text-muted">{{ t.talep_no }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+    
+    <!-- Sağ: Son Talepler -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>{{ 'Son Talepler' if is_destek else 'Taleplerim' }}</h6>
+                <a href="{{ url_for('talep.liste') }}" class="btn btn-sm btn-outline-primary">Tümü</a>
+            </div>
+            <div class="card-body p-0">
+                {% if son_talepler %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>No</th>
+                                <th>Konu</th>
+                                <th>Kategori</th>
+                                {% if is_destek %}<th>Talep Eden</th>{% endif %}
+                                <th>Öncelik</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in son_talepler %}
+                            <tr onclick="window.location='{{ url_for('talep.detay', id=t.id) }}'" style="cursor:pointer">
+                                <td><code>{{ t.talep_no }}</code></td>
+                                <td>{{ t.konu|truncate(30) }}</td>
+                                <td><span class="badge bg-{{ t.kategori.renk }}">{{ t.kategori.ad }}</span></td>
+                                {% if is_destek %}<td>{{ t.olusturan.full_name }}</td>{% endif %}
+                                <td><span class="badge bg-{{ t.oncelik_renk }}">{{ t.oncelik_text }}</span></td>
+                                <td><span class="badge bg-{{ t.durum_renk }}">{{ t.durum_text }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4 mb-0">Henüz talep yok</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

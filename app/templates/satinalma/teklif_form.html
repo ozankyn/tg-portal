@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Teklif Ekle - TG Portal{% endblock %}
+{% block page_title %}Teklif Ekle{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="alert alert-info">
+            <strong>Talep:</strong> {{ talep.talep_no }} - {{ talep.baslik }}
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Tedarikçi *</label>
+                            <select name="tedarikci_id" class="form-select" required>
+                                <option value="">Seçin...</option>
+                                {% for t in tedarikciler %}
+                                <option value="{{ t.id }}">{{ t.unvan }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Teklif No</label>
+                            <input type="text" name="teklif_no" class="form-control" placeholder="Tedarikçi teklif numarası">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Teklif Tarihi</label>
+                            <input type="date" name="teklif_tarihi" class="form-control" value="{{ today }}">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Geçerlilik Tarihi</label>
+                            <input type="date" name="gecerlilik_tarihi" class="form-control">
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label class="form-label">Teslimat Süresi</label>
+                            <input type="text" name="teslimat_suresi" class="form-control" placeholder="Örn: 3-5 iş günü">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Toplam Tutar *</label>
+                            <div class="input-group">
+                                <input type="text" name="toplam_tutar" class="form-control" required placeholder="0.00">
+                                <select name="para_birimi" class="form-select" style="max-width: 80px;">
+                                    <option value="TRY">₺</option>
+                                    <option value="USD">$</option>
+                                    <option value="EUR">€</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Ödeme Koşulu</label>
+                            <input type="text" name="odeme_kosulu" class="form-control" placeholder="Örn: 30 gün vadeli">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                <input type="checkbox" name="kdv_dahil" class="form-check-input" id="kdvDahil" checked>
+                                <label class="form-check-label" for="kdvDahil">KDV Dahil</label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Notlar</label>
+                            <textarea name="notlar" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-2"></i>Kaydet
+                        </button>
+                        <a href="{{ url_for('satinalma.talep_detay', id=talep.id) }}" class="btn btn-outline-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

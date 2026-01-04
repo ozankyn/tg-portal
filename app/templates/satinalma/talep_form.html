@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Talep Düzenle' if talep else 'Yeni Satın Alma Talebi' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'Talep Düzenle' if talep else 'Yeni Satın Alma Talebi' }}{% endblock %}
+
+{% block content %}
+<form method="POST" id="talepForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="row g-4">
+        <!-- Sol: Ana Bilgiler -->
+        <div class="col-lg-8">
+            <!-- Temel Bilgiler -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Talep Bilgileri</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">Talep Başlığı *</label>
+                            <input type="text" name="baslik" class="form-control" required
+                                   value="{{ talep.baslik if talep else '' }}"
+                                   placeholder="Örn: Ofis için dizüstü bilgisayar alımı">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Kategori *</label>
+                            <select name="kategori_id" class="form-select" required>
+                                <option value="">Seçin...</option>
+                                {% for k in kategoriler %}
+                                <option value="{{ k.id }}" {{ 'selected' if talep and talep.kategori_id == k.id }}>{{ k.ad }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label class="form-label">Öncelik</label>
+                            <select name="oncelik" class="form-select">
+                                <option value="dusuk" {{ 'selected' if talep and talep.oncelik == 'dusuk' }}>Düşük</option>
+                                <option value="normal" {{ 'selected' if not talep or talep.oncelik == 'normal' }}>Normal</option>
+                                <option value="yuksek" {{ 'selected' if talep and talep.oncelik == 'yuksek' }}>Yüksek</option>
+                                <option value="acil" {{ 'selected' if talep and talep.oncelik == 'acil' }}>Acil</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Açıklama</label>
+                            <textarea name="aciklama" class="form-control" rows="2"
+                                      placeholder="Talep detayları...">{{ talep.aciklama if talep else '' }}</textarea>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label">Gerekçe</label>
+                            <textarea name="gerekce" class="form-control" rows="2"
+                                      placeholder="Neden bu alıma ihtiyaç var?">{{ talep.gerekce if talep else '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kalemler -->
+            <div class="card mt-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">Talep Kalemleri</h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="kalemEkle()">
+                        <i class="bi bi-plus-lg me-1"></i>Kalem Ekle
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table" id="kalemlerTable">
+                            <thead>
+                                <tr>
+                                    <th style="width:40%">Ürün/Hizmet Adı *</th>
+                                    <th style="width:15%">Miktar</th>
+                                    <th style="width:15%">Birim</th>
+                                    <th style="width:20%">Tah. Birim Fiyat</th>
+                                    <th style="width:10%"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="kalemlerBody">
+                                {% if talep and talep.kalemler.count() > 0 %}
+                                {% for kalem in talep.kalemler %}
+                                <tr>
+                                    <td><input type="text" name="urun_adi[]" class="form-control form-control-sm" value="{{ kalem.urun_adi }}" required></td>
+                                    <td><input type="number" name="miktar[]" class="form-control form-control-sm" value="{{ kalem.miktar }}" step="0.01" min="0.01"></td>
+                                    <td>
+                                        <select name="birim[]" class="form-select form-select-sm">
+                                            <option value="Adet" {{ 'selected' if kalem.birim == 'Adet' }}>Adet</option>
+                                            <option value="Kutu" {{ 'selected' if kalem.birim == 'Kutu' }}>Kutu</option>
+                                            <option value="Paket" {{ 'selected' if kalem.birim == 'Paket' }}>Paket</option>
+                                            <option value="Kg" {{ 'selected' if kalem.birim == 'Kg' }}>Kg</option>
+                                            <option value="Lt" {{ 'selected' if kalem.birim == 'Lt' }}>Lt</option>
+                                            <option value="Mt" {{ 'selected' if kalem.birim == 'Mt' }}>Mt</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" name="birim_fiyat[]" class="form-control form-control-sm" value="{{ kalem.birim_fiyat or '' }}" placeholder="₺"></td>
+                                    <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="kalemSil(this)"><i class="bi bi-trash"></i></button></td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td><input type="text" name="urun_adi[]" class="form-control form-control-sm" placeholder="Ürün adı" required></td>
+                                    <td><input type="number" name="miktar[]" class="form-control form-control-sm" value="1" step="0.01" min="0.01"></td>
+                                    <td>
+                                        <select name="birim[]" class="form-select form-select-sm">
+                                            <option value="Adet">Adet</option>
+                                            <option value="Kutu">Kutu</option>
+                                            <option value="Paket">Paket</option>
+                                            <option value="Kg">Kg</option>
+                                            <option value="Lt">Lt</option>
+                                            <option value="Mt">Mt</option>
+                                        </select>
+                                    </td>
+                                    <td><input type="text" name="birim_fiyat[]" class="form-control form-control-sm" placeholder="₺"></td>
+                                    <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="kalemSil(this)"><i class="bi bi-trash"></i></button></td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sağ: Ek Bilgiler -->
+        <div class="col-lg-4">
+            <!-- Tarih ve Bütçe -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Tarih & Bütçe</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">İstenen Tarih</label>
+                        <input type="date" name="istenen_tarih" class="form-control"
+                               value="{{ talep.istenen_tarih.strftime('%Y-%m-%d') if talep and talep.istenen_tarih else '' }}">
+                        <div class="form-text">Ne zamana kadar temin edilmeli?</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Tahmini Toplam Bütçe</label>
+                        <div class="input-group">
+                            <input type="text" name="tahmini_tutar" class="form-control"
+                                   value="{{ talep.tahmini_tutar if talep else '' }}" placeholder="0.00">
+                            <select name="para_birimi" class="form-select" style="max-width: 80px;">
+                                <option value="TRY" {{ 'selected' if not talep or talep.para_birimi == 'TRY' }}>₺</option>
+                                <option value="USD" {{ 'selected' if talep and talep.para_birimi == 'USD' }}>$</option>
+                                <option value="EUR" {{ 'selected' if talep and talep.para_birimi == 'EUR' }}>€</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Departman</label>
+                        <input type="text" name="departman" class="form-control"
+                               value="{{ talep.departman if talep else '' }}" placeholder="Talep eden departman">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Proje (Opsiyonel)</label>
+                        <select name="proje_id" class="form-select">
+                            <option value="">Seçin...</option>
+                            {% for p in projeler %}
+                            <option value="{{ p.id }}" {{ 'selected' if talep and talep.proje_id == p.id }}>{{ p.ad }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Kaydet -->
+            <div class="card mt-4">
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-2"></i>{{ 'Güncelle' if talep else 'Kaydet' }}
+                        </button>
+                        <a href="{{ url_for('satinalma.dashboard') }}" class="btn btn-outline-secondary">
+                            İptal
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function kalemEkle() {
+    var row = `<tr>
+        <td><input type="text" name="urun_adi[]" class="form-control form-control-sm" placeholder="Ürün adı" required></td>
+        <td><input type="number" name="miktar[]" class="form-control form-control-sm" value="1" step="0.01" min="0.01"></td>
+        <td>
+            <select name="birim[]" class="form-select form-select-sm">
+                <option value="Adet">Adet</option>
+                <option value="Kutu">Kutu</option>
+                <option value="Paket">Paket</option>
+                <option value="Kg">Kg</option>
+                <option value="Lt">Lt</option>
+                <option value="Mt">Mt</option>
+            </select>
+        </td>
+        <td><input type="text" name="birim_fiyat[]" class="form-control form-control-sm" placeholder="₺"></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger" onclick="kalemSil(this)"><i class="bi bi-trash"></i></button></td>
+    </tr>`;
+    $('#kalemlerBody').append(row);
+}
+
+function kalemSil(btn) {
+    if ($('#kalemlerBody tr').length > 1) {
+        $(btn).closest('tr').remove();
+    }
+}
+</script>
+{% endblock %}

@@ -46,6 +46,48 @@ from app.models.egitim import (
     PozisyonZorunluEgitim
 )
 
+# Quiz models
+from app.models.quiz import (
+    SoruKategorisi,
+    Soru,
+    SoruSecenegi,
+    Test,
+    TestSorusu,
+    TestSonuc,
+    TestCevap
+)
+
+# Onay models
+from app.models.onay import (
+    OnayTipi, OnayAkisi, OnayAdimi, 
+    OnayTalebi, OnayKaydi, YetkiDevri,
+    OnayServisi
+)
+
+from app.models.masraf import (
+    MasrafKategorisi, Masraf, MasrafKalemi, MasrafAvans,
+    get_calisan_masraf_ozeti
+)
+
+from app.models.sozlesme import (
+    SozlesmeTipi, Sozlesme, SozlesmeEk,
+    get_yaklasan_sozlesmeler, get_sona_eren_sozlesmeler
+)
+
+from app.models.satinalma import (
+    SatinAlmaKategorisi, SatinAlmaTalebi, TalepKalemi,
+    SatinAlmaTeklif, TeklifKalemi, SatinAlmaSiparisi, SiparisTeslimat
+)
+
+from app.models.talep import (
+    TalepKategorisi, Talep, TalepYorum,
+    get_acik_talepler, get_talep_istatistikleri
+)
+
+from app.models.ayarlar import (
+    SistemAyar, AktiviteLog, varsayilan_ayarlari_yukle
+)
+
 __all__ = [
     # Base
     'TimestampMixin',
@@ -86,4 +128,12 @@ __all__ = [
     'EgitimMateryali',
     'CalisanZorunluEgitim',
     'PozisyonZorunluEgitim',
+    # Quiz
+    'SoruKategorisi',
+    'Soru',
+    'SoruSecenegi',
+    'Test',
+    'TestSorusu',
+    'TestSonuc',
+    'TestCevap',
 ]

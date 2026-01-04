@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}Sınav Sonucu - {{ test.baslik }}{% endblock %}
+{% block page_title %}Sınav Sonucu{% endblock %}
+
+{% block extra_css %}
+<style>
+    .result-card {
+        text-align: center;
+        padding: 2rem;
+    }
+    .result-icon {
+        font-size: 5rem;
+        margin-bottom: 1rem;
+    }
+    .result-passed .result-icon { color: #198754; }
+    .result-failed .result-icon { color: #dc3545; }
+    .progress-lg {
+        height: 25px;
+        border-radius: 12px;
+    }
+    .soru-result {
+        border-left: 4px solid;
+        margin-bottom: 1rem;
+    }
+    .soru-result.correct { border-color: #198754; }
+    .soru-result.wrong { border-color: #dc3545; }
+    .soru-result.empty { border-color: #6c757d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mb-4">
+    <div class="col-lg-8">
+        <!-- Ana Sonuç Kartı -->
+        <div class="card {{ 'result-passed' if sonuc.gecti else 'result-failed' }}">
+            <div class="card-body result-card">
+                {% if sonuc.gecti %}
+                <div class="result-icon"><i class="bi bi-trophy-fill"></i></div>
+                <h2 class="text-success mb-3">Tebrikler! Sınavı Geçtiniz</h2>
+                {% else %}
+                <div class="result-icon"><i class="bi bi-x-circle-fill"></i></div>
+                <h2 class="text-danger mb-3">Maalesef Geçemediniz</h2>
+                {% endif %}
+                
+                <h1 class="display-1 fw-bold mb-4">%{{ sonuc.yuzde }}</h1>
+                
+                <div class="progress progress-lg mb-4">
+                    <div class="progress-bar {{ 'bg-success' if sonuc.gecti else 'bg-danger' }}" 
+                         style="width: {{ sonuc.yuzde }}%"></div>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="fs-3 fw-bold text-success">{{ sonuc.dogru_sayisi }}</div>
+                        <div class="text-muted">Doğru</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fs-3 fw-bold text-danger">{{ sonuc.yanlis_sayisi }}</div>
+                        <div class="text-muted">Yanlış</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="fs-3 fw-bold text-secondary">{{ sonuc.bos_sayisi }}</div>
+                        <div class="text-muted">Boş</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Detaylı İstatistikler -->
+    <div class="col-lg-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>İstatistikler</h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Toplam Puan</span>
+                    <strong>{{ sonuc.alinan_puan }} / {{ sonuc.toplam_puan }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Geçme Puanı</span>
+                    <strong>%{{ test.gecme_puani }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Süre</span>
+                    <strong>{{ sonuc.sure_text }}</strong>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Başlangıç</span>
+                    <span>{{ sonuc.baslangic_zamani.strftime('%d.%m.%Y %H:%M') }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Bitiş</span>
+                    <span>{{ sonuc.bitis_zamani.strftime('%d.%m.%Y %H:%M') if sonuc.bitis_zamani else '-' }}</span>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="d-grid gap-2">
+            {% if not sonuc.gecti and test.tekrar_hak %}
+                {% set cozum_sayisi = test.sonuclar.filter_by(calisan_id=sonuc.calisan_id, tamamlandi=True).count() %}
+                {% if cozum_sayisi < test.tekrar_hak %}
+                <a href="{{ url_for('egitim.test_baslat', id=test.id) }}" class="btn btn-primary">
+                    <i class="bi bi-arrow-repeat me-1"></i> Tekrar Dene ({{ test.tekrar_hak - cozum_sayisi }} hak)
+                </a>
+                {% endif %}
+            {% endif %}
+            
+            {% if test.egitim_id %}
+            <a href="{{ url_for('egitim.detay', id=test.egitim_id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Eğitime Dön
+            </a>
+            {% else %}
+            <a href="{{ url_for('egitim.test_liste') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Testlere Dön
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Soru Bazlı Sonuçlar -->
+    <div class="col-lg-8">
+        {% if test.sonucu_goster %}
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-list-check me-2"></i>Soru Detayları</h6>
+            </div>
+            <div class="card-body">
+                {% for item in cevaplar %}
+                {% set soru = item.soru %}
+                {% set cevap = item.cevap %}
+                <div class="soru-result {{ 'correct' if cevap and cevap.dogru else ('wrong' if cevap and cevap.secilen_secenek_id else 'empty') }} p-3 bg-light rounded">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <strong>Soru {{ loop.index }}</strong>
+                        {% if cevap and cevap.dogru %}
+                        <span class="badge bg-success"><i class="bi bi-check"></i> Doğru (+{{ cevap.alinan_puan }})</span>
+                        {% elif cevap and cevap.secilen_secenek_id %}
+                        <span class="badge bg-danger"><i class="bi bi-x"></i> Yanlış</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Boş</span>
+                        {% endif %}
+                    </div>
+                    
+                    <p class="mb-2">{{ soru.soru_metni }}</p>
+                    
+                    {% if test.dogru_cevaplari_goster %}
+                    <div class="small">
+                        {% if cevap and cevap.secilen_secenek %}
+                        <div class="{{ 'text-success' if cevap.dogru else 'text-danger' }}">
+                            <strong>Cevabınız:</strong> {{ cevap.secilen_secenek.secenek_metni }}
+                        </div>
+                        {% endif %}
+                        
+                        {% if not cevap or not cevap.dogru %}
+                        <div class="text-success">
+                            <strong>Doğru Cevap:</strong> {{ soru.dogru_secenek.secenek_metni if soru.dogru_secenek else '-' }}
+                        </div>
+                        {% endif %}
+                        
+                        {% if soru.aciklama %}
+                        <div class="text-muted mt-2">
+                            <i class="bi bi-info-circle me-1"></i> {{ soru.aciklama }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center text-muted py-5">
+                <i class="bi bi-eye-slash fs-1 d-block mb-3"></i>
+                <p>Soru detayları bu test için gösterilmiyor.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

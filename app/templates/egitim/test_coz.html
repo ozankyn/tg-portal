@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}{{ test.baslik }} - Sınav{% endblock %}
+{% block page_title %}{{ test.baslik }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .timer-box {
+        position: sticky;
+        top: 1rem;
+        z-index: 100;
+    }
+    .timer-box.warning {
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+    .soru-card {
+        transition: all 0.3s ease;
+    }
+    .soru-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    .secenek-label {
+        display: block;
+        padding: 1rem;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .secenek-label:hover {
+        border-color: #0d6efd;
+        background-color: #f8f9fa;
+    }
+    .secenek-input:checked + .secenek-label {
+        border-color: #0d6efd;
+        background-color: #e7f1ff;
+    }
+    .secenek-input {
+        display: none;
+    }
+    .soru-nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .soru-nav-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+    }
+    .soru-nav-btn.answered {
+        background-color: #198754 !important;
+        color: white !important;
+    }
+    .soru-nav-btn.current {
+        border: 2px solid #0d6efd;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="POST" id="testForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="row">
+        <!-- Sol: Sorular -->
+        <div class="col-lg-9">
+            {% for ts in test_sorulari %}
+            {% set soru = ts.soru %}
+            {% set mevcut = mevcut_cevaplar.get(soru.id) %}
+            <div class="card soru-card mb-4" id="soru-{{ loop.index }}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>
+                        <strong>Soru {{ loop.index }}</strong>
+                        <span class="badge bg-{{ soru.zorluk_renk }} ms-2">{{ soru.zorluk_text }}</span>
+                    </span>
+                    <span class="badge bg-secondary">{{ ts.puan }} puan</span>
+                </div>
+                <div class="card-body">
+                    <p class="lead mb-4">{{ soru.soru_metni }}</p>
+                    
+                    {% if soru.gorsel_url %}
+                    <img src="{{ soru.gorsel_url }}" class="img-fluid mb-4 rounded" alt="Soru görseli">
+                    {% endif %}
+                    
+                    <div class="secenekler">
+                        {% set secenekler = soru.secenekler.all() %}
+                        {% if test.secenek_karistir %}
+                            {% set secenekler = secenekler|shuffle %}
+                        {% endif %}
+                        
+                        {% for secenek in secenekler %}
+                        <div class="mb-2">
+                            {% if soru.soru_tipi == 'coklu_secim' %}
+                            <input type="checkbox" name="soru_{{ soru.id }}" value="{{ secenek.id }}" 
+                                   class="secenek-input" id="secenek_{{ secenek.id }}"
+                                   data-soru="{{ loop.parent.loop.index }}"
+                                   {{ 'checked' if mevcut and mevcut.secilen_secenekler and secenek.id in mevcut.secilen_secenekler }}>
+                            {% else %}
+                            <input type="radio" name="soru_{{ soru.id }}" value="{{ secenek.id }}" 
+                                   class="secenek-input" id="secenek_{{ secenek.id }}"
+                                   data-soru="{{ loop.parent.loop.index }}"
+                                   {{ 'checked' if mevcut and mevcut.secilen_secenek_id == secenek.id }}>
+                            {% endif %}
+                            <label for="secenek_{{ secenek.id }}" class="secenek-label">
+                                <span class="fw-bold me-2">{{ ['A', 'B', 'C', 'D', 'E', 'F'][loop.index0] }})</span>
+                                {{ secenek.secenek_metni }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Alt Butonlar -->
+            <div class="card">
+                <div class="card-body d-flex justify-content-between">
+                    <button type="submit" name="kaydet" class="btn btn-outline-primary">
+                        <i class="bi bi-save me-1"></i> Kaydet (Devam Et)
+                    </button>
+                    <button type="button" class="btn btn-success btn-lg" onclick="confirmFinish()">
+                        <i class="bi bi-check-circle me-1"></i> Sınavı Bitir
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sağ: Timer ve Navigasyon -->
+        <div class="col-lg-3">
+            <!-- Timer -->
+            {% if kalan_sure is not none %}
+            <div class="card timer-box mb-4" id="timerBox">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Kalan Süre</h6>
+                    <div class="display-4 fw-bold" id="timer">
+                        <span id="dakika">{{ (kalan_sure // 60)|int }}</span>:<span id="saniye">{{ '%02d'|format(kalan_sure % 60) }}</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Soru Navigasyonu -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">Sorular</h6>
+                </div>
+                <div class="card-body">
+                    <div class="soru-nav">
+                        {% for ts in test_sorulari %}
+                        {% set mevcut = mevcut_cevaplar.get(ts.soru_id) %}
+                        <a href="#soru-{{ loop.index }}" 
+                           class="btn btn-outline-secondary soru-nav-btn {{ 'answered' if mevcut and (mevcut.secilen_secenek_id or mevcut.secilen_secenekler) }}"
+                           id="nav-{{ loop.index }}">
+                            {{ loop.index }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="small">
+                        <div class="d-flex align-items-center mb-1">
+                            <span class="badge bg-success me-2">&nbsp;</span>
+                            Cevaplandı
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-outline-secondary border me-2">&nbsp;</span>
+                            Boş
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="text-center">
+                        <strong>{{ test_sorulari|length }}</strong> soru<br>
+                        <strong>{{ test.toplam_puan }}</strong> toplam puan<br>
+                        <strong>%{{ test.gecme_puani }}</strong> geçme
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <input type="hidden" name="bitir" id="bitirInput" value="">
+</form>
+
+<!-- Bitir Onay Modal -->
+<div class="modal fade" id="finishModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sınavı Bitir</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Sınavı bitirmek istediğinize emin misiniz?</p>
+                <div class="alert alert-warning" id="bosUyari" style="display:none;">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <strong id="bosSayi">0</strong> soru boş bırakıldı!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Devam Et</button>
+                <button type="button" class="btn btn-success" onclick="finishTest()">Sınavı Bitir</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Timer
+{% if kalan_sure is not none %}
+let kalanSure = {{ kalan_sure }};
+const timerInterval = setInterval(function() {
+    kalanSure--;
+    
+    if (kalanSure <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('bitirInput').value = '1';
+        document.getElementById('testForm').submit();
+        return;
+    }
+    
+    const dakika = Math.floor(kalanSure / 60);
+    const saniye = kalanSure % 60;
+    
+    document.getElementById('dakika').textContent = dakika;
+    document.getElementById('saniye').textContent = saniye.toString().padStart(2, '0');
+    
+    // Son 5 dakika uyarısı
+    if (kalanSure <= 300) {
+        document.getElementById('timerBox').classList.add('warning');
+        document.getElementById('timer').classList.add('text-danger');
+    }
+}, 1000);
+{% endif %}
+
+// Seçenek değiştiğinde navigasyonu güncelle
+document.querySelectorAll('.secenek-input').forEach(input => {
+    input.addEventListener('change', function() {
+        const soruNo = this.dataset.soru;
+        const navBtn = document.getElementById('nav-' + soruNo);
+        
+        // Bu soru için herhangi bir seçim var mı kontrol et
+        const soruName = this.name;
+        const anyChecked = document.querySelector('input[name="' + soruName + '"]:checked');
+        
+        if (anyChecked) {
+            navBtn.classList.add('answered');
+        } else {
+            navBtn.classList.remove('answered');
+        }
+    });
+});
+
+// Bitir onay
+function confirmFinish() {
+    // Boş soru sayısı
+    let bosSayi = 0;
+    {% for ts in test_sorulari %}
+    if (!document.querySelector('input[name="soru_{{ ts.soru_id }}"]:checked')) {
+        bosSayi++;
+    }
+    {% endfor %}
+    
+    if (bosSayi > 0) {
+        document.getElementById('bosSayi').textContent = bosSayi;
+        document.getElementById('bosUyari').style.display = 'block';
+    } else {
+        document.getElementById('bosUyari').style.display = 'none';
+    }
+    
+    new bootstrap.Modal(document.getElementById('finishModal')).show();
+}
+
+function finishTest() {
+    document.getElementById('bitirInput').value = '1';
+    document.getElementById('testForm').submit();
+}
+
+// Sayfa kapatılırken uyarı
+window.addEventListener('beforeunload', function(e) {
+    e.preventDefault();
+    e.returnValue = '';
+});
+
+// Form submit edilirken uyarıyı kaldır
+document.getElementById('testForm').addEventListener('submit', function() {
+    window.removeEventListener('beforeunload', function() {});
+});
+</script>
+{% endblock %}

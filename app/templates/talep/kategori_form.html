@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Kategori Düzenle' if kategori else 'Yeni Kategori' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'Kategori Düzenle' if kategori else 'Yeni Kategori' }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Kategori Adı *</label>
+                        <input type="text" name="ad" class="form-control" required
+                               value="{{ kategori.ad if kategori else '' }}"
+                               placeholder="Örn: IT Destek">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Kod</label>
+                                <input type="text" name="kod" class="form-control"
+                                       value="{{ kategori.kod if kategori else '' }}"
+                                       placeholder="Örn: IT">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Sıra</label>
+                                <input type="number" name="sira" class="form-control"
+                                       value="{{ kategori.sira if kategori else 0 }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea name="aciklama" class="form-control" rows="2">{{ kategori.aciklama if kategori else '' }}</textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">İkon</label>
+                                <input type="text" name="ikon" class="form-control"
+                                       value="{{ kategori.ikon if kategori else 'bi-ticket' }}"
+                                       placeholder="bi-ticket">
+                                <div class="form-text">Bootstrap Icons</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Renk</label>
+                                <select name="renk" class="form-select">
+                                    <option value="primary" {{ 'selected' if kategori and kategori.renk == 'primary' }}>Primary (Mavi)</option>
+                                    <option value="secondary" {{ 'selected' if kategori and kategori.renk == 'secondary' }}>Secondary (Gri)</option>
+                                    <option value="success" {{ 'selected' if kategori and kategori.renk == 'success' }}>Success (Yeşil)</option>
+                                    <option value="danger" {{ 'selected' if kategori and kategori.renk == 'danger' }}>Danger (Kırmızı)</option>
+                                    <option value="warning" {{ 'selected' if kategori and kategori.renk == 'warning' }}>Warning (Sarı)</option>
+                                    <option value="info" {{ 'selected' if kategori and kategori.renk == 'info' }}>Info (Açık Mavi)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Varsayılan Atanan</label>
+                        <select name="varsayilan_atanan_id" class="form-select">
+                            <option value="">Seçilmedi</option>
+                            {% for u in kullanicilar %}
+                            <option value="{{ u.id }}" {{ 'selected' if kategori and kategori.varsayilan_atanan_id == u.id }}>{{ u.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Bu kategorideki talepler otomatik olarak bu kişiye atanır</div>
+                    </div>
+                    
+                    <hr>
+                    <h6 class="mb-3">SLA (Service Level Agreement)</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">İlk Yanıt Süresi (saat)</label>
+                                <input type="number" name="sla_cevap" class="form-control" min="1"
+                                       value="{{ kategori.sla_cevap if kategori else 4 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Çözüm Süresi (saat)</label>
+                                <input type="number" name="sla_cozum" class="form-control" min="1"
+                                       value="{{ kategori.sla_cozum if kategori else 24 }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-2"></i>{{ 'Güncelle' if kategori else 'Kaydet' }}
+                        </button>
+                        <a href="{{ url_for('talep.kategori_liste') }}" class="btn btn-outline-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

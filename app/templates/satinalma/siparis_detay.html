@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}{{ siparis.siparis_no }} - TG Portal{% endblock %}
+{% block page_title %}Sipariş Detayı{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <!-- Sol: Sipariş Bilgileri -->
+    <div class="col-lg-8">
+        <!-- Başlık -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <code class="fs-5">{{ siparis.siparis_no }}</code>
+                </div>
+                <span class="badge bg-{{ siparis.durum_renk }} fs-6">{{ siparis.durum_text }}</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="text-muted small">Tedarikçi</label>
+                        <p class="mb-0 fw-semibold">{{ siparis.tedarikci.unvan }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="text-muted small">Toplam Tutar</label>
+                        <p class="mb-0 fs-4 fw-bold text-primary">₺{{ "%.2f"|format(siparis.toplam_tutar) }}</p>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <label class="text-muted small">Sipariş Tarihi</label>
+                        <p class="mb-0">{{ siparis.siparis_tarihi.strftime('%d.%m.%Y') }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small">Beklenen Teslimat</label>
+                        <p class="mb-0">{{ siparis.beklenen_teslimat.strftime('%d.%m.%Y') if siparis.beklenen_teslimat else '-' }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="text-muted small">Talep</label>
+                        <p class="mb-0">
+                            <a href="{{ url_for('satinalma.talep_detay', id=siparis.talep_id) }}">
+                                {{ siparis.talep.talep_no }}
+                            </a>
+                        </p>
+                    </div>
+                    
+                    {% if siparis.notlar %}
+                    <div class="col-12">
+                        <label class="text-muted small">Notlar</label>
+                        <p class="mb-0">{{ siparis.notlar }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Teslimatlar -->
+        <div class="card mt-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Teslimat Kayıtları</h6>
+                {% if current_user.has_permission('satinalma.admin') and siparis.durum in ['siparis_verildi', 'kismen_teslim'] %}
+                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#teslimatModal">
+                    <i class="bi bi-plus-lg me-1"></i>Teslimat Kaydet
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                {% if teslimatlar %}
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Teslim Alan</th>
+                                <th>İrsaliye No</th>
+                                <th>Notlar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in teslimatlar %}
+                            <tr>
+                                <td>{{ t.teslimat_tarihi.strftime('%d.%m.%Y') }}</td>
+                                <td>{{ t.teslim_alan.full_name if t.teslim_alan else '-' }}</td>
+                                <td>{{ t.irsaliye_no or '-' }}</td>
+                                <td>{{ t.notlar or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-3 mb-0">Henüz teslimat kaydı yok</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sağ: İşlemler -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">İşlemler</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('satinalma.siparis_liste') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>Listeye Dön
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Teklif Bilgisi -->
+        {% if siparis.teklif %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">Seçilen Teklif</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-1"><strong>Teklif No:</strong> {{ siparis.teklif.teklif_no or '-' }}</p>
+                <p class="mb-1"><strong>Tutar:</strong> ₺{{ "%.2f"|format(siparis.teklif.toplam_tutar) }}</p>
+                <p class="mb-1"><strong>Teslimat:</strong> {{ siparis.teklif.teslimat_suresi or '-' }}</p>
+                <p class="mb-0"><strong>Ödeme:</strong> {{ siparis.teklif.odeme_kosulu or '-' }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Meta -->
+        <div class="card mt-4">
+            <div class="card-body small text-muted">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Oluşturulma:</span>
+                    <span>{{ siparis.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Teslimat Modal -->
+<div class="modal fade" id="teslimatModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('satinalma.teslimat_kaydet', id=siparis.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Teslimat Kaydet</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Teslimat Tarihi *</label>
+                        <input type="date" name="teslimat_tarihi" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">İrsaliye No</label>
+                        <input type="text" name="irsaliye_no" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Notlar</label>
+                        <textarea name="notlar" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" name="tam_teslimat" class="form-check-input" id="tamTeslimat">
+                        <label class="form-check-label" for="tamTeslimat">
+                            <strong>Tam teslimat yapıldı</strong>
+                            <small class="text-muted d-block">Sipariş tamamlandı olarak işaretlensin</small>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-success">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

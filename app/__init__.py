@@ -68,6 +68,12 @@ def create_app(config_name=None):
     from app.modules.api.routes import api_bp
     from app.modules.basvuru.routes import basvuru_bp
     from app.modules.kariyer.routes import kariyer_bp
+    from app.modules.masraf.routes import masraf_bp
+    from app.modules.sozlesme.routes import sozlesme_bp
+    from app.modules.satinalma.routes import satinalma_bp
+    from app.modules.talep.routes import talep_bp
+    from app.modules.rapor.routes import rapor_bp
+    from app.modules.ayarlar.routes import ayarlar_bp
     
     app.register_blueprint(core_bp)
     app.register_blueprint(ik_bp, url_prefix='/ik')
@@ -79,7 +85,15 @@ def create_app(config_name=None):
     app.register_blueprint(kariyer_bp, url_prefix='/kariyer')
     from app.modules.egitim.routes import egitim_bp
     app.register_blueprint(egitim_bp, url_prefix="/egitim")
-    
+    app.register_blueprint(masraf_bp, url_prefix="/masraf")
+    app.register_blueprint(sozlesme_bp, url_prefix="/sozlesme")
+    app.register_blueprint(satinalma_bp, url_prefix="/satinalma")
+    app.register_blueprint(talep_bp, url_prefix="/talep")
+    app.register_blueprint(rapor_bp, url_prefix="/rapor")
+    app.register_blueprint(ayarlar_bp, url_prefix="/ayarlar")
+
+    from app.modules.onay.routes import onay_bp
+    app.register_blueprint(onay_bp, url_prefix="/onay")
     
     # Context processors
     @app.context_processor

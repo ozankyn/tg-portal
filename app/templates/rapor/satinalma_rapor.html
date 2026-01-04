@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Satın Alma Raporları - TG Portal{% endblock %}
+{% block page_title %}Satın Alma Raporları{% endblock %}
+
+{% block content %}
+<!-- Filtre -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-2 align-items-end">
+            <div class="col-auto">
+                <label class="form-label">Yıl</label>
+                <select name="yil" class="form-select form-select-sm">
+                    {% for y in range(2024, 2027) %}
+                    <option value="{{ y }}" {{ 'selected' if y == yil }}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-sm">Filtrele</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- İstatistikler -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ stats.toplam_talep }}</h2>
+                <small>Toplam Talep</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ stats.toplam_siparis }}</h2>
+                <small>Sipariş</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <h3 class="mb-0">₺{{ "%.0f"|format(stats.toplam_harcama) }}</h3>
+                <small>Toplam Harcama</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-dark">
+            <div class="card-body text-center">
+                <h2 class="mb-0">{{ stats.bekleyen }}</h2>
+                <small>Onay Bekleyen</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Kategori Dağılımı -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Kategori Dağılımı</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="kategoriChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Kategori Tablosu -->
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-table me-2"></i>Kategori Detay</h6>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Kategori</th>
+                            <th class="text-end">Talep Sayısı</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ad, adet in kategori_dagilim %}
+                        <tr>
+                            <td>{{ ad }}</td>
+                            <td class="text-end">{{ adet }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Aylık Harcama -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Aylık Harcama ({{ yil }})</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="harcamaChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="{{ url_for('rapor.dashboard') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Geri
+    </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Kategori Chart
+new Chart(document.getElementById('kategoriChart'), {
+    type: 'doughnut',
+    data: {
+        labels: [{% for ad, adet in kategori_dagilim %}'{{ ad }}'{% if not loop.last %},{% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for ad, adet in kategori_dagilim %}{{ adet }}{% if not loop.last %},{% endif %}{% endfor %}],
+            backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0', '#6f42c1']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'right' } }
+    }
+});
+
+// Aylık Harcama Chart
+const aylar = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
+const harcamaData = {};
+{% for ay, toplam in aylik_harcama %}
+harcamaData[{{ ay }}] = {{ toplam or 0 }};
+{% endfor %}
+
+new Chart(document.getElementById('harcamaChart'), {
+    type: 'bar',
+    data: {
+        labels: aylar,
+        datasets: [{
+            label: 'Harcama (₺)',
+            data: aylar.map((_, i) => harcamaData[i+1] || 0),
+            backgroundColor: '#198754'
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true } }
+    }
+});
+</script>
+{% endblock %}
