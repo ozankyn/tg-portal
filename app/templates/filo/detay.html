@@ -4,6 +4,25 @@
 {% block page_title %}{{ arac.plaka }} - {{ arac.marka }} {{ arac.model }}{% endblock %}
 
 {% block content %}
+<!-- İşlem Butonları -->
+<div class="btn-group mb-3">
+    <a href="{{ url_for('filo.arac_teslim', id=arac.id) }}" class="btn btn-success">
+        <i class="bi bi-box-arrow-right me-1"></i>Teslim Et
+    </a>
+    <a href="{{ url_for('filo.arac_iade', id=arac.id) }}" class="btn btn-warning">
+        <i class="bi bi-box-arrow-in-left me-1"></i>İade Al
+    </a>
+    <a href="{{ url_for('filo.kaza_ekle', id=arac.id) }}" class="btn btn-danger">
+        <i class="bi bi-exclamation-triangle me-1"></i>Kaza Bildir
+    </a>
+    <a href="{{ url_for('filo.ikame_ekle', id=arac.id) }}" class="btn btn-info">
+        <i class="bi bi-arrow-repeat me-1"></i>İkame Araç
+    </a>
+    <a href="{{ url_for('filo.yakit_ekle', id=arac.id) }}" class="btn btn-secondary">
+        <i class="bi bi-fuel-pump me-1"></i>Yakıt Ekle
+    </a>
+</div>
+
 <div class="row">
     <div class="col-lg-8">
         <!-- Araç Bilgileri -->

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Kaza Bildirimi - {{ arac.plaka }} - TG Portal{% endblock %}
+{% block page_title %}Kaza Bildirimi{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Önemli:</strong> En az 1 fotoğraf yüklemeniz zorunludur. Kaza kaydı filo yöneticisi onayına sunulacaktır.
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h6 class="mb-0">
+                    <i class="bi bi-car-front me-2"></i>
+                    {{ arac.plaka }} - {{ arac.marka }} {{ arac.model }}
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Kaza Tarihi/Saati *</label>
+                                <input type="datetime-local" name="tarih" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Sürücü</label>
+                                <select name="surucu_id" class="form-select">
+                                    <option value="">Seçin...</option>
+                                    {% for calisan in calisanlar %}
+                                    <option value="{{ calisan.id }}" {{ 'selected' if arac.atanan_calisan_id == calisan.id }}>
+                                        {{ calisan.full_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Kaza Konumu</label>
+                        <input type="text" name="konum" class="form-control" placeholder="Adres veya konum bilgisi">
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Kusur Oranı (%)</label>
+                                <input type="number" name="kusur_orani" class="form-control" min="0" max="100">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Tahmini Hasar Tutarı (₺)</label>
+                                <input type="number" name="hasar_tutari" class="form-control" step="0.01">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label">Sigorta Karşıladı (₺)</label>
+                                <input type="number" name="sigorta_karsiladi" class="form-control" step="0.01">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Tutanak No</label>
+                        <input type="text" name="tutanak_no" class="form-control">
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="yaralanma" class="form-check-input" id="yaralanma">
+                        <label class="form-check-label text-danger" for="yaralanma">
+                            <strong>Yaralanma var</strong>
+                        </label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Kaza Açıklaması *</label>
+                        <textarea name="aciklama" class="form-control" rows="4" required
+                                  placeholder="Kaza nasıl meydana geldi? Detaylı açıklayın..."></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Fotoğraflar * <span class="text-danger">(En az 1 fotoğraf zorunlu)</span></label>
+                        <input type="file" name="fotograflar" class="form-control" multiple accept="image/*" required>
+                        <div class="form-text">Araç hasar fotoğrafları, kaza yeri, tutanak vb.</div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="bi bi-exclamation-circle me-1"></i>Kaza Bildir
+                        </button>
+                        <a href="{{ url_for('filo.detay', id=arac.id) }}" class="btn btn-outline-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Yakıt İçe Aktar - TG Portal{% endblock %}
+{% block page_title %}Yakıt Verilerini İçe Aktar{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-file-earmark-excel me-2"></i>Excel Dosyası Yükle</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-info-circle me-2"></i>Dosya Formatı</h6>
+                        <p class="mb-2">Excel dosyanız aşağıdaki kolonları içermelidir:</p>
+                        <ul class="mb-0">
+                            <li><strong>PLAKA</strong> - Araç plakası (zorunlu)</li>
+                            <li><strong>İŞLEM TARİHİ</strong> - Yakıt alım tarihi (zorunlu)</li>
+                            <li><strong>MİKTAR</strong> - Litre cinsinden miktar (zorunlu)</li>
+                            <li><strong>TUTAR</strong> - Toplam tutar TL (zorunlu)</li>
+                            <li><strong>YAKIT TİPİ</strong> - Motorin/Kurşunsuz (opsiyonel)</li>
+                            <li><strong>İSTASYON</strong> - İstasyon adı (opsiyonel)</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label">Excel Dosyası *</label>
+                        <input type="file" name="excel_file" class="form-control" 
+                               accept=".xlsx,.xls" required>
+                        <div class="form-text">Sadece .xlsx veya .xls dosyaları kabul edilir.</div>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Önemli:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Sistemde kayıtlı olmayan plakalar atlanacaktır.</li>
+                            <li>Aynı araç, tarih ve miktar ile daha önce eklenmiş kayıtlar tekrar eklenmez.</li>
+                            <li>Birim fiyat otomatik hesaplanır (Tutar / Miktar).</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload me-1"></i>Yükle ve İçe Aktar
+                        </button>
+                        <a href="{{ url_for('filo.yakit_liste') }}" class="btn btn-outline-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-table me-2"></i>Örnek Excel Formatı</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-secondary">
+                            <tr>
+                                <th>PLAKA</th>
+                                <th>YAKIT TİPİ</th>
+                                <th>İSTASYON</th>
+                                <th>İŞLEM TARİHİ</th>
+                                <th>MİKTAR</th>
+                                <th>TUTAR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>34ABC123</td>
+                                <td>MOTORİN</td>
+                                <td>Shell - İstanbul</td>
+                                <td>31/12/2025 14:30</td>
+                                <td>45,50 LT</td>
+                                <td>2.456,70 TL</td>
+                            </tr>
+                            <tr>
+                                <td>34XYZ789</td>
+                                <td>KURŞUNSUZ</td>
+                                <td>BP - Ankara</td>
+                                <td>30/12/2025 09:15</td>
+                                <td>38,20 LT</td>
+                                <td>1.985,40 TL</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

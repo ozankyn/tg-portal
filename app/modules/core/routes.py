@@ -4,7 +4,7 @@ TG Portal - Core Routes (Auth, Admin, Dashboard)
 """
 
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models.core import User, Role, Permission, AuditLog
@@ -278,3 +278,15 @@ def not_found(e):
 @core_bp.app_errorhandler(500)
 def server_error(e):
     return render_template('core/500.html'), 500
+
+
+# ==================== UPLOADS ====================
+from flask import send_from_directory
+
+@core_bp.route('/uploads/<path:filename>')
+@login_required
+def uploaded_file(filename):
+    """Upload dosyalarını serve et"""
+    import os
+    upload_folder = os.path.join(current_app.root_path, '..', 'uploads')
+    return send_from_directory(upload_folder, filename)

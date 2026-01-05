@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}İkame Araç Detay - {{ ikame.plaka }} - TG Portal{% endblock %}
+{% block page_title %}İkame Araç Detayı{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="bi bi-arrow-repeat me-2"></i>
+                    {{ ikame.plaka }} - {{ ikame.marka or '' }} {{ ikame.model or '' }}
+                </h6>
+                <span class="badge bg-{{ 'success' if ikame.durum == 'aktif' else 'secondary' }}">
+                    {{ ikame.durum|upper }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr><td class="text-muted">Asıl Araç</td><td>
+                                <a href="{{ url_for('filo.detay', id=ikame.asil_arac_id) }}">
+                                    {{ ikame.asil_arac.plaka }}
+                                </a>
+                            </td></tr>
+                            <tr><td class="text-muted">Neden</td><td><span class="badge bg-primary">{{ ikame.neden|upper }}</span></td></tr>
+                            <tr><td class="text-muted">Tedarikçi</td><td>{{ ikame.tedarikci.ad if ikame.tedarikci else '-' }}</td></tr>
+                            <tr><td class="text-muted">Günlük Ücret</td><td>{{ "%.2f"|format(ikame.gunluk_ucret) if ikame.gunluk_ucret else '-' }} ₺</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr><td class="text-muted">Başlangıç</td><td>{{ ikame.baslangic_tarihi.strftime('%d.%m.%Y') }}</td></tr>
+                            <tr><td class="text-muted">Bitiş</td><td>{{ ikame.bitis_tarihi.strftime('%d.%m.%Y') if ikame.bitis_tarihi else 'Devam Ediyor' }}</td></tr>
+                            <tr><td class="text-muted">Başlangıç KM</td><td>{{ ikame.baslangic_km or '-' }}</td></tr>
+                            <tr><td class="text-muted">Bitiş KM</td><td>{{ ikame.bitis_km or '-' }}</td></tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <h4 class="mb-0">{{ ikame.aktif_gun_sayisi }}</h4>
+                        <small class="text-muted">Gün</small>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h4 class="mb-0">{{ "%.2f"|format(ikame.toplam_maliyet) }} ₺</h4>
+                        <small class="text-muted">Toplam Maliyet</small>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h4 class="mb-0">{{ (ikame.bitis_km - ikame.baslangic_km) if ikame.bitis_km and ikame.baslangic_km else '-' }}</h4>
+                        <small class="text-muted">Kullanılan KM</small>
+                    </div>
+                </div>
+                
+                {% if ikame.ilgili_kaza %}
+                <hr>
+                <h6><i class="bi bi-exclamation-triangle me-2"></i>İlgili Kaza</h6>
+                <a href="{{ url_for('filo.kaza_detay', id=ikame.ilgili_kaza_id) }}">
+                    {{ ikame.ilgili_kaza.tarih.strftime('%d.%m.%Y') }} - {{ ikame.ilgili_kaza.konum or 'Detay için tıklayın' }}
+                </a>
+                {% endif %}
+                
+                {% if ikame.notlar %}
+                <hr>
+                <h6><i class="bi bi-sticky me-2"></i>Notlar</h6>
+                <p>{{ ikame.notlar }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        {% if ikame.durum == 'aktif' %}
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-box-arrow-in-left me-2"></i>İade Et</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('filo.ikame_iade', id=ikame.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Bitiş Tarihi *</label>
+                        <input type="date" name="bitis_tarihi" class="form-control" required
+                               value="{{ today().strftime('%Y-%m-%d') if today else '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Bitiş KM</label>
+                        <input type="number" name="bitis_km" class="form-control">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-warning w-100">
+                        <i class="bi bi-check-lg me-1"></i>İade Et
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ url_for('filo.ikame_liste') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Listeye Dön
+    </a>
+</div>
+{% endblock %}

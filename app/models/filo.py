@@ -243,8 +243,17 @@ class Kaza(db.Model, TimestampMixin, AuditMixin):
     # Durum
     durum = db.Column(db.String(50), default='acik')  # acik, kapandi, dava
     
+    # Onay sistemi
+    onay_durumu = db.Column(db.String(20), default='bekliyor')  # bekliyor, onaylandi, reddedildi
+    onaylayan_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    onay_tarihi = db.Column(db.DateTime)
+    red_nedeni = db.Column(db.Text)
+    
+    # İlişkiler
     arac = db.relationship('Arac', backref='kazalar')
     surucu = db.relationship('Calisan', backref='kazalar')
+    onaylayan = db.relationship('User', foreign_keys=[onaylayan_id], backref='onayladigi_kazalar')
+    fotograflar = db.relationship('KazaFotograf', backref='kaza', lazy='dynamic', cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<Kaza {self.arac_id} {self.tarih}>'

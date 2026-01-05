@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Araç {{ 'Teslim' if teslim.islem_tipi == 'teslim' else 'İade' }} Formu - {{ teslim.arac.plaka }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; padding: 20px; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .header h1 { font-size: 18px; margin-bottom: 5px; }
+        .header p { color: #666; }
+        .section { margin-bottom: 15px; }
+        .section-title { font-weight: bold; background: #f0f0f0; padding: 5px 10px; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        table.info td { padding: 5px; vertical-align: top; }
+        table.info td:first-child { width: 120px; color: #666; }
+        table.bordered { border: 1px solid #ccc; }
+        table.bordered th, table.bordered td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        table.bordered th { background: #f5f5f5; }
+        .checkbox { display: inline-block; width: 15px; height: 15px; border: 1px solid #333; margin-right: 5px; vertical-align: middle; text-align: center; line-height: 13px; }
+        .checkbox.checked::after { content: "✓"; }
+        .aksesuar-item { display: inline-block; width: 48%; margin-bottom: 5px; }
+        .signature-box { border: 1px solid #ccc; height: 100px; margin-top: 5px; }
+        .signature-img { max-height: 90px; max-width: 100%; }
+        .row { display: flex; gap: 20px; }
+        .col { flex: 1; }
+        .footer { margin-top: 30px; text-align: center; font-size: 10px; color: #999; }
+        @media print {
+            body { padding: 10px; }
+            .no-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="margin-bottom: 20px; text-align: center;">
+        <button onclick="window.print()" style="padding: 10px 30px; font-size: 14px; cursor: pointer;">
+            🖨️ Yazdır
+        </button>
+    </div>
+    
+    <div class="header">
+        <h1>ARAÇ {{ 'TESLİM' if teslim.islem_tipi == 'teslim' else 'İADE' }} FORMU</h1>
+        <p>Team Guerilla Marketing - Filo Yönetimi</p>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">ARAÇ BİLGİLERİ</div>
+        <div class="row">
+            <div class="col">
+                <table class="info">
+                    <tr><td>Plaka:</td><td><strong>{{ teslim.arac.plaka }}</strong></td></tr>
+                    <tr><td>Marka/Model:</td><td>{{ teslim.arac.marka }} {{ teslim.arac.model }}</td></tr>
+                    <tr><td>Renk:</td><td>{{ teslim.arac.renk or '-' }}</td></tr>
+                </table>
+            </div>
+            <div class="col">
+                <table class="info">
+                    <tr><td>Tarih:</td><td><strong>{{ teslim.tarih.strftime('%d.%m.%Y %H:%M') }}</strong></td></tr>
+                    <tr><td>Kilometre:</td><td><strong>{{ teslim.km }} km</strong></td></tr>
+                    <tr><td>Yakıt Durumu:</td><td>{{ teslim.yakit_durumu_display }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">TESLİM BİLGİLERİ</div>
+        <div class="row">
+            <div class="col">
+                <table class="info">
+                    <tr><td>Teslim Eden:</td><td>
+                        {{ teslim.teslim_eden_calisan.full_name if teslim.teslim_eden_calisan else (teslim.teslim_eden.full_name if teslim.teslim_eden else '-') }}
+                    </td></tr>
+                </table>
+            </div>
+            <div class="col">
+                <table class="info">
+                    <tr><td>Teslim Alan:</td><td>
+                        {{ teslim.teslim_alan_calisan.full_name if teslim.teslim_alan_calisan else (teslim.teslim_alan.full_name if teslim.teslim_alan else '-') }}
+                    </td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">AKSESUARLAR</div>
+        <div>
+            {% for key, label in aksesuarlar.items() %}
+            <span class="aksesuar-item">
+                <span class="checkbox {{ 'checked' if key in (teslim.aksesuarlar or []) }}"></span>
+                {{ label }}
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="section">
+        <div class="section-title">HASAR DURUMU</div>
+        <table class="bordered">
+            <tr>
+                <th style="width: 150px;">Mevcut Hasarlar</th>
+                <td>{{ teslim.mevcut_hasarlar or 'Hasar bulunmamaktadır.' }}</td>
+            </tr>
+            {% if teslim.yeni_hasar %}
+            <tr>
+                <th style="background: #ffe0e0;">Yeni Hasar</th>
+                <td style="background: #ffe0e0;">{{ teslim.yeni_hasar_aciklama or 'Belirtilmedi' }}</td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+    
+    {% if teslim.notlar %}
+    <div class="section">
+        <div class="section-title">NOTLAR</div>
+        <p>{{ teslim.notlar }}</p>
+    </div>
+    {% endif %}
+    
+    <div class="section">
+        <div class="section-title">İMZALAR</div>
+        <div class="row">
+            <div class="col">
+                <p><strong>Teslim Eden</strong></p>
+                <div class="signature-box">
+                    {% if teslim.imza_teslim_eden %}
+                    <img src="{{ teslim.imza_teslim_eden }}" class="signature-img" alt="İmza">
+                    {% endif %}
+                </div>
+                <p style="margin-top: 5px;">Ad Soyad: _________________________</p>
+                <p>Tarih: {{ teslim.tarih.strftime('%d.%m.%Y') }}</p>
+            </div>
+            <div class="col">
+                <p><strong>Teslim Alan</strong></p>
+                <div class="signature-box">
+                    {% if teslim.imza_teslim_alan %}
+                    <img src="{{ teslim.imza_teslim_alan }}" class="signature-img" alt="İmza">
+                    {% endif %}
+                </div>
+                <p style="margin-top: 5px;">Ad Soyad: _________________________</p>
+                <p>Tarih: {{ teslim.tarih.strftime('%d.%m.%Y') }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>Bu belge {{ teslim.created_at.strftime('%d.%m.%Y %H:%M') }} tarihinde oluşturulmuştur. | Form No: TSL-{{ teslim.id }}</p>
+    </div>
+</body>
+</html>

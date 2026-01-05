@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Kaza Kayıtları - TG Portal{% endblock %}
+{% block page_title %}Kaza Kayıtları{% endblock %}
+
+{% block content %}
+{% if bekleyen_sayisi > 0 %}
+<div class="alert alert-warning">
+    <i class="bi bi-hourglass-split me-2"></i>
+    <strong>{{ bekleyen_sayisi }}</strong> kaza kaydı onay bekliyor.
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <form method="GET" class="row g-2">
+            <div class="col-auto">
+                <select name="arac_id" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tüm Araçlar</option>
+                    {% for arac in araclar %}
+                    <option value="{{ arac.id }}" {{ 'selected' if request.args.get('arac_id')|int == arac.id }}>
+                        {{ arac.plaka }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <select name="onay_durumu" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tüm Onay Durumları</option>
+                    <option value="bekliyor" {{ 'selected' if request.args.get('onay_durumu') == 'bekliyor' }}>Bekliyor</option>
+                    <option value="onaylandi" {{ 'selected' if request.args.get('onay_durumu') == 'onaylandi' }}>Onaylandı</option>
+                    <option value="reddedildi" {{ 'selected' if request.args.get('onay_durumu') == 'reddedildi' }}>Reddedildi</option>
+                </select>
+            </div>
+            <div class="col-auto">
+                <select name="durum" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">Tüm Durumlar</option>
+                    <option value="acik" {{ 'selected' if request.args.get('durum') == 'acik' }}>Açık</option>
+                    <option value="kapandi" {{ 'selected' if request.args.get('durum') == 'kapandi' }}>Kapandı</option>
+                    <option value="dava" {{ 'selected' if request.args.get('durum') == 'dava' }}>Dava</option>
+                </select>
+            </div>
+        </form>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Araç</th>
+                        <th>Sürücü</th>
+                        <th>Konum</th>
+                        <th>Kusur</th>
+                        <th>Hasar</th>
+                        <th>Onay</th>
+                        <th>Durum</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for kaza in kazalar %}
+                    <tr>
+                        <td>{{ kaza.tarih.strftime('%d.%m.%Y') }}</td>
+                        <td>
+                            <a href="{{ url_for('filo.detay', id=kaza.arac_id) }}">
+                                {{ kaza.arac.plaka }}
+                            </a>
+                        </td>
+                        <td>{{ kaza.surucu.full_name if kaza.surucu else '-' }}</td>
+                        <td><small>{{ kaza.konum[:30] + '...' if kaza.konum and kaza.konum|length > 30 else kaza.konum or '-' }}</small></td>
+                        <td>%{{ kaza.kusur_orani or 0 }}</td>
+                        <td>{{ "%.0f"|format(kaza.hasar_tutari) if kaza.hasar_tutari else '-' }} ₺</td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if kaza.onay_durumu == 'onaylandi' else ('danger' if kaza.onay_durumu == 'reddedildi' else 'warning') }}">
+                                {{ kaza.onay_durumu }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 'success' if kaza.durum == 'kapandi' else ('warning' if kaza.durum == 'dava' else 'primary') }}">
+                                {{ kaza.durum }}
+                            </span>
+                            {% if kaza.yaralanma %}
+                            <span class="badge bg-danger">YARALANMA</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('filo.kaza_detay', id=kaza.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">Kaza kaydı bulunamadı</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if pagination.pages > 1 %}
+<nav class="mt-3">
+    <ul class="pagination pagination-sm justify-content-center">
+        {% for p in pagination.iter_pages() %}
+        {% if p %}
+        <li class="page-item {{ 'active' if p == pagination.page }}">
+            <a class="page-link" href="{{ url_for('filo.kaza_liste', page=p, **request.args) }}">{{ p }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

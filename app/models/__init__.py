@@ -88,6 +88,10 @@ from app.models.ayarlar import (
     SistemAyar, AktiviteLog, varsayilan_ayarlari_yukle
 )
 
+from app.models.filo_update import (
+    AracTeslim, KazaFotograf, IkameArac, VARSAYILAN_AKSESUARLAR
+)
+
 __all__ = [
     # Base
     'TimestampMixin',

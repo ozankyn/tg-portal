@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}Araç {{ 'Teslim' if islem_tipi == 'teslim' else 'İade' }} - {{ arac.plaka }} - TG Portal{% endblock %}
+{% block page_title %}Araç {{ 'Teslim' if islem_tipi == 'teslim' else 'İade' }} Formu{% endblock %}
+
+{% block extra_css %}
+<style>
+    .signature-pad {
+        border: 1px solid #dee2e6;
+        border-radius: 0.375rem;
+        background: #fff;
+    }
+    .aksesuar-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<form method="POST" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="row">
+        <!-- Sol: Araç Bilgileri -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header bg-{{ 'success' if islem_tipi == 'teslim' else 'warning' }} text-white">
+                    <h6 class="mb-0">
+                        <i class="bi bi-{{ 'box-arrow-right' if islem_tipi == 'teslim' else 'box-arrow-in-left' }} me-2"></i>
+                        Araç Bilgileri
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm table-borderless mb-0">
+                        <tr>
+                            <td class="text-muted">Plaka</td>
+                            <td><strong>{{ arac.plaka }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Araç</td>
+                            <td>{{ arac.marka }} {{ arac.model }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Renk</td>
+                            <td>{{ arac.renk or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Mevcut KM</td>
+                            <td>{{ arac.km|default(0) }} km</td>
+                        </tr>
+                        {% if arac.atanan_calisan %}
+                        <tr>
+                            <td class="text-muted">Zimmetli</td>
+                            <td>{{ arac.atanan_calisan.full_name }}</td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+            </div>
+            
+            {% if islem_tipi == 'iade' and son_teslim %}
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Son Teslim Bilgisi</h6>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        Teslim: {{ son_teslim.tarih.strftime('%d.%m.%Y %H:%M') }}<br>
+                        KM: {{ son_teslim.km }}<br>
+                        Yakıt: {{ son_teslim.yakit_durumu_display }}
+                    </small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sağ: Form -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-speedometer me-2"></i>Temel Bilgiler</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Kilometre *</label>
+                                <input type="number" name="km" class="form-control" required
+                                       value="{{ arac.km or 0 }}" min="{{ arac.km or 0 }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Yakıt Durumu *</label>
+                                <select name="yakit_durumu" class="form-select" required>
+                                    <option value="">Seçin...</option>
+                                    <option value="dolu">Dolu</option>
+                                    <option value="uc_ceyrek">3/4</option>
+                                    <option value="yarim">1/2</option>
+                                    <option value="ceyrek">1/4</option>
+                                    <option value="bos">Boş</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if islem_tipi == 'teslim' %}
+                    <div class="mb-3">
+                        <label class="form-label">Teslim Alan Çalışan *</label>
+                        <select name="teslim_alan_calisan_id" class="form-select" required>
+                            <option value="">Seçin...</option>
+                            {% for calisan in calisanlar %}
+                            <option value="{{ calisan.id }}">{{ calisan.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Aksesuarlar -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-box-seam me-2"></i>Aksesuarlar</h6>
+                </div>
+                <div class="card-body">
+                    <div class="aksesuar-grid">
+                        {% for key, label in aksesuarlar.items() %}
+                        <div class="form-check">
+                            <input type="checkbox" name="aksesuarlar" value="{{ key }}" 
+                                   class="form-check-input" id="aks_{{ key }}" checked>
+                            <label class="form-check-label" for="aks_{{ key }}">{{ label }}</label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Hasar Durumu -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Hasar Durumu</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Mevcut Hasarlar</label>
+                        <textarea name="mevcut_hasarlar" class="form-control" rows="2"
+                                  placeholder="Varsa mevcut hasarları belirtin..."></textarea>
+                    </div>
+                    
+                    {% if islem_tipi == 'iade' %}
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="yeni_hasar" class="form-check-input" id="yeniHasar"
+                               onchange="document.getElementById('yeniHasarAciklama').classList.toggle('d-none')">
+                        <label class="form-check-label text-danger" for="yeniHasar">
+                            <strong>Yeni hasar tespit edildi</strong>
+                        </label>
+                    </div>
+                    <div id="yeniHasarAciklama" class="d-none">
+                        <textarea name="yeni_hasar_aciklama" class="form-control" rows="2"
+                                  placeholder="Yeni hasar açıklaması..."></textarea>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Fotoğraflar -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-camera me-2"></i>Fotoğraflar</h6>
+                </div>
+                <div class="card-body">
+                    <input type="file" name="fotograflar" class="form-control" multiple accept="image/*">
+                    <div class="form-text">Araç fotoğrafları (çoklu seçim yapabilirsiniz)</div>
+                </div>
+            </div>
+            
+            <!-- İmzalar -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-pen me-2"></i>İmzalar</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Teslim Eden İmza</label>
+                            <canvas id="signatureTeslimEden" class="signature-pad w-100" height="150"></canvas>
+                            <input type="hidden" name="imza_teslim_eden" id="imzaTeslimEden">
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="clearSignature('TeslimEden')">Temizle</button>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Teslim Alan İmza</label>
+                            <canvas id="signatureTeslimAlan" class="signature-pad w-100" height="150"></canvas>
+                            <input type="hidden" name="imza_teslim_alan" id="imzaTeslimAlan">
+                            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="clearSignature('TeslimAlan')">Temizle</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Notlar -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-sticky me-2"></i>Notlar</h6>
+                </div>
+                <div class="card-body">
+                    <textarea name="notlar" class="form-control" rows="2"
+                              placeholder="Ek notlar..."></textarea>
+                </div>
+            </div>
+            
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-{{ 'success' if islem_tipi == 'teslim' else 'warning' }}">
+                    <i class="bi bi-check-lg me-1"></i>{{ 'Teslim Et' if islem_tipi == 'teslim' else 'İade Al' }}
+                </button>
+                <a href="{{ url_for('filo.detay', id=arac.id) }}" class="btn btn-outline-secondary">İptal</a>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<script>
+// İmza pad'leri
+var signaturePadTeslimEden = new SignaturePad(document.getElementById('signatureTeslimEden'));
+var signaturePadTeslimAlan = new SignaturePad(document.getElementById('signatureTeslimAlan'));
+
+function clearSignature(type) {
+    if (type === 'TeslimEden') {
+        signaturePadTeslimEden.clear();
+    } else {
+        signaturePadTeslimAlan.clear();
+    }
+}
+
+// Form submit öncesi imzaları kaydet
+document.querySelector('form').addEventListener('submit', function() {
+    if (!signaturePadTeslimEden.isEmpty()) {
+        document.getElementById('imzaTeslimEden').value = signaturePadTeslimEden.toDataURL();
+    }
+    if (!signaturePadTeslimAlan.isEmpty()) {
+        document.getElementById('imzaTeslimAlan').value = signaturePadTeslimAlan.toDataURL();
+    }
+});
+</script>
+{% endblock %}

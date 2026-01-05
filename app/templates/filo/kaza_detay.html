@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}Kaza Detay - {{ kaza.arac.plaka }} - TG Portal{% endblock %}
+{% block page_title %}Kaza Detayı{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Onay Durumu Banner -->
+        {% if kaza.onay_durumu == 'bekliyor' %}
+        <div class="alert alert-warning">
+            <i class="bi bi-hourglass-split me-2"></i>
+            <strong>Onay Bekliyor</strong> - Bu kaza kaydı filo yöneticisi onayını bekliyor.
+        </div>
+        {% elif kaza.onay_durumu == 'reddedildi' %}
+        <div class="alert alert-danger">
+            <i class="bi bi-x-circle me-2"></i>
+            <strong>Reddedildi</strong> - {{ kaza.red_nedeni or 'Sebep belirtilmedi' }}
+        </div>
+        {% endif %}
+        
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="bi bi-car-front me-2"></i>
+                    {{ kaza.arac.plaka }} - {{ kaza.arac.marka }} {{ kaza.arac.model }}
+                </h6>
+                <span class="badge bg-{{ 'success' if kaza.onay_durumu == 'onaylandi' else ('danger' if kaza.onay_durumu == 'reddedildi' else 'warning') }}">
+                    {{ kaza.onay_durumu|upper }}
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr><td class="text-muted">Tarih</td><td><strong>{{ kaza.tarih.strftime('%d.%m.%Y %H:%M') }}</strong></td></tr>
+                            <tr><td class="text-muted">Konum</td><td>{{ kaza.konum or '-' }}</td></tr>
+                            <tr><td class="text-muted">Sürücü</td><td>{{ kaza.surucu.full_name if kaza.surucu else '-' }}</td></tr>
+                            <tr><td class="text-muted">Tutanak No</td><td>{{ kaza.tutanak_no or '-' }}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm table-borderless">
+                            <tr><td class="text-muted">Kusur Oranı</td><td>{{ kaza.kusur_orani or '0' }}%</td></tr>
+                            <tr><td class="text-muted">Hasar Tutarı</td><td>{{ "%.2f"|format(kaza.hasar_tutari) if kaza.hasar_tutari else '-' }} ₺</td></tr>
+                            <tr><td class="text-muted">Sigorta Karşıladı</td><td>{{ "%.2f"|format(kaza.sigorta_karsiladi) if kaza.sigorta_karsiladi else '-' }} ₺</td></tr>
+                            <tr><td class="text-muted">Yaralanma</td><td>
+                                {% if kaza.yaralanma %}
+                                <span class="badge bg-danger">EVET</span>
+                                {% else %}
+                                <span class="badge bg-success">Hayır</span>
+                                {% endif %}
+                            </td></tr>
+                        </table>
+                    </div>
+                </div>
+                
+                <h6><i class="bi bi-file-text me-2"></i>Açıklama</h6>
+                <p>{{ kaza.aciklama or '-' }}</p>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <small class="text-muted">Durum:</small>
+                        <span class="badge bg-{{ 'success' if kaza.durum == 'kapandi' else ('warning' if kaza.durum == 'dava' else 'primary') }}">
+                            {{ kaza.durum|upper }}
+                        </span>
+                    </div>
+                    {% if kaza.onaylayan %}
+                    <div class="col-md-6">
+                        <small class="text-muted">Onaylayan:</small>
+                        {{ kaza.onaylayan.full_name }} ({{ kaza.onay_tarihi.strftime('%d.%m.%Y') }})
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Fotoğraflar -->
+        {% if kaza.fotograflar.count() > 0 %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-camera me-2"></i>Fotoğraflar ({{ kaza.fotograflar.count() }})</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    {% for foto in kaza.fotograflar %}
+                    <div class="col-md-4">
+                        <a href="{{ url_for('core.uploaded_file', filename=foto.dosya_yolu) }}" target="_blank">
+                            <img src="{{ url_for('core.uploaded_file', filename=foto.dosya_yolu) }}" 
+                                 class="img-fluid rounded" alt="{{ foto.aciklama or 'Kaza fotoğrafı' }}">
+                        </a>
+                        {% if foto.aciklama %}
+                        <small class="text-muted d-block">{{ foto.aciklama }}</small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- İkame Araçlar -->
+        {% if kaza.ikame_araclar %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-arrow-repeat me-2"></i>İkame Araçlar</h6>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr><th>Plaka</th><th>Araç</th><th>Süre</th><th>Durum</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for ikame in kaza.ikame_araclar %}
+                        <tr>
+                            <td><a href="{{ url_for('filo.ikame_detay', id=ikame.id) }}">{{ ikame.plaka }}</a></td>
+                            <td>{{ ikame.marka }} {{ ikame.model }}</td>
+                            <td>{{ ikame.baslangic_tarihi.strftime('%d.%m.%Y') }} - {{ ikame.bitis_tarihi.strftime('%d.%m.%Y') if ikame.bitis_tarihi else 'Devam' }}</td>
+                            <td><span class="badge bg-{{ 'success' if ikame.durum == 'aktif' else 'secondary' }}">{{ ikame.durum }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Onay İşlemleri -->
+        {% if current_user.has_permission('filo.admin') and kaza.onay_durumu == 'bekliyor' %}
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="bi bi-check-circle me-2"></i>Onay İşlemleri</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('filo.kaza_onayla', id=kaza.id) }}" class="mb-2">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-check-lg me-1"></i>Onayla
+                    </button>
+                </form>
+                
+                <form method="POST" action="{{ url_for('filo.kaza_reddet', id=kaza.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="mb-2">
+                        <textarea name="red_nedeni" class="form-control form-control-sm" rows="2" 
+                                  placeholder="Red nedeni (opsiyonel)"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100">
+                        <i class="bi bi-x-lg me-1"></i>Reddet
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- İkame Araç Ekle -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="bi bi-plus-circle me-2"></i>İşlemler</h6>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('filo.ikame_ekle', id=kaza.arac_id) }}?kaza_id={{ kaza.id }}" class="btn btn-outline-primary w-100 mb-2">
+                    <i class="bi bi-arrow-repeat me-1"></i>İkame Araç Ekle
+                </a>
+                <a href="{{ url_for('filo.detay', id=kaza.arac_id) }}" class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-car-front me-1"></i>Araç Detayı
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a href="{{ url_for('filo.kaza_liste') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Listeye Dön
+    </a>
+</div>
+{% endblock %}
