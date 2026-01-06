@@ -185,3 +185,59 @@ VARSAYILAN_AKSESUARLAR = {
     'yedek_anahtar': 'Yedek Anahtar',
     'kullanim_kilavuzu': 'Kullanım Kılavuzu',
 }
+
+
+# ==================== TRAFİK CEZASI ====================
+class TrafikCezasi(db.Model, TimestampMixin, AuditMixin):
+    """Trafik cezası kayıtları"""
+    __tablename__ = 'trafik_cezalari'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    arac_id = db.Column(db.Integer, db.ForeignKey('araclar.id'), nullable=False)
+    surucu_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'))
+    
+    # Ceza Bilgileri
+    ceza_tarihi = db.Column(db.DateTime, nullable=False)
+    teblig_tarihi = db.Column(db.Date)
+    son_odeme_tarihi = db.Column(db.Date)
+    
+    # Tutar
+    ceza_tutari = db.Column(db.Numeric(10, 2), nullable=False)
+    indirimli_tutar = db.Column(db.Numeric(10, 2))  # Erken ödeme indirimi
+    odenen_tutar = db.Column(db.Numeric(10, 2))
+    
+    # Detaylar
+    ceza_turu = db.Column(db.String(100))  # Hız, park, kırmızı ışık vb.
+    ceza_puani = db.Column(db.Integer, default=0)
+    plaka_yazilan = db.Column(db.String(20))  # Cezanın yazıldığı plaka
+    konum = db.Column(db.String(200))
+    aciklama = db.Column(db.Text)
+    
+    # Belge
+    tutanak_no = db.Column(db.String(50))
+    belge_yolu = db.Column(db.String(500))
+    
+    # Durum
+    durum = db.Column(db.String(20), default='bekliyor')  # bekliyor, odendi, itiraz, iptal
+    odeme_tarihi = db.Column(db.Date)
+    
+    # Sürücüye yansıtma
+    surucuye_yansitildi = db.Column(db.Boolean, default=False)
+    yansitma_tarihi = db.Column(db.Date)
+    
+    # İlişkiler
+    arac = db.relationship('Arac', backref=db.backref('trafik_cezalari', lazy='dynamic'))
+    surucu = db.relationship('Calisan', backref='trafik_cezalari')
+    
+    def __repr__(self):
+        return f'<TrafikCezasi {self.arac_id} {self.ceza_tarihi}>'
+    
+    @property
+    def gecikme_durumu(self):
+        """Ödeme gecikme durumu"""
+        from datetime import date
+        if self.durum == 'odendi':
+            return 'odendi'
+        if self.son_odeme_tarihi and date.today() > self.son_odeme_tarihi:
+            return 'gecikti'
+        return 'bekliyor'

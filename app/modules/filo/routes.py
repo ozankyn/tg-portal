@@ -12,7 +12,7 @@ from datetime import datetime, date
 from werkzeug.utils import secure_filename
 from app import db
 from app.models.filo import Arac, FiloIslem, YakitKayit, Sigorta, Muayene, Kaza
-from app.models.filo_update import AracTeslim, KazaFotograf, IkameArac, VARSAYILAN_AKSESUARLAR
+from app.models.filo_update import AracTeslim, KazaFotograf, IkameArac, TrafikCezasi, VARSAYILAN_AKSESUARLAR
 from app.models.base import AracDurumu, YakitTipi, IslemTipi, CalisanDurumu
 from app.models.ik import Calisan
 from app.models.proje import Proje
@@ -256,7 +256,8 @@ def islem_ekle(id):
         flash('İşlem kaydı eklendi.', 'success')
         return redirect(url_for('filo.detay', id=id))
     
-    return render_template('filo/islem_form.html', arac=arac, islem_tipleri=IslemTipi)
+    tedarikciler = Tedarikci.query.filter_by(is_deleted=False).order_by(Tedarikci.unvan).all()
+    return render_template('filo/islem_form.html', arac=arac, islem_tipleri=IslemTipi, tedarikciler=tedarikciler)
 
 
 # ==================== API ====================
@@ -888,3 +889,118 @@ def ikame_liste():
                           ikameler=pagination.items,
                           pagination=pagination,
                           aktif_sayisi=aktif_sayisi)
+
+
+# ==================== TRAFİK CEZASI ====================
+
+@filo_bp.route('/cezalar')
+@login_required
+@permission_required('filo.view')
+def ceza_liste():
+    """Trafik cezaları listesi"""
+    page = request.args.get('page', 1, type=int)
+    arac_id = request.args.get('arac_id', type=int)
+    durum = request.args.get('durum')
+    
+    query = TrafikCezasi.query.join(Arac).filter(Arac.is_deleted == False)
+    
+    if arac_id:
+        query = query.filter(TrafikCezasi.arac_id == arac_id)
+    
+    if durum:
+        query = query.filter(TrafikCezasi.durum == durum)
+    
+    query = query.order_by(TrafikCezasi.ceza_tarihi.desc())
+    pagination = query.paginate(page=page, per_page=20, error_out=False)
+    
+    # Özet
+    bekleyen = TrafikCezasi.query.filter_by(durum='bekliyor').count()
+    toplam_borc = db.session.query(db.func.sum(TrafikCezasi.ceza_tutari)).filter(TrafikCezasi.durum == 'bekliyor').scalar() or 0
+    
+    araclar = Arac.query.filter_by(is_deleted=False).order_by(Arac.plaka).all()
+    
+    return render_template('filo/ceza_liste.html',
+                          cezalar=pagination.items,
+                          pagination=pagination,
+                          araclar=araclar,
+                          bekleyen=bekleyen,
+                          toplam_borc=toplam_borc)
+
+
+@filo_bp.route('/<int:id>/ceza/ekle', methods=['GET', 'POST'])
+@login_required
+@permission_required('filo.create')
+def ceza_ekle(id):
+    """Trafik cezası ekle"""
+    arac = Arac.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        ceza = TrafikCezasi(
+            arac_id=arac.id,
+            surucu_id=request.form.get('surucu_id') or arac.atanan_calisan_id,
+            ceza_tarihi=datetime.strptime(request.form['ceza_tarihi'], '%Y-%m-%dT%H:%M'),
+            teblig_tarihi=datetime.strptime(request.form['teblig_tarihi'], '%Y-%m-%d').date() if request.form.get('teblig_tarihi') else None,
+            son_odeme_tarihi=datetime.strptime(request.form['son_odeme_tarihi'], '%Y-%m-%d').date() if request.form.get('son_odeme_tarihi') else None,
+            ceza_tutari=request.form.get('ceza_tutari'),
+            indirimli_tutar=request.form.get('indirimli_tutar') or None,
+            ceza_turu=request.form.get('ceza_turu'),
+            ceza_puani=request.form.get('ceza_puani') or 0,
+            konum=request.form.get('konum'),
+            tutanak_no=request.form.get('tutanak_no'),
+            aciklama=request.form.get('aciklama'),
+            durum='bekliyor'
+        )
+        
+        db.session.add(ceza)
+        db.session.commit()
+        
+        flash('Trafik cezası kaydedildi.', 'success')
+        return redirect(url_for('filo.ceza_detay', id=ceza.id))
+    
+    calisanlar = Calisan.query.filter_by(is_deleted=False, durum=CalisanDurumu.AKTIF).order_by(Calisan.ad).all()
+    
+    return render_template('filo/ceza_form.html',
+                          arac=arac,
+                          calisanlar=calisanlar)
+
+
+@filo_bp.route('/ceza/<int:id>')
+@login_required
+@permission_required('filo.view')
+def ceza_detay(id):
+    """Trafik cezası detayı"""
+    ceza = TrafikCezasi.query.get_or_404(id)
+    return render_template('filo/ceza_detay.html', ceza=ceza)
+
+
+@filo_bp.route('/ceza/<int:id>/ode', methods=['POST'])
+@login_required
+@permission_required('filo.edit')
+def ceza_ode(id):
+    """Trafik cezası öde"""
+    ceza = TrafikCezasi.query.get_or_404(id)
+    
+    ceza.durum = 'odendi'
+    ceza.odeme_tarihi = datetime.strptime(request.form['odeme_tarihi'], '%Y-%m-%d').date()
+    ceza.odenen_tutar = request.form.get('odenen_tutar') or ceza.ceza_tutari
+    
+    db.session.commit()
+    
+    flash('Ceza ödendi olarak işaretlendi.', 'success')
+    return redirect(url_for('filo.ceza_detay', id=ceza.id))
+
+
+@filo_bp.route('/ceza/<int:id>/yansit', methods=['POST'])
+@login_required
+@permission_required('filo.edit')
+def ceza_yansit(id):
+    """Cezayı sürücüye yansıt"""
+    ceza = TrafikCezasi.query.get_or_404(id)
+    
+    ceza.surucuye_yansitildi = True
+    ceza.yansitma_tarihi = date.today()
+    
+    db.session.commit()
+    
+    flash('Ceza sürücüye yansıtıldı.', 'success')
+    return redirect(url_for('filo.ceza_detay', id=ceza.id))

@@ -88,9 +88,10 @@ from app.models.ayarlar import (
     SistemAyar, AktiviteLog, varsayilan_ayarlari_yukle
 )
 
-from app.models.filo_update import (
-    AracTeslim, KazaFotograf, IkameArac, VARSAYILAN_AKSESUARLAR
-)
+from app.models.egitim import (
+        EgitimTipi, Egitim, EgitimKatilimci, EgitimMateryali,
+        CalisanZorunluEgitim, PozisyonZorunluEgitim
+    )
 
 __all__ = [
     # Base

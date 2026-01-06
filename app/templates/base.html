@@ -449,6 +449,12 @@
                                 <i class="bi bi-arrow-repeat me-2"></i>İkame Araçlar
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {% if 'ceza' in request.path %}active{% endif %}" 
+                               href="{{ url_for('filo.ceza_liste') }}">
+                                <i class="bi bi-exclamation-octagon me-2"></i>Trafik Cezaları
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </li>

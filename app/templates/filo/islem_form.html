@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}İşlem Ekle - {{ arac.plaka }} - TG Portal{% endblock %}
+{% block page_title %}Bakım/İşlem Ekle{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="bi bi-tools me-2"></i>{{ arac.plaka }} - Bakım/İşlem Kaydı</h6>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">İşlem Tipi *</label>
+                            <select name="islem_tipi" class="form-select" required>
+                                <option value="">Seçin...</option>
+                                {% for tip in islem_tipleri %}
+                                <option value="{{ tip.value }}">{{ tip.value.replace('_', ' ').title() }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tarih *</label>
+                            <input type="date" name="tarih" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Kilometre</label>
+                            <input type="number" name="km" class="form-control" value="{{ arac.km or 0 }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tedarikçi</label>
+                            <select name="tedarikci_id" class="form-select">
+                                <option value="">Seçin...</option>
+                                {% for t in tedarikciler %}
+                                <option value="{{ t.id }}">{{ t.unvan }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Tutar (₺)</label>
+                            <input type="number" name="tutar" class="form-control" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">KDV (₺)</label>
+                            <input type="number" name="kdv" class="form-control" step="0.01">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Fatura No</label>
+                            <input type="text" name="fatura_no" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Sonraki İşlem Tarihi</label>
+                            <input type="date" name="sonraki_tarih" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Sonraki İşlem KM</label>
+                            <input type="number" name="sonraki_km" class="form-control">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Açıklama</label>
+                        <textarea name="aciklama" class="form-control" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-lg me-1"></i>Kaydet
+                        </button>
+                        <a href="{{ url_for('filo.detay', id=arac.id) }}" class="btn btn-outline-secondary">İptal</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
