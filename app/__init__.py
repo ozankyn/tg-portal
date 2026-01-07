@@ -43,6 +43,11 @@ def create_app(config_name=None):
     app.config['TWILIO_AUTH_TOKEN'] = os.environ.get('TWILIO_AUTH_TOKEN', '')
     app.config['TWILIO_PHONE_NUMBER'] = os.environ.get('TWILIO_PHONE_NUMBER', '')
     
+    
+    # Şirket Ayarları
+    app.config['COMPANY_NAME'] = os.environ.get('COMPANY_NAME', '')
+    app.config['COMPANY_SUBTITLE'] = os.environ.get('COMPANY_SUBTITLE', 'ERP Sistemi')
+    app.config['COMPANY_LOGO'] = os.environ.get('COMPANY_LOGO', 'logo.png')
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)

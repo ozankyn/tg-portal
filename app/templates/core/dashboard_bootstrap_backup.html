@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - TG Portal{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Ana İstatistikler -->
+<div class="row mb-4">
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="card stat-card primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Çalışanlar</h6>
+                        <h3 class="mb-0">{{ stats.calisan_sayisi }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-people fs-1 text-primary opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="card stat-card success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Araçlar</h6>
+                        <h3 class="mb-0">{{ stats.arac_sayisi }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-truck fs-1 text-success opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="card stat-card warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Aktif Projeler</h6>
+                        <h3 class="mb-0">{{ stats.aktif_proje }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-folder fs-1 text-warning opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3 mb-3">
+        <div class="card stat-card danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Bekleyen Adaylar</h6>
+                        <h3 class="mb-0">{{ stats.bekleyen_aday }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-person-plus fs-1 text-danger opacity-25"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Proje Durumu -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-folder me-2"></i>Proje Doluluk Durumu</h6>
+                <a href="{{ url_for('proje.proje_liste') }}" class="btn btn-sm btn-outline-primary">Tümü</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Proje</th>
+                                <th>Müşteri</th>
+                                <th>Kadro</th>
+                                <th>Doluluk</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in projeler %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('proje.proje_detay', id=p.id) }}" class="text-decoration-none">
+                                        {{ p.ad }}
+                                    </a>
+                                </td>
+                                <td><small class="text-muted">{{ p.musteri.display_name }}</small></td>
+                                <td>{{ p.mevcut_calisan }} / {{ p.toplam_kadro }}</td>
+                                <td style="width: 120px;">
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar {% if p.doluluk_orani >= 80 %}bg-success{% elif p.doluluk_orani >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                             style="width: {{ p.doluluk_orani }}%"></div>
+                                    </div>
+                                    <small>{{ p.doluluk_orani }}%</small>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">Aktif proje yok</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Acil Kadrolar -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-white">
+                <h6 class="mb-0"><i class="bi bi-exclamation-triangle text-danger me-2"></i>Acil Kadro İhtiyacı</h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Pozisyon</th>
+                                <th>Proje</th>
+                                <th>Eksik</th>
+                                <th>Öncelik</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for k in acil_kadrolar %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('proje.kadro_detay', id=k.id) }}" class="text-decoration-none">
+                                        {{ k.pozisyon_adi }}
+                                    </a>
+                                    {% if k.il %}
+                                    <br><small class="text-muted">{{ k.il }}</small>
+                                    {% endif %}
+                                </td>
+                                <td><small>{{ k.proje.ad }}</small></td>
+                                <td><span class="badge bg-danger">{{ k.eksik_sayi }}</span></td>
+                                <td>
+                                    {% if k.oncelik <= 3 %}
+                                    <span class="badge bg-danger">Acil</span>
+                                    {% elif k.oncelik <= 5 %}
+                                    <span class="badge bg-warning">Normal</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Düşük</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">Acil kadro ihtiyacı yok</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Son Eklenen Çalışanlar -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-person-plus me-2"></i>Son Eklenen Çalışanlar</h6>
+                <a href="{{ url_for('ik.liste') }}" class="btn btn-sm btn-outline-primary">Tümü</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ad Soyad</th>
+                                <th>Pozisyon</th>
+                                <th>Tarih</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in son_calisanlar %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('ik.detay', id=c.id) }}" class="text-decoration-none">
+                                        {{ c.full_name }}
+                                    </a>
+                                </td>
+                                <td><small class="text-muted">{{ c.pozisyon.ad if c.pozisyon else '-' }}</small></td>
+                                <td><small>{{ c.created_at.strftime('%d.%m.%Y') }}</small></td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">Kayıt yok</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Araç Durumu -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-truck me-2"></i>Araç Durumu</h6>
+                <a href="{{ url_for('filo.liste') }}" class="btn btn-sm btn-outline-primary">Tümü</a>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h4 class="text-success mb-0">{{ arac_durum.aktif }}</h4>
+                        <small class="text-muted">Aktif</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-warning mb-0">{{ arac_durum.bakimda }}</h4>
+                        <small class="text-muted">Bakımda</small>
+                    </div>
+                    <div class="col-4">
+                        <h4 class="text-danger mb-0">{{ arac_durum.arizali }}</h4>
+                        <small class="text-muted">Arızalı</small>
+                    </div>
+                </div>
+                <hr>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <h5 class="text-primary mb-0">{{ arac_durum.projeli }}</h5>
+                        <small class="text-muted">Projeye Atanmış</small>
+                    </div>
+                    <div class="col-6">
+                        <h5 class="text-secondary mb-0">{{ arac_durum.projesiz }}</h5>
+                        <small class="text-muted">Boşta</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

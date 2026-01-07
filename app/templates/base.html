@@ -1,536 +1,517 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html class="dark" lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
     <title>{% block title %}TG Portal{% endblock %}</title>
     
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- Select2 -->
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet"/>
+    
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "primary-dark": "#0f67be",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                        "sidebar-dark": "#1c2127",
+                        "card-dark": "#1c2127",
+                        "border-light": "#e5e7eb",
+                        "border-dark": "#3b4754",
+                        "text-muted": "#637588",
+                        "text-muted-dark": "#9dabb9",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
     
     <style>
-        :root {
-            --sidebar-width: 260px;
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3b4754; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #586474; }
+        
+        /* Sidebar submenu animations */
+        .sidebar-submenu { 
+            max-height: 0; 
+            overflow: hidden; 
+            transition: max-height 0.3s ease-out;
         }
-        body {
-            min-height: 100vh;
-        }
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: var(--sidebar-width);
-            height: 100vh;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            padding-top: 1rem;
-            z-index: 1000;
-            overflow-y: auto;
-        }
-        .sidebar .nav-link {
-            color: rgba(255,255,255,0.7);
-            padding: 0.6rem 1.25rem;
-            border-radius: 0;
-            transition: all 0.2s;
-        }
-        .sidebar .nav-link:hover {
-            color: #fff;
-            background: rgba(255,255,255,0.1);
-        }
-        .sidebar .nav-link.active {
-            color: #fff;
-            background: rgba(255,255,255,0.15);
-            border-left: 3px solid #0d6efd;
-        }
-        .sidebar .nav-link i {
-            width: 24px;
-        }
-        .sidebar-brand {
-            color: #fff;
-            font-size: 1.25rem;
-            font-weight: 600;
-            padding: 1rem 1.25rem;
-            text-decoration: none;
-            display: block;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 1rem;
-        }
-        .sidebar-section {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            color: rgba(255,255,255,0.4);
-            padding: 1rem 1.25rem 0.5rem;
-            letter-spacing: 0.5px;
+        .sidebar-submenu.open { 
+            max-height: 500px; 
         }
         
-        /* Collapsible submenu styles */
-        .sidebar .nav-link[data-bs-toggle="collapse"] {
-            position: relative;
-        }
-        .sidebar .nav-link[data-bs-toggle="collapse"]::after {
-            content: '\F282';
-            font-family: 'bootstrap-icons';
-            position: absolute;
-            right: 1rem;
-            transition: transform 0.2s;
-        }
-        .sidebar .nav-link[data-bs-toggle="collapse"][aria-expanded="true"]::after {
-            transform: rotate(180deg);
-        }
-        .sidebar .collapse .nav-link,
-        .sidebar .collapsing .nav-link {
-            padding-left: 2.5rem;
-            font-size: 0.875rem;
-        }
-        .sidebar .collapse .nav-link:hover {
-            background: rgba(255,255,255,0.05);
-        }
-        .sidebar .collapse .nav-link.active {
-            background: rgba(255,255,255,0.1);
-            border-left: 2px solid #0d6efd;
+        /* Material icons size fix */
+        .material-symbols-outlined {
+            font-size: 20px;
+            line-height: 1;
         }
         
-        .main-content {
-            margin-left: var(--sidebar-width);
-            min-height: 100vh;
-            background: #f8f9fa;
+        /* Select2 dark mode fixes */
+        .dark .select2-container--default .select2-selection--single {
+            background-color: #111418;
+            border-color: #3b4754;
+            color: white;
         }
-        .topbar {
-            background: #fff;
-            padding: 0.75rem 1.5rem;
-            border-bottom: 1px solid #e9ecef;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .dark .select2-dropdown {
+            background-color: #1c2127;
+            border-color: #3b4754;
         }
-        .content-wrapper {
-            padding: 1.5rem;
+        .dark .select2-results__option {
+            color: white;
         }
-        .card {
-            border: none;
-            box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+        .dark .select2-results__option--highlighted {
+            background-color: #137fec !important;
         }
-        .stat-card {
-            border-left: 4px solid;
+        
+        /* Form elements for dark mode */
+        .dark input, .dark select, .dark textarea {
+            background-color: #111418;
+            border-color: #3b4754;
+            color: white;
         }
-        .stat-card.primary { border-left-color: #0d6efd; }
-        .stat-card.success { border-left-color: #198754; }
-        .stat-card.warning { border-left-color: #ffc107; }
-        .stat-card.danger { border-left-color: #dc3545; }
-        .stat-card.info { border-left-color: #0dcaf0; }
-        .table th {
-            font-weight: 600;
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        .dark input:focus, .dark select:focus, .dark textarea:focus {
+            border-color: #137fec;
+            ring-color: #137fec;
         }
-        .badge-status {
-            font-size: 0.75rem;
-            padding: 0.35rem 0.65rem;
-        }
-        .progress-sm {
-            height: 6px;
-        }
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-            }
-            .main-content {
-                margin-left: 0;
-            }
-        }
+        
+        /* Table styles */
+        .dark table { border-color: #3b4754; }
+        .dark th { background-color: #111418; color: #9dabb9; }
+        .dark td { border-color: #3b4754; }
+        .dark tr:hover { background-color: #252b36; }
     </style>
+    
     {% block extra_css %}{% endblock %}
 </head>
-<body>
-    <!-- Sidebar -->
-    <nav class="sidebar">
-        <a href="{{ url_for('core.dashboard') }}" class="sidebar-brand">
-            <i class="bi bi-grid-3x3-gap-fill me-2"></i>TG Portal
-        </a>
+<body class="font-display antialiased bg-background-light dark:bg-background-dark text-[#111418] dark:text-white overflow-hidden">
+    <div class="flex h-screen overflow-hidden">
         
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'core.dashboard' %}active{% endif %}" href="{{ url_for('core.dashboard') }}">
-                    <i class="bi bi-speedometer2 me-2"></i>Dashboard
+        <!-- Sidebar -->
+        <aside class="hidden md:flex w-72 flex-col bg-white dark:bg-sidebar-dark border-r border-border-light dark:border-border-dark transition-all duration-300 z-20" id="sidebar">
+           <!-- Logo -->
+            <div class="h-16 flex items-center px-6 border-b border-border-light dark:border-border-dark">
+                <a href="{{ url_for('core.dashboard') }}" class="flex items-center gap-3">
+                    {% if config.get('COMPANY_LOGO') %}
+                    <img src="{{ url_for('static', filename='images/' + config.get('COMPANY_LOGO')) }}" alt="Logo" class="h-10 w-auto"/>
+                    {% else %}
+                    <div class="w-10 h-10 bg-primary rounded-lg flex items-center justify-center text-white shadow-lg shadow-primary/30">
+                        <span class="material-symbols-outlined text-2xl">grid_view</span>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <span class="block text-primary dark:text-white font-bold text-lg tracking-tight leading-none">{{ config.get('COMPANY_NAME', 'TG PORTAL') }}</span>
+                        <span class="block text-[10px] text-text-muted dark:text-text-muted-dark uppercase tracking-wider font-semibold mt-0.5">{{ config.get('COMPANY_SUBTITLE', 'ERP Sistemi') }}</span>
+                    </div>
                 </a>
-            </li>
-            
-            <!-- Onaylar - Herkes görebilir -->
-            <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'onay' %}active{% endif %}" href="{{ url_for('onay.index') }}">
-                    <i class="bi bi-check2-square me-2"></i>Onaylar
-                    <span class="badge bg-warning ms-auto" id="onayBadge"></span>
-                </a>
-            </li>
-            
-            {% if has_permission('proje.view') %}
-            <li class="sidebar-section">Proje Yönetimi</li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'proje' and 'musteri' not in request.path and 'kadro' not in request.path %}active{% endif %}" href="{{ url_for('proje.proje_liste') }}">
-                    <i class="bi bi-folder me-2"></i>Projeler
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if 'musteri' in request.path %}active{% endif %}" href="{{ url_for('proje.musteri_liste') }}">
-                    <i class="bi bi-buildings me-2"></i>Müşteriler
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link {% if 'kadro' in request.path %}active{% endif %}" href="{{ url_for('proje.kadro_liste') }}">
-                    <i class="bi bi-people me-2"></i>Kadrolar
-                </a>
-            </li>
-            {% endif %}
-            
-            {% if has_permission('ik.view') %}
-            <!-- İNSAN KAYNAKLARI - Collapsible -->
-            <li class="sidebar-section">İnsan Kaynakları</li>
-            
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'ik.dashboard' %}active{% endif %}" href="{{ url_for('ik.dashboard') }}">
-                    <i class="bi bi-graph-up me-2"></i>İK Dashboard
-                </a>
-            </li>
-            
-            <!-- Adaylar Submenu -->
-            <li class="nav-item">
-                <a class="nav-link d-flex justify-content-between align-items-center" 
-                href="#adaylarMenu" data-bs-toggle="collapse" role="button"
-                aria-expanded="{{ 'true' if request.endpoint and 'aday' in request.endpoint else 'false' }}">
-                    <span><i class="bi bi-person-plus me-2"></i>Adaylar</span>
-                </a>
-                <div class="collapse {% if request.endpoint and 'aday' in request.endpoint %}show{% endif %}" id="adaylarMenu">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'ik.aday_liste' %}active{% endif %}" 
-                            href="{{ url_for('ik.aday_liste') }}">
-                                <i class="bi bi-list-ul me-2"></i>Aday Listesi
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'ik.eksik_evraklar' %}active{% endif %}" 
-                            href="{{ url_for('ik.eksik_evraklar') }}">
-                                <i class="bi bi-exclamation-triangle me-2"></i>Eksik Evraklar
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if 'kadro' in request.path %}active{% endif %}" 
-                            href="{{ url_for('proje.kadro_liste') }}">
-                                <i class="bi bi-send me-2"></i>Kadrolar & Davet
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
-            
-            <!-- Çalışanlar Submenu -->
-            <li class="nav-item">
-                <a class="nav-link d-flex justify-content-between align-items-center" 
-                   href="#calisanlarMenu" data-bs-toggle="collapse" role="button"
-                   aria-expanded="{{ 'true' if request.endpoint in ['ik.liste', 'ik.detay', 'ik.ekle', 'ik.duzenle'] else 'false' }}">
-                    <span><i class="bi bi-people me-2"></i>Çalışanlar</span>
-                </a>
-                <div class="collapse {% if request.endpoint in ['ik.liste', 'ik.detay', 'ik.ekle', 'ik.duzenle'] %}show{% endif %}" id="calisanlarMenu">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'ik.liste' %}active{% endif %}" 
-                               href="{{ url_for('ik.liste') }}">
-                                <i class="bi bi-list-ul me-2"></i>Çalışan Listesi
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'ik.ekle' %}active{% endif %}" 
-                               href="{{ url_for('ik.ekle') }}">
-                                <i class="bi bi-plus-circle me-2"></i>Yeni Çalışan
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'ik.isten_cikis_liste' %}active{% endif %}" 
-                               href="{{ url_for('ik.isten_cikis_liste') }}">
-                                <i class="bi bi-box-arrow-right me-2"></i>İşten Çıkışlar
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
-
-            <!-- Zimmet Yönetimi Submenu -->
-            <li class="nav-item">
-                <a class="nav-link d-flex justify-content-between align-items-center" 
-                   href="#zimmetMenu" data-bs-toggle="collapse" role="button"
-                   aria-expanded="{{ 'true' if request.endpoint and 'zimmet' in request.endpoint else 'false' }}">
-                    <span><i class="bi bi-box-seam me-2"></i>Zimmet</span>
-                </a>
-                <div class="collapse {% if request.endpoint and 'zimmet' in request.endpoint %}show{% endif %}" id="zimmetMenu">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'ik.zimmet_liste' %}active{% endif %}" 
-                               href="{{ url_for('ik.zimmet_liste') }}">
-                                <i class="bi bi-list-ul me-2"></i>Zimmet Listesi
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'ik.zimmet_ekle' %}active{% endif %}" 
-                               href="{{ url_for('ik.zimmet_ekle') }}">
-                                <i class="bi bi-plus-circle me-2"></i>Yeni Zimmet
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'ik.zimmet_tipleri' %}active{% endif %}" 
-                               href="{{ url_for('ik.zimmet_tipleri') }}">
-                                <i class="bi bi-tags me-2"></i>Zimmet Tipleri
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
-
-            <!-- Eğitim Yönetimi Submenu -->
-            <li class="nav-item">
-                <a class="nav-link d-flex justify-content-between align-items-center" 
-                   href="#egitimMenu" data-bs-toggle="collapse" role="button"
-                   aria-expanded="{{ 'true' if request.blueprint == 'egitim' else 'false' }}">
-                    <span><i class="bi bi-mortarboard me-2"></i>Eğitim</span>
-                </a>
-                <div class="collapse {% if request.blueprint == 'egitim' %}show{% endif %}" id="egitimMenu">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'egitim.dashboard' %}active{% endif %}" 
-                               href="{{ url_for('egitim.dashboard') }}">
-                                <i class="bi bi-speedometer2 me-2"></i>Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'egitim.liste' %}active{% endif %}" 
-                               href="{{ url_for('egitim.liste') }}">
-                                <i class="bi bi-list-ul me-2"></i>Eğitimler
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'egitim.ekle' %}active{% endif %}" 
-                               href="{{ url_for('egitim.ekle') }}">
-                                <i class="bi bi-plus-circle me-2"></i>Yeni Eğitim
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'egitim.zorunlu_egitim_takip' %}active{% endif %}" 
-                               href="{{ url_for('egitim.zorunlu_egitim_takip') }}">
-                                <i class="bi bi-shield-check me-2"></i>Zorunlu Takip
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'egitim.tip_liste' %}active{% endif %}" 
-                               href="{{ url_for('egitim.tip_liste') }}">
-                                <i class="bi bi-tags me-2"></i>Eğitim Tipleri
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'egitim.soru_liste' %}active{% endif %}" 
-                               href="{{ url_for('egitim.soru_liste') }}">
-                                <i class="bi bi-question-circle me-2"></i>Soru Bankası
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if request.endpoint == 'egitim.test_liste' %}active{% endif %}" 
-                               href="{{ url_for('egitim.test_liste') }}">
-                                <i class="bi bi-clipboard-check me-2"></i>Testler
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
-            
-            <!-- Evrak Yönetimi -->
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'ik.evrak_tipleri' %}active{% endif %}" 
-                   href="{{ url_for('ik.evrak_tipleri') }}">
-                    <i class="bi bi-folder me-2"></i>Evrak Tipleri
-                </a>
-            </li>
-            
-            <!-- İzin Yönetimi -->
-            <li class="nav-item">
-                <a class="nav-link {% if request.endpoint == 'ik.izin_liste' %}active{% endif %}" 
-                   href="{{ url_for('ik.izin_liste') }}">
-                    <i class="bi bi-calendar-check me-2"></i>İzin Talepleri
-                </a>
-            </li>
-            {% endif %}
-
-            <!-- Masraf Yönetimi -->
-            <li class="sidebar-section">Masraf</li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'masraf' %}active{% endif %}" href="{{ url_for('masraf.dashboard') }}">
-                    <i class="bi bi-receipt me-2"></i>Masraflarım
-                </a>
-            </li>
-
-            <!-- Sözleşme Yönetimi -->
-            {% if has_permission('sozlesme.view') %}
-            <li class="sidebar-section">Sözleşmeler</li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'sozlesme' %}active{% endif %}" href="{{ url_for('sozlesme.dashboard') }}">
-                    <i class="bi bi-file-earmark-text me-2"></i>Sözleşmeler
-                </a>
-            </li>
-            {% endif %}
-
-            <!-- Satın Alma -->
-            {% if has_permission('satinalma.view') %}
-            <li class="sidebar-section">Satın Alma</li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'satinalma' %}active{% endif %}" href="{{ url_for('satinalma.dashboard') }}">
-                    <i class="bi bi-cart3 me-2"></i>Satın Alma
-                </a>
-            </li>
-            {% endif %}
-
-            <!-- Destek Talepleri -->
-            <li class="sidebar-section">Destek</li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'talep' %}active{% endif %}" href="{{ url_for('talep.dashboard') }}">
-                    <i class="bi bi-ticket me-2"></i>Talepler
-                </a>
-            </li>
-
-            <!-- Raporlar -->
-            {% if has_permission('rapor.view') %}
-            <li class="sidebar-section">Raporlar</li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'rapor' %}active{% endif %}" href="{{ url_for('rapor.dashboard') }}">
-                    <i class="bi bi-bar-chart me-2"></i>Raporlar
-                </a>
-            </li>
-            {% endif %}
-            
-            {% if has_permission('filo.view') %}
-            <li class="sidebar-section">Filo Yönetimi</li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'filo' and 'yakit' not in request.path and 'teslim' not in request.path and 'kaza' not in request.path and 'ikame' not in request.path %}active{% endif %}" 
-                   href="{{ url_for('filo.liste') }}">
-                    <i class="bi bi-car-front me-2"></i>Araçlar
-                </a>
-            </li>
-            <!-- Filo İşlemler Submenu -->
-            <li class="nav-item">
-                <a class="nav-link d-flex justify-content-between align-items-center" 
-                   href="#filoIslemlerMenu" data-bs-toggle="collapse" role="button"
-                   aria-expanded="{{ 'true' if 'yakit' in request.path or 'teslim' in request.path or 'kaza' in request.path or 'ikame' in request.path else 'false' }}">
-                    <span><i class="bi bi-gear me-2"></i>İşlemler</span>
-                </a>
-                <div class="collapse {% if 'yakit' in request.path or 'teslim' in request.path or 'kaza' in request.path or 'ikame' in request.path %}show{% endif %}" id="filoIslemlerMenu">
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link {% if 'yakit' in request.path %}active{% endif %}" 
-                               href="{{ url_for('filo.yakit_liste') }}">
-                                <i class="bi bi-fuel-pump me-2"></i>Yakıt Kayıtları
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if 'teslim' in request.path %}active{% endif %}" 
-                               href="{{ url_for('filo.teslim_liste') }}">
-                                <i class="bi bi-box-arrow-right me-2"></i>Teslim/İade
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if 'kaza' in request.path %}active{% endif %}" 
-                               href="{{ url_for('filo.kaza_liste') }}">
-                                <i class="bi bi-exclamation-triangle me-2"></i>Kazalar
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if 'ikame' in request.path %}active{% endif %}" 
-                               href="{{ url_for('filo.ikame_liste') }}">
-                                <i class="bi bi-arrow-repeat me-2"></i>İkame Araçlar
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link {% if 'ceza' in request.path %}active{% endif %}" 
-                               href="{{ url_for('filo.ceza_liste') }}">
-                                <i class="bi bi-exclamation-octagon me-2"></i>Trafik Cezaları
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
-            {% endif %}
-            
-            {% if has_permission('tedarikci.view') %}
-            <li class="sidebar-section">Tedarik</li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'tedarikci' %}active{% endif %}" href="{{ url_for('tedarikci.liste') }}">
-                    <i class="bi bi-building me-2"></i>Tedarikçiler
-                </a>
-            </li>
-            {% endif %}
-            
-            {% if current_user.is_admin %}
-            <li class="sidebar-section">Yönetim</li>
-            <li class="nav-item">
-                <a class="nav-link {% if request.blueprint == 'ayarlar' %}active{% endif %}" href="{{ url_for('ayarlar.dashboard') }}">
-                    <i class="bi bi-gear me-2"></i>Ayarlar
-                </a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
-    
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Topbar -->
-        <div class="topbar">
-            <div>
-                <h5 class="mb-0">{% block page_title %}Dashboard{% endblock %}</h5>
             </div>
-            <div class="d-flex align-items-center">
-                <div class="dropdown">
-                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
-                        <span class="me-2">{{ current_user.full_name }}</span>
-                        <i class="bi bi-person-circle fs-4"></i>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" href="{{ url_for('core.profil') }}"><i class="bi bi-person me-2"></i>Profil</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="{{ url_for('core.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>Çıkış</a></li>
-                    </ul>
+            
+            <!-- Navigation -->
+            <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+                
+                <!-- Dashboard -->
+                <a href="{{ url_for('core.dashboard') }}" 
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors
+                          {% if request.endpoint == 'core.dashboard' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span class="font-medium">Kontrol Paneli</span>
+                </a>
+                
+                <!-- Onaylar -->
+                <a href="{{ url_for('onay.index') }}" 
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors
+                          {% if request.blueprint == 'onay' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">check_circle</span>
+                    <span class="font-medium">Onaylar</span>
+                    <span class="ml-auto bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" id="onayBadge" style="display:none;"></span>
+                </a>
+                
+                {% if has_permission('proje.view') %}
+                <!-- Proje Yönetimi Section -->
+                <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Proje Yönetimi</p>
+                
+                <a href="{{ url_for('proje.proje_liste') }}" 
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors
+                          {% if request.blueprint == 'proje' and 'musteri' not in request.path and 'kadro' not in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">folder_open</span>
+                    <span class="font-medium">Projeler</span>
+                </a>
+                
+                <a href="{{ url_for('proje.musteri_liste') }}" 
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors
+                          {% if 'musteri' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">apartment</span>
+                    <span class="font-medium">Müşteriler</span>
+                </a>
+                {% endif %}
+                
+                {% if has_permission('ik.view') %}
+                <!-- İnsan Kaynakları Section -->
+                <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">İnsan Kaynakları</p>
+                
+                <a href="{{ url_for('ik.dashboard') }}" 
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors
+                          {% if request.endpoint == 'ik.dashboard' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">monitoring</span>
+                    <span class="font-medium">İK Dashboard</span>
+                </a>
+                
+                <!-- Adaylar Submenu -->
+                <div class="sidebar-menu-item">
+                    <button onclick="toggleSubmenu('adaylarMenu')" 
+                            class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white">
+                        <span class="flex items-center gap-3">
+                            <span class="material-symbols-outlined">person_add</span>
+                            <span class="font-medium">Adaylar</span>
+                        </span>
+                        <span class="material-symbols-outlined text-sm transition-transform" id="adaylarMenuIcon">expand_more</span>
+                    </button>
+                    <div id="adaylarMenu" class="sidebar-submenu {% if request.endpoint and 'aday' in request.endpoint %}open{% endif %}">
+                        <div class="pl-12 py-1 space-y-1">
+                            <a href="{{ url_for('ik.aday_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.aday_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Aday Listesi</a>
+                            <a href="{{ url_for('ik.eksik_evraklar') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.eksik_evraklar' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Eksik Evraklar</a>
+                            <a href="{{ url_for('proje.kadro_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'kadro' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Kadrolar & Davet</a>
+                        </div>
+                    </div>
                 </div>
+                
+                <!-- Çalışanlar Submenu -->
+                <div class="sidebar-menu-item">
+                    <button onclick="toggleSubmenu('calisanlarMenu')" 
+                            class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white">
+                        <span class="flex items-center gap-3">
+                            <span class="material-symbols-outlined">groups</span>
+                            <span class="font-medium">Çalışanlar</span>
+                        </span>
+                        <span class="material-symbols-outlined text-sm transition-transform" id="calisanlarMenuIcon">expand_more</span>
+                    </button>
+                    <div id="calisanlarMenu" class="sidebar-submenu {% if request.endpoint in ['ik.liste', 'ik.detay', 'ik.ekle', 'ik.duzenle'] %}open{% endif %}">
+                        <div class="pl-12 py-1 space-y-1">
+                            <a href="{{ url_for('ik.liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Çalışan Listesi</a>
+                            <a href="{{ url_for('ik.ekle') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.ekle' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Yeni Çalışan</a>
+                            <a href="{{ url_for('ik.isten_cikis_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.isten_cikis_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">İşten Çıkışlar</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Zimmet Submenu -->
+                <div class="sidebar-menu-item">
+                    <button onclick="toggleSubmenu('zimmetMenu')" 
+                            class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white">
+                        <span class="flex items-center gap-3">
+                            <span class="material-symbols-outlined">inventory_2</span>
+                            <span class="font-medium">Zimmet</span>
+                        </span>
+                        <span class="material-symbols-outlined text-sm transition-transform" id="zimmetMenuIcon">expand_more</span>
+                    </button>
+                    <div id="zimmetMenu" class="sidebar-submenu {% if request.endpoint and 'zimmet' in request.endpoint %}open{% endif %}">
+                        <div class="pl-12 py-1 space-y-1">
+                            <a href="{{ url_for('ik.zimmet_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.zimmet_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Zimmet Listesi</a>
+                            <a href="{{ url_for('ik.zimmet_ekle') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.zimmet_ekle' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Yeni Zimmet</a>
+                            <a href="{{ url_for('ik.zimmet_tipleri') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.zimmet_tipleri' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Zimmet Tipleri</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Eğitim Submenu -->
+                <div class="sidebar-menu-item">
+                    <button onclick="toggleSubmenu('egitimMenu')" 
+                            class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white">
+                        <span class="flex items-center gap-3">
+                            <span class="material-symbols-outlined">school</span>
+                            <span class="font-medium">Eğitim</span>
+                        </span>
+                        <span class="material-symbols-outlined text-sm transition-transform" id="egitimMenuIcon">expand_more</span>
+                    </button>
+                    <div id="egitimMenu" class="sidebar-submenu {% if request.blueprint == 'egitim' %}open{% endif %}">
+                        <div class="pl-12 py-1 space-y-1">
+                            <a href="{{ url_for('egitim.dashboard') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.dashboard' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Dashboard</a>
+                            <a href="{{ url_for('egitim.liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Eğitimler</a>
+                            <a href="{{ url_for('egitim.ekle') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.ekle' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Yeni Eğitim</a>
+                            <a href="{{ url_for('egitim.zorunlu_egitim_takip') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.zorunlu_egitim_takip' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Zorunlu Takip</a>
+                            <a href="{{ url_for('egitim.tip_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.tip_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Eğitim Tipleri</a>
+                            <a href="{{ url_for('egitim.soru_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.soru_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Soru Bankası</a>
+                            <a href="{{ url_for('egitim.test_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.test_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Testler</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <a href="{{ url_for('ik.evrak_tipleri') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.endpoint == 'ik.evrak_tipleri' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">folder</span>
+                    <span class="font-medium">Evrak Tipleri</span>
+                </a>
+                
+                <a href="{{ url_for('ik.izin_liste') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.endpoint == 'ik.izin_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">event_available</span>
+                    <span class="font-medium">İzin Talepleri</span>
+                </a>
+                {% endif %}
+                
+                <!-- Masraf -->
+                <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Masraf</p>
+                <a href="{{ url_for('masraf.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'masraf' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">receipt_long</span>
+                    <span class="font-medium">Masraflarım</span>
+                </a>
+                
+                {% if has_permission('sozlesme.view') %}
+                <!-- Sözleşmeler -->
+                <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Sözleşmeler</p>
+                <a href="{{ url_for('sozlesme.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'sozlesme' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">description</span>
+                    <span class="font-medium">Sözleşmeler</span>
+                </a>
+                {% endif %}
+                
+                {% if has_permission('satinalma.view') %}
+                <!-- Satın Alma -->
+                <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Satın Alma</p>
+                <a href="{{ url_for('satinalma.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'satinalma' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">shopping_cart</span>
+                    <span class="font-medium">Satın Alma</span>
+                </a>
+                {% endif %}
+                
+                <!-- Destek -->
+                <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Destek</p>
+                <a href="{{ url_for('talep.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'talep' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">support_agent</span>
+                    <span class="font-medium">Talepler</span>
+                </a>
+                
+                {% if has_permission('rapor.view') %}
+                <!-- Raporlar -->
+                <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Raporlar</p>
+                <a href="{{ url_for('rapor.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'rapor' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">bar_chart</span>
+                    <span class="font-medium">Raporlar</span>
+                </a>
+                {% endif %}
+                
+                {% if has_permission('filo.view') %}
+                <!-- Filo Yönetimi -->
+                <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Filo Yönetimi</p>
+                <a href="{{ url_for('filo.liste') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'filo' and 'yakit' not in request.path and 'teslim' not in request.path and 'kaza' not in request.path and 'ikame' not in request.path and 'ceza' not in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">directions_car</span>
+                    <span class="font-medium">Araçlar</span>
+                </a>
+                
+                <!-- Filo İşlemler Submenu -->
+                <div class="sidebar-menu-item">
+                    <button onclick="toggleSubmenu('filoMenu')" 
+                            class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white">
+                        <span class="flex items-center gap-3">
+                            <span class="material-symbols-outlined">build</span>
+                            <span class="font-medium">İşlemler</span>
+                        </span>
+                        <span class="material-symbols-outlined text-sm transition-transform" id="filoMenuIcon">expand_more</span>
+                    </button>
+                    <div id="filoMenu" class="sidebar-submenu {% if 'yakit' in request.path or 'teslim' in request.path or 'kaza' in request.path or 'ikame' in request.path or 'ceza' in request.path %}open{% endif %}">
+                        <div class="pl-12 py-1 space-y-1">
+                            <a href="{{ url_for('filo.yakit_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'yakit' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Yakıt Kayıtları</a>
+                            <a href="{{ url_for('filo.teslim_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'teslim' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Teslim/İade</a>
+                            <a href="{{ url_for('filo.kaza_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'kaza' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Kazalar</a>
+                            <a href="{{ url_for('filo.ikame_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'ikame' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">İkame Araçlar</a>
+                            <a href="{{ url_for('filo.ceza_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'ceza' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Trafik Cezaları</a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if has_permission('tedarikci.view') %}
+                <!-- Tedarik -->
+                <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Tedarik</p>
+                <a href="{{ url_for('tedarikci.liste') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'tedarikci' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">business</span>
+                    <span class="font-medium">Tedarikçiler</span>
+                </a>
+                {% endif %}
+                
+                {% if current_user.is_admin %}
+                <!-- Yönetim -->
+                <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Yönetim</p>
+                <a href="{{ url_for('ayarlar.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'ayarlar' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span class="font-medium">Ayarlar</span>
+                </a>
+                {% endif %}
+                
+            </nav>
+            
+            <!-- Sidebar Footer -->
+            <div class="p-4 border-t border-border-light dark:border-border-dark">
+                <a href="{{ url_for('core.logout') }}" class="flex items-center gap-3 px-4 py-2 text-red-500 hover:text-red-600 transition-colors">
+                    <span class="material-symbols-outlined">logout</span>
+                    <span class="font-medium">Çıkış Yap</span>
+                </a>
             </div>
-        </div>
+        </aside>
         
-        <!-- Content -->
-        <div class="content-wrapper">
-            <!-- Flash Messages -->
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            {% endfor %}
-            {% endif %}
-            {% endwith %}
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden relative">
             
-            {% block content %}{% endblock %}
+            <!-- Header -->
+            <header class="h-16 bg-white dark:bg-card-dark border-b border-border-light dark:border-border-dark flex items-center justify-between px-6 z-10">
+                <div class="flex items-center gap-4 flex-1">
+                    <!-- Mobile Menu Button -->
+                    <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#3b4754] rounded-lg">
+                        <span class="material-symbols-outlined">menu</span>
+                    </button>
+                    
+                    <!-- Page Title -->
+                    <h1 class="text-lg font-bold text-[#111418] dark:text-white">{% block page_title %}Dashboard{% endblock %}</h1>
+                    
+                    <!-- Search -->
+                    <div class="relative hidden sm:block w-full max-w-md ml-4">
+                        <input type="text" placeholder="Arama yapın..." class="w-full h-10 pl-10 pr-4 bg-gray-100 dark:bg-[#111418] border-none rounded-lg text-sm text-[#111418] dark:text-white placeholder-text-muted dark:placeholder-[#586474] focus:ring-2 focus:ring-primary/50"/>
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-muted dark:text-[#586474] text-lg pointer-events-none">search</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3 sm:gap-5">
+                    <!-- Theme Toggle -->
+                    <button onclick="toggleTheme()" class="w-10 h-10 flex items-center justify-center rounded-full text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#3b4754] transition-colors" title="Temayı Değiştir">
+                        <span class="material-symbols-outlined dark:hidden">dark_mode</span>
+                        <span class="material-symbols-outlined hidden dark:block">light_mode</span>
+                    </button>
+                    
+                    <!-- Notifications -->
+                    <button class="relative w-10 h-10 flex items-center justify-center rounded-full text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#3b4754] transition-colors">
+                        <span class="material-symbols-outlined">notifications</span>
+                        <span class="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-card-dark"></span>
+                    </button>
+                    
+                    <div class="h-8 w-px bg-border-light dark:bg-border-dark hidden sm:block"></div>
+                    
+                    <!-- User Menu -->
+                    <div class="relative" id="userMenuContainer">
+                        <button onclick="toggleUserMenu()" class="flex items-center gap-3 pl-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-[#3b4754] transition-colors">
+                            <div class="text-right hidden sm:block">
+                                <p class="text-sm font-bold text-[#111418] dark:text-white leading-none">{{ current_user.full_name }}</p>
+                                <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">{{ current_user.role.ad if current_user.role else 'Kullanıcı' }}</p>
+                            </div>
+                            <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-lg">
+                                {{ current_user.ad[0] if current_user.ad else 'U' }}{{ current_user.soyad[0] if current_user.soyad else '' }}
+                            </div>
+                        </button>
+                        
+                        <!-- Dropdown -->
+                        <div id="userMenu" class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-card-dark rounded-xl shadow-lg border border-border-light dark:border-border-dark py-2 z-50">
+                            <a href="{{ url_for('core.profil') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]">
+                                <span class="material-symbols-outlined text-lg">person</span>
+                                Profil
+                            </a>
+                            <hr class="my-2 border-border-light dark:border-border-dark">
+                            <a href="{{ url_for('core.logout') }}" class="flex items-center gap-2 px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
+                                <span class="material-symbols-outlined text-lg">logout</span>
+                                Çıkış Yap
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Main Content Area -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-background-light dark:bg-background-dark p-4 sm:p-6">
+                
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                {% for category, message in messages %}
+                <div class="mb-4 p-4 rounded-lg flex items-center gap-3 {% if category == 'success' %}bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800{% elif category == 'error' or category == 'danger' %}bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800{% elif category == 'warning' %}bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-800{% else %}bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800{% endif %}">
+                    <span class="material-symbols-outlined">{% if category == 'success' %}check_circle{% elif category == 'error' or category == 'danger' %}error{% elif category == 'warning' %}warning{% else %}info{% endif %}</span>
+                    <span>{{ message }}</span>
+                    <button onclick="this.parentElement.remove()" class="ml-auto">
+                        <span class="material-symbols-outlined text-lg">close</span>
+                    </button>
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+                
+                {% block content %}{% endblock %}
+                
+                <!-- Footer -->
+                <div class="mt-8 text-center text-xs text-text-muted dark:text-[#586474]">
+                    <p>© 2024 TG Portal ERP Sistemi. Tüm hakları saklıdır.</p>
+                </div>
+            </main>
         </div>
     </div>
     
+    <!-- Mobile Sidebar Overlay -->
+    <div id="mobileOverlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden" onclick="toggleMobileMenu()"></div>
+    
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     
     <script>
-        // Select2 global config
-        $.fn.select2.defaults.set('theme', 'bootstrap-5');
-        $.fn.select2.defaults.set('language', 'tr');
+        // Theme toggle
+        function toggleTheme() {
+            document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+        }
         
-        // Initialize Select2
+        // Load saved theme
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+        }
+        
+        // Sidebar submenu toggle
+        function toggleSubmenu(menuId) {
+            const menu = document.getElementById(menuId);
+            const icon = document.getElementById(menuId + 'Icon');
+            menu.classList.toggle('open');
+            if (icon) {
+                icon.style.transform = menu.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0)';
+            }
+        }
+        
+        // User menu toggle
+        function toggleUserMenu() {
+            document.getElementById('userMenu').classList.toggle('hidden');
+        }
+        
+        // Close user menu on outside click
+        document.addEventListener('click', function(e) {
+            const container = document.getElementById('userMenuContainer');
+            if (container && !container.contains(e.target)) {
+                document.getElementById('userMenu').classList.add('hidden');
+            }
+        });
+        
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobileOverlay');
+            sidebar.classList.toggle('hidden');
+            sidebar.classList.toggle('fixed');
+            sidebar.classList.toggle('inset-y-0');
+            sidebar.classList.toggle('left-0');
+            sidebar.classList.toggle('z-40');
+            overlay.classList.toggle('hidden');
+        }
+        
+        // Select2 initialization
         $(document).ready(function() {
             $('.select2').select2();
         });
