@@ -1,222 +1,380 @@
 {% extends "base.html" %}
 
-{% block title %}{% if calisan %}Çalışan Düzenle{% else %}Yeni Çalışan{% endif %} - TG Portal{% endblock %}
-{% block page_title %}{% if calisan %}Çalışan Düzenle{% else %}Yeni Çalışan{% endif %}{% endblock %}
+{% block title %}{% if calisan %}Çalışan Düzenle{% else %}Yeni Çalışan Ekle{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if calisan %}Çalışan Düzenle{% else %}Yeni Çalışan Ekle{% endif %}{% endblock %}
 
 {% block content %}
-<form method="POST">
+<!-- Breadcrumbs & Actions -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-2 text-sm text-text-muted dark:text-text-muted-dark">
+        <a class="hover:text-primary transition-colors" href="{{ url_for('core.dashboard') }}">Ana Sayfa</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <a class="hover:text-primary transition-colors" href="{{ url_for('ik.liste') }}">Çalışanlar</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <span class="text-[#111418] dark:text-white font-medium">{% if calisan %}Düzenle{% else %}Yeni Çalışan Ekle{% endif %}</span>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('ik.liste') }}" class="px-4 py-2 text-sm font-bold text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-all">İptal</a>
+        <button type="submit" form="calisanForm" class="px-6 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">Kaydet</button>
+    </div>
+</div>
+
+<!-- Page Header -->
+<div class="flex items-center gap-4 mb-6">
+    <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+        <span class="material-symbols-outlined text-3xl">{% if calisan %}edit{% else %}person_add{% endif %}</span>
+    </div>
+    <div>
+        <h2 class="text-2xl font-bold text-[#111418] dark:text-white">{% if calisan %}{{ calisan.ad }} {{ calisan.soyad }}{% else %}Yeni Çalışan Kaydı{% endif %}</h2>
+        <p class="text-sm text-text-muted dark:text-text-muted-dark">{% if calisan %}Çalışan bilgilerini güncelleyin.{% else %}Sisteme yeni bir çalışan eklemek için bilgileri doldurun.{% endif %}</p>
+    </div>
+</div>
+
+<form id="calisanForm" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     
-    <div class="row">
-        <div class="col-lg-8">
-            <!-- Kişisel Bilgiler -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-person me-2"></i>Kişisel Bilgiler</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Sicil No</label>
-                            <input type="text" name="sicil_no" class="form-control"
-                                   value="{{ calisan.sicil_no if calisan else '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Ad <span class="text-danger">*</span></label>
-                            <input type="text" name="ad" class="form-control" required
-                                   value="{{ calisan.ad if calisan else '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Soyad <span class="text-danger">*</span></label>
-                            <input type="text" name="soyad" class="form-control" required
-                                   value="{{ calisan.soyad if calisan else '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">TC Kimlik No</label>
-                            <input type="text" name="tc_kimlik" class="form-control" maxlength="11"
-                                   value="{{ calisan.tc_kimlik if calisan else '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Doğum Tarihi</label>
-                            <input type="date" name="dogum_tarihi" class="form-control"
-                                   value="{{ calisan.dogum_tarihi.strftime('%Y-%m-%d') if calisan and calisan.dogum_tarihi else '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Cinsiyet</label>
-                            <select name="cinsiyet" class="form-select">
-                                <option value="">Seçiniz</option>
-                                <option value="erkek" {% if calisan and calisan.cinsiyet == 'erkek' %}selected{% endif %}>Erkek</option>
-                                <option value="kadin" {% if calisan and calisan.cinsiyet == 'kadin' %}selected{% endif %}>Kadın</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
+    <div class="lg:col-span-8 space-y-6">
+        
+        <!-- Kişisel Bilgiler -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-primary">account_circle</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Kişisel Bilgiler</h3>
             </div>
-            
-            <!-- İletişim Bilgileri -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-telephone me-2"></i>İletişim Bilgileri</h6>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Ad <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" name="ad" value="{{ calisan.ad if calisan else '' }}" placeholder="Adı" required
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Email</label>
-                            <input type="email" name="email" class="form-control"
-                                   value="{{ calisan.email if calisan else '' }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Telefon</label>
-                            <input type="tel" name="telefon" class="form-control"
-                                   value="{{ calisan.telefon if calisan else '' }}">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Adres</label>
-                            <textarea name="adres" class="form-control" rows="2">{{ calisan.adres if calisan else '' }}</textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">İl</label>
-                            <input type="text" name="il" class="form-control"
-                                   value="{{ calisan.il if calisan else '' }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">İlçe</label>
-                            <input type="text" name="ilce" class="form-control"
-                                   value="{{ calisan.ilce if calisan else '' }}">
-                        </div>
-                    </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Soyad <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" name="soyad" value="{{ calisan.soyad if calisan else '' }}" placeholder="Soyadı" required
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
                 </div>
-            </div>
-            
-            <!-- İş Bilgileri -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-briefcase me-2"></i>İş Bilgileri</h6>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        T.C. Kimlik No
+                    </label>
+                    <input type="text" name="tc_kimlik" value="{{ calisan.tc_kimlik if calisan else '' }}" placeholder="11 haneli kimlik numarası" maxlength="11"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5 font-mono">
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Departman</label>
-                            <select name="departman_id" class="form-select select2">
-                                <option value="">Seçiniz</option>
-                                {% for d in departmanlar %}
-                                <option value="{{ d.id }}" {% if calisan and calisan.departman_id == d.id %}selected{% endif %}>
-                                    {{ d.ad }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Pozisyon</label>
-                            <select name="pozisyon_id" class="form-select select2">
-                                <option value="">Seçiniz</option>
-                                {% for p in pozisyonlar %}
-                                <option value="{{ p.id }}" {% if calisan and calisan.pozisyon_id == p.id %}selected{% endif %}>
-                                    {{ p.ad }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">İşe Başlama Tarihi</label>
-                            <input type="date" name="ise_baslama" class="form-control"
-                                   value="{{ calisan.ise_baslama.strftime('%Y-%m-%d') if calisan and calisan.ise_baslama else '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Çalışma Tipi</label>
-                            <select name="calisma_tipi" class="form-select">
-                                <option value="">Seçiniz</option>
-                                <option value="tam_zamanli" {% if calisan and calisan.calisma_tipi == 'tam_zamanli' %}selected{% endif %}>Tam Zamanlı</option>
-                                <option value="yari_zamanli" {% if calisan and calisan.calisma_tipi == 'yari_zamanli' %}selected{% endif %}>Yarı Zamanlı</option>
-                                <option value="stajyer" {% if calisan and calisan.calisma_tipi == 'stajyer' %}selected{% endif %}>Stajyer</option>
-                                <option value="sozlesmeli" {% if calisan and calisan.calisma_tipi == 'sozlesmeli' %}selected{% endif %}>Sözleşmeli</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Durum</label>
-                            <select name="durum" class="form-select">
-                                {% for d in durumlar %}
-                                <option value="{{ d.value }}" {% if calisan and calisan.durum == d %}selected{% endif %}>
-                                    {{ d.value.replace('_', ' ').title() }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Sicil No
+                    </label>
+                    <input type="text" name="sicil_no" value="{{ calisan.sicil_no if calisan else '' }}" placeholder="Sicil numarası"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5 font-mono">
                 </div>
-            </div>
-            
-            <!-- Acil Durum -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Acil Durum İletişim</h6>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Doğum Tarihi
+                    </label>
+                    <input type="date" name="dogum_tarihi" value="{{ calisan.dogum_tarihi.strftime('%Y-%m-%d') if calisan and calisan.dogum_tarihi else '' }}"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Ad Soyad</label>
-                            <input type="text" name="acil_kisi_ad" class="form-control"
-                                   value="{{ calisan.acil_kisi_ad if calisan else '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Telefon</label>
-                            <input type="tel" name="acil_kisi_telefon" class="form-control"
-                                   value="{{ calisan.acil_kisi_telefon if calisan else '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Yakınlık</label>
-                            <input type="text" name="acil_kisi_yakinlik" class="form-control" placeholder="örn: Eş, Anne, Kardeş"
-                                   value="{{ calisan.acil_kisi_yakinlik if calisan else '' }}">
-                        </div>
-                    </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Doğum Yeri
+                    </label>
+                    <input type="text" name="dogum_yeri" value="{{ calisan.dogum_yeri if calisan else '' }}" placeholder="Doğum yeri"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Cinsiyet
+                    </label>
+                    <select name="cinsiyet" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="">Seçiniz</option>
+                        <option value="erkek" {% if calisan and calisan.cinsiyet == 'erkek' %}selected{% endif %}>Erkek</option>
+                        <option value="kadin" {% if calisan and calisan.cinsiyet == 'kadin' %}selected{% endif %}>Kadın</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Medeni Durum
+                    </label>
+                    <select name="medeni_durum" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="">Seçiniz</option>
+                        <option value="bekar" {% if calisan and calisan.medeni_durum == 'bekar' %}selected{% endif %}>Bekar</option>
+                        <option value="evli" {% if calisan and calisan.medeni_durum == 'evli' %}selected{% endif %}>Evli</option>
+                        <option value="bosanmis" {% if calisan and calisan.medeni_durum == 'bosanmis' %}selected{% endif %}>Boşanmış</option>
+                    </select>
                 </div>
             </div>
         </div>
         
-        <div class="col-lg-4">
-            <!-- Kaydet -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-1"></i>
-                            {% if calisan %}Güncelle{% else %}Kaydet{% endif %}
-                        </button>
-                        <a href="{{ url_for('ik.liste') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg me-1"></i>İptal
-                        </a>
+        <!-- İletişim Bilgileri -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-primary">contact_mail</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">İletişim Bilgileri</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        E-Posta Adresi
+                    </label>
+                    <input type="email" name="email" value="{{ calisan.email if calisan else '' }}" placeholder="ornek@email.com"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Telefon Numarası
+                    </label>
+                    <input type="tel" name="telefon" value="{{ calisan.telefon if calisan else '' }}" placeholder="05XX XXX XX XX"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        İl
+                    </label>
+                    <select name="il" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="">Seçiniz</option>
+                        {% for il in iller or [] %}
+                        <option value="{{ il.ad }}" {% if calisan and calisan.il == il.ad %}selected{% endif %}>{{ il.ad }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        İlçe
+                    </label>
+                    <input type="text" name="ilce" value="{{ calisan.ilce if calisan else '' }}" placeholder="İlçe"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Adres
+                    </label>
+                    <textarea name="adres" rows="2" placeholder="Açık adres"
+                              class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">{{ calisan.adres if calisan else '' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Acil Durum İletişim -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-red-500">emergency</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Acil Durum İletişim</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Ad Soyad
+                    </label>
+                    <input type="text" name="acil_kisi_ad" value="{{ calisan.acil_kisi_ad if calisan else '' }}" placeholder="Acil durumda aranacak kişi"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Telefon
+                    </label>
+                    <input type="tel" name="acil_kisi_telefon" value="{{ calisan.acil_kisi_telefon if calisan else '' }}" placeholder="05XX XXX XX XX"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Yakınlık
+                    </label>
+                    <input type="text" name="acil_kisi_yakinlik" value="{{ calisan.acil_kisi_yakinlik if calisan else '' }}" placeholder="Örn: Eş, Anne, Kardeş"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+            </div>
+        </div>
+        
+        <!-- İş Bilgileri -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-primary">work</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">İş Bilgileri</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Departman
+                    </label>
+                    <select name="departman_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="">Seçiniz</option>
+                        {% for dept in departmanlar or [] %}
+                        <option value="{{ dept.id }}" {% if calisan and calisan.departman_id == dept.id %}selected{% endif %}>{{ dept.ad }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Pozisyon
+                    </label>
+                    <select name="pozisyon_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="">Seçiniz</option>
+                        {% for poz in pozisyonlar or [] %}
+                        <option value="{{ poz.id }}" {% if calisan and calisan.pozisyon_id == poz.id %}selected{% endif %}>{{ poz.ad }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Yönetici
+                    </label>
+                    <select name="yonetici_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="">Seçiniz</option>
+                        {% for ynt in yoneticiler or [] %}
+                        <option value="{{ ynt.id }}" {% if calisan and calisan.yonetici_id == ynt.id %}selected{% endif %}>{{ ynt.ad }} {{ ynt.soyad }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Çalışma Tipi
+                    </label>
+                    <select name="calisma_tipi" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="">Seçiniz</option>
+                        <option value="tam_zamanli" {% if calisan and calisan.calisma_tipi == 'tam_zamanli' %}selected{% endif %}>Tam Zamanlı</option>
+                        <option value="yari_zamanli" {% if calisan and calisan.calisma_tipi == 'yari_zamanli' %}selected{% endif %}>Yarı Zamanlı</option>
+                        <option value="stajyer" {% if calisan and calisan.calisma_tipi == 'stajyer' %}selected{% endif %}>Stajyer</option>
+                        <option value="sozlesmeli" {% if calisan and calisan.calisma_tipi == 'sozlesmeli' %}selected{% endif %}>Sözleşmeli</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        İşe Başlama Tarihi
+                    </label>
+                    <input type="date" name="ise_baslama" value="{{ calisan.ise_baslama.strftime('%Y-%m-%d') if calisan and calisan.ise_baslama else '' }}"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Durum
+                    </label>
+                    <select name="durum" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="aktif" {% if calisan and calisan.durum and calisan.durum.value == 'aktif' %}selected{% endif %}>Aktif</option>
+                        <option value="izinli" {% if calisan and calisan.durum and calisan.durum.value == 'izinli' %}selected{% endif %}>İzinli</option>
+                        <option value="askiya_alindi" {% if calisan and calisan.durum and calisan.durum.value == 'askiya_alindi' %}selected{% endif %}>Askıya Alındı</option>
+                        <option value="ayrildi" {% if calisan and calisan.durum and calisan.durum.value == 'ayrildi' %}selected{% endif %}>Ayrıldı</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Notlar
+                    </label>
+                    <textarea name="notlar" rows="3" placeholder="Çalışan hakkında notlar..."
+                              class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">{{ calisan.notlar if calisan else '' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Submit Buttons (Mobile) -->
+        <div class="flex items-center justify-end gap-4 pt-4 lg:hidden">
+            <a href="{{ url_for('ik.liste') }}" class="px-6 py-2.5 text-sm font-bold text-text-muted dark:text-text-muted-dark hover:text-[#111418] dark:hover:text-white transition-colors">İptal</a>
+            <button type="submit" class="px-8 py-2.5 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">
+                {% if calisan %}Güncelle{% else %}Kaydet{% endif %}
+            </button>
+        </div>
+        
+    </div>
+    
+    <!-- Sidebar -->
+    <aside class="lg:col-span-4 space-y-6">
+        
+        <!-- Photo Upload -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-sm font-bold uppercase text-text-muted dark:text-text-muted-dark mb-4 tracking-widest">Fotoğraf</h3>
+            <div class="flex flex-col items-center">
+                <div class="w-32 h-32 rounded-full bg-gray-100 dark:bg-[#111418] border-2 border-dashed border-border-light dark:border-border-dark flex items-center justify-center mb-4 overflow-hidden">
+                    {% if calisan and calisan.foto %}
+                    <img src="{{ url_for('static', filename='uploads/' + calisan.foto) }}" alt="Fotoğraf" class="w-full h-full object-cover" id="previewImg">
+                    {% else %}
+                    <span class="material-symbols-outlined text-4xl text-gray-400" id="previewIcon">person</span>
+                    <img src="#" alt="Fotoğraf" class="w-full h-full object-cover hidden" id="previewImg">
+                    {% endif %}
+                </div>
+                <label class="cursor-pointer">
+                    <span class="px-4 py-2 bg-gray-100 dark:bg-[#111418] hover:bg-gray-200 dark:hover:bg-[#252b36] rounded-lg text-sm font-medium transition-colors">
+                        Fotoğraf Seç
+                    </span>
+                    <input type="file" name="foto" accept="image/*" class="hidden" onchange="previewImage(this)">
+                </label>
+            </div>
+        </div>
+        
+        <!-- Info Box -->
+        <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="material-symbols-outlined text-blue-500">info</span>
+                <h4 class="font-bold text-blue-900 dark:text-blue-200">Bilgilendirme</h4>
+            </div>
+            <ul class="space-y-3 text-sm text-blue-800 dark:text-blue-300/80">
+                <li class="flex gap-2">
+                    <span class="material-symbols-outlined text-xs mt-1">check_circle</span>
+                    <span>Yıldızlı (*) alanların doldurulması zorunludur.</span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="material-symbols-outlined text-xs mt-1">check_circle</span>
+                    <span>T.C. Kimlik numarası mükerrer kayıt kontrolü için kullanılır.</span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="material-symbols-outlined text-xs mt-1">check_circle</span>
+                    <span>Evraklar kayıt sonrası detay sayfasından yüklenebilir.</span>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Record Summary -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-sm font-bold uppercase text-text-muted dark:text-text-muted-dark mb-6 tracking-widest">Kayıt Özeti</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase">Kayıt Tarihi</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">
+                        {% if calisan and calisan.created_at %}{{ calisan.created_at.strftime('%d.%m.%Y') }}{% else %}Bugün{% endif %}
+                    </span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase">Kayıt Türü</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{% if calisan %}Düzenleme{% else %}Yeni Giriş{% endif %}</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase">İşlemi Yapan</span>
+                    <div class="flex items-center gap-2">
+                        <div class="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">
+                            {{ current_user.ad[0] if current_user and current_user.ad else 'U' }}
+                        </div>
+                        <span class="text-sm font-medium text-[#111418] dark:text-white">{{ current_user.ad if current_user else '' }}</span>
                     </div>
                 </div>
             </div>
-            
-            <!-- Notlar -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-sticky me-2"></i>Notlar</h6>
-                </div>
-                <div class="card-body">
-                    <textarea name="notlar" class="form-control" rows="4">{{ calisan.notlar if calisan else '' }}</textarea>
-                </div>
-            </div>
-            
             {% if calisan %}
-            <!-- Bilgi -->
-            <div class="card">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
-                </div>
-                <div class="card-body">
-                    <small class="text-muted">
-                        <strong>Kıdem:</strong> {{ calisan.kidem_yili }} yıl<br><br>
-                        <strong>Oluşturulma:</strong><br>
-                        {{ calisan.created_at.strftime('%d.%m.%Y %H:%M') }}<br><br>
-                        <strong>Son Güncelleme:</strong><br>
-                        {{ calisan.updated_at.strftime('%d.%m.%Y %H:%M') }}
-                    </small>
-                </div>
-            </div>
+            <a href="{{ url_for('ik.detay', id=calisan.id) }}" class="w-full mt-6 py-2.5 border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#111418] rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-lg">arrow_back</span>
+                Detay Sayfasına Dön
+            </a>
             {% endif %}
         </div>
-    </div>
+        
+    </aside>
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewImage(input) {
+    const preview = document.getElementById('previewImg');
+    const icon = document.getElementById('previewIcon');
+    
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.classList.remove('hidden');
+            if (icon) icon.classList.add('hidden');
+        }
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+</script>
 {% endblock %}

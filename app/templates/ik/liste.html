@@ -1,155 +1,240 @@
 {% extends "base.html" %}
 
-{% block title %}Çalışanlar - TG Portal{% endblock %}
-{% block page_title %}Çalışanlar{% endblock %}
+{% block title %}Çalışan Listesi - TG Portal{% endblock %}
+{% block page_title %}Çalışan Listesi{% endblock %}
 
 {% block content %}
-<div class="card mb-4">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <div><i class="bi bi-funnel me-2"></i>Filtreler</div>
-        {% if has_permission('ik.create') %}
-        <a href="{{ url_for('ik.ekle') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-lg me-1"></i>Yeni Çalışan
-        </a>
-        {% endif %}
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#111418] dark:text-white">Çalışan Listesi</h1>
+        <p class="text-text-muted dark:text-text-muted-dark text-sm mt-1">
+            Tüm çalışanları görüntüleyin, filtreleyin ve yönetin.
+        </p>
     </div>
-    <div class="card-body">
-        <form method="GET" class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">Ara</label>
-                <input type="text" name="search" class="form-control" 
-                       value="{{ request.args.get('search', '') }}" placeholder="Ad, sicil no...">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Departman</label>
-                <select name="departman_id" class="form-select">
-                    <option value="">Tümü</option>
-                    {% for d in departmanlar %}
-                    <option value="{{ d.id }}" {% if request.args.get('departman_id')|int == d.id %}selected{% endif %}>
-                        {{ d.ad }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Durum</label>
-                <select name="durum" class="form-select">
-                    <option value="">Tümü</option>
-                    {% for d in durumlar %}
-                    <option value="{{ d.value }}" {% if request.args.get('durum') == d.value %}selected{% endif %}>
-                        {{ d.value.replace('_', ' ').title() }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary me-2">
-                    <i class="bi bi-search me-1"></i>Filtrele
-                </button>
-                <a href="{{ url_for('ik.liste') }}" class="btn btn-outline-secondary">Temizle</a>
-            </div>
-        </form>
+    <div class="flex gap-3">
+        <a href="{{ url_for('ik.ekle') }}" class="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary-dark transition-colors shadow-sm">
+            <span class="material-symbols-outlined text-lg">person_add</span>
+            Yeni Çalışan Ekle
+        </a>
     </div>
 </div>
 
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Sicil No</th>
-                        <th>Ad Soyad</th>
-                        <th>Departman</th>
-                        <th>Pozisyon</th>
-                        <th>İşe Başlama</th>
-                        <th>Durum</th>
-                        <th width="100"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for c in calisanlar %}
-                    <tr>
-                        <td>{{ c.sicil_no or '-' }}</td>
-                        <td>
-                            <a href="{{ url_for('ik.detay', id=c.id) }}" class="text-decoration-none fw-bold">
-                                {{ c.full_name }}
-                            </a>
-                            {% if c.email %}
-                            <br><small class="text-muted">{{ c.email }}</small>
-                            {% endif %}
-                        </td>
-                        <td>{{ c.departman.ad if c.departman else '-' }}</td>
-                        <td>{{ c.pozisyon.ad if c.pozisyon else '-' }}</td>
-                        <td>{{ c.ise_baslama.strftime('%d.%m.%Y') if c.ise_baslama else '-' }}</td>
-                        <td>
-                            {% if c.durum.value == 'aktif' %}
-                            <span class="badge bg-success">Aktif</span>
-                            {% elif c.durum.value == 'izinli' %}
-                            <span class="badge bg-info">İzinli</span>
-                            {% elif c.durum.value == 'ayrildi' %}
-                            <span class="badge bg-secondary">Ayrıldı</span>
-                            {% else %}
-                            <span class="badge bg-warning">{{ c.durum.value.replace('_', ' ').title() }}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ url_for('ik.detay', id=c.id) }}" class="btn btn-outline-primary" title="Detay">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                {% if has_permission('ik.edit') %}
-                                <a href="{{ url_for('ik.duzenle', id=c.id) }}" class="btn btn-outline-warning" title="Düzenle">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
+<!-- Filter & Action Bar -->
+<div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl p-4 mb-6 shadow-sm">
+    <form method="GET" class="flex flex-col lg:flex-row gap-4 justify-between">
+        <div class="flex flex-wrap gap-2 items-center">
+            <!-- Status Filter Buttons -->
+            <div class="flex gap-2 flex-wrap">
+                <a href="{{ url_for('ik.liste') }}" 
+                   class="h-9 px-4 rounded-lg text-xs font-bold transition-colors flex items-center
+                          {% if not request.args.get('durum') %}
+                          bg-primary/10 text-primary border border-primary/20
+                          {% else %}
+                          bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark hover:border-primary/40
+                          {% endif %}">
+                    Hepsi
+                </a>
+                <a href="{{ url_for('ik.liste', durum='aktif') }}" 
+                   class="h-9 px-4 rounded-lg text-xs font-bold transition-colors flex items-center
+                          {% if request.args.get('durum') == 'aktif' %}
+                          bg-primary/10 text-primary border border-primary/20
+                          {% else %}
+                          bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark hover:border-primary/40
+                          {% endif %}">
+                    Aktif
+                </a>
+                <a href="{{ url_for('ik.liste', durum='izinli') }}" 
+                   class="h-9 px-4 rounded-lg text-xs font-bold transition-colors flex items-center
+                          {% if request.args.get('durum') == 'izinli' %}
+                          bg-primary/10 text-primary border border-primary/20
+                          {% else %}
+                          bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark hover:border-primary/40
+                          {% endif %}">
+                    İzinli
+                </a>
+                <a href="{{ url_for('ik.liste', durum='ayrildi') }}" 
+                   class="h-9 px-4 rounded-lg text-xs font-bold transition-colors flex items-center
+                          {% if request.args.get('durum') == 'ayrildi' %}
+                          bg-primary/10 text-primary border border-primary/20
+                          {% else %}
+                          bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark hover:border-primary/40
+                          {% endif %}">
+                    Ayrıldı
+                </a>
+            </div>
+            
+            <!-- Departman Filter -->
+            <select name="departman_id" onchange="this.form.submit()" class="h-9 px-3 rounded-lg text-xs font-medium bg-gray-100 dark:bg-[#111418] border border-border-light dark:border-border-dark focus:ring-primary focus:border-primary">
+                <option value="">Tüm Departmanlar</option>
+                {% for dept in departmanlar %}
+                <option value="{{ dept.id }}" {% if request.args.get('departman_id')|int == dept.id %}selected{% endif %}>{{ dept.ad }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <!-- Search -->
+        <div class="flex items-center gap-2">
+            <div class="flex items-center bg-gray-100 dark:bg-[#111418] rounded-lg border border-border-light dark:border-border-dark px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary/50 transition-all">
+                <span class="material-symbols-outlined text-text-muted dark:text-[#586474] text-lg mr-2">search</span>
+                <input type="text" 
+                       name="search" 
+                       value="{{ request.args.get('search', '') }}"
+                       class="bg-transparent border-none p-0 text-sm w-full sm:w-48 focus:ring-0 text-[#111418] dark:text-white placeholder-text-muted dark:placeholder-[#586474]" 
+                       placeholder="Ad, sicil, email..."/>
+            </div>
+            <button type="submit" class="p-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+                <span class="material-symbols-outlined text-xl">search</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Table Container -->
+<div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 dark:bg-[#111418] border-b border-border-light dark:border-border-dark">
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">Çalışan</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden md:table-cell">Sicil No</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden lg:table-cell">Departman</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden lg:table-cell">Pozisyon</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden sm:table-cell">İşe Başlama</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">Durum</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark text-right">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for calisan in calisanlar %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors group">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden shrink-0">
+                                {% if calisan.foto %}
+                                <img src="{{ url_for('static', filename='uploads/' + calisan.foto) }}" alt="{{ calisan.ad }}" class="w-full h-full object-cover"/>
+                                {% else %}
+                                <span class="text-sm font-bold text-gray-500 dark:text-gray-400">{{ calisan.ad[0] if calisan.ad else '' }}{{ calisan.soyad[0] if calisan.soyad else '' }}</span>
                                 {% endif %}
                             </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                            Çalışan bulunamadı
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-[#111418] dark:text-white truncate">{{ calisan.ad }} {{ calisan.soyad }}</p>
+                                <p class="text-xs text-text-muted dark:text-text-muted-dark truncate">{{ calisan.email or calisan.telefon or '-' }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-[#111418] dark:text-white hidden md:table-cell font-mono">{{ calisan.sicil_no or '-' }}</td>
+                    <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden lg:table-cell">{{ calisan.departman.ad if calisan.departman else '-' }}</td>
+                    <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden lg:table-cell">{{ calisan.pozisyon.ad if calisan.pozisyon else '-' }}</td>
+                    <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden sm:table-cell">{{ calisan.ise_baslama.strftime('%d.%m.%Y') if calisan.ise_baslama else '-' }}</td>
+                    <td class="px-6 py-4">
+                        {% if calisan.durum.value == 'aktif' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            Aktif
+                        </span>
+                        {% elif calisan.durum.value == 'izinli' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            İzinli
+                        </span>
+                        {% elif calisan.durum.value == 'askiya_alindi' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            Askıda
+                        </span>
+                        {% elif calisan.durum.value == 'ayrildi' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            Ayrıldı
+                        </span>
+                        {% elif calisan.durum.value == 'aday' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            Aday
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            {{ calisan.durum.value if calisan.durum else 'Belirsiz' }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <a href="{{ url_for('ik.detay', id=calisan.id) }}" 
+                               class="p-1.5 hover:text-primary transition-colors rounded-lg bg-gray-100 dark:bg-[#252b36]"
+                               title="Detay">
+                                <span class="material-symbols-outlined text-xl">visibility</span>
+                            </a>
+                            <a href="{{ url_for('ik.duzenle', id=calisan.id) }}" 
+                               class="p-1.5 hover:text-primary transition-colors rounded-lg bg-gray-100 dark:bg-[#252b36]"
+                               title="Düzenle">
+                                <span class="material-symbols-outlined text-xl">edit</span>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-3">group_off</span>
+                            <p class="text-text-muted dark:text-text-muted-dark font-medium">Çalışan bulunamadı</p>
+                            <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Filtreleri değiştirmeyi veya yeni çalışan eklemeyi deneyin.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
     
-    {% if pagination.pages > 1 %}
-    <div class="card-footer bg-white">
-        <nav>
-            <ul class="pagination pagination-sm mb-0 justify-content-center">
-                {% if pagination.has_prev %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('ik.liste', page=pagination.prev_num, **request.args) }}">
-                        <i class="bi bi-chevron-left"></i>
+    <!-- Pagination Footer -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="px-6 py-4 bg-gray-50 dark:bg-[#111418] border-t border-border-light dark:border-border-dark flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p class="text-xs text-text-muted dark:text-text-muted-dark font-medium">
+            Toplam <span class="text-[#111418] dark:text-white font-bold">{{ pagination.total }}</span> çalışan arasından 
+            <span class="text-[#111418] dark:text-white font-bold">{{ ((pagination.page - 1) * pagination.per_page) + 1 }}-{{ [pagination.page * pagination.per_page, pagination.total]|min }}</span> arası gösteriliyor
+        </p>
+        <div class="flex items-center gap-1">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('ik.liste', page=pagination.prev_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), search=request.args.get('search')) }}" 
+               class="p-1.5 rounded-lg border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-[#252b36] transition-colors">
+                <span class="material-symbols-outlined text-lg">chevron_left</span>
+            </a>
+            {% else %}
+            <button class="p-1.5 rounded-lg border border-border-light dark:border-border-dark opacity-50 cursor-not-allowed" disabled>
+                <span class="material-symbols-outlined text-lg">chevron_left</span>
+            </button>
+            {% endif %}
+            
+            {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=2, right_edge=1) %}
+                {% if page_num %}
+                    {% if page_num == pagination.page %}
+                    <span class="w-8 h-8 rounded-lg bg-primary text-white text-xs font-bold flex items-center justify-center">{{ page_num }}</span>
+                    {% else %}
+                    <a href="{{ url_for('ik.liste', page=page_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), search=request.args.get('search')) }}" 
+                       class="w-8 h-8 rounded-lg hover:bg-gray-200 dark:hover:bg-[#252b36] text-xs font-bold flex items-center justify-center transition-colors">
+                        {{ page_num }}
                     </a>
-                </li>
-                {% endif %}
-                
-                {% for p in pagination.iter_pages() %}
-                {% if p %}
-                <li class="page-item {% if p == pagination.page %}active{% endif %}">
-                    <a class="page-link" href="{{ url_for('ik.liste', page=p, **request.args) }}">{{ p }}</a>
-                </li>
+                    {% endif %}
                 {% else %}
-                <li class="page-item disabled"><span class="page-link">...</span></li>
+                <span class="px-1 text-gray-400">...</span>
                 {% endif %}
-                {% endfor %}
-                
-                {% if pagination.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('ik.liste', page=pagination.next_num, **request.args) }}">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <a href="{{ url_for('ik.liste', page=pagination.next_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), search=request.args.get('search')) }}" 
+               class="p-1.5 rounded-lg border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-[#252b36] transition-colors">
+                <span class="material-symbols-outlined text-lg">chevron_right</span>
+            </a>
+            {% else %}
+            <button class="p-1.5 rounded-lg border border-border-light dark:border-border-dark opacity-50 cursor-not-allowed" disabled>
+                <span class="material-symbols-outlined text-lg">chevron_right</span>
+            </button>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
 </div>

@@ -1,244 +1,346 @@
 {% extends "base.html" %}
 
-{% block title %}{{ calisan.full_name }} - TG Portal{% endblock %}
-{% block page_title %}{{ calisan.full_name }}{% endblock %}
+{% block title %}{{ calisan.ad }} {{ calisan.soyad }} - Çalışan Detay - TG Portal{% endblock %}
+{% block page_title %}Çalışan Detay{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
-        <!-- Kişisel Bilgiler -->
-        <div class="card mb-4">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-person me-2"></i>Kişisel Bilgiler</h6>
-                {% if calisan.durum.value == 'aktif' %}
-                <span class="badge bg-success">Aktif</span>
-                {% elif calisan.durum.value == 'izinli' %}
-                <span class="badge bg-info">İzinli</span>
-                {% elif calisan.durum.value == 'ayrildi' %}
-                <span class="badge bg-secondary">Ayrıldı</span>
-                {% else %}
-                <span class="badge bg-warning">{{ calisan.durum.value.replace('_', ' ').title() }}</span>
+<!-- Breadcrumbs -->
+<div class="flex items-center gap-2 text-sm text-text-muted dark:text-text-muted-dark mb-6">
+    <a class="hover:text-primary transition-colors" href="{{ url_for('core.dashboard') }}">Ana Sayfa</a>
+    <span class="material-symbols-outlined text-xs">chevron_right</span>
+    <a class="hover:text-primary transition-colors" href="{{ url_for('ik.liste') }}">Çalışanlar</a>
+    <span class="material-symbols-outlined text-xs">chevron_right</span>
+    <span class="text-[#111418] dark:text-white font-medium">{{ calisan.ad }} {{ calisan.soyad }}</span>
+</div>
+
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    
+    <!-- Left Column: Profile Overview -->
+    <aside class="lg:col-span-4 space-y-6">
+        
+        <!-- Profile Card -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
+            <div class="p-6 flex flex-col items-center text-center">
+                <div class="relative mb-4">
+                    <div class="w-32 h-32 rounded-full border-4 border-gray-100 dark:border-gray-700 overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                        {% if calisan.foto %}
+                        <img alt="{{ calisan.ad }}" class="w-full h-full object-cover" src="{{ url_for('static', filename='uploads/' + calisan.foto) }}"/>
+                        {% else %}
+                        <span class="text-4xl font-bold text-gray-400 dark:text-gray-500">{{ calisan.ad[0] if calisan.ad else '' }}{{ calisan.soyad[0] if calisan.soyad else '' }}</span>
+                        {% endif %}
+                    </div>
+                    {% if calisan.durum.value == 'aktif' %}
+                    <span class="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-4 border-white dark:border-card-dark rounded-full"></span>
+                    {% endif %}
+                </div>
+                <h2 class="text-xl font-bold text-[#111418] dark:text-white">{{ calisan.ad }} {{ calisan.soyad }}</h2>
+                <p class="text-text-muted dark:text-text-muted-dark font-medium">{{ calisan.pozisyon.ad if calisan.pozisyon else 'Pozisyon Belirtilmemiş' }}</p>
+                {% if calisan.sicil_no %}
+                <div class="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold uppercase tracking-wider">
+                    Sicil: {{ calisan.sicil_no }}
+                </div>
                 {% endif %}
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Sicil No</label>
-                        <div class="fw-bold">{{ calisan.sicil_no or '-' }}</div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Ad Soyad</label>
-                        <div class="fw-bold fs-5">{{ calisan.full_name }}</div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">TC Kimlik</label>
-                        <div>{{ calisan.tc_kimlik or '-' }}</div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Doğum Tarihi</label>
-                        <div>{{ calisan.dogum_tarihi.strftime('%d.%m.%Y') if calisan.dogum_tarihi else '-' }}</div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Cinsiyet</label>
-                        <div>{{ calisan.cinsiyet.title() if calisan.cinsiyet else '-' }}</div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Medeni Durum</label>
-                        <div>{{ calisan.medeni_durum or '-' }}</div>
-                    </div>
+            
+            <div class="px-6 pb-6 space-y-4">
+                {% if calisan.email %}
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">mail</span>
+                    <a href="mailto:{{ calisan.email }}" class="hover:text-primary transition-colors">{{ calisan.email }}</a>
                 </div>
-            </div>
-        </div>
-        
-        <!-- İletişim -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-telephone me-2"></i>İletişim</h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Email</label>
-                        <div>
-                            {% if calisan.email %}
-                            <a href="mailto:{{ calisan.email }}">{{ calisan.email }}</a>
-                            {% else %}-{% endif %}
-                        </div>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Telefon</label>
-                        <div>
-                            {% if calisan.telefon %}
-                            <a href="tel:{{ calisan.telefon }}">{{ calisan.telefon }}</a>
-                            {% else %}-{% endif %}
-                        </div>
-                    </div>
-                    <div class="col-12 mb-3">
-                        <label class="text-muted small">Adres</label>
-                        <div>{{ calisan.adres or '-' }}</div>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">İl / İlçe</label>
-                        <div>{{ calisan.il or '-' }} / {{ calisan.ilce or '-' }}</div>
-                    </div>
+                {% endif %}
+                {% if calisan.telefon %}
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">call</span>
+                    <a href="tel:{{ calisan.telefon }}" class="hover:text-primary transition-colors">{{ calisan.telefon }}</a>
                 </div>
-            </div>
-        </div>
-        
-        <!-- İş Bilgileri -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-briefcase me-2"></i>İş Bilgileri</h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Departman</label>
-                        <div class="fw-bold">{{ calisan.departman.ad if calisan.departman else '-' }}</div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Pozisyon</label>
-                        <div class="fw-bold">{{ calisan.pozisyon.ad if calisan.pozisyon else '-' }}</div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Yönetici</label>
-                        <div>{{ calisan.yonetici.full_name if calisan.yonetici else '-' }}</div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">İşe Başlama</label>
-                        <div>{{ calisan.ise_baslama.strftime('%d.%m.%Y') if calisan.ise_baslama else '-' }}</div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Kıdem</label>
-                        <div class="fw-bold">{{ calisan.kidem_yili }} yıl</div>
-                    </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Çalışma Tipi</label>
-                        <div>{{ calisan.calisma_tipi.replace('_', ' ').title() if calisan.calisma_tipi else '-' }}</div>
-                    </div>
+                {% endif %}
+                {% if calisan.departman %}
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">business</span>
+                    <span>{{ calisan.departman.ad }}</span>
                 </div>
-            </div>
-        </div>
-        
-        <!-- İzin Geçmişi -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Son İzinler</h6>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Tarih</th>
-                                <th>Tip</th>
-                                <th>Gün</th>
-                                <th>Durum</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for izin in izinler %}
-                            <tr>
-                                <td>{{ izin.baslangic.strftime('%d.%m.%Y') }} - {{ izin.bitis.strftime('%d.%m.%Y') }}</td>
-                                <td>{{ izin.izin_tipi.replace('_', ' ').title() if izin.izin_tipi else '-' }}</td>
-                                <td>{{ izin.gun_sayisi or '-' }}</td>
-                                <td>
-                                    {% if izin.durum == 'onaylandi' %}
-                                    <span class="badge bg-success">Onaylandı</span>
-                                    {% elif izin.durum == 'beklemede' %}
-                                    <span class="badge bg-warning">Beklemede</span>
-                                    {% else %}
-                                    <span class="badge bg-danger">Reddedildi</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-muted py-3">Henüz izin kaydı yok</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                {% endif %}
+                {% if calisan.il %}
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">location_on</span>
+                    <span>{{ calisan.ilce ~ ', ' if calisan.ilce else '' }}{{ calisan.il }}</span>
                 </div>
+                {% endif %}
             </div>
-        </div>
-    </div>
-    
-    <div class="col-lg-4">
-        <!-- Aksiyonlar -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Aksiyonlar</h6>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    {% if has_permission('ik.edit') %}
-                    <a href="{{ url_for('ik.duzenle', id=calisan.id) }}" class="btn btn-primary">
-                        <i class="bi bi-pencil me-1"></i>Düzenle
-                    </a>
+            
+            <div class="border-t border-border-light dark:border-border-dark p-6 flex flex-col gap-3">
+                <a href="{{ url_for('ik.duzenle', id=calisan.id) }}" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">edit</span>
+                    Düzenle
+                </a>
+                <div class="grid grid-cols-2 gap-3">
+                    <a href="{{ url_for('ik.calisan_zimmetler', id=calisan.id) }}" class="bg-gray-100 dark:bg-[#111418] hover:bg-gray-200 dark:hover:bg-[#252b36] text-sm font-bold py-2 rounded-lg transition-all text-center">Zimmetler</a>
+                    {% if calisan.durum.value == 'aktif' %}
+                    <a href="{{ url_for('ik.isten_cikis_baslat', calisan_id=calisan.id) }}" class="bg-gray-100 dark:bg-[#111418] hover:bg-red-100 dark:hover:bg-red-900/20 text-sm font-bold py-2 rounded-lg transition-all text-center text-red-600">İşten Çıkış</a>
+                    {% else %}
+                    <span class="bg-gray-100 dark:bg-[#111418] text-sm font-bold py-2 rounded-lg text-center text-gray-400">İşten Çıkış</span>
                     {% endif %}
-                    <a href="{{ url_for('ik.liste') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Listeye Dön
-                    </a>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Status Card -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark mb-4 tracking-widest">Durum Bilgisi</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Durum</span>
+                    {% if calisan.durum.value == 'aktif' %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                        Aktif
+                    </span>
+                    {% elif calisan.durum.value == 'izinli' %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                        İzinli
+                    </span>
+                    {% elif calisan.durum.value == 'ayrildi' %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                        Ayrıldı
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                        {{ calisan.durum.value }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Çalışma Tipi</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">
+                        {% if calisan.calisma_tipi == 'tam_zamanli' %}Tam Zamanlı
+                        {% elif calisan.calisma_tipi == 'yari_zamanli' %}Yarı Zamanlı
+                        {% elif calisan.calisma_tipi == 'stajyer' %}Stajyer
+                        {% elif calisan.calisma_tipi == 'sozlesmeli' %}Sözleşmeli
+                        {% else %}{{ calisan.calisma_tipi or '-' }}{% endif %}
+                    </span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">İşe Başlama</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ calisan.ise_baslama.strftime('%d.%m.%Y') if calisan.ise_baslama else '-' }}</span>
+                </div>
+                {% if calisan.isten_ayrilma %}
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Ayrılma Tarihi</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ calisan.isten_ayrilma.strftime('%d.%m.%Y') }}</span>
+                </div>
+                {% endif %}
+                {% if calisan.yonetici %}
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Yönetici</span>
+                    <a href="{{ url_for('ik.detay', id=calisan.yonetici.id) }}" class="text-sm font-medium text-primary hover:underline">{{ calisan.yonetici.ad }} {{ calisan.yonetici.soyad }}</a>
+                </div>
+                {% endif %}
             </div>
         </div>
         
         <!-- Acil Durum -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-exclamation-triangle me-2"></i>Acil Durum</h6>
-            </div>
-            <div class="card-body">
-                {% if calisan.acil_kisi_ad %}
-                <div class="mb-2">
-                    <strong>{{ calisan.acil_kisi_ad }}</strong>
-                    {% if calisan.acil_kisi_yakinlik %}
-                    <br><small class="text-muted">({{ calisan.acil_kisi_yakinlik }})</small>
-                    {% endif %}
+        {% if calisan.acil_kisi_ad %}
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark mb-4 tracking-widest">Acil Durum İletişim</h3>
+            <div class="space-y-3">
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="material-symbols-outlined text-red-500">emergency</span>
+                    <span class="font-medium text-[#111418] dark:text-white">{{ calisan.acil_kisi_ad }}</span>
                 </div>
                 {% if calisan.acil_kisi_telefon %}
-                <div><i class="bi bi-telephone me-2"></i><a href="tel:{{ calisan.acil_kisi_telefon }}">{{ calisan.acil_kisi_telefon }}</a></div>
-                {% endif %}
-                {% else %}
-                <span class="text-muted">Belirtilmemiş</span>
-                {% endif %}
-            </div>
-        </div>
-        
-        <!-- Atanan Araç -->
-        {% if calisan.araclar %}
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-truck me-2"></i>Atanan Araç</h6>
-            </div>
-            <div class="card-body">
-                {% for arac in calisan.araclar %}
-                <div class="d-flex align-items-center mb-2">
-                    <i class="bi bi-car-front fs-4 me-2 text-muted"></i>
-                    <div>
-                        <a href="{{ url_for('filo.detay', id=arac.id) }}" class="text-decoration-none">
-                            <strong>{{ arac.plaka }}</strong>
-                        </a>
-                        <br><small class="text-muted">{{ arac.marka }} {{ arac.model }}</small>
-                    </div>
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">call</span>
+                    <a href="tel:{{ calisan.acil_kisi_telefon }}" class="hover:text-primary transition-colors">{{ calisan.acil_kisi_telefon }}</a>
                 </div>
-                {% endfor %}
+                {% endif %}
+                {% if calisan.acil_kisi_yakinlik %}
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">family_restroom</span>
+                    <span>{{ calisan.acil_kisi_yakinlik }}</span>
+                </div>
+                {% endif %}
             </div>
         </div>
         {% endif %}
         
-        <!-- Notlar -->
-        {% if calisan.notlar %}
-        <div class="card">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-sticky me-2"></i>Notlar</h6>
-            </div>
-            <div class="card-body">
-                <p class="mb-0">{{ calisan.notlar }}</p>
+    </aside>
+    
+    <!-- Right Column: Details -->
+    <div class="lg:col-span-8 space-y-6">
+        
+        <!-- Personal Information -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-6">Kişisel Bilgiler</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                {% if calisan.tc_kimlik %}
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">T.C. Kimlik No</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white font-mono">{{ calisan.tc_kimlik }}</span>
+                </div>
+                {% endif %}
+                {% if calisan.dogum_tarihi %}
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Doğum Tarihi</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ calisan.dogum_tarihi.strftime('%d.%m.%Y') }}</span>
+                </div>
+                {% endif %}
+                {% if calisan.dogum_yeri %}
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Doğum Yeri</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ calisan.dogum_yeri }}</span>
+                </div>
+                {% endif %}
+                {% if calisan.cinsiyet %}
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Cinsiyet</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ 'Erkek' if calisan.cinsiyet == 'erkek' else 'Kadın' }}</span>
+                </div>
+                {% endif %}
+                {% if calisan.medeni_durum %}
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Medeni Durum</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">
+                        {% if calisan.medeni_durum == 'bekar' %}Bekar
+                        {% elif calisan.medeni_durum == 'evli' %}Evli
+                        {% elif calisan.medeni_durum == 'bosanmis' %}Boşanmış
+                        {% else %}{{ calisan.medeni_durum }}{% endif %}
+                    </span>
+                </div>
+                {% endif %}
+                {% if calisan.adres %}
+                <div class="flex flex-col gap-1 md:col-span-2">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Adres</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ calisan.adres }}</span>
+                </div>
+                {% endif %}
             </div>
         </div>
+        
+        <!-- Document Tracking -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
+            <div class="p-6 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Evrak Takibi</h3>
+                <a href="{{ url_for('ik.eksik_evraklar', calisan_id=calisan.id) }}" class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
+                    <span class="material-symbols-outlined text-lg">folder_open</span>
+                    Tümünü Gör
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 dark:bg-[#111418] text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">
+                        <tr>
+                            <th class="px-6 py-4">Belge Adı</th>
+                            <th class="px-6 py-4 hidden sm:table-cell">Yükleme Tarihi</th>
+                            <th class="px-6 py-4">Durum</th>
+                            <th class="px-6 py-4 text-right">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for evrak in evraklar[:5] %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined {% if evrak.durum == 'onaylandi' %}text-green-500{% elif evrak.durum == 'bekliyor' %}text-amber-500{% else %}text-gray-400{% endif %}">description</span>
+                                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ evrak.evrak_tipi.ad if evrak.evrak_tipi else 'Belge' }}</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden sm:table-cell">
+                                {{ evrak.created_at.strftime('%d.%m.%Y') if evrak.created_at else '-' }}
+                            </td>
+                            <td class="px-6 py-4">
+                                {% if evrak.durum == 'onaylandi' %}
+                                <span class="px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold rounded uppercase">Onaylandı</span>
+                                {% elif evrak.durum == 'bekliyor' %}
+                                <span class="px-2 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold rounded uppercase">Bekliyor</span>
+                                {% else %}
+                                <span class="px-2 py-1 bg-gray-500/10 text-gray-600 dark:text-gray-400 text-[10px] font-bold rounded uppercase">{{ evrak.durum or 'Yüklendi' }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                {% if evrak.dosya_yolu %}
+                                <a href="{{ url_for('static', filename='uploads/' + evrak.dosya_yolu) }}" target="_blank" class="w-8 h-8 rounded bg-gray-100 dark:bg-[#111418] inline-flex items-center justify-center hover:text-primary transition-colors">
+                                    <span class="material-symbols-outlined text-lg">visibility</span>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-8 text-center text-text-muted dark:text-text-muted-dark">
+                                <span class="material-symbols-outlined text-3xl mb-2 opacity-50">folder_off</span>
+                                <p>Henüz evrak yüklenmemiş</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Recent Leaves -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
+            <div class="p-6 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Son İzinler</h3>
+                <a href="{{ url_for('ik.izin_liste') }}?calisan_id={{ calisan.id }}" class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
+                    <span class="material-symbols-outlined text-lg">calendar_month</span>
+                    Tümünü Gör
+                </a>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 dark:bg-[#111418] text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">
+                        <tr>
+                            <th class="px-6 py-4">İzin Tipi</th>
+                            <th class="px-6 py-4 hidden sm:table-cell">Başlangıç</th>
+                            <th class="px-6 py-4 hidden sm:table-cell">Bitiş</th>
+                            <th class="px-6 py-4">Gün</th>
+                            <th class="px-6 py-4">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for izin in izinler %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                            <td class="px-6 py-4 text-sm font-medium text-[#111418] dark:text-white">{{ izin.izin_tipi.ad if izin.izin_tipi else izin.tip or 'İzin' }}</td>
+                            <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden sm:table-cell">{{ izin.baslangic.strftime('%d.%m.%Y') if izin.baslangic else '-' }}</td>
+                            <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden sm:table-cell">{{ izin.bitis.strftime('%d.%m.%Y') if izin.bitis else '-' }}</td>
+                            <td class="px-6 py-4 text-sm font-bold text-[#111418] dark:text-white">{{ izin.gun_sayisi or '-' }}</td>
+                            <td class="px-6 py-4">
+                                {% if izin.durum == 'onaylandi' %}
+                                <span class="px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold rounded uppercase">Onaylandı</span>
+                                {% elif izin.durum == 'bekliyor' %}
+                                <span class="px-2 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold rounded uppercase">Bekliyor</span>
+                                {% elif izin.durum == 'reddedildi' %}
+                                <span class="px-2 py-1 bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold rounded uppercase">Reddedildi</span>
+                                {% else %}
+                                <span class="px-2 py-1 bg-gray-500/10 text-gray-600 dark:text-gray-400 text-[10px] font-bold rounded uppercase">{{ izin.durum or '-' }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-8 text-center text-text-muted dark:text-text-muted-dark">
+                                <span class="material-symbols-outlined text-3xl mb-2 opacity-50">event_busy</span>
+                                <p>Henüz izin kaydı yok</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Notes -->
+        {% if calisan.notlar %}
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-4">Notlar</h3>
+            <p class="text-sm text-text-muted dark:text-text-muted-dark whitespace-pre-line">{{ calisan.notlar }}</p>
+        </div>
         {% endif %}
+        
     </div>
 </div>
 {% endblock %}
