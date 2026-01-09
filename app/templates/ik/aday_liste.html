@@ -1,142 +1,261 @@
 {% extends "base.html" %}
 
-{% block title %}Adaylar - TG Portal{% endblock %}
-{% block page_title %}Adaylar{% endblock %}
+{% block title %}Aday Listesi - TG Portal{% endblock %}
+{% block page_title %}Aday Listesi{% endblock %}
 
 {% block content %}
-<div class="card mb-4">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <div><i class="bi bi-funnel me-2"></i>Filtreler</div>
-        {% if has_permission('ik.create') %}
-        <a href="{{ url_for('ik.aday_ekle') }}" class="btn btn-primary btn-sm">
-            <i class="bi bi-plus-lg me-1"></i>Yeni Aday
-        </a>
-        {% endif %}
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#111418] dark:text-white">Aday Listesi</h1>
+        <p class="text-text-muted dark:text-text-muted-dark text-sm mt-1">
+            İşe alım süreçlerindeki tüm aday başvurularını görüntüleyin, filtreleyin ve yönetin.
+        </p>
     </div>
-    <div class="card-body">
-        <form method="GET" class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label">Durum</label>
-                <select name="durum" class="form-select">
-                    <option value="">Tümü</option>
-                    <option value="basvurdu" {% if request.args.get('durum') == 'basvurdu' %}selected{% endif %}>Başvurdu</option>
-                    <option value="degerlendiriliyor" {% if request.args.get('durum') == 'degerlendiriliyor' %}selected{% endif %}>Değerlendiriliyor</option>
-                    <option value="mulakat" {% if request.args.get('durum') == 'mulakat' %}selected{% endif %}>Mülakat</option>
-                    <option value="teklif" {% if request.args.get('durum') == 'teklif' %}selected{% endif %}>Teklif</option>
-                    <option value="ise_alindi" {% if request.args.get('durum') == 'ise_alindi' %}selected{% endif %}>İşe Alındı</option>
-                    <option value="red" {% if request.args.get('durum') == 'red' %}selected{% endif %}>Reddedildi</option>
-                </select>
-            </div>
-            <div class="col-md-4 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary me-2">
-                    <i class="bi bi-search me-1"></i>Filtrele
-                </button>
-                <a href="{{ url_for('ik.aday_liste') }}" class="btn btn-outline-secondary">Temizle</a>
-            </div>
-        </form>
+    <div class="flex gap-3">
+        <a href="{{ url_for('ik.aday_ekle') }}" class="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary-dark transition-colors shadow-sm">
+            <span class="material-symbols-outlined text-lg">add</span>
+            Yeni Aday Ekle
+        </a>
     </div>
 </div>
 
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Ad Soyad</th>
-                        <th>Pozisyon</th>
-                        <th>Başvuru Tarihi</th>
-                        <th>Kaynak</th>
-                        <th>Durum</th>
-                        <th width="100"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for aday in adaylar %}
-                    <tr>
-                        <td>
-                            <strong>{{ aday.full_name }}</strong>
-                            {% if aday.email %}
-                            <br><small class="text-muted">{{ aday.email }}</small>
-                            {% endif %}
-                        </td>
-                        <td>{{ aday.pozisyon.ad if aday.pozisyon else '-' }}</td>
-                        <td>{{ aday.basvuru_tarihi.strftime('%d.%m.%Y') if aday.basvuru_tarihi else '-' }}</td>
-                        <td>{{ aday.kaynak.replace('_', ' ').title() if aday.kaynak else '-' }}</td>
-                        <td>
-                            {% if aday.durum == 'basvurdu' %}
-                            <span class="badge bg-info">Başvurdu</span>
-                            {% elif aday.durum == 'degerlendiriliyor' %}
-                            <span class="badge bg-warning">Değerlendiriliyor</span>
-                            {% elif aday.durum == 'mulakat' %}
-                            <span class="badge bg-primary">Mülakat</span>
-                            {% elif aday.durum == 'teklif' %}
-                            <span class="badge bg-success">Teklif</span>
-                            {% elif aday.durum == 'ise_alindi' %}
-                            <span class="badge bg-success">İşe Alındı</span>
-                            {% elif aday.durum == 'red' %}
-                            <span class="badge bg-danger">Reddedildi</span>
-                            {% else %}
-                            <span class="badge bg-secondary">{{ aday.durum }}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="btn btn-outline-primary" title="Detay">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                {% if has_permission('ik.edit') %}
-                                <a href="{{ url_for('ik.aday_duzenle', id=aday.id) }}" class="btn btn-outline-warning" title="Düzenle">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
+<!-- Filter & Action Bar -->
+<div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl p-4 mb-6 shadow-sm">
+    <form method="GET" class="flex flex-col lg:flex-row gap-4 justify-between">
+        <div class="flex flex-wrap gap-2 items-center">
+            <!-- Status Filter Buttons -->
+            <div class="flex gap-2 flex-wrap">
+                <a href="{{ url_for('ik.aday_liste') }}" 
+                   class="h-9 px-4 rounded-lg text-xs font-bold transition-colors flex items-center
+                          {% if not request.args.get('durum') %}
+                          bg-primary/10 text-primary border border-primary/20
+                          {% else %}
+                          bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark hover:border-primary/40
+                          {% endif %}">
+                    Hepsi ({{ stats.toplam }})
+                </a>
+                <a href="{{ url_for('ik.aday_liste', durum='basvurdu') }}" 
+                   class="h-9 px-4 rounded-lg text-xs font-bold transition-colors flex items-center
+                          {% if request.args.get('durum') == 'basvurdu' %}
+                          bg-primary/10 text-primary border border-primary/20
+                          {% else %}
+                          bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark hover:border-primary/40
+                          {% endif %}">
+                    Başvurdu ({{ stats.basvurdu }})
+                </a>
+                <a href="{{ url_for('ik.aday_liste', durum='degerlendiriliyor') }}" 
+                   class="h-9 px-4 rounded-lg text-xs font-bold transition-colors flex items-center
+                          {% if request.args.get('durum') == 'degerlendiriliyor' %}
+                          bg-primary/10 text-primary border border-primary/20
+                          {% else %}
+                          bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark hover:border-primary/40
+                          {% endif %}">
+                    Değerlendirme ({{ stats.degerlendiriliyor }})
+                </a>
+                <a href="{{ url_for('ik.aday_liste', durum='mulakat') }}" 
+                   class="h-9 px-4 rounded-lg text-xs font-bold transition-colors flex items-center
+                          {% if request.args.get('durum') == 'mulakat' %}
+                          bg-primary/10 text-primary border border-primary/20
+                          {% else %}
+                          bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark hover:border-primary/40
+                          {% endif %}">
+                    Mülakat ({{ stats.mulakat }})
+                </a>
+                <a href="{{ url_for('ik.aday_liste', durum='teklif') }}" 
+                   class="h-9 px-4 rounded-lg text-xs font-bold transition-colors flex items-center
+                          {% if request.args.get('durum') == 'teklif' %}
+                          bg-primary/10 text-primary border border-primary/20
+                          {% else %}
+                          bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark hover:border-primary/40
+                          {% endif %}">
+                    Teklif ({{ stats.teklif }})
+                </a>
+                <a href="{{ url_for('ik.aday_liste', durum='ise_alindi') }}" 
+                   class="h-9 px-4 rounded-lg text-xs font-bold transition-colors flex items-center
+                          {% if request.args.get('durum') == 'ise_alindi' %}
+                          bg-primary/10 text-primary border border-primary/20
+                          {% else %}
+                          bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark hover:border-primary/40
+                          {% endif %}">
+                    İşe Alındı ({{ stats.ise_alindi }})
+                </a>
+            </div>
+        </div>
+        
+        <!-- Search -->
+        <div class="flex items-center gap-2">
+            <div class="flex items-center bg-gray-100 dark:bg-[#111418] rounded-lg border border-border-light dark:border-border-dark px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary/50 transition-all">
+                <span class="material-symbols-outlined text-text-muted dark:text-[#586474] text-lg mr-2">search</span>
+                <input type="text" 
+                       name="search" 
+                       value="{{ request.args.get('search', '') }}"
+                       class="bg-transparent border-none p-0 text-sm w-full sm:w-48 focus:ring-0 text-[#111418] dark:text-white placeholder-text-muted dark:placeholder-[#586474]" 
+                       placeholder="İsim, telefon, email..."/>
+            </div>
+            <button type="submit" class="p-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+                <span class="material-symbols-outlined text-xl">search</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Table Container -->
+<div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 dark:bg-[#111418] border-b border-border-light dark:border-border-dark">
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">Aday</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden sm:table-cell">Telefon</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden md:table-cell">Başvuru Tarihi</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden lg:table-cell">Kaynak</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">Durum</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark text-right">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for aday in adaylar %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors group">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden shrink-0">
+                                {% if aday.fotograf %}
+                                <img src="{{ url_for('static', filename='uploads/' + aday.fotograf) }}" alt="{{ aday.ad }}" class="w-full h-full object-cover"/>
+                                {% else %}
+                                <span class="text-xs font-bold text-gray-500 dark:text-gray-400">{{ aday.ad[0] if aday.ad else '' }}{{ aday.soyad[0] if aday.soyad else '' }}</span>
                                 {% endif %}
                             </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
-                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-                            Aday bulunamadı
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-[#111418] dark:text-white truncate">{{ aday.ad }} {{ aday.soyad }}</p>
+                                <p class="text-xs text-text-muted dark:text-text-muted-dark truncate">{{ aday.email or '-' }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-[#111418] dark:text-white hidden sm:table-cell">{{ aday.telefon or '-' }}</td>
+                    <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden md:table-cell">{{ aday.created_at.strftime('%d.%m.%Y') }}</td>
+                    <td class="px-6 py-4 hidden lg:table-cell">
+                        {% if aday.kaynak %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-[#252b36] border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark">
+                            {{ aday.kaynak }}
+                        </span>
+                        {% else %}
+                        <span class="text-text-muted dark:text-text-muted-dark">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if aday.durum == 'basvurdu' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            Başvurdu
+                        </span>
+                        {% elif aday.durum == 'degerlendiriliyor' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            Değerlendiriliyor
+                        </span>
+                        {% elif aday.durum == 'mulakat' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            Mülakat
+                        </span>
+                        {% elif aday.durum == 'teklif' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            Teklif
+                        </span>
+                        {% elif aday.durum == 'ise_alindi' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            İşe Alındı
+                        </span>
+                        {% elif aday.durum == 'reddedildi' %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            Reddedildi
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            {{ aday.durum or 'Belirsiz' }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" 
+                               class="p-1.5 hover:text-primary transition-colors rounded-lg bg-gray-100 dark:bg-[#252b36]"
+                               title="Detay">
+                                <span class="material-symbols-outlined text-xl">visibility</span>
+                            </a>
+                            <a href="{{ url_for('ik.aday_duzenle', id=aday.id) }}" 
+                               class="p-1.5 hover:text-primary transition-colors rounded-lg bg-gray-100 dark:bg-[#252b36]"
+                               title="Düzenle">
+                                <span class="material-symbols-outlined text-xl">edit</span>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-3">person_search</span>
+                            <p class="text-text-muted dark:text-text-muted-dark font-medium">Aday bulunamadı</p>
+                            <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">Filtreleri değiştirmeyi veya yeni aday eklemeyi deneyin.</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
     
-    {% if pagination.pages > 1 %}
-    <div class="card-footer bg-white">
-        <nav>
-            <ul class="pagination pagination-sm mb-0 justify-content-center">
-                {% if pagination.has_prev %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('ik.aday_liste', page=pagination.prev_num, **request.args) }}">
-                        <i class="bi bi-chevron-left"></i>
+    <!-- Pagination Footer -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="px-6 py-4 bg-gray-50 dark:bg-[#111418] border-t border-border-light dark:border-border-dark flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p class="text-xs text-text-muted dark:text-text-muted-dark font-medium">
+            Toplam <span class="text-[#111418] dark:text-white font-bold">{{ pagination.total }}</span> aday arasından 
+            <span class="text-[#111418] dark:text-white font-bold">{{ ((pagination.page - 1) * pagination.per_page) + 1 }}-{{ [pagination.page * pagination.per_page, pagination.total]|min }}</span> arası gösteriliyor
+        </p>
+        <div class="flex items-center gap-1">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('ik.aday_liste', page=pagination.prev_num, durum=request.args.get('durum'), search=request.args.get('search')) }}" 
+               class="p-1.5 rounded-lg border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-[#252b36] transition-colors">
+                <span class="material-symbols-outlined text-lg">chevron_left</span>
+            </a>
+            {% else %}
+            <button class="p-1.5 rounded-lg border border-border-light dark:border-border-dark opacity-50 cursor-not-allowed" disabled>
+                <span class="material-symbols-outlined text-lg">chevron_left</span>
+            </button>
+            {% endif %}
+            
+            {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=2, right_edge=1) %}
+                {% if page_num %}
+                    {% if page_num == pagination.page %}
+                    <span class="w-8 h-8 rounded-lg bg-primary text-white text-xs font-bold flex items-center justify-center">{{ page_num }}</span>
+                    {% else %}
+                    <a href="{{ url_for('ik.aday_liste', page=page_num, durum=request.args.get('durum'), search=request.args.get('search')) }}" 
+                       class="w-8 h-8 rounded-lg hover:bg-gray-200 dark:hover:bg-[#252b36] text-xs font-bold flex items-center justify-center transition-colors">
+                        {{ page_num }}
                     </a>
-                </li>
-                {% endif %}
-                
-                {% for p in pagination.iter_pages() %}
-                {% if p %}
-                <li class="page-item {% if p == pagination.page %}active{% endif %}">
-                    <a class="page-link" href="{{ url_for('ik.aday_liste', page=p, **request.args) }}">{{ p }}</a>
-                </li>
+                    {% endif %}
                 {% else %}
-                <li class="page-item disabled"><span class="page-link">...</span></li>
+                <span class="px-1 text-gray-400">...</span>
                 {% endif %}
-                {% endfor %}
-                
-                {% if pagination.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="{{ url_for('ik.aday_liste', page=pagination.next_num, **request.args) }}">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
-                {% endif %}
-            </ul>
-        </nav>
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <a href="{{ url_for('ik.aday_liste', page=pagination.next_num, durum=request.args.get('durum'), search=request.args.get('search')) }}" 
+               class="p-1.5 rounded-lg border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-[#252b36] transition-colors">
+                <span class="material-symbols-outlined text-lg">chevron_right</span>
+            </a>
+            {% else %}
+            <button class="p-1.5 rounded-lg border border-border-light dark:border-border-dark opacity-50 cursor-not-allowed" disabled>
+                <span class="material-symbols-outlined text-lg">chevron_right</span>
+            </button>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
 </div>
