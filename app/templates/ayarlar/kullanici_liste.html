@@ -1,128 +1,204 @@
 {% extends "base.html" %}
 
-{% block title %}Kullanıcılar - TG Portal{% endblock %}
+{% block title %}Kullanıcı Yönetimi - TG Portal{% endblock %}
 {% block page_title %}Kullanıcı Yönetimi{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <form method="GET" class="row g-2">
-                    <div class="col-auto">
-                        <input type="text" name="q" class="form-control form-control-sm" 
-                               placeholder="Ara..." value="{{ request.args.get('q', '') }}">
-                    </div>
-                    <div class="col-auto">
-                        <select name="durum" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="">Tümü</option>
-                            <option value="aktif" {{ 'selected' if request.args.get('durum') == 'aktif' }}>Aktif</option>
-                            <option value="pasif" {{ 'selected' if request.args.get('durum') == 'pasif' }}>Pasif</option>
-                        </select>
-                    </div>
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary">Filtrele</button>
-                    </div>
-                </form>
-            </div>
-            <div class="col-md-4 text-end">
-                <a href="{{ url_for('ayarlar.kullanici_ekle') }}" class="btn btn-primary btn-sm">
-                    <i class="bi bi-plus-lg me-1"></i>Yeni Kullanıcı
-                </a>
-            </div>
-        </div>
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#111418] dark:text-white">Kullanıcı Yönetimi</h1>
+        <p class="text-text-muted dark:text-text-muted-dark text-sm mt-1">
+            Sistem kullanıcılarını görüntüleyin ve yönetin.
+        </p>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Kullanıcı</th>
-                        <th>E-posta</th>
-                        <th>Roller</th>
-                        <th>Son Giriş</th>
-                        <th>Durum</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for user in kullanicilar %}
-                    <tr>
-                        <td>
-                            <strong>{{ user.full_name }}</strong>
-                            {% if user.is_admin %}
-                            <span class="badge bg-danger ms-1">Admin</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ user.email }}</td>
-                        <td>
-                            {% for rol in user.roles %}
-                            <span class="badge bg-secondary">{{ rol.name }}</span>
-                            {% else %}
-                            <span class="text-muted">-</span>
-                            {% endfor %}
-                        </td>
-                        <td>
-                            {% if user.last_login %}
-                            {{ user.last_login.strftime('%d.%m.%Y %H:%M') }}
-                            {% else %}-{% endif %}
-                        </td>
-                        <td>
-                            {% if user.is_active %}
-                            <span class="badge bg-success">Aktif</span>
-                            {% else %}
-                            <span class="badge bg-secondary">Pasif</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ url_for('ayarlar.kullanici_duzenle', id=user.id) }}" class="btn btn-outline-primary">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                {% if user.id != current_user.id %}
-                                <form method="POST" action="{{ url_for('ayarlar.kullanici_durum', id=user.id) }}" class="d-inline">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-outline-{{ 'danger' if user.is_active else 'success' }}"
-                                            onclick="return confirm('Emin misiniz?')">
-                                        <i class="bi bi-{{ 'x-lg' if user.is_active else 'check-lg' }}"></i>
-                                    </button>
-                                </form>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">Kullanıcı bulunamadı</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        {% if pagination.pages > 1 %}
-        <div class="card-footer">
-            <nav>
-                <ul class="pagination pagination-sm mb-0 justify-content-center">
-                    {% for p in pagination.iter_pages() %}
-                    {% if p %}
-                    <li class="page-item {{ 'active' if p == pagination.page }}">
-                        <a class="page-link" href="{{ url_for('ayarlar.kullanici_liste', page=p, q=request.args.get('q'), durum=request.args.get('durum')) }}">{{ p }}</a>
-                    </li>
-                    {% else %}
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                    {% endif %}
-                    {% endfor %}
-                </ul>
-            </nav>
-        </div>
-        {% endif %}
+    <div class="flex gap-3">
+        <a href="{{ url_for('ayarlar.kullanici_ekle') }}" class="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary-dark transition-colors shadow-sm">
+            <span class="material-symbols-outlined text-lg">person_add</span>
+            Yeni Kullanıcı
+        </a>
     </div>
 </div>
 
-<div class="mt-3">
-    <a href="{{ url_for('ayarlar.dashboard') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Geri
-    </a>
+<!-- Filter Bar -->
+<div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl p-4 mb-6 shadow-sm">
+    <form method="GET" class="flex flex-col lg:flex-row gap-4 justify-between">
+        <div class="flex flex-wrap gap-2 items-center">
+            <a href="{{ url_for('ayarlar.kullanici_liste') }}" 
+               class="h-9 px-4 rounded-lg text-xs font-bold transition-colors flex items-center
+                      {% if not request.args.get('durum') %}
+                      bg-primary/10 text-primary border border-primary/20
+                      {% else %}
+                      bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark hover:border-primary/40
+                      {% endif %}">
+                Hepsi
+            </a>
+            <a href="{{ url_for('ayarlar.kullanici_liste', durum='aktif') }}" 
+               class="h-9 px-4 rounded-lg text-xs font-bold transition-colors flex items-center
+                      {% if request.args.get('durum') == 'aktif' %}
+                      bg-primary/10 text-primary border border-primary/20
+                      {% else %}
+                      bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark hover:border-primary/40
+                      {% endif %}">
+                Aktif
+            </a>
+            <a href="{{ url_for('ayarlar.kullanici_liste', durum='pasif') }}" 
+               class="h-9 px-4 rounded-lg text-xs font-bold transition-colors flex items-center
+                      {% if request.args.get('durum') == 'pasif' %}
+                      bg-primary/10 text-primary border border-primary/20
+                      {% else %}
+                      bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark hover:border-primary/40
+                      {% endif %}">
+                Pasif
+            </a>
+        </div>
+        
+        <!-- Search -->
+        <div class="flex items-center gap-2">
+            <div class="flex items-center bg-gray-100 dark:bg-[#111418] rounded-lg border border-border-light dark:border-border-dark px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary/50 transition-all">
+                <span class="material-symbols-outlined text-text-muted dark:text-[#586474] text-lg mr-2">search</span>
+                <input type="text" 
+                       name="q" 
+                       value="{{ request.args.get('q', '') }}"
+                       class="bg-transparent border-none p-0 text-sm w-full sm:w-48 focus:ring-0 text-[#111418] dark:text-white placeholder-text-muted dark:placeholder-[#586474]" 
+                       placeholder="Ad, email ara..."/>
+            </div>
+            <button type="submit" class="p-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors">
+                <span class="material-symbols-outlined text-xl">search</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Table -->
+<div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 dark:bg-[#111418] border-b border-border-light dark:border-border-dark">
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">Kullanıcı</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden md:table-cell">E-posta</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden lg:table-cell">Rol</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden sm:table-cell">Son Giriş</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">Durum</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark text-right">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for kullanici in kullanicilar %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors group">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                                <span class="text-sm font-bold text-primary">{{ kullanici.ad[0] if kullanici.ad else 'U' }}{{ kullanici.soyad[0] if kullanici.soyad else '' }}</span>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-bold text-[#111418] dark:text-white truncate">{{ kullanici.ad }} {{ kullanici.soyad }}</p>
+                                <p class="text-xs text-text-muted dark:text-text-muted-dark truncate md:hidden">{{ kullanici.email }}</p>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-[#111418] dark:text-white hidden md:table-cell">{{ kullanici.email }}</td>
+                    <td class="px-6 py-4 hidden lg:table-cell">
+                        {% if kullanici.is_admin %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+                            Admin
+                        </span>
+                        {% elif kullanici.roles %}
+                        {% for rol in kullanici.roles %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 mr-1">
+                            {{ rol.display_name or rol.name }}
+                        </span>
+                        {% endfor %}
+                        {% else %}
+                        <span class="text-text-muted dark:text-text-muted-dark text-sm">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden sm:table-cell">
+                        {{ kullanici.last_login.strftime('%d.%m.%Y %H:%M') if kullanici.last_login else '-' }}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if kullanici.is_active %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            Aktif
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                            Pasif
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <a href="{{ url_for('ayarlar.kullanici_duzenle', id=kullanici.id) }}" 
+                               class="p-1.5 hover:text-primary transition-colors rounded-lg bg-gray-100 dark:bg-[#252b36]"
+                               title="Düzenle">
+                                <span class="material-symbols-outlined text-xl">edit</span>
+                            </a>
+                            <form action="{{ url_for('ayarlar.kullanici_durum', id=kullanici.id) }}" method="POST" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" 
+                                        class="p-1.5 hover:text-{{ 'red-500' if kullanici.is_active else 'green-500' }} transition-colors rounded-lg bg-gray-100 dark:bg-[#252b36]"
+                                        title="{{ 'Pasif Yap' if kullanici.is_active else 'Aktif Yap' }}">
+                                    <span class="material-symbols-outlined text-xl">{{ 'person_off' if kullanici.is_active else 'person' }}</span>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-3">group_off</span>
+                            <p class="text-text-muted dark:text-text-muted-dark font-medium">Kullanıcı bulunamadı</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="px-6 py-4 bg-gray-50 dark:bg-[#111418] border-t border-border-light dark:border-border-dark flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p class="text-xs text-text-muted dark:text-text-muted-dark font-medium">
+            Toplam <span class="text-[#111418] dark:text-white font-bold">{{ pagination.total }}</span> kullanıcı
+        </p>
+        <div class="flex items-center gap-1">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('ayarlar.kullanici_liste', page=pagination.prev_num, durum=request.args.get('durum'), q=request.args.get('q')) }}" 
+               class="p-1.5 rounded-lg border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-[#252b36] transition-colors">
+                <span class="material-symbols-outlined text-lg">chevron_left</span>
+            </a>
+            {% endif %}
+            
+            {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=2, right_edge=1) %}
+                {% if page_num %}
+                    {% if page_num == pagination.page %}
+                    <span class="w-8 h-8 rounded-lg bg-primary text-white text-xs font-bold flex items-center justify-center">{{ page_num }}</span>
+                    {% else %}
+                    <a href="{{ url_for('ayarlar.kullanici_liste', page=page_num, durum=request.args.get('durum'), q=request.args.get('q')) }}" 
+                       class="w-8 h-8 rounded-lg hover:bg-gray-200 dark:hover:bg-[#252b36] text-xs font-bold flex items-center justify-center transition-colors">
+                        {{ page_num }}
+                    </a>
+                    {% endif %}
+                {% else %}
+                <span class="px-1 text-gray-400">...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <a href="{{ url_for('ayarlar.kullanici_liste', page=pagination.next_num, durum=request.args.get('durum'), q=request.args.get('q')) }}" 
+               class="p-1.5 rounded-lg border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-[#252b36] transition-colors">
+                <span class="material-symbols-outlined text-lg">chevron_right</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

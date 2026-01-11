@@ -1,111 +1,167 @@
 {% extends "base.html" %}
 
-{% block title %}Aktivite Logları - TG Portal{% endblock %}
-{% block page_title %}Aktivite Logları{% endblock %}
+{% block title %}Sistem Logları - TG Portal{% endblock %}
+{% block page_title %}Sistem Logları{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <form method="GET" class="row g-2">
-            <div class="col-auto">
-                <select name="eylem" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">Tüm Eylemler</option>
-                    <option value="login" {{ 'selected' if request.args.get('eylem') == 'login' }}>Giriş</option>
-                    <option value="logout" {{ 'selected' if request.args.get('eylem') == 'logout' }}>Çıkış</option>
-                    <option value="create" {{ 'selected' if request.args.get('eylem') == 'create' }}>Oluşturma</option>
-                    <option value="update" {{ 'selected' if request.args.get('eylem') == 'update' }}>Güncelleme</option>
-                    <option value="delete" {{ 'selected' if request.args.get('eylem') == 'delete' }}>Silme</option>
-                </select>
-            </div>
-            <div class="col-auto">
-                <select name="modul" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">Tüm Modüller</option>
-                    <option value="ik" {{ 'selected' if request.args.get('modul') == 'ik' }}>İK</option>
-                    <option value="masraf" {{ 'selected' if request.args.get('modul') == 'masraf' }}>Masraf</option>
-                    <option value="sozlesme" {{ 'selected' if request.args.get('modul') == 'sozlesme' }}>Sözleşme</option>
-                    <option value="talep" {{ 'selected' if request.args.get('modul') == 'talep' }}>Talep</option>
-                    <option value="satinalma" {{ 'selected' if request.args.get('modul') == 'satinalma' }}>Satın Alma</option>
-                </select>
-            </div>
-            <div class="col-auto">
-                <select name="kullanici_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">Tüm Kullanıcılar</option>
-                    {% for u in kullanicilar %}
-                    <option value="{{ u.id }}" {{ 'selected' if request.args.get('kullanici_id')|int == u.id }}>{{ u.full_name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </form>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover table-sm mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Tarih</th>
-                        <th>Kullanıcı</th>
-                        <th>Eylem</th>
-                        <th>Modül</th>
-                        <th>Açıklama</th>
-                        <th>IP</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for log in loglar %}
-                    <tr>
-                        <td class="text-nowrap">{{ log.tarih.strftime('%d.%m.%Y %H:%M') }}</td>
-                        <td>{{ log.kullanici.full_name if log.kullanici else '-' }}</td>
-                        <td>
-                            {% if log.eylem == 'login' %}
-                            <span class="badge bg-success">Giriş</span>
-                            {% elif log.eylem == 'logout' %}
-                            <span class="badge bg-secondary">Çıkış</span>
-                            {% elif log.eylem == 'create' %}
-                            <span class="badge bg-primary">Oluşturma</span>
-                            {% elif log.eylem == 'update' %}
-                            <span class="badge bg-info">Güncelleme</span>
-                            {% elif log.eylem == 'delete' %}
-                            <span class="badge bg-danger">Silme</span>
-                            {% else %}
-                            <span class="badge bg-secondary">{{ log.eylem }}</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ log.modul or '-' }}</td>
-                        <td>{{ log.aciklama or '-' }}</td>
-                        <td><small class="text-muted">{{ log.ip_adresi or '-' }}</small></td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">Log kaydı bulunamadı</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        {% if pagination.pages > 1 %}
-        <div class="card-footer">
-            <nav>
-                <ul class="pagination pagination-sm mb-0 justify-content-center">
-                    {% for p in pagination.iter_pages() %}
-                    {% if p %}
-                    <li class="page-item {{ 'active' if p == pagination.page }}">
-                        <a class="page-link" href="{{ url_for('ayarlar.log_liste', page=p, eylem=request.args.get('eylem'), modul=request.args.get('modul'), kullanici_id=request.args.get('kullanici_id')) }}">{{ p }}</a>
-                    </li>
-                    {% else %}
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                    {% endif %}
-                    {% endfor %}
-                </ul>
-            </nav>
-        </div>
-        {% endif %}
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#111418] dark:text-white">Sistem Logları</h1>
+        <p class="text-text-muted dark:text-text-muted-dark text-sm mt-1">
+            Kullanıcı işlemleri ve sistem olaylarını inceleyin.
+        </p>
     </div>
 </div>
 
-<div class="mt-3">
-    <a href="{{ url_for('ayarlar.dashboard') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Geri
-    </a>
+<!-- Filter Bar -->
+<div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl p-4 mb-6 shadow-sm">
+    <form method="GET" class="flex flex-col lg:flex-row gap-4 justify-between">
+        <div class="flex flex-wrap gap-2 items-center">
+            <select name="eylem" onchange="this.form.submit()" class="h-9 px-3 rounded-lg text-xs font-medium bg-gray-100 dark:bg-[#111418] border border-border-light dark:border-border-dark focus:ring-primary focus:border-primary">
+                <option value="">Tüm İşlemler</option>
+                <option value="create" {% if request.args.get('eylem') == 'create' %}selected{% endif %}>Oluşturma</option>
+                <option value="update" {% if request.args.get('eylem') == 'update' %}selected{% endif %}>Güncelleme</option>
+                <option value="delete" {% if request.args.get('eylem') == 'delete' %}selected{% endif %}>Silme</option>
+                <option value="login" {% if request.args.get('eylem') == 'login' %}selected{% endif %}>Giriş</option>
+                <option value="logout" {% if request.args.get('eylem') == 'logout' %}selected{% endif %}>Çıkış</option>
+            </select>
+            <select name="modul" onchange="this.form.submit()" class="h-9 px-3 rounded-lg text-xs font-medium bg-gray-100 dark:bg-[#111418] border border-border-light dark:border-border-dark focus:ring-primary focus:border-primary">
+                <option value="">Tüm Modüller</option>
+                <option value="ik" {% if request.args.get('modul') == 'ik' %}selected{% endif %}>İK</option>
+                <option value="filo" {% if request.args.get('modul') == 'filo' %}selected{% endif %}>Filo</option>
+                <option value="masraf" {% if request.args.get('modul') == 'masraf' %}selected{% endif %}>Masraf</option>
+                <option value="sozlesme" {% if request.args.get('modul') == 'sozlesme' %}selected{% endif %}>Sözleşme</option>
+                <option value="satinalma" {% if request.args.get('modul') == 'satinalma' %}selected{% endif %}>Satın Alma</option>
+                <option value="ayarlar" {% if request.args.get('modul') == 'ayarlar' %}selected{% endif %}>Ayarlar</option>
+            </select>
+            <select name="kullanici_id" onchange="this.form.submit()" class="h-9 px-3 rounded-lg text-xs font-medium bg-gray-100 dark:bg-[#111418] border border-border-light dark:border-border-dark focus:ring-primary focus:border-primary">
+                <option value="">Tüm Kullanıcılar</option>
+                {% for user in kullanicilar or [] %}
+                <option value="{{ user.id }}" {% if request.args.get('kullanici_id')|int == user.id %}selected{% endif %}>{{ user.ad }} {{ user.soyad }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        {% if request.args.get('eylem') or request.args.get('modul') or request.args.get('kullanici_id') %}
+        <a href="{{ url_for('ayarlar.log_liste') }}" class="h-9 px-4 rounded-lg text-xs font-bold bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark hover:bg-gray-200 dark:hover:bg-[#252b36] transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined text-sm">close</span>
+            Filtreleri Temizle
+        </a>
+        {% endif %}
+    </form>
+</div>
+
+<!-- Logs Table -->
+<div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 dark:bg-[#111418] border-b border-border-light dark:border-border-dark">
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">Tarih</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">Kullanıcı</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden md:table-cell">Eylem</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden lg:table-cell">Modül</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">Açıklama</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for log in loglar or [] %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark whitespace-nowrap">
+                        {{ log.tarih.strftime('%d.%m.%Y %H:%M:%S') if log.tarih else '-' }}
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                                <span class="text-xs font-bold text-primary">{{ log.kullanici.ad[0] if log.kullanici and log.kullanici.ad else '?' }}</span>
+                            </div>
+                            <span class="text-sm font-medium text-[#111418] dark:text-white">{{ log.kullanici.ad if log.kullanici else 'Sistem' }} {{ log.kullanici.soyad if log.kullanici else '' }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 hidden md:table-cell">
+                        {% if log.eylem == 'create' %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Oluşturma</span>
+                        {% elif log.eylem == 'update' %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Güncelleme</span>
+                        {% elif log.eylem == 'delete' %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Silme</span>
+                        {% elif log.eylem == 'login' %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">Giriş</span>
+                        {% elif log.eylem == 'logout' %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Çıkış</span>
+                        {% elif log.eylem == 'view' %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">Görüntüleme</span>
+                        {% elif log.eylem == 'export' %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Dışa Aktarma</span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">{{ log.eylem or '-' }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden lg:table-cell">
+                        {% if log.modul %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark uppercase">
+                            {{ log.modul }}
+                        </span>
+                        {% else %}
+                        -
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-[#111418] dark:text-white max-w-xs truncate">
+                        {{ log.aciklama or '-' }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-3">history</span>
+                            <p class="text-text-muted dark:text-text-muted-dark font-medium">Log kaydı bulunamadı</p>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <!-- Pagination -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="px-6 py-4 bg-gray-50 dark:bg-[#111418] border-t border-border-light dark:border-border-dark flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p class="text-xs text-text-muted dark:text-text-muted-dark font-medium">
+            Toplam <span class="text-[#111418] dark:text-white font-bold">{{ pagination.total }}</span> log kaydı
+        </p>
+        <div class="flex items-center gap-1">
+            {% if pagination.has_prev %}
+            <a href="{{ url_for('ayarlar.log_liste', page=pagination.prev_num, eylem=request.args.get('eylem'), modul=request.args.get('modul'), kullanici_id=request.args.get('kullanici_id')) }}" 
+               class="p-1.5 rounded-lg border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-[#252b36] transition-colors">
+                <span class="material-symbols-outlined text-lg">chevron_left</span>
+            </a>
+            {% endif %}
+            
+            {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=2, right_edge=1) %}
+                {% if page_num %}
+                    {% if page_num == pagination.page %}
+                    <span class="w-8 h-8 rounded-lg bg-primary text-white text-xs font-bold flex items-center justify-center">{{ page_num }}</span>
+                    {% else %}
+                    <a href="{{ url_for('ayarlar.log_liste', page=page_num, eylem=request.args.get('eylem'), modul=request.args.get('modul'), kullanici_id=request.args.get('kullanici_id')) }}" 
+                       class="w-8 h-8 rounded-lg hover:bg-gray-200 dark:hover:bg-[#252b36] text-xs font-bold flex items-center justify-center transition-colors">
+                        {{ page_num }}
+                    </a>
+                    {% endif %}
+                {% else %}
+                <span class="px-1 text-gray-400">...</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+            <a href="{{ url_for('ayarlar.log_liste', page=pagination.next_num, eylem=request.args.get('eylem'), modul=request.args.get('modul'), kullanici_id=request.args.get('kullanici_id')) }}" 
+               class="p-1.5 rounded-lg border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-[#252b36] transition-colors">
+                <span class="material-symbols-outlined text-lg">chevron_right</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

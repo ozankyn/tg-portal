@@ -4,111 +4,202 @@
 {% block page_title %}Sistem Ayarları{% endblock %}
 
 {% block content %}
-<form method="POST">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#111418] dark:text-white">Sistem Ayarları</h1>
+        <p class="text-text-muted dark:text-text-muted-dark text-sm mt-1">
+            Genel sistem yapılandırması ve parametreler.
+        </p>
+    </div>
+    <div class="flex gap-3">
+        <a href="{{ url_for('ayarlar.varsayilan_yukle') }}" class="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark rounded-lg font-bold text-sm hover:bg-gray-200 dark:hover:bg-[#252b36] transition-colors">
+            <span class="material-symbols-outlined text-lg">refresh</span>
+            Varsayılanları Yükle
+        </a>
+    </div>
+</div>
+
+<form method="POST" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     
-    <div class="row g-4">
-        <!-- Genel Ayarlar -->
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Genel Ayarlar</h6>
+    <div class="lg:col-span-8 space-y-6">
+        
+        <!-- Şirket Bilgileri -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-primary">business</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Şirket Bilgileri</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Şirket Adı
+                    </label>
+                    <input type="text" name="sirket_adi" value="{{ ayarlar.sirket_adi if ayarlar else '' }}" placeholder="Şirket adı"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
                 </div>
-                <div class="card-body">
-                    {% for ayar in genel %}
-                    <div class="mb-3">
-                        <label class="form-label">{{ ayar.aciklama or ayar.anahtar }}</label>
-                        {% if ayar.tip == 'boolean' %}
-                        <select name="{{ ayar.anahtar }}" class="form-select">
-                            <option value="true" {{ 'selected' if ayar.deger == 'true' }}>Evet</option>
-                            <option value="false" {{ 'selected' if ayar.deger != 'true' }}>Hayır</option>
-                        </select>
-                        {% elif ayar.tip == 'number' %}
-                        <input type="number" name="{{ ayar.anahtar }}" class="form-control" value="{{ ayar.deger }}">
-                        {% else %}
-                        <input type="text" name="{{ ayar.anahtar }}" class="form-control" value="{{ ayar.deger }}">
-                        {% endif %}
-                    </div>
-                    {% endfor %}
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Vergi Numarası
+                    </label>
+                    <input type="text" name="vergi_no" value="{{ ayarlar.vergi_no if ayarlar else '' }}" placeholder="Vergi numarası"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Telefon
+                    </label>
+                    <input type="text" name="telefon" value="{{ ayarlar.telefon if ayarlar else '' }}" placeholder="Şirket telefonu"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        E-posta
+                    </label>
+                    <input type="email" name="email" value="{{ ayarlar.email if ayarlar else '' }}" placeholder="Şirket e-postası"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Adres
+                    </label>
+                    <textarea name="adres" rows="2" placeholder="Şirket adresi"
+                              class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">{{ ayarlar.adres if ayarlar else '' }}</textarea>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Genel Ayarlar -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-primary">settings</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Genel Ayarlar</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Sayfa Başına Kayıt
+                    </label>
+                    <input type="number" name="sayfa_basina_kayit" value="{{ ayarlar.sayfa_basina_kayit if ayarlar else 20 }}" min="5" max="100"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Tarih Formatı
+                    </label>
+                    <select name="tarih_formati" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="dd.mm.yyyy" {% if ayarlar and ayarlar.tarih_formati == 'dd.mm.yyyy' %}selected{% endif %}>DD.MM.YYYY</option>
+                        <option value="yyyy-mm-dd" {% if ayarlar and ayarlar.tarih_formati == 'yyyy-mm-dd' %}selected{% endif %}>YYYY-MM-DD</option>
+                        <option value="mm/dd/yyyy" {% if ayarlar and ayarlar.tarih_formati == 'mm/dd/yyyy' %}selected{% endif %}>MM/DD/YYYY</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Para Birimi
+                    </label>
+                    <select name="para_birimi" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="TRY" {% if ayarlar and ayarlar.para_birimi == 'TRY' %}selected{% endif %}>TRY (₺)</option>
+                        <option value="USD" {% if ayarlar and ayarlar.para_birimi == 'USD' %}selected{% endif %}>USD ($)</option>
+                        <option value="EUR" {% if ayarlar and ayarlar.para_birimi == 'EUR' %}selected{% endif %}>EUR (€)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Saat Dilimi
+                    </label>
+                    <select name="saat_dilimi" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="Europe/Istanbul" {% if ayarlar and ayarlar.saat_dilimi == 'Europe/Istanbul' %}selected{% endif %}>Europe/Istanbul (UTC+3)</option>
+                        <option value="UTC" {% if ayarlar and ayarlar.saat_dilimi == 'UTC' %}selected{% endif %}>UTC</option>
+                    </select>
                 </div>
             </div>
         </div>
         
         <!-- E-posta Ayarları -->
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h6 class="mb-0"><i class="bi bi-envelope me-2"></i>E-posta Ayarları</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-primary">mail</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">E-posta Ayarları</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        SMTP Sunucu
+                    </label>
+                    <input type="text" name="smtp_server" value="{{ ayarlar.smtp_server if ayarlar else '' }}" placeholder="smtp.example.com"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
                 </div>
-                <div class="card-body">
-                    {% for ayar in email %}
-                    <div class="mb-3">
-                        <label class="form-label">{{ ayar.aciklama or ayar.anahtar }}</label>
-                        {% if ayar.tip == 'boolean' %}
-                        <select name="{{ ayar.anahtar }}" class="form-select">
-                            <option value="true" {{ 'selected' if ayar.deger == 'true' }}>Evet</option>
-                            <option value="false" {{ 'selected' if ayar.deger != 'true' }}>Hayır</option>
-                        </select>
-                        {% elif ayar.tip == 'password' %}
-                        <input type="password" name="{{ ayar.anahtar }}" class="form-control" value="{{ ayar.deger }}" placeholder="••••••">
-                        {% elif ayar.tip == 'number' %}
-                        <input type="number" name="{{ ayar.anahtar }}" class="form-control" value="{{ ayar.deger }}">
-                        {% else %}
-                        <input type="text" name="{{ ayar.anahtar }}" class="form-control" value="{{ ayar.deger }}">
-                        {% endif %}
-                    </div>
-                    {% endfor %}
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        SMTP Port
+                    </label>
+                    <input type="number" name="smtp_port" value="{{ ayarlar.smtp_port if ayarlar else 587 }}"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        SMTP Kullanıcı
+                    </label>
+                    <input type="text" name="smtp_user" value="{{ ayarlar.smtp_user if ayarlar else '' }}" placeholder="SMTP kullanıcı adı"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        SMTP Şifre
+                    </label>
+                    <input type="password" name="smtp_password" placeholder="Değiştirmek için doldurun"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
                 </div>
             </div>
         </div>
         
-        <!-- Bildirim Ayarları -->
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header bg-warning">
-                    <h6 class="mb-0"><i class="bi bi-bell me-2"></i>Bildirim Ayarları</h6>
-                </div>
-                <div class="card-body">
-                    {% for ayar in bildirim %}
-                    <div class="mb-3">
-                        <label class="form-label">{{ ayar.aciklama or ayar.anahtar }}</label>
-                        <select name="{{ ayar.anahtar }}" class="form-select">
-                            <option value="true" {{ 'selected' if ayar.deger == 'true' }}>Aktif</option>
-                            <option value="false" {{ 'selected' if ayar.deger != 'true' }}>Pasif</option>
-                        </select>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
+        <!-- Submit -->
+        <div class="flex justify-end">
+            <button type="submit" class="px-8 py-2.5 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">
+                Ayarları Kaydet
+            </button>
         </div>
         
-        <!-- Güvenlik Ayarları -->
-        <div class="col-lg-6">
-            <div class="card">
-                <div class="card-header bg-danger text-white">
-                    <h6 class="mb-0"><i class="bi bi-shield-lock me-2"></i>Güvenlik Ayarları</h6>
-                </div>
-                <div class="card-body">
-                    {% for ayar in guvenlik %}
-                    <div class="mb-3">
-                        <label class="form-label">{{ ayar.aciklama or ayar.anahtar }}</label>
-                        <input type="number" name="{{ ayar.anahtar }}" class="form-control" value="{{ ayar.deger }}">
-                    </div>
-                    {% endfor %}
-                </div>
-            </div>
-        </div>
     </div>
     
-    <div class="mt-4 d-flex gap-2">
-        <button type="submit" class="btn btn-primary">
-            <i class="bi bi-check-lg me-1"></i>Kaydet
-        </button>
-        <a href="{{ url_for('ayarlar.varsayilan_yukle') }}" class="btn btn-outline-secondary"
-           onclick="return confirm('Varsayılan ayarlar yüklensin mi?')">
-            <i class="bi bi-arrow-clockwise me-1"></i>Varsayılanları Yükle
-        </a>
-        <a href="{{ url_for('ayarlar.dashboard') }}" class="btn btn-outline-secondary">Geri</a>
-    </div>
+    <!-- Sidebar -->
+    <aside class="lg:col-span-4 space-y-6">
+        
+        <!-- Sistem Bilgisi -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-sm font-bold uppercase text-text-muted dark:text-text-muted-dark mb-4 tracking-widest">Sistem Bilgisi</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Versiyon</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">1.0.0</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Python</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">3.11</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Flask</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">2.x</span>
+                </div>
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Veritabanı</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">PostgreSQL</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Info Box -->
+        <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="material-symbols-outlined text-amber-500">warning</span>
+                <h4 class="font-bold text-amber-900 dark:text-amber-200">Dikkat</h4>
+            </div>
+            <p class="text-sm text-amber-800 dark:text-amber-300/80">
+                Sistem ayarlarını değiştirmek uygulamanın çalışmasını etkileyebilir. Değişiklikleri kaydetmeden önce doğru olduğundan emin olun.
+            </p>
+        </div>
+        
+    </aside>
 </form>
 {% endblock %}

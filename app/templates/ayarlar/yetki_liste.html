@@ -1,112 +1,130 @@
 {% extends "base.html" %}
 
-{% block title %}Yetkiler - TG Portal{% endblock %}
+{% block title %}Yetki Yönetimi - TG Portal{% endblock %}
 {% block page_title %}Yetki Yönetimi{% endblock %}
 
 {% block content %}
-<div class="row g-4">
-    <!-- Sol: Yetki Listesi -->
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Tanımlı Yetkiler</h6>
-                <a href="{{ url_for('ayarlar.varsayilan_yetkiler') }}" class="btn btn-outline-primary btn-sm"
-                   onclick="return confirm('Varsayılan yetkiler eklensin mi?')">
-                    <i class="bi bi-plus-lg me-1"></i>Varsayılanları Yükle
-                </a>
-            </div>
-            <div class="card-body">
-                {% if yetki_gruplari %}
-                <div class="row g-3">
-                    {% for modul, yetkiler in yetki_gruplari.items() %}
-                    <div class="col-md-6 col-lg-4">
-                        <div class="border rounded p-3 h-100">
-                            <h6 class="text-uppercase text-primary border-bottom pb-2 mb-3" style="font-size: 0.8rem;">
-                                <i class="bi bi-folder me-1"></i>{{ modul }}
-                                <span class="badge bg-secondary float-end">{{ yetkiler|length }}</span>
-                            </h6>
-                            {% for yetki in yetkiler %}
-                            <div class="mb-2">
-                                <code class="small">{{ yetki.code }}</code>
-                                {% if yetki.name %}
-                                <small class="text-muted d-block">{{ yetki.name }}</small>
-                                {% endif %}
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="text-center text-muted py-5">
-                    <i class="bi bi-key fs-1 d-block mb-3"></i>
-                    <p>Henüz yetki tanımlanmamış.</p>
-                    <a href="{{ url_for('ayarlar.varsayilan_yetkiler') }}" class="btn btn-primary">
-                        <i class="bi bi-plus-lg me-1"></i>Varsayılan Yetkileri Yükle
-                    </a>
-                </div>
-                {% endif %}
-            </div>
-        </div>
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#111418] dark:text-white">Yetki Yönetimi</h1>
+        <p class="text-text-muted dark:text-text-muted-dark text-sm mt-1">
+            Sistem yetkilerini görüntüleyin ve düzenleyin.
+        </p>
     </div>
-    
-    <!-- Sağ: Yeni Yetki Ekle -->
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">Yeni Yetki Ekle</h6>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('ayarlar.yetki_ekle') }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Yetki Kodu *</label>
-                        <input type="text" name="code" class="form-control" required
-                               placeholder="modul.eylem" pattern="[a-z_]+\.[a-z_*]+">
-                        <div class="form-text">Örn: masraf.create, ik.admin, filo.*</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Görünen Ad</label>
-                        <input type="text" name="name" class="form-control"
-                               placeholder="Masraf Oluşturma">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Modül</label>
-                        <input type="text" name="module" class="form-control"
-                               placeholder="masraf">
-                        <div class="form-text">Boş bırakılırsa koddan alınır</div>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-plus-lg me-1"></i>Ekle
-                    </button>
-                </form>
-            </div>
-        </div>
-        
-        <div class="card mt-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Yetki Formatı</h6>
-            </div>
-            <div class="card-body small">
-                <p><code>modul.eylem</code> formatı kullanılır:</p>
-                <ul class="mb-0">
-                    <li><code>ik.view</code> - İK görüntüleme</li>
-                    <li><code>masraf.create</code> - Masraf oluşturma</li>
-                    <li><code>onay.approve</code> - Onay verme</li>
-                    <li><code>filo.*</code> - Tüm filo yetkileri</li>
-                </ul>
-            </div>
-        </div>
+    <div class="flex gap-3">
+        <a href="{{ url_for('ayarlar.varsayilan_yetkiler') }}" class="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark rounded-lg font-bold text-sm hover:bg-gray-200 dark:hover:bg-[#252b36] transition-colors">
+            <span class="material-symbols-outlined text-lg">refresh</span>
+            Varsayılanları Yükle
+        </a>
+        <button onclick="document.getElementById('yetkiModal').classList.remove('hidden')" class="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary-dark transition-colors shadow-sm">
+            <span class="material-symbols-outlined text-lg">add</span>
+            Yeni Yetki
+        </button>
     </div>
 </div>
 
-<div class="mt-3">
-    <a href="{{ url_for('ayarlar.dashboard') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Geri
-    </a>
+<!-- Yetkiler Table -->
+<div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 dark:bg-[#111418] border-b border-border-light dark:border-border-dark">
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">Yetki Kodu</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">Yetki Adı</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden md:table-cell">Modül</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden lg:table-cell">Açıklama</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% set current_modul = namespace(value='') %}
+                {% for yetki in yetkiler or [] %}
+                {% set modul = yetki.kod.split('.')[0] if '.' in yetki.kod else 'genel' %}
+                
+                {% if modul != current_modul.value %}
+                {% set current_modul.value = modul %}
+                <tr class="bg-gray-50/50 dark:bg-[#111418]/50">
+                    <td colspan="4" class="px-6 py-3">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-primary">folder</span>
+                            <span class="text-sm font-bold text-[#111418] dark:text-white uppercase">{{ modul }}</span>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+                
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <td class="px-6 py-4">
+                        <span class="text-sm font-mono font-medium text-primary">{{ yetki.kod }}</span>
+                    </td>
+                    <td class="px-6 py-4 text-sm font-medium text-[#111418] dark:text-white">{{ yetki.ad }}</td>
+                    <td class="px-6 py-4 hidden md:table-cell">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark">
+                            {{ modul }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden lg:table-cell">
+                        {{ yetki.aciklama or '-' }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="px-6 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                            <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-3">key_off</span>
+                            <p class="text-text-muted dark:text-text-muted-dark font-medium">Henüz yetki tanımlanmamış</p>
+                            <button onclick="document.getElementById('yetkiModal').classList.remove('hidden')" class="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary-dark transition-colors">
+                                <span class="material-symbols-outlined text-lg">add</span>
+                                İlk Yetkiyi Ekle
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Yetki Ekleme Modal -->
+<div id="yetkiModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full">
+        <div class="p-6 border-b border-border-light dark:border-border-dark">
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white">Yeni Yetki Ekle</h3>
+        </div>
+        <form action="{{ url_for('ayarlar.yetki_ekle') }}" method="POST" class="p-6 space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div>
+                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                    Yetki Kodu <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="kod" placeholder="Örn: ik.view" required
+                       class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5 font-mono">
+                <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Format: modul.islem (örn: ik.create, filo.delete)</p>
+            </div>
+            <div>
+                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                    Yetki Adı <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="ad" placeholder="Örn: İK Görüntüleme" required
+                       class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+            </div>
+            <div>
+                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                    Açıklama
+                </label>
+                <textarea name="aciklama" rows="2" placeholder="Yetki açıklaması..."
+                          class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5"></textarea>
+            </div>
+            <div class="flex justify-end gap-3 pt-4">
+                <button type="button" onclick="document.getElementById('yetkiModal').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-[#111418] rounded-lg font-medium text-sm hover:bg-gray-200 dark:hover:bg-[#252b36] transition-colors">
+                    İptal
+                </button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary-dark transition-colors">
+                    Ekle
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 {% endblock %}

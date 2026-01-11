@@ -4,131 +4,134 @@
 {% block page_title %}Ayarlar{% endblock %}
 
 {% block content %}
-<!-- İstatistikler -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card stat-card primary">
-            <div class="card-body text-center">
-                <i class="bi bi-people fs-1 text-primary opacity-50"></i>
-                <h3 class="mb-0 mt-2">{{ stats.kullanici }}</h3>
-                <small class="text-muted">Aktif Kullanıcı</small>
+<!-- Page Header -->
+<div class="mb-6">
+    <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#111418] dark:text-white">Sistem Ayarları</h1>
+    <p class="text-text-muted dark:text-text-muted-dark text-sm mt-1">
+        Sistem yapılandırması, kullanıcı ve rol yönetimi.
+    </p>
+</div>
+
+<!-- Quick Stats -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">group</span>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-[#111418] dark:text-white">{{ kullanici_sayisi or 0 }}</p>
+                <p class="text-xs text-text-muted dark:text-text-muted-dark">Kullanıcı</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card success">
-            <div class="card-body text-center">
-                <i class="bi bi-shield-check fs-1 text-success opacity-50"></i>
-                <h3 class="mb-0 mt-2">{{ stats.rol }}</h3>
-                <small class="text-muted">Tanımlı Rol</small>
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                <span class="material-symbols-outlined text-purple-600 dark:text-purple-400">shield_person</span>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-[#111418] dark:text-white">{{ rol_sayisi or 0 }}</p>
+                <p class="text-xs text-text-muted dark:text-text-muted-dark">Rol</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card warning">
-            <div class="card-body text-center">
-                <i class="bi bi-key fs-1 text-warning opacity-50"></i>
-                <h3 class="mb-0 mt-2">{{ stats.yetki }}</h3>
-                <small class="text-muted">Tanımlı Yetki</small>
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <span class="material-symbols-outlined text-amber-600 dark:text-amber-400">key</span>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-[#111418] dark:text-white">{{ yetki_sayisi or 0 }}</p>
+                <p class="text-xs text-text-muted dark:text-text-muted-dark">Yetki</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card info">
-            <div class="card-body text-center">
-                <i class="bi bi-gear fs-1 text-info opacity-50"></i>
-                <h3 class="mb-0 mt-2">{{ stats.ayar }}</h3>
-                <small class="text-muted">Sistem Ayarı</small>
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 shadow-sm">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <span class="material-symbols-outlined text-emerald-600 dark:text-emerald-400">person</span>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-[#111418] dark:text-white">{{ aktif_kullanici or 0 }}</p>
+                <p class="text-xs text-text-muted dark:text-text-muted-dark">Aktif</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Menü Kartları -->
-<div class="row g-4">
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-sliders fs-1 text-primary mb-3"></i>
-                <h5>Sistem Ayarları</h5>
-                <p class="text-muted small">Genel ayarlar, e-posta, bildirim ve güvenlik konfigürasyonu</p>
-                <a href="{{ url_for('ayarlar.sistem') }}" class="btn btn-outline-primary">
-                    <i class="bi bi-gear me-1"></i>Düzenle
-                </a>
-            </div>
-        </div>
-    </div>
+<!-- Menu Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-people fs-1 text-success mb-3"></i>
-                <h5>Kullanıcı Yönetimi</h5>
-                <p class="text-muted small">Kullanıcı ekleme, düzenleme, rol ve bireysel yetki atama</p>
-                <a href="{{ url_for('ayarlar.kullanici_liste') }}" class="btn btn-outline-success">
-                    <i class="bi bi-person-gear me-1"></i>Yönet
-                </a>
+    <!-- Kullanıcı Yönetimi -->
+    <a href="{{ url_for('ayarlar.kullanici_liste') }}" class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-2xl text-blue-600 dark:text-blue-400">manage_accounts</span>
             </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-1">Kullanıcı Yönetimi</h3>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">Kullanıcı ekleme, düzenleme ve yetkilendirme işlemleri.</p>
+            </div>
+            <span class="material-symbols-outlined text-gray-300 dark:text-gray-600 group-hover:text-primary transition-colors">chevron_right</span>
         </div>
-    </div>
+    </a>
     
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-shield-lock fs-1 text-warning mb-3"></i>
-                <h5>Rol Yönetimi</h5>
-                <p class="text-muted small">Roller ve yetki grupları tanımlama</p>
-                <a href="{{ url_for('ayarlar.rol_liste') }}" class="btn btn-outline-warning">
-                    <i class="bi bi-person-badge me-1"></i>Yönet
-                </a>
+    <!-- Rol Yönetimi -->
+    <a href="{{ url_for('ayarlar.rol_liste') }}" class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-2xl text-purple-600 dark:text-purple-400">shield_person</span>
             </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-1">Rol Yönetimi</h3>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">Kullanıcı rolleri ve yetki grupları tanımlama.</p>
+            </div>
+            <span class="material-symbols-outlined text-gray-300 dark:text-gray-600 group-hover:text-primary transition-colors">chevron_right</span>
         </div>
-    </div>
+    </a>
     
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-key fs-1 text-info mb-3"></i>
-                <h5>Yetkiler</h5>
-                <p class="text-muted small">Sistem yetkileri tanımlama ve yönetme</p>
-                <a href="{{ url_for('ayarlar.yetki_liste') }}" class="btn btn-outline-info">
-                    <i class="bi bi-list-check me-1"></i>Görüntüle
-                </a>
+    <!-- Yetki Yönetimi -->
+    <a href="{{ url_for('ayarlar.yetki_liste') }}" class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-2xl text-amber-600 dark:text-amber-400">key</span>
             </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-1">Yetki Yönetimi</h3>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">Sistem yetkilerini görüntüleme ve düzenleme.</p>
+            </div>
+            <span class="material-symbols-outlined text-gray-300 dark:text-gray-600 group-hover:text-primary transition-colors">chevron_right</span>
         </div>
-    </div>
+    </a>
     
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="bi bi-clock-history fs-1 text-secondary mb-3"></i>
-                <h5>Aktivite Logları</h5>
-                <p class="text-muted small">Kullanıcı işlemleri ve sistem logları</p>
-                <a href="{{ url_for('ayarlar.log_liste') }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-journal-text me-1"></i>Görüntüle
-                </a>
+    <!-- Sistem Ayarları -->
+    <a href="{{ url_for('ayarlar.sistem') }}" class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-2xl text-slate-600 dark:text-slate-400">settings</span>
             </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-1">Sistem Ayarları</h3>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">Genel sistem yapılandırması ve parametreler.</p>
+            </div>
+            <span class="material-symbols-outlined text-gray-300 dark:text-gray-600 group-hover:text-primary transition-colors">chevron_right</span>
         </div>
-    </div>
+    </a>
     
-    <div class="col-md-6 col-lg-4">
-        <div class="card h-100 border-dashed">
-            <div class="card-body text-center">
-                <i class="bi bi-download fs-1 text-muted mb-3"></i>
-                <h5 class="text-muted">Hızlı Kurulum</h5>
-                <p class="text-muted small">Varsayılan yetkileri ve rolleri yükle</p>
-                <div class="btn-group">
-                    <a href="{{ url_for('ayarlar.varsayilan_yetkiler') }}" class="btn btn-sm btn-outline-primary"
-                       onclick="return confirm('Varsayılan yetkiler eklensin mi?')">
-                        Yetkiler
-                    </a>
-                    <a href="{{ url_for('ayarlar.varsayilan_roller') }}" class="btn btn-sm btn-outline-success"
-                       onclick="return confirm('Varsayılan roller eklensin mi?')">
-                        Roller
-                    </a>
-                </div>
+    <!-- Sistem Logları -->
+    <a href="{{ url_for('ayarlar.log_liste') }}" class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-2xl text-rose-600 dark:text-rose-400">history</span>
             </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-1">Sistem Logları</h3>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">Kullanıcı işlemleri ve sistem olayları kayıtları.</p>
+            </div>
+            <span class="material-symbols-outlined text-gray-300 dark:text-gray-600 group-hover:text-primary transition-colors">chevron_right</span>
         </div>
-    </div>
+    </a>
+    
 </div>
 {% endblock %}

@@ -1,122 +1,165 @@
 {% extends "base.html" %}
 
-{% block title %}{{ 'Rol Düzenle' if rol else 'Yeni Rol' }} - TG Portal{% endblock %}
-{% block page_title %}{{ 'Rol Düzenle' if rol else 'Yeni Rol' }}{% endblock %}
+{% block title %}{% if rol %}Rol Düzenle{% else %}Yeni Rol{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if rol %}Rol Düzenle{% else %}Yeni Rol{% endif %}{% endblock %}
 
 {% block content %}
-<form method="POST">
+<!-- Breadcrumbs & Actions -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-2 text-sm text-text-muted dark:text-text-muted-dark">
+        <a class="hover:text-primary transition-colors" href="{{ url_for('ayarlar.dashboard') }}">Ayarlar</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <a class="hover:text-primary transition-colors" href="{{ url_for('ayarlar.rol_liste') }}">Roller</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <span class="text-[#111418] dark:text-white font-medium">{% if rol %}Düzenle{% else %}Yeni Rol{% endif %}</span>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('ayarlar.rol_liste') }}" class="px-4 py-2 text-sm font-bold text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-all">İptal</a>
+        <button type="submit" form="rolForm" class="px-6 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">Kaydet</button>
+    </div>
+</div>
+
+<form id="rolForm" method="POST" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     
-    <div class="row">
-        <!-- Sol: Rol Bilgileri -->
-        <div class="col-lg-4">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0"><i class="bi bi-shield me-2"></i>Rol Bilgileri</h6>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Rol Kodu *</label>
-                        <input type="text" name="name" class="form-control" required
-                               value="{{ rol.name if rol else '' }}" 
-                               pattern="[a-z_]+"
-                               placeholder="ornek_rol">
-                        <div class="form-text">Küçük harf ve alt çizgi</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Görünen Ad</label>
-                        <input type="text" name="display_name" class="form-control"
-                               value="{{ rol.display_name if rol else '' }}"
-                               placeholder="Örnek Rol">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Açıklama</label>
-                        <textarea name="description" class="form-control" rows="3">{{ rol.description if rol else '' }}</textarea>
-                    </div>
-                </div>
+    <div class="lg:col-span-8 space-y-6">
+        
+        <!-- Rol Bilgileri -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-primary">shield_person</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Rol Bilgileri</h3>
             </div>
-            
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg me-1"></i>{{ 'Güncelle' if rol else 'Kaydet' }}
-                </button>
-                <a href="{{ url_for('ayarlar.rol_liste') }}" class="btn btn-outline-secondary">İptal</a>
+            <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                            Rol Kodu <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="name" value="{{ rol.name if rol else '' }}" placeholder="Örn: ik_yonetici" required
+                               class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5 font-mono">
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Benzersiz, boşluksuz kod</p>
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                            Görünen Ad
+                        </label>
+                        <input type="text" name="display_name" value="{{ rol.display_name if rol else '' }}" placeholder="Örn: İK Yöneticisi"
+                               class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                    </div>
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Açıklama
+                    </label>
+                    <textarea name="description" rows="3" placeholder="Rol hakkında kısa açıklama..."
+                              class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">{{ rol.description if rol else '' }}</textarea>
+                </div>
             </div>
         </div>
         
-        <!-- Sağ: Yetkiler -->
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="bi bi-key me-2"></i>Rol Yetkileri</h6>
-                    <div>
-                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll()">Tümünü Seç</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectNone()">Temizle</button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    {% if yetki_gruplari %}
-                    <div class="row g-3">
-                        {% for modul, yetkiler in yetki_gruplari.items() %}
-                        <div class="col-md-6 col-lg-4">
-                            <div class="border rounded p-2 h-100">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <strong class="text-uppercase text-primary" style="font-size: 0.75rem;">
-                                        {{ modul }}
-                                    </strong>
-                                    <button type="button" class="btn btn-xs btn-link p-0" 
-                                            onclick="toggleModule('{{ modul }}')">
-                                        <small>Tümü</small>
-                                    </button>
-                                </div>
-                                {% for yetki in yetkiler %}
-                                <div class="form-check">
-                                    <input type="checkbox" name="permissions[]" value="{{ yetki.id }}"
-                                           class="form-check-input perm-{{ modul }}" id="perm{{ yetki.id }}"
-                                           {{ 'checked' if rol and yetki in rol.permissions }}>
-                                    <label class="form-check-label small" for="perm{{ yetki.id }}">
-                                        {{ yetki.code.split('.')[1] if '.' in yetki.code else yetki.code }}
-                                        {% if yetki.name %}
-                                        <span class="text-muted d-block" style="font-size: 0.7rem;">{{ yetki.name }}</span>
-                                        {% endif %}
-                                    </label>
-                                </div>
-                                {% endfor %}
+        <!-- Yetkiler -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-primary">key</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Yetkiler</h3>
+            </div>
+            
+            {% set perm_gruplari = {} %}
+            {% for perm in permissions or [] %}
+                {% set modul = perm.name.split('.')[0] if '.' in perm.name else 'genel' %}
+                {% if modul not in perm_gruplari %}
+                    {% set _ = perm_gruplari.update({modul: []}) %}
+                {% endif %}
+                {% set _ = perm_gruplari[modul].append(perm) %}
+            {% endfor %}
+            
+            <div class="space-y-6">
+                {% for modul, perm_list in perm_gruplari.items() %}
+                <div>
+                    <h4 class="text-sm font-bold text-[#111418] dark:text-white uppercase mb-3 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-lg text-primary">folder</span>
+                        {{ modul|capitalize }}
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pl-6">
+                        {% for perm in perm_list %}
+                        <label class="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-[#111418] hover:bg-gray-100 dark:hover:bg-[#252b36] cursor-pointer transition-colors">
+                            <input type="checkbox" name="permissions" value="{{ perm.id }}" 
+                                   {% if rol and perm in rol.permissions %}checked{% endif %}
+                                   class="w-4 h-4 rounded border-border-light dark:border-border-dark text-primary focus:ring-primary">
+                            <div>
+                                <span class="text-sm font-medium text-[#111418] dark:text-white">{{ perm.display_name or perm.name }}</span>
+                                <span class="block text-xs text-text-muted dark:text-text-muted-dark font-mono">{{ perm.name }}</span>
                             </div>
-                        </div>
+                        </label>
                         {% endfor %}
                     </div>
-                    {% else %}
-                    <div class="text-center text-muted py-4">
-                        <p>Henüz yetki tanımlanmamış.</p>
-                        <a href="{{ url_for('ayarlar.varsayilan_yetkiler') }}" class="btn btn-sm btn-outline-primary">
-                            Varsayılan Yetkileri Yükle
-                        </a>
-                    </div>
-                    {% endif %}
+                </div>
+                {% else %}
+                <p class="text-text-muted dark:text-text-muted-dark text-center py-4">Henüz yetki tanımlanmamış</p>
+                {% endfor %}
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- Sidebar -->
+    <aside class="lg:col-span-4 space-y-6">
+        
+        <!-- Hızlı Seçim -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-sm font-bold uppercase text-text-muted dark:text-text-muted-dark mb-4 tracking-widest">Hızlı Seçim</h3>
+            <div class="space-y-2">
+                <button type="button" onclick="selectAll()" class="w-full py-2 px-4 bg-gray-100 dark:bg-[#111418] hover:bg-gray-200 dark:hover:bg-[#252b36] rounded-lg text-sm font-medium transition-colors">
+                    Tümünü Seç
+                </button>
+                <button type="button" onclick="deselectAll()" class="w-full py-2 px-4 bg-gray-100 dark:bg-[#111418] hover:bg-gray-200 dark:hover:bg-[#252b36] rounded-lg text-sm font-medium transition-colors">
+                    Tümünü Kaldır
+                </button>
+            </div>
+        </div>
+        
+        <!-- Info -->
+        <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="material-symbols-outlined text-blue-500">info</span>
+                <h4 class="font-bold text-blue-900 dark:text-blue-200">Bilgilendirme</h4>
+            </div>
+            <ul class="space-y-3 text-sm text-blue-800 dark:text-blue-300/80">
+                <li class="flex gap-2">
+                    <span class="material-symbols-outlined text-xs mt-1">check_circle</span>
+                    <span>Rol kodu benzersiz olmalıdır.</span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="material-symbols-outlined text-xs mt-1">check_circle</span>
+                    <span>Seçilen yetkiler bu role atanan tüm kullanıcılara uygulanır.</span>
+                </li>
+            </ul>
+        </div>
+        
+        {% if rol and rol.is_system %}
+        <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl p-6">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-amber-500">lock</span>
+                <div>
+                    <h4 class="font-bold text-amber-900 dark:text-amber-200">Sistem Rolü</h4>
+                    <p class="text-sm text-amber-800 dark:text-amber-300/80 mt-1">Bu rol sistem tarafından oluşturulmuştur ve silinemez.</p>
                 </div>
             </div>
         </div>
-    </div>
+        {% endif %}
+        
+    </aside>
 </form>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 function selectAll() {
-    document.querySelectorAll('input[name="permissions[]"]').forEach(cb => cb.checked = true);
+    document.querySelectorAll('input[name="permissions"]').forEach(cb => cb.checked = true);
 }
-
-function selectNone() {
-    document.querySelectorAll('input[name="permissions[]"]').forEach(cb => cb.checked = false);
-}
-
-function toggleModule(modul) {
-    const checkboxes = document.querySelectorAll('.perm-' + modul);
-    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-    checkboxes.forEach(cb => cb.checked = !allChecked);
+function deselectAll() {
+    document.querySelectorAll('input[name="permissions"]').forEach(cb => cb.checked = false);
 }
 </script>
 {% endblock %}

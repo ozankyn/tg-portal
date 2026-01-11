@@ -1,158 +1,219 @@
 {% extends "base.html" %}
 
-{% block title %}{{ 'Kullanıcı Düzenle' if user else 'Yeni Kullanıcı' }} - TG Portal{% endblock %}
-{% block page_title %}{{ 'Kullanıcı Düzenle' if user else 'Yeni Kullanıcı' }}{% endblock %}
+{% block title %}{% if user %}Kullanıcı Düzenle{% else %}Yeni Kullanıcı{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if user %}Kullanıcı Düzenle{% else %}Yeni Kullanıcı{% endif %}{% endblock %}
 
 {% block content %}
-<form method="POST">
+<!-- Breadcrumbs & Actions -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-2 text-sm text-text-muted dark:text-text-muted-dark">
+        <a class="hover:text-primary transition-colors" href="{{ url_for('ayarlar.dashboard') }}">Ayarlar</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <a class="hover:text-primary transition-colors" href="{{ url_for('ayarlar.kullanici_liste') }}">Kullanıcılar</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <span class="text-[#111418] dark:text-white font-medium">{% if user %}Düzenle{% else %}Yeni Kullanıcı{% endif %}</span>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('ayarlar.kullanici_liste') }}" class="px-4 py-2 text-sm font-bold text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-all">İptal</a>
+        <button type="submit" form="kullaniciForm" class="px-6 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">Kaydet</button>
+    </div>
+</div>
+
+<!-- Page Header -->
+<div class="flex items-center gap-4 mb-6">
+    <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+        <span class="material-symbols-outlined text-3xl">{% if user %}edit{% else %}person_add{% endif %}</span>
+    </div>
+    <div>
+        <h2 class="text-2xl font-bold text-[#111418] dark:text-white">{% if user %}{{ user.ad }} {{ user.soyad }}{% else %}Yeni Kullanıcı{% endif %}</h2>
+        <p class="text-sm text-text-muted dark:text-text-muted-dark">{% if user %}Kullanıcı bilgilerini güncelleyin.{% else %}Sisteme yeni kullanıcı ekleyin.{% endif %}</p>
+    </div>
+</div>
+
+<form id="kullaniciForm" method="POST" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     
-    <div class="row">
-        <!-- Sol: Temel Bilgiler -->
-        <div class="col-lg-5">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h6 class="mb-0"><i class="bi bi-person me-2"></i>Kullanıcı Bilgileri</h6>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">E-posta *</label>
-                        <input type="email" name="email" class="form-control" required
-                               value="{{ user.email if user else '' }}">
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Ad *</label>
-                                <input type="text" name="ad" class="form-control" required
-                                       value="{{ user.ad if user else '' }}">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Soyad *</label>
-                                <input type="text" name="soyad" class="form-control" required
-                                       value="{{ user.soyad if user else '' }}">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">{{ 'Yeni Şifre' if user else 'Şifre *' }}</label>
-                        <input type="password" name="password" class="form-control"
-                               {{ '' if user else 'required' }} minlength="6">
-                        {% if user %}
-                        <div class="form-text">Boş bırakırsanız şifre değişmez</div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Rol</label>
-                        <select name="role_id" class="form-select">
-                            <option value="">Rol seçin...</option>
-                            {% for rol in roller %}
-                            <option value="{{ rol.id }}" {{ 'selected' if user and rol in user.roles }}>
-                                {{ rol.display_name or rol.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                        <div class="form-text">Rol, kullanıcıya toplu yetki atar</div>
-                    </div>
-                    
-                    <hr>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                <input type="checkbox" name="is_active" class="form-check-input" id="isActive"
-                                       {{ 'checked' if not user or user.is_active }}>
-                                <label class="form-check-label" for="isActive">Aktif</label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-check">
-                                <input type="checkbox" name="is_admin" class="form-check-input" id="isAdmin"
-                                       {{ 'checked' if user and user.is_admin }}>
-                                <label class="form-check-label text-danger" for="isAdmin">
-                                    <strong>Süper Admin</strong>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <div class="lg:col-span-8 space-y-6">
+        
+        <!-- Kişisel Bilgiler -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-primary">person</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Kişisel Bilgiler</h3>
             </div>
-            
-            <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary">
-                    <i class="bi bi-check-lg me-1"></i>{{ 'Güncelle' if user else 'Kaydet' }}
-                </button>
-                <a href="{{ url_for('ayarlar.kullanici_liste') }}" class="btn btn-outline-secondary">İptal</a>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Ad <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" name="ad" value="{{ user.ad if user else '' }}" placeholder="Ad" required
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Soyad <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" name="soyad" value="{{ user.soyad if user else '' }}" placeholder="Soyad" required
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        E-posta <span class="text-red-500">*</span>
+                    </label>
+                    <input type="email" name="email" value="{{ user.email if user else '' }}" placeholder="ornek@email.com" required
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
             </div>
         </div>
         
-        <!-- Sağ: Bireysel Yetkiler (Claims) -->
-        <div class="col-lg-7">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0"><i class="bi bi-key me-2"></i>Bireysel Yetkiler (Claims)</h6>
-                    <small class="text-muted">Rol dışında ek yetkiler</small>
+        <!-- Şifre -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-primary">lock</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Şifre</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Şifre {% if not user %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    <input type="password" name="password" placeholder="{% if user %}Değiştirmek için doldurun{% else %}Şifre{% endif %}" {% if not user %}required{% endif %}
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
                 </div>
-                <div class="card-body">
-                    {% if yetki_gruplari %}
-                    <div class="row g-3">
-                        {% for modul, yetkiler in yetki_gruplari.items() %}
-                        <div class="col-md-6 col-lg-4">
-                            <div class="border rounded p-2">
-                                <strong class="text-uppercase text-primary d-block mb-2" style="font-size: 0.75rem;">
-                                    {{ modul }}
-                                </strong>
-                                {% for yetki in yetkiler %}
-                                <div class="form-check">
-                                    <input type="checkbox" name="claims[]" value="{{ yetki.id }}"
-                                           class="form-check-input" id="claim{{ yetki.id }}"
-                                           {{ 'checked' if user and yetki in user.claims }}>
-                                    <label class="form-check-label small" for="claim{{ yetki.id }}">
-                                        {{ yetki.code.split('.')[1] if '.' in yetki.code else yetki.code }}
-                                        {% if yetki.name %}
-                                        <span class="text-muted d-block" style="font-size: 0.7rem;">{{ yetki.name }}</span>
-                                        {% endif %}
-                                    </label>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Şifre Tekrar {% if not user %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    <input type="password" name="password_confirm" placeholder="Şifre tekrar"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+            </div>
+            {% if user %}
+            <p class="text-xs text-text-muted dark:text-text-muted-dark mt-4">
+                <span class="material-symbols-outlined text-sm align-middle">info</span>
+                Şifreyi değiştirmek istemiyorsanız boş bırakın.
+            </p>
+            {% endif %}
+        </div>
+        
+        <!-- Yetkilendirme -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-primary">shield_person</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Yetkilendirme</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Rol
+                    </label>
+                    <select name="role_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="">Rol Seçin</option>
+                        {% for rol in roller or [] %}
+                        <option value="{{ rol.id }}" {% if user and user.roles and rol in user.roles %}selected{% endif %}>{{ rol.display_name or rol.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <div class="flex flex-col gap-3 w-full">
+                        <label class="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 dark:bg-[#111418] rounded-lg hover:bg-gray-100 dark:hover:bg-[#252b36] transition-colors">
+                            <input type="checkbox" name="is_active" {% if not user or user.is_active %}checked{% endif %}
+                                   class="w-5 h-5 rounded border-border-light dark:border-border-dark text-primary focus:ring-primary">
+                            <span class="text-sm font-medium text-[#111418] dark:text-white">Aktif Kullanıcı</span>
+                        </label>
+                        <label class="flex items-center gap-3 cursor-pointer p-3 bg-gray-50 dark:bg-[#111418] rounded-lg hover:bg-gray-100 dark:hover:bg-[#252b36] transition-colors">
+                            <input type="checkbox" name="is_admin" {% if user and user.is_admin %}checked{% endif %}
+                                   class="w-5 h-5 rounded border-border-light dark:border-border-dark text-primary focus:ring-primary">
+                            <span class="text-sm font-medium text-[#111418] dark:text-white">Admin Yetkisi</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Bireysel Yetkiler -->
+        {% if yetki_gruplari %}
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-primary">key</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Bireysel Yetkiler (Opsiyonel)</h3>
+            </div>
+            <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">
+                Rol dışında ek yetkiler vermek için seçin. Bu yetkiler sadece bu kullanıcıya özeldir.
+            </p>
+            
+            <div class="space-y-4">
+                {% for modul, perm_list in yetki_gruplari.items() %}
+                <div>
+                    <h4 class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase mb-2">{{ modul }}</h4>
+                    <div class="flex flex-wrap gap-2">
+                        {% for perm in perm_list %}
+                        <label class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 dark:bg-[#111418] hover:bg-gray-100 dark:hover:bg-[#252b36] cursor-pointer transition-colors">
+                            <input type="checkbox" name="claims[]" value="{{ perm.id }}" 
+                                   {% if user and user.claims and perm in user.claims %}checked{% endif %}
+                                   class="w-4 h-4 rounded border-border-light dark:border-border-dark text-primary focus:ring-primary">
+                            <span class="text-xs font-medium text-[#111418] dark:text-white">{{ perm.display_name or perm.code }}</span>
+                        </label>
                         {% endfor %}
                     </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+    </div>
+    
+    <!-- Sidebar -->
+    <aside class="lg:col-span-4 space-y-6">
+        
+        <!-- Info Box -->
+        <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="material-symbols-outlined text-blue-500">info</span>
+                <h4 class="font-bold text-blue-900 dark:text-blue-200">Bilgilendirme</h4>
+            </div>
+            <ul class="space-y-3 text-sm text-blue-800 dark:text-blue-300/80">
+                <li class="flex gap-2">
+                    <span class="material-symbols-outlined text-xs mt-1">check_circle</span>
+                    <span>E-posta adresi giriş için kullanılacaktır.</span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="material-symbols-outlined text-xs mt-1">check_circle</span>
+                    <span>Şifre en az 6 karakter olmalıdır.</span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="material-symbols-outlined text-xs mt-1">check_circle</span>
+                    <span>Admin yetkisi tüm modüllere erişim sağlar.</span>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Record Summary -->
+        {% if user %}
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-sm font-bold uppercase text-text-muted dark:text-text-muted-dark mb-6 tracking-widest">Kullanıcı Bilgisi</h3>
+            <div class="space-y-4">
+                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase">Oluşturulma</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ user.created_at.strftime('%d.%m.%Y') if user.created_at else '-' }}</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase">Son Giriş</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ user.last_login.strftime('%d.%m.%Y %H:%M') if user.last_login else '-' }}</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase">Durum</span>
+                    {% if user.is_active %}
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
                     {% else %}
-                    <div class="text-center text-muted py-4">
-                        <p>Henüz yetki tanımlanmamış.</p>
-                        <a href="{{ url_for('ayarlar.varsayilan_yetkiler') }}" class="btn btn-sm btn-outline-primary">
-                            Varsayılan Yetkileri Yükle
-                        </a>
-                    </div>
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Pasif</span>
                     {% endif %}
                 </div>
             </div>
-            
-            {% if user and user.roles %}
-            <div class="card mt-3">
-                <div class="card-header bg-light">
-                    <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Rolden Gelen Yetkiler</h6>
-                </div>
-                <div class="card-body">
-                    <small class="text-muted">
-                        {% for rol in user.roles %}
-                        <strong>{{ rol.display_name or rol.name }}:</strong>
-                        {% for perm in rol.permissions %}
-                        <span class="badge bg-secondary">{{ perm.code }}</span>
-                        {% endfor %}
-                        {% endfor %}
-                    </small>
-                </div>
-            </div>
-            {% endif %}
         </div>
-    </div>
+        {% endif %}
+        
+    </aside>
 </form>
 {% endblock %}
