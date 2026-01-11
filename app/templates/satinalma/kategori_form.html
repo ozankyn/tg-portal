@@ -4,65 +4,54 @@
 {% block page_title %}{{ 'Kategori Düzenle' if kategori else 'Yeni Kategori' }}{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-body">
-                <form method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Kategori Adı *</label>
-                        <input type="text" name="ad" class="form-control" required
-                               value="{{ kategori.ad if kategori else '' }}"
-                               placeholder="Örn: IT Ekipman">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Kod</label>
-                        <input type="text" name="kod" class="form-control"
-                               value="{{ kategori.kod if kategori else '' }}"
-                               placeholder="Örn: IT">
-                        <div class="form-text">Benzersiz kısa kod</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Açıklama</label>
-                        <textarea name="aciklama" class="form-control" rows="2">{{ kategori.aciklama if kategori else '' }}</textarea>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">İkon</label>
-                        <input type="text" name="ikon" class="form-control"
-                               value="{{ kategori.ikon if kategori else 'bi-box' }}"
-                               placeholder="bi-box">
-                        <div class="form-text">Bootstrap Icons sınıfı (örn: bi-laptop, bi-printer)</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Onay Limiti (₺)</label>
-                        <input type="text" name="onay_limiti" class="form-control"
-                               value="{{ kategori.onay_limiti if kategori else '' }}"
-                               placeholder="0">
-                        <div class="form-text">Bu tutarın üzerindeki talepler için onay gerekir</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Sıra</label>
-                        <input type="number" name="sira" class="form-control" style="max-width: 100px;"
-                               value="{{ kategori.sira if kategori else 0 }}">
-                    </div>
-                    
-                    <hr>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-2"></i>{{ 'Güncelle' if kategori else 'Kaydet' }}
-                        </button>
-                        <a href="{{ url_for('satinalma.kategori_liste') }}" class="btn btn-outline-secondary">İptal</a>
-                    </div>
-                </form>
-            </div>
+<div class="max-w-lg mx-auto">
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+        <div class="p-6">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Kategori Adı *</label>
+                    <input type="text" name="ad" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="{{ kategori.ad if kategori else '' }}" placeholder="Örn: IT Ekipman">
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Kod</label>
+                    <input type="text" name="kod" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ kategori.kod if kategori else '' }}" placeholder="Örn: IT">
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Benzersiz kısa kod</p>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Açıklama</label>
+                    <textarea name="aciklama" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="2">{{ kategori.aciklama if kategori else '' }}</textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">İkon</label>
+                    <input type="text" name="ikon" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ kategori.ikon if kategori else 'bi-box' }}" placeholder="bi-box">
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Bootstrap Icons sınıfı (örn: bi-laptop, bi-printer)</p>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Onay Limiti (₺)</label>
+                    <input type="text" name="onay_limiti" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ kategori.onay_limiti if kategori else '' }}" placeholder="0">
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Bu tutarın üzerindeki talepler için onay gerekir</p>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Sıra</label>
+                    <input type="number" name="sira" class="w-24 px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ kategori.sira if kategori else 0 }}">
+                </div>
+                
+                <hr class="my-6">
+                
+                <div class="flex items-center gap-3">
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-symbols-outlined">check</span>{{ 'Güncelle' if kategori else 'Kaydet' }}
+                    </button>
+                    <a href="{{ url_for('satinalma.kategori_liste') }}" class="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>

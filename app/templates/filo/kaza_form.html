@@ -4,104 +4,93 @@
 {% block page_title %}Kaza Bildirimi{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="alert alert-warning">
-            <i class="bi bi-exclamation-triangle me-2"></i>
-            <strong>Önemli:</strong> En az 1 fotoğraf yüklemeniz zorunludur. Kaza kaydı filo yöneticisi onayına sunulacaktır.
+<div class="max-w-3xl mx-auto">
+    <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-lg p-4 mb-4 flex items-start gap-2">
+        <span class="material-symbols-outlined text-amber-600 mt-0.5">warning</span>
+        <div>
+            <strong class="text-[#111418] dark:text-white">Önemli:</strong> En az 1 fotoğraf yüklemeniz zorunludur. Kaza kaydı filo yöneticisi onayına sunulacaktır.
         </div>
-        
-        <div class="card">
-            <div class="card-header bg-danger text-white">
-                <h6 class="mb-0">
-                    <i class="bi bi-car-front me-2"></i>
-                    {{ arac.plaka }} - {{ arac.marka }} {{ arac.model }}
-                </h6>
-            </div>
-            <div class="card-body">
-                <form method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Kaza Tarihi/Saati *</label>
-                                <input type="datetime-local" name="tarih" class="form-control" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Sürücü</label>
-                                <select name="surucu_id" class="form-select">
-                                    <option value="">Seçin...</option>
-                                    {% for calisan in calisanlar %}
-                                    <option value="{{ calisan.id }}" {{ 'selected' if arac.atanan_calisan_id == calisan.id }}>
-                                        {{ calisan.full_name }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
+    </div>
+    
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+        <div class="bg-red-600 text-white px-4 py-3 rounded-t-xl">
+            <h6 class="font-medium flex items-center gap-2">
+                <span class="material-symbols-outlined">directions_car</span>
+                {{ arac.plaka }} - {{ arac.marka }} {{ arac.model }}
+            </h6>
+        </div>
+        <div class="p-6">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Kaza Tarihi/Saati *</label>
+                        <input type="datetime-local" name="tarih" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Kaza Konumu</label>
-                        <input type="text" name="konum" class="form-control" placeholder="Adres veya konum bilgisi">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Sürücü</label>
+                        <select name="surucu_id" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Seçin...</option>
+                            {% for calisan in calisanlar %}
+                            <option value="{{ calisan.id }}" {{ 'selected' if arac.atanan_calisan_id == calisan.id }}>
+                                {{ calisan.full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label">Kusur Oranı (%)</label>
-                                <input type="number" name="kusur_orani" class="form-control" min="0" max="100">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label">Tahmini Hasar Tutarı (₺)</label>
-                                <input type="number" name="hasar_tutari" class="form-control" step="0.01">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label">Sigorta Karşıladı (₺)</label>
-                                <input type="number" name="sigorta_karsiladi" class="form-control" step="0.01">
-                            </div>
-                        </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Kaza Konumu</label>
+                    <input type="text" name="konum" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Adres veya konum bilgisi">
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Kusur Oranı (%)</label>
+                        <input type="number" name="kusur_orani" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="0" max="100">
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Tutanak No</label>
-                        <input type="text" name="tutanak_no" class="form-control">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Tahmini Hasar Tutarı (₺)</label>
+                        <input type="number" name="hasar_tutari" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01">
                     </div>
-                    
-                    <div class="form-check mb-3">
-                        <input type="checkbox" name="yaralanma" class="form-check-input" id="yaralanma">
-                        <label class="form-check-label text-danger" for="yaralanma">
-                            <strong>Yaralanma var</strong>
-                        </label>
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Sigorta Karşıladı (₺)</label>
+                        <input type="number" name="sigorta_karsiladi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01">
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Kaza Açıklaması *</label>
-                        <textarea name="aciklama" class="form-control" rows="4" required
-                                  placeholder="Kaza nasıl meydana geldi? Detaylı açıklayın..."></textarea>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label class="form-label">Fotoğraflar * <span class="text-danger">(En az 1 fotoğraf zorunlu)</span></label>
-                        <input type="file" name="fotograflar" class="form-control" multiple accept="image/*" required>
-                        <div class="form-text">Araç hasar fotoğrafları, kaza yeri, tutanak vb.</div>
-                    </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-exclamation-circle me-1"></i>Kaza Bildir
-                        </button>
-                        <a href="{{ url_for('filo.detay', id=arac.id) }}" class="btn btn-outline-secondary">İptal</a>
-                    </div>
-                </form>
-            </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Tutanak No</label>
+                    <input type="text" name="tutanak_no" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div class="flex items-center mb-4">
+                    <input type="checkbox" name="yaralanma" class="w-4 h-4 text-rose-600 border-border-light dark:border-border-dark rounded focus:ring-red-500" id="yaralanma">
+                    <label class="ml-2 text-rose-600 font-semibold" for="yaralanma">Yaralanma var</label>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Kaza Açıklaması *</label>
+                    <textarea name="aciklama" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="4" required placeholder="Kaza nasıl meydana geldi? Detaylı açıklayın..."></textarea>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">
+                        Fotoğraflar * <span class="text-red-500">(En az 1 fotoğraf zorunlu)</span>
+                    </label>
+                    <input type="file" name="fotograflar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" multiple accept="image/*" required>
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Araç hasar fotoğrafları, kaza yeri, tutanak vb.</p>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors">
+                        <span class="material-symbols-outlined">error</span>Kaza Bildir
+                    </button>
+                    <a href="{{ url_for('filo.detay', id=arac.id) }}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-[#111418] dark:text-white font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>

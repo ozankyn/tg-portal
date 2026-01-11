@@ -48,15 +48,15 @@
         <div class="row">
             <div class="col">
                 <table class="info">
-                    <tr><td>Plaka:</td><td><strong>{{ teslim.arac.plaka }}</strong></td></tr>
+                    <tr><td>Plaka:</td><td><strong class="text-[#111418] dark:text-white">{{ teslim.arac.plaka }}</strong></td></tr>
                     <tr><td>Marka/Model:</td><td>{{ teslim.arac.marka }} {{ teslim.arac.model }}</td></tr>
                     <tr><td>Renk:</td><td>{{ teslim.arac.renk or '-' }}</td></tr>
                 </table>
             </div>
             <div class="col">
                 <table class="info">
-                    <tr><td>Tarih:</td><td><strong>{{ teslim.tarih.strftime('%d.%m.%Y %H:%M') }}</strong></td></tr>
-                    <tr><td>Kilometre:</td><td><strong>{{ teslim.km }} km</strong></td></tr>
+                    <tr><td>Tarih:</td><td><strong class="text-[#111418] dark:text-white">{{ teslim.tarih.strftime('%d.%m.%Y %H:%M') }}</strong></td></tr>
+                    <tr><td>Kilometre:</td><td><strong class="text-[#111418] dark:text-white">{{ teslim.km }} km</strong></td></tr>
                     <tr><td>Yakıt Durumu:</td><td>{{ teslim.yakit_durumu_display }}</td></tr>
                 </table>
             </div>
@@ -122,7 +122,7 @@
         <div class="section-title">İMZALAR</div>
         <div class="row">
             <div class="col">
-                <p><strong>Teslim Eden</strong></p>
+                <p><strong class="text-[#111418] dark:text-white">Teslim Eden</strong></p>
                 <div class="signature-box">
                     {% if teslim.imza_teslim_eden %}
                     <img src="{{ teslim.imza_teslim_eden }}" class="signature-img" alt="İmza">
@@ -132,7 +132,7 @@
                 <p>Tarih: {{ teslim.tarih.strftime('%d.%m.%Y') }}</p>
             </div>
             <div class="col">
-                <p><strong>Teslim Alan</strong></p>
+                <p><strong class="text-[#111418] dark:text-white">Teslim Alan</strong></p>
                 <div class="signature-box">
                     {% if teslim.imza_teslim_alan %}
                     <img src="{{ teslim.imza_teslim_alan }}" class="signature-img" alt="İmza">

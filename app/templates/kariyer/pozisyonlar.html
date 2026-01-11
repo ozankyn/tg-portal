@@ -5,101 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kariyer Fırsatları - Team Guerilla</title>
     
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'tg-primary': '#00a651',
+                        'tg-primary-dark': '#008c44',
+                        'tg-secondary': '#2c3e50',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
     
     <style>
-        :root {
-            --tg-primary: #00a651;
-            --tg-secondary: #2c3e50;
-        }
-        
-        body {
-            background: #f8f9fa;
-        }
-        
-        .hero-section {
-            background: linear-gradient(135deg, var(--tg-secondary) 0%, #1a252f 100%);
-            color: white;
-            padding: 4rem 0;
-        }
-        
-        .hero-section h1 {
-            font-weight: 700;
-        }
-        
         .position-card {
-            border: none;
-            border-radius: 15px;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        
         .position-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        }
-        
-        .position-card .card-title {
-            color: var(--tg-secondary);
-            font-weight: 600;
-        }
-        
-        .btn-apply {
-            background: var(--tg-primary);
-            border-color: var(--tg-primary);
-            color: white;
-        }
-        
-        .btn-apply:hover {
-            background: #008c44;
-            border-color: #008c44;
-            color: white;
-        }
-        
-        .badge-location {
-            background: rgba(0, 166, 81, 0.1);
-            color: var(--tg-primary);
-        }
-        
-        .badge-count {
-            background: var(--tg-primary);
-            color: white;
-        }
-        
-        .filter-section {
-            background: white;
-            padding: 1rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        
-        .company-info {
-            font-size: 0.9rem;
-            color: #6c757d;
-        }
-        
-        footer {
-            background: var(--tg-secondary);
-            color: white;
-            padding: 2rem 0;
-            margin-top: 3rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-50 font-sans">
     <!-- Hero Section -->
-    <div class="hero-section">
-        <div class="container">
-            <div class="row align-items-center">
-                <div class="col-lg-8">
-                    <h1><i class="bi bi-building me-3"></i>Team Guerilla</h1>
-                    <p class="lead mb-0">Kariyer fırsatlarını keşfedin ve ekibimize katılın!</p>
+    <div class="bg-gradient-to-br from-slate-800 to-slate-900 text-white py-16">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-bold flex items-center gap-3">
+                        <span class="material-symbols-outlined text-4xl">apartment</span>
+                        Team Guerilla
+                    </h1>
+                    <p class="text-lg text-slate-300 mt-2">Kariyer fırsatlarını keşfedin ve ekibimize katılın!</p>
                 </div>
-                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
-                    <span class="badge badge-count fs-5 px-4 py-2">
+                <div>
+                    <span class="inline-flex items-center gap-2 px-5 py-2.5 bg-tg-primary text-white text-lg font-semibold rounded-full">
+                        <span class="material-symbols-outlined">work</span>
                         {{ pozisyonlar|length }} Açık Pozisyon
                     </span>
                 </div>
@@ -107,110 +61,105 @@
         </div>
     </div>
     
-    <div class="container py-5">
+    <div class="max-w-6xl mx-auto px-4 py-10">
         <!-- Filtreler -->
         {% if iller %}
-        <div class="filter-section">
-            <div class="row align-items-center">
-                <div class="col-md-2">
-                    <strong><i class="bi bi-funnel me-2"></i>Filtrele:</strong>
-                </div>
-                <div class="col-md-10">
-                    <a href="{{ url_for('kariyer.pozisyonlar') }}" 
-                       class="btn btn-sm {% if not il_filtre %}btn-primary{% else %}btn-outline-secondary{% endif %} me-2 mb-2">
-                        Tümü
-                    </a>
-                    {% for il in iller %}
-                    <a href="{{ url_for('kariyer.pozisyonlar', il=il) }}" 
-                       class="btn btn-sm {% if il_filtre == il %}btn-primary{% else %}btn-outline-secondary{% endif %} me-2 mb-2">
-                        {{ il }}
-                    </a>
-                    {% endfor %}
-                </div>
+        <div class="bg-white rounded-xl shadow-sm p-4 mb-8">
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="font-semibold text-gray-700 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">filter_alt</span>
+                    Filtrele:
+                </span>
+                <a href="{{ url_for('kariyer.pozisyonlar') }}" 
+                   class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {% if not il_filtre %}bg-tg-primary text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                    Tümü
+                </a>
+                {% for il in iller %}
+                <a href="{{ url_for('kariyer.pozisyonlar', il=il) }}" 
+                   class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {% if il_filtre == il %}bg-tg-primary text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                    {{ il }}
+                </a>
+                {% endfor %}
             </div>
         </div>
         {% endif %}
         
         <!-- Pozisyonlar -->
         {% if pozisyonlar %}
-        <div class="row">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for kadro in pozisyonlar %}
-            <div class="col-lg-4 col-md-6 mb-4">
-                <div class="card position-card h-100">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <h5 class="card-title mb-0">{{ kadro.pozisyon_adi }}</h5>
-                            <span class="badge badge-count">{{ kadro.eksik_sayi }} Kişi</span>
-                        </div>
-                        
-                        <p class="company-info mb-3">
-                            <i class="bi bi-building me-1"></i>
-                            {{ kadro.proje.musteri.display_name }}
-                            {% if kadro.proje.ad != kadro.proje.musteri.ad %}
-                            <span class="text-muted">/ {{ kadro.proje.ad }}</span>
+            <div class="position-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+                <div class="p-5 flex-1">
+                    <div class="flex justify-between items-start gap-3 mb-3">
+                        <h5 class="text-lg font-semibold text-slate-800">{{ kadro.pozisyon_adi }}</h5>
+                        <span class="flex-shrink-0 px-2.5 py-1 bg-tg-primary text-white text-xs font-semibold rounded-full">
+                            {{ kadro.eksik_sayi }} Kişi
+                        </span>
+                    </div>
+                    
+                    <p class="text-sm text-gray-500 mb-3 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">apartment</span>
+                        {{ kadro.proje.musteri.display_name }}
+                        {% if kadro.proje.ad != kadro.proje.musteri.ad %}
+                        <span class="text-gray-400">/ {{ kadro.proje.ad }}</span>
+                        {% endif %}
+                    </p>
+                    
+                    <div class="flex flex-wrap gap-2 mb-3">
+                        {% if kadro.il %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-tg-primary text-xs font-medium rounded-full">
+                            <span class="material-symbols-outlined text-sm">location_on</span>
+                            {{ kadro.il }}{% if kadro.ilce %} / {{ kadro.ilce }}{% endif %}
+                        </span>
+                        {% endif %}
+                        {% if kadro.maas_min or kadro.maas_max %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+                            <span class="material-symbols-outlined text-sm">payments</span>
+                            {% if kadro.maas_min and kadro.maas_max %}
+                            ₺{{ '{:,.0f}'.format(kadro.maas_min) }} - ₺{{ '{:,.0f}'.format(kadro.maas_max) }}
+                            {% elif kadro.maas_min %}
+                            ₺{{ '{:,.0f}'.format(kadro.maas_min) }}+
                             {% endif %}
-                        </p>
-                        
-                        <div class="mb-3">
-                            {% if kadro.il %}
-                            <span class="badge badge-location me-1">
-                                <i class="bi bi-geo-alt me-1"></i>{{ kadro.il }}{% if kadro.ilce %} / {{ kadro.ilce }}{% endif %}
-                            </span>
-                            {% endif %}
-                            {% if kadro.maas_min or kadro.maas_max %}
-                            <span class="badge bg-light text-dark">
-                                <i class="bi bi-cash me-1"></i>
-                                {% if kadro.maas_min and kadro.maas_max %}
-                                ₺{{ '{:,.0f}'.format(kadro.maas_min) }} - ₺{{ '{:,.0f}'.format(kadro.maas_max) }}
-                                {% elif kadro.maas_min %}
-                                ₺{{ '{:,.0f}'.format(kadro.maas_min) }}+
-                                {% endif %}
-                            </span>
-                            {% endif %}
-                        </div>
-                        
-                        {% if kadro.aciklama %}
-                        <p class="card-text text-muted small">
-                            {{ kadro.aciklama[:100] }}{% if kadro.aciklama|length > 100 %}...{% endif %}
-                        </p>
+                        </span>
                         {% endif %}
                     </div>
-                    <div class="card-footer bg-white border-0 pb-3">
-                        <a href="{{ url_for('kariyer.basvuru_kvkk', kadro_id=kadro.id) }}" class="btn btn-apply w-100">
-                            <i class="bi bi-send me-2"></i>Başvur
-                        </a>
-                    </div>
+                    
+                    {% if kadro.aciklama %}
+                    <p class="text-sm text-gray-500 line-clamp-2">
+                        {{ kadro.aciklama[:100] }}{% if kadro.aciklama|length > 100 %}...{% endif %}
+                    </p>
+                    {% endif %}
+                </div>
+                <div class="px-5 pb-5">
+                    <a href="{{ url_for('kariyer.basvuru_kvkk', kadro_id=kadro.id) }}" 
+                       class="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-tg-primary text-white font-medium rounded-lg hover:bg-tg-primary-dark transition-colors">
+                        <span class="material-symbols-outlined text-lg">send</span>
+                        Başvur
+                    </a>
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <div class="text-center py-5">
-            <i class="bi bi-briefcase text-muted" style="font-size: 4rem;"></i>
-            <h4 class="mt-3">Şu an açık pozisyon bulunmamaktadır</h4>
-            <p class="text-muted">Daha sonra tekrar kontrol ediniz.</p>
+        <div class="text-center py-16">
+            <span class="material-symbols-outlined text-6xl text-gray-300 mb-4 block">work_off</span>
+            <h4 class="text-xl font-semibold text-gray-700 mb-2">Şu an açık pozisyon bulunmamaktadır</h4>
+            <p class="text-gray-500">Daha sonra tekrar kontrol ediniz.</p>
         </div>
         {% endif %}
     </div>
     
     <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5><i class="bi bi-building me-2"></i>Team Guerilla</h5>
-                    <p class="mb-0 text-white-50">Promosyon ve Organizasyon Hizmetleri</p>
+    <footer class="bg-slate-800 text-white py-8 mt-12">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h5 class="text-lg font-semibold flex items-center gap-2">
+                        <span class="material-symbols-outlined">apartment</span>
+                        Team Guerilla
+                    </h5>
+                    <p class="text-slate-400 text-sm mt-1">Promosyon ve Organizasyon Hizmetleri</p>
                 </div>
-                <div class="col-md-6 text-md-end">
-                    <p class="mb-0 text-white-50">
-                        <i class="bi bi-envelope me-1"></i> ik@teamguerilla.com
-                    </p>
-                </div>
-            </div>
-        </div>
-    </footer>
-    
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+                <div class="text-slate-400 text-sm flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">mail</span>
+                    <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="9ef7f5deeafbfff3f9ebfbecf7f2f2ffb0

@@ -4,149 +4,119 @@
 {% block page_title %}İK Dashboard{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-6 col-lg-3 mb-3">
-        <div class="card stat-card primary">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted mb-1">Aktif Çalışan</h6>
-                        <h3 class="mb-0">{{ aktif_calisan }}</h3>
-                    </div>
-                    <div class="text-primary opacity-50">
-                        <i class="bi bi-people fs-1"></i>
-                    </div>
-                </div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-5">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-1">Aktif Çalışan</p>
+                <p class="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{{ aktif_calisan }}</p>
             </div>
+            <span class="material-symbols-outlined text-4xl text-blue-500 opacity-50">group</span>
         </div>
     </div>
     
-    <div class="col-md-6 col-lg-3 mb-3">
-        <div class="card stat-card warning">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted mb-1">Bekleyen Aday</h6>
-                        <h3 class="mb-0">{{ bekleyen_aday }}</h3>
-                    </div>
-                    <div class="text-warning opacity-50">
-                        <i class="bi bi-person-plus fs-1"></i>
-                    </div>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-5">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-1">Bekleyen Aday</p>
+                <p class="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{{ bekleyen_aday }}</p>
             </div>
+            <span class="material-symbols-outlined text-4xl text-yellow-500 opacity-50">person_add</span>
         </div>
     </div>
     
-    <div class="col-md-6 col-lg-3 mb-3">
-        <div class="card stat-card danger">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted mb-1">Bekleyen İzin</h6>
-                        <h3 class="mb-0">{{ bekleyen_izin }}</h3>
-                    </div>
-                    <div class="text-danger opacity-50">
-                        <i class="bi bi-calendar-x fs-1"></i>
-                    </div>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-5">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-1">Bekleyen İzin</p>
+                <p class="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{{ bekleyen_izin }}</p>
             </div>
+            <span class="material-symbols-outlined text-4xl text-red-500 opacity-50">event_busy</span>
         </div>
     </div>
     
-    <div class="col-md-6 col-lg-3 mb-3">
-        <div class="card stat-card success">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="text-muted mb-1">Departman</h6>
-                        <h3 class="mb-0">{{ departman_stats|length }}</h3>
-                    </div>
-                    <div class="text-success opacity-50">
-                        <i class="bi bi-building fs-1"></i>
-                    </div>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-5">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-1">Departman</p>
+                <p class="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{{ departman_stats|length }}</p>
             </div>
+            <span class="material-symbols-outlined text-4xl text-green-500 opacity-50">apartment</span>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Departman Dağılımı</h6>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+        <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">pie_chart</span>
+                Departman Dağılımı
+            </h3>
+        </div>
+        <div class="p-5">
+            {% if departman_stats %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-text-muted dark:text-text-muted-dark">
+                            <th class="pb-2 font-medium">Departman</th>
+                            <th class="pb-2 font-medium text-right">Kişi</th>
+                            <th class="pb-2 w-2/5"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% set max_count = departman_stats|map(attribute=1)|max %}
+                        {% for dept_ad, count in departman_stats %}
+                        <tr>
+                            <td class="py-2">{{ dept_ad }}</td>
+                            <td class="py-2 text-right font-medium">{{ count }}</td>
+                            <td class="py-2">
+                                <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: {{ (count / max_count * 100)|int }}%"></div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            <div class="card-body">
-                {% if departman_stats %}
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>Departman</th>
-                                <th class="text-end">Kişi</th>
-                                <th width="40%"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% set max_count = departman_stats|map(attribute=1)|max %}
-                            {% for dept_ad, count in departman_stats %}
-                            <tr>
-                                <td>{{ dept_ad }}</td>
-                                <td class="text-end">{{ count }}</td>
-                                <td>
-                                    <div class="progress" style="height: 8px;">
-                                        <div class="progress-bar bg-primary" style="width: {{ (count / max_count * 100)|int }}%"></div>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted text-center mb-0">Henüz veri yok</p>
-                {% endif %}
-            </div>
+            {% else %}
+            <p class="text-text-muted dark:text-text-muted-dark text-center">Henüz veri yok</p>
+            {% endif %}
         </div>
     </div>
     
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Hızlı Erişim</h6>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    {% if has_permission('ik.create') %}
-                    <div class="col-6">
-                        <a href="{{ url_for('ik.ekle') }}" class="btn btn-outline-primary w-100 py-3">
-                            <i class="bi bi-person-plus d-block fs-3 mb-1"></i>
-                            Çalışan Ekle
-                        </a>
-                    </div>
-                    {% endif %}
-                    
-                    <div class="col-6">
-                        <a href="{{ url_for('ik.liste') }}" class="btn btn-outline-secondary w-100 py-3">
-                            <i class="bi bi-people d-block fs-3 mb-1"></i>
-                            Çalışan Listesi
-                        </a>
-                    </div>
-                    
-                    <div class="col-6">
-                        <a href="{{ url_for('ik.aday_liste') }}" class="btn btn-outline-warning w-100 py-3">
-                            <i class="bi bi-person-badge d-block fs-3 mb-1"></i>
-                            Adaylar
-                        </a>
-                    </div>
-                    
-                    <div class="col-6">
-                        <a href="{{ url_for('ik.izin_liste') }}" class="btn btn-outline-info w-100 py-3">
-                            <i class="bi bi-calendar-check d-block fs-3 mb-1"></i>
-                            İzin Talepleri
-                        </a>
-                    </div>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+        <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">bolt</span>
+                Hızlı Erişim
+            </h3>
+        </div>
+        <div class="p-5">
+            <div class="grid grid-cols-2 gap-3">
+                {% if has_permission('ik.create') %}
+                <a href="{{ url_for('ik.ekle') }}" class="flex flex-col items-center justify-center gap-2 p-4 border border-border-light dark:border-border-dark rounded-lg hover:bg-blue-50 dark:hover:bg-[#252b36] hover:border-blue-300 dark:hover:border-blue-500 transition-colors">
+                    <span class="material-symbols-outlined text-3xl text-blue-600">person_add</span>
+                    <span class="text-sm font-medium text-text-primary dark:text-text-primary-dark">Çalışan Ekle</span>
+                </a>
+                {% endif %}
+                
+                <a href="{{ url_for('ik.liste') }}" class="flex flex-col items-center justify-center gap-2 p-4 border border-border-light dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] hover:border-gray-300 dark:hover:border-gray-500 transition-colors">
+                    <span class="material-symbols-outlined text-3xl text-text-muted dark:text-text-muted-dark">group</span>
+                    <span class="text-sm font-medium text-text-primary dark:text-text-primary-dark">Çalışan Listesi</span>
+                </a>
+                
+                <a href="{{ url_for('ik.aday_liste') }}" class="flex flex-col items-center justify-center gap-2 p-4 border border-border-light dark:border-border-dark rounded-lg hover:bg-yellow-50 dark:hover:bg-[#252b36] hover:border-yellow-300 dark:hover:border-yellow-500 transition-colors">
+                    <span class="material-symbols-outlined text-3xl text-yellow-600">badge</span>
+                    <span class="text-sm font-medium text-text-primary dark:text-text-primary-dark">Adaylar</span>
+                </a>
+                
+                <a href="{{ url_for('ik.izin_liste') }}" class="flex flex-col items-center justify-center gap-2 p-4 border border-border-light dark:border-border-dark rounded-lg hover:bg-cyan-50 dark:hover:bg-[#252b36] hover:border-cyan-300 dark:hover:border-cyan-500 transition-colors">
+                    <span class="material-symbols-outlined text-3xl text-cyan-600">event_available</span>
+                    <span class="text-sm font-medium text-text-primary dark:text-text-primary-dark">İzin Talepleri</span>
+                </a>
             </div>
         </div>
     </div>

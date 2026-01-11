@@ -4,94 +4,99 @@
 {% block page_title %}Yakıt Verilerini İçe Aktar{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-file-earmark-excel me-2"></i>Excel Dosyası Yükle</h6>
-            </div>
-            <div class="card-body">
-                <form method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
-                    <div class="alert alert-info">
-                        <h6><i class="bi bi-info-circle me-2"></i>Dosya Formatı</h6>
-                        <p class="mb-2">Excel dosyanız aşağıdaki kolonları içermelidir:</p>
-                        <ul class="mb-0">
-                            <li><strong>PLAKA</strong> - Araç plakası (zorunlu)</li>
-                            <li><strong>İŞLEM TARİHİ</strong> - Yakıt alım tarihi (zorunlu)</li>
-                            <li><strong>MİKTAR</strong> - Litre cinsinden miktar (zorunlu)</li>
-                            <li><strong>TUTAR</strong> - Toplam tutar TL (zorunlu)</li>
-                            <li><strong>YAKIT TİPİ</strong> - Motorin/Kurşunsuz (opsiyonel)</li>
-                            <li><strong>İSTASYON</strong> - İstasyon adı (opsiyonel)</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label class="form-label">Excel Dosyası *</label>
-                        <input type="file" name="excel_file" class="form-control" 
-                               accept=".xlsx,.xls" required>
-                        <div class="form-text">Sadece .xlsx veya .xls dosyaları kabul edilir.</div>
-                    </div>
-                    
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Önemli:</strong>
-                        <ul class="mb-0 mt-2">
-                            <li>Sistemde kayıtlı olmayan plakalar atlanacaktır.</li>
-                            <li>Aynı araç, tarih ve miktar ile daha önce eklenmiş kayıtlar tekrar eklenmez.</li>
-                            <li>Birim fiyat otomatik hesaplanır (Tutar / Miktar).</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-upload me-1"></i>Yükle ve İçe Aktar
-                        </button>
-                        <a href="{{ url_for('filo.yakit_liste') }}" class="btn btn-outline-secondary">İptal</a>
-                    </div>
-                </form>
-            </div>
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+        <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+            <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined">table_chart</span>Excel Dosyası Yükle
+            </h6>
         </div>
-        
-        <div class="card mt-4">
-            <div class="card-header bg-light">
-                <h6 class="mb-0"><i class="bi bi-table me-2"></i>Örnek Excel Formatı</h6>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0">
-                        <thead class="table-secondary">
-                            <tr>
-                                <th>PLAKA</th>
-                                <th>YAKIT TİPİ</th>
-                                <th>İSTASYON</th>
-                                <th>İŞLEM TARİHİ</th>
-                                <th>MİKTAR</th>
-                                <th>TUTAR</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>34ABC123</td>
-                                <td>MOTORİN</td>
-                                <td>Shell - İstanbul</td>
-                                <td>31/12/2025 14:30</td>
-                                <td>45,50 LT</td>
-                                <td>2.456,70 TL</td>
-                            </tr>
-                            <tr>
-                                <td>34XYZ789</td>
-                                <td>KURŞUNSUZ</td>
-                                <td>BP - Ankara</td>
-                                <td>30/12/2025 09:15</td>
-                                <td>38,20 LT</td>
-                                <td>1.985,40 TL</td>
-                            </tr>
-                        </tbody>
-                    </table>
+        <div class="p-6">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-lg p-4 mb-6">
+                    <h6 class="font-medium text-blue-800 dark:text-blue-300 flex items-center gap-2 mb-2">
+                        <span class="material-symbols-outlined">info</span>Dosya Formatı
+                    </h6>
+                    <p class="text-sm text-blue-700 dark:text-blue-300/80 mb-2">Excel dosyanız aşağıdaki kolonları içermelidir:</p>
+                    <ul class="text-sm text-blue-700 dark:text-blue-300/80 list-disc list-inside space-y-1">
+                        <li><strong class="text-[#111418] dark:text-white">PLAKA</strong> - Araç plakası (zorunlu)</li>
+                        <li><strong class="text-[#111418] dark:text-white">İŞLEM TARİHİ</strong> - Yakıt alım tarihi (zorunlu)</li>
+                        <li><strong class="text-[#111418] dark:text-white">MİKTAR</strong> - Litre cinsinden miktar (zorunlu)</li>
+                        <li><strong class="text-[#111418] dark:text-white">TUTAR</strong> - Toplam tutar TL (zorunlu)</li>
+                        <li><strong class="text-[#111418] dark:text-white">YAKIT TİPİ</strong> - Motorin/Kurşunsuz (opsiyonel)</li>
+                        <li><strong class="text-[#111418] dark:text-white">İSTASYON</strong> - İstasyon adı (opsiyonel)</li>
+                    </ul>
                 </div>
-            </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Excel Dosyası *</label>
+                    <input type="file" name="excel_file" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" accept=".xlsx,.xls" required>
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Sadece .xlsx veya .xls dosyaları kabul edilir.</p>
+                </div>
+                
+                <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-lg p-4 mb-6">
+                    <div class="flex items-start gap-2">
+                        <span class="material-symbols-outlined text-amber-600 mt-0.5">warning</span>
+                        <div>
+                            <strong class="text-amber-800 dark:text-amber-300">Önemli:</strong>
+                            <ul class="text-sm text-amber-700 dark:text-amber-300/80 list-disc list-inside mt-2 space-y-1">
+                                <li>Sistemde kayıtlı olmayan plakalar atlanacaktır.</li>
+                                <li>Aynı araç, tarih ve miktar ile daha önce eklenmiş kayıtlar tekrar eklenmez.</li>
+                                <li>Birim fiyat otomatik hesaplanır (Tutar / Miktar).</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-symbols-outlined">upload</span>Yükle ve İçe Aktar
+                    </button>
+                    <a href="{{ url_for('filo.yakit_liste') }}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-[#111418] dark:text-white font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mt-6">
+        <div class="px-4 py-3 border-b border-border-light dark:border-border-dark bg-gray-50 dark:bg-[#111418]">
+            <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined">table_chart</span>Örnek Excel Formatı
+            </h6>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-100 dark:bg-gray-800">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">PLAKA</th>
+                        <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">YAKIT TİPİ</th>
+                        <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">İSTASYON</th>
+                        <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">İŞLEM TARİHİ</th>
+                        <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">MİKTAR</th>
+                        <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">TUTAR</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                    <tr>
+                        <td class="px-4 py-3">34ABC123</td>
+                        <td class="px-4 py-3">MOTORİN</td>
+                        <td class="px-4 py-3">Shell - İstanbul</td>
+                        <td class="px-4 py-3">31/12/2025 14:30</td>
+                        <td class="px-4 py-3">45,50 LT</td>
+                        <td class="px-4 py-3">2.456,70 TL</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3">34XYZ789</td>
+                        <td class="px-4 py-3">KURŞUNSUZ</td>
+                        <td class="px-4 py-3">BP - Ankara</td>
+                        <td class="px-4 py-3">30/12/2025 09:15</td>
+                        <td class="px-4 py-3">38,20 LT</td>
+                        <td class="px-4 py-3">1.985,40 TL</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>

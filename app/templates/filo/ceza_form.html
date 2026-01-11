@@ -4,101 +4,101 @@
 {% block page_title %}Trafik Cezası Ekle{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-danger text-white">
-                <h6 class="mb-0"><i class="bi bi-exclamation-octagon me-2"></i>{{ arac.plaka }} - Trafik Cezası</h6>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Ceza Tarihi/Saati *</label>
-                            <input type="datetime-local" name="ceza_tarihi" class="form-control" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Sürücü</label>
-                            <select name="surucu_id" class="form-select">
-                                <option value="">Seçin...</option>
-                                {% for calisan in calisanlar %}
-                                <option value="{{ calisan.id }}" {{ 'selected' if arac.atanan_calisan_id == calisan.id }}>
-                                    {{ calisan.full_name }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+        <div class="bg-red-600 text-white px-4 py-3 rounded-t-xl">
+            <h6 class="font-medium flex items-center gap-2">
+                <span class="material-symbols-outlined">error</span>{{ arac.plaka }} - Trafik Cezası
+            </h6>
+        </div>
+        <div class="p-6">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Ceza Tarihi/Saati *</label>
+                        <input type="datetime-local" name="ceza_tarihi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Ceza Türü *</label>
-                            <select name="ceza_turu" class="form-select" required>
-                                <option value="">Seçin...</option>
-                                <option value="Hız İhlali">Hız İhlali</option>
-                                <option value="Kırmızı Işık">Kırmızı Işık İhlali</option>
-                                <option value="Park İhlali">Park İhlali</option>
-                                <option value="Emniyet Kemeri">Emniyet Kemeri</option>
-                                <option value="Cep Telefonu">Cep Telefonu Kullanımı</option>
-                                <option value="Geçiş Üstünlüğü">Geçiş Üstünlüğü İhlali</option>
-                                <option value="Şerit İhlali">Şerit İhlali</option>
-                                <option value="Alkol">Alkollü Araç Kullanma</option>
-                                <option value="Diğer">Diğer</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Ceza Puanı</label>
-                            <input type="number" name="ceza_puani" class="form-control" min="0" max="100" value="0">
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Sürücü</label>
+                        <select name="surucu_id" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Seçin...</option>
+                            {% for calisan in calisanlar %}
+                            <option value="{{ calisan.id }}" {{ 'selected' if arac.atanan_calisan_id == calisan.id }}>
+                                {{ calisan.full_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Ceza Tutarı (₺) *</label>
-                            <input type="number" name="ceza_tutari" class="form-control" step="0.01" required>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">İndirimli Tutar (₺)</label>
-                            <input type="number" name="indirimli_tutar" class="form-control" step="0.01">
-                            <div class="form-text">Erken ödeme indirimi</div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label class="form-label">Tutanak No</label>
-                            <input type="text" name="tutanak_no" class="form-control">
-                        </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Ceza Türü *</label>
+                        <select name="ceza_turu" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="">Seçin...</option>
+                            <option value="Hız İhlali">Hız İhlali</option>
+                            <option value="Kırmızı Işık">Kırmızı Işık İhlali</option>
+                            <option value="Park İhlali">Park İhlali</option>
+                            <option value="Emniyet Kemeri">Emniyet Kemeri</option>
+                            <option value="Cep Telefonu">Cep Telefonu Kullanımı</option>
+                            <option value="Geçiş Üstünlüğü">Geçiş Üstünlüğü İhlali</option>
+                            <option value="Şerit İhlali">Şerit İhlali</option>
+                            <option value="Alkol">Alkollü Araç Kullanma</option>
+                            <option value="Diğer">Diğer</option>
+                        </select>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Tebliğ Tarihi</label>
-                            <input type="date" name="teblig_tarihi" class="form-control">
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Son Ödeme Tarihi</label>
-                            <input type="date" name="son_odeme_tarihi" class="form-control">
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Ceza Puanı</label>
+                        <input type="number" name="ceza_puani" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="0" max="100" value="0">
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Konum</label>
-                        <input type="text" name="konum" class="form-control" placeholder="Cezanın kesildiği yer">
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Ceza Tutarı (₺) *</label>
+                        <input type="number" name="ceza_tutari" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01" required>
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Açıklama</label>
-                        <textarea name="aciklama" class="form-control" rows="2"></textarea>
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">İndirimli Tutar (₺)</label>
+                        <input type="number" name="indirimli_tutar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01">
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Erken ödeme indirimi</p>
                     </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-plus-lg me-1"></i>Ceza Kaydet
-                        </button>
-                        <a href="{{ url_for('filo.detay', id=arac.id) }}" class="btn btn-outline-secondary">İptal</a>
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Tutanak No</label>
+                        <input type="text" name="tutanak_no" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
-                </form>
-            </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Tebliğ Tarihi</label>
+                        <input type="date" name="teblig_tarihi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Son Ödeme Tarihi</label>
+                        <input type="date" name="son_odeme_tarihi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Konum</label>
+                    <input type="text" name="konum" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Cezanın kesildiği yer">
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Açıklama</label>
+                    <textarea name="aciklama" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="2"></textarea>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors">
+                        <span class="material-symbols-outlined">add</span>Ceza Kaydet
+                    </button>
+                    <a href="{{ url_for('filo.detay', id=arac.id) }}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-[#111418] dark:text-white font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>

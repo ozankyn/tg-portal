@@ -3,67 +3,81 @@
 {% block title %}Başvuru Tamamlandı{% endblock %}
 
 {% block progress %}
-<div class="progress-steps">
-    <div class="step completed">
-        <span class="step-number"><i class="bi bi-check"></i></span>
-        <span>KVKK Onay</span>
+<div class="flex items-center justify-center gap-2 py-4">
+    <div class="flex items-center gap-2">
+        <span class="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm">
+            <span class="material-symbols-outlined text-sm">check</span>
+        </span>
+        <span class="text-sm text-white/70">KVKK Onay</span>
     </div>
-    <div class="step-line completed"></div>
-    <div class="step completed">
-        <span class="step-number"><i class="bi bi-check"></i></span>
-        <span>Başvuru Formu</span>
+    <div class="w-8 h-0.5 bg-green-500"></div>
+    <div class="flex items-center gap-2">
+        <span class="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm">
+            <span class="material-symbols-outlined text-sm">check</span>
+        </span>
+        <span class="text-sm text-white/70">Başvuru Formu</span>
     </div>
-    <div class="step-line completed"></div>
-    <div class="step active">
-        <span class="step-number"><i class="bi bi-check"></i></span>
-        <span>Tamamlandı</span>
+    <div class="w-8 h-0.5 bg-green-500"></div>
+    <div class="flex items-center gap-2">
+        <span class="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm">
+            <span class="material-symbols-outlined text-sm">check</span>
+        </span>
+        <span class="text-sm font-medium text-white">Tamamlandı</span>
     </div>
 </div>
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-body p-5 text-center">
-                <div class="mb-4">
-                    <i class="bi bi-check-circle text-success" style="font-size: 5rem;"></i>
+<div class="flex justify-center">
+    <div class="w-full max-w-lg">
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm">
+            <div class="p-8 text-center">
+                <div class="mb-6">
+                    <span class="material-symbols-outlined text-green-500" style="font-size: 5rem;">check_circle</span>
                 </div>
                 
-                <h2 class="mb-3">Başvurunuz Alındı!</h2>
+                <h2 class="text-2xl font-bold text-gray-900 mb-3">Başvurunuz Alındı!</h2>
                 
-                <p class="lead text-muted mb-4">
-                    Sayın <strong>{{ aday.full_name }}</strong>,<br>
+                <p class="text-lg text-gray-600 mb-6">
+                    Sayın <strong class="text-gray-900">{{ aday.full_name }}</strong>,<br>
                     başvurunuz başarıyla tamamlandı.
                 </p>
                 
                 {% if aday.kadro %}
-                <div class="alert alert-light">
-                    <strong>Başvurduğunuz Pozisyon:</strong><br>
-                    {{ aday.kadro.proje.musteri.display_name }} - {{ aday.kadro.pozisyon_adi }}
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <p class="text-sm text-gray-500 mb-1">Başvurduğunuz Pozisyon:</p>
+                    <p class="font-semibold text-gray-900">{{ aday.kadro.proje.musteri.display_name }} - {{ aday.kadro.pozisyon_adi }}</p>
                     {% if aday.kadro.il %}
-                    <br><small class="text-muted">{{ aday.kadro.il }}</small>
+                    <p class="text-sm text-gray-500 mt-1 flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-sm">location_on</span>
+                        {{ aday.kadro.il }}
+                    </p>
                     {% endif %}
                 </div>
                 {% endif %}
                 
-                <div class="bg-light rounded p-3 mb-4">
-                    <p class="mb-0">
-                        <i class="bi bi-clock me-2"></i>
+                <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">
+                    <p class="text-sm text-blue-800 flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-lg">schedule</span>
                         Başvurunuz insan kaynakları ekibimiz tarafından değerlendirilecektir. 
                         Uygun görülmeniz halinde sizinle iletişime geçilecektir.
                     </p>
                 </div>
                 
-                <div class="text-muted mb-4">
-                    <small>
-                        <i class="bi bi-envelope me-1"></i> {{ aday.email }}<br>
-                        <i class="bi bi-telephone me-1"></i> {{ aday.telefon }}
-                    </small>
+                <div class="text-gray-500 text-sm mb-6 space-y-1">
+                    <p class="flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-sm">mail</span>
+                        {{ aday.email }}
+                    </p>
+                    <p class="flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-sm">call</span>
+                        {{ aday.telefon }}
+                    </p>
                 </div>
                 
-                <a href="{{ url_for('kariyer.pozisyonlar') }}" class="btn btn-outline-primary">
-                    <i class="bi bi-arrow-left me-2"></i>Diğer Pozisyonlara Göz At
+                <a href="{{ url_for('kariyer.pozisyonlar') }}" class="inline-flex items-center gap-2 px-6 py-2.5 border border-blue-500 text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                    Diğer Pozisyonlara Göz At
                 </a>
             </div>
         </div>

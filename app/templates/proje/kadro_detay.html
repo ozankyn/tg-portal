@@ -5,248 +5,223 @@
 
 {% block content %}
 <!-- İstatistikler -->
-<div class="row mb-4">
-    <div class="col-6 col-lg-3 mb-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h3 class="mb-0">{{ kadro.hedef_sayi }}</h3>
-                <small class="text-muted">Hedef Kadro</small>
-            </div>
-        </div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-card-dark rounded-lg shadow-sm p-4 text-center">
+        <h3 class="text-2xl font-bold mb-1">{{ kadro.hedef_sayi }}</h3>
+        <span class="text-sm text-text-muted dark:text-text-muted-dark">Hedef Kadro</span>
     </div>
-    <div class="col-6 col-lg-3 mb-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h3 class="mb-0 text-success">{{ kadro.mevcut_sayi }}</h3>
-                <small class="text-muted">Mevcut</small>
-            </div>
-        </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg shadow-sm p-4 text-center">
+        <h3 class="text-2xl font-bold text-emerald-600 mb-1">{{ kadro.mevcut_sayi }}</h3>
+        <span class="text-sm text-text-muted dark:text-text-muted-dark">Mevcut</span>
     </div>
-    <div class="col-6 col-lg-3 mb-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h3 class="mb-0 text-danger">{{ kadro.eksik_sayi }}</h3>
-                <small class="text-muted">Eksik</small>
-            </div>
-        </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg shadow-sm p-4 text-center">
+        <h3 class="text-2xl font-bold text-rose-600 mb-1">{{ kadro.eksik_sayi }}</h3>
+        <span class="text-sm text-text-muted dark:text-text-muted-dark">Eksik</span>
     </div>
-    <div class="col-6 col-lg-3 mb-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h3 class="mb-0 text-warning">{{ kadro.bekleyen_aday_sayisi }}</h3>
-                <small class="text-muted">Bekleyen Aday</small>
-            </div>
-        </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg shadow-sm p-4 text-center">
+        <h3 class="text-2xl font-bold text-amber-600 mb-1">{{ kadro.bekleyen_aday_sayisi }}</h3>
+        <span class="text-sm text-text-muted dark:text-text-muted-dark">Bekleyen Aday</span>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-lg-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
         <!-- Tabs -->
-        <ul class="nav nav-tabs" id="kadroTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="adaylar-tab" data-bs-toggle="tab" data-bs-target="#adaylar" type="button">
-                    <i class="bi bi-people me-1"></i>Adaylar <span class="badge bg-warning">{{ adaylar|length }}</span>
+        <div class="border-b border-border-light dark:border-border-dark">
+            <nav class="flex gap-4" id="kadroTabs">
+                <button class="tab-btn active px-4 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600 dark:text-blue-400" data-target="adaylar">
+                    <span class="material-symbols-outlined mr-1">group</span>Adaylar <span class="ml-1 px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{{ adaylar|length }}</span>
                 </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="calisanlar-tab" data-bs-toggle="tab" data-bs-target="#calisanlar" type="button">
-                    <i class="bi bi-person-check me-1"></i>Çalışanlar <span class="badge bg-success">{{ calisanlar|length }}</span>
+                <button class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-text-muted dark:text-text-muted-dark hover:text-text-muted dark:text-text-muted-dark" data-target="calisanlar">
+                    <span class="material-symbols-outlined mr-1">group</span>Çalışanlar <span class="ml-1 px-2 py-0.5 text-xs rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">{{ calisanlar|length }}</span>
                 </button>
-            </li>
-        </ul>
+            </nav>
+        </div>
         
-        <div class="tab-content" id="kadroTabsContent">
-            <!-- Adaylar Tab -->
-            <div class="tab-pane fade show active" id="adaylar" role="tabpanel">
-                <div class="card border-top-0 rounded-top-0">
-                    <div class="card-header bg-white d-flex justify-content-end">
-                        {% if has_permission('ik.create') %}
-                        <a href="{{ url_for('basvuru.aday_davet', kadro_id=kadro.id) }}" class="btn btn-primary btn-sm me-2"><i class="bi bi-send me-1"></i>Aday Davet Et</a><a href="{{ url_for('proje.kadro_aday_ekle', id=kadro.id) }}" class="btn btn-success btn-sm">
-                            <i class="bi bi-plus-lg me-1"></i>Aday Ekle
-                        </a>
-                        {% endif %}
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Ad Soyad</th>
-                                        <th>İletişim</th>
-                                        <th>Başvuru</th>
-                                        <th>Durum</th>
-                                        <th width="150"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for a in adaylar %}
-                                    <tr>
-                                        <td>
-                                            <strong>{{ a.full_name }}</strong>
-                                            {% if a.kaynak %}
-                                            <br><small class="text-muted">{{ a.kaynak }}</small>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if a.email %}<small>{{ a.email }}</small><br>{% endif %}
-                                            {% if a.telefon %}<small>{{ a.telefon }}</small>{% endif %}
-                                        </td>
-                                        <td>{{ a.basvuru_tarihi.strftime('%d.%m.%Y') if a.basvuru_tarihi else '-' }}</td>
-                                        <td>
-                                            {% if a.durum == 'basvurdu' %}
-                                            <span class="badge bg-info">Başvurdu</span>
-                                            {% elif a.durum == 'degerlendiriliyor' %}
-                                            <span class="badge bg-primary">Değerlendiriliyor</span>
-                                            {% elif a.durum == 'mulakat' %}
-                                            <span class="badge bg-warning">Mülakat</span>
-                                            {% elif a.durum == 'teklif' %}
-                                            <span class="badge bg-success">Teklif</span>
-                                            {% elif a.durum == 'ise_alindi' %}
-                                            <span class="badge bg-success">İşe Alındı</span>
-                                            {% elif a.durum == 'red' %}
-                                            <span class="badge bg-danger">Red</span>
-                                            {% else %}
-                                            <span class="badge bg-secondary">{{ a.durum }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <!-- Durum Dropdown -->
-                                                <div class="dropdown">
-                                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                                                        <i class="bi bi-arrow-repeat"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu">
-                                                        <li><a class="dropdown-item" href="{{ url_for('proje.aday_durum_degistir', id=a.id, durum='degerlendiriliyor') }}">Değerlendiriliyor</a></li>
-                                                        <li><a class="dropdown-item" href="{{ url_for('proje.aday_durum_degistir', id=a.id, durum='mulakat') }}">Mülakat</a></li>
-                                                        <li><a class="dropdown-item" href="{{ url_for('proje.aday_durum_degistir', id=a.id, durum='teklif') }}">Teklif</a></li>
-                                                        <li><hr class="dropdown-divider"></li>
-                                                        <li><a class="dropdown-item text-danger" href="{{ url_for('proje.aday_reddet', id=a.id) }}">Reddet</a></li>
-                                                    </ul>
-                                                </div>
-                                                
-                                                {% if a.durum in ['mulakat', 'teklif'] and has_permission('ik.create') %}
-                                                <a href="{{ url_for('proje.aday_ise_al', id=a.id) }}" class="btn btn-success" title="İşe Al">
-                                                    <i class="bi bi-person-check"></i>
-                                                </a>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                    </tr>
+        <!-- Adaylar Tab -->
+        <div class="tab-content" id="adaylar">
+            <div class="bg-white dark:bg-card-dark rounded-b-xl shadow-sm border border-t-0 border-gray-200 dark:border-border-dark">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-end gap-2">
+                    {% if has_permission('ik.create') %}
+                    <a href="{{ url_for('basvuru.aday_davet', kadro_id=kadro.id) }}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-symbols-outlined">send</span>Aday Davet Et
+                    </a>
+                    <a href="{{ url_for('proje.kadro_aday_ekle', id=kadro.id) }}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                        <span class="material-symbols-outlined">add</span>Aday Ekle
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 dark:bg-[#111418]">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Ad Soyad</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">İletişim</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Başvuru</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark w-36"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                            {% for a in adaylar %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                                <td class="px-4 py-3">
+                                    <strong>{{ a.full_name }}</strong>
+                                    {% if a.kaynak %}
+                                    <br><span class="text-xs text-text-muted dark:text-text-muted-dark">{{ a.kaynak }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-xs text-text-muted dark:text-text-muted-dark">
+                                    {% if a.email %}{{ a.email }}<br>{% endif %}
+                                    {% if a.telefon %}{{ a.telefon }}{% endif %}
+                                </td>
+                                <td class="px-4 py-3">{{ a.basvuru_tarihi.strftime('%d.%m.%Y') if a.basvuru_tarihi else '-' }}</td>
+                                <td class="px-4 py-3">
+                                    {% if a.durum == 'basvurdu' %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-cyan-100 text-cyan-800">Başvurdu</span>
+                                    {% elif a.durum == 'degerlendiriliyor' %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Değerlendiriliyor</span>
+                                    {% elif a.durum == 'mulakat' %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Mülakat</span>
+                                    {% elif a.durum == 'teklif' %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Teklif</span>
+                                    {% elif a.durum == 'ise_alindi' %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">İşe Alındı</span>
+                                    {% elif a.durum == 'red' %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Red</span>
                                     {% else %}
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">
-                                            Henüz aday yok
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">{{ a.durum }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-1">
+                                        <!-- Durum Dropdown -->
+                                        <div class="relative" x-data="{ open: false }">
+                                            <button @click="open = !open" class="inline-flex items-center justify-center w-8 h-8 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                                                <span class="material-symbols-outlined">sync</span>
+                                            </button>
+                                            <div x-show="open" @click.away="open = false" class="absolute right-0 mt-1 w-40 bg-white dark:bg-card-dark rounded-lg shadow-lg border border-border-light dark:border-border-dark z-10">
+                                                <a href="{{ url_for('proje.aday_durum_degistir', id=a.id, durum='degerlendiriliyor') }}" class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-[#252b36]">Değerlendiriliyor</a>
+                                                <a href="{{ url_for('proje.aday_durum_degistir', id=a.id, durum='mulakat') }}" class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-[#252b36]">Mülakat</a>
+                                                <a href="{{ url_for('proje.aday_durum_degistir', id=a.id, durum='teklif') }}" class="block px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-[#252b36]">Teklif</a>
+                                                <hr class="my-1">
+                                                <a href="{{ url_for('proje.aday_reddet', id=a.id) }}" class="block px-4 py-2 text-sm text-rose-600 hover:bg-red-50">Reddet</a>
+                                            </div>
+                                        </div>
+                                        {% if a.durum in ['mulakat', 'teklif'] and has_permission('ik.create') %}
+                                        <a href="{{ url_for('proje.aday_ise_al', id=a.id) }}" class="inline-flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded-lg hover:bg-green-700" title="İşe Al">
+                                            <span class="material-symbols-outlined">person_check</span>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz aday yok</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            
-            <!-- Çalışanlar Tab -->
-            <div class="tab-pane fade" id="calisanlar" role="tabpanel">
-                <div class="card border-top-0 rounded-top-0">
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Sicil</th>
-                                        <th>Ad Soyad</th>
-                                        <th>İletişim</th>
-                                        <th>İşe Başlama</th>
-                                        <th>Durum</th>
-                                        <th width="80"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for c in calisanlar %}
-                                    <tr>
-                                        <td><strong>{{ c.sicil_no or '-' }}</strong></td>
-                                        <td>{{ c.full_name }}</td>
-                                        <td>
-                                            {% if c.email %}<small>{{ c.email }}</small><br>{% endif %}
-                                            {% if c.telefon %}<small>{{ c.telefon }}</small>{% endif %}
-                                        </td>
-                                        <td>{{ c.ise_baslama.strftime('%d.%m.%Y') if c.ise_baslama else '-' }}</td>
-                                        <td>
-                                            {% if c.durum.value == 'aktif' %}
-                                            <span class="badge bg-success">Aktif</span>
-                                            {% elif c.durum.value == 'izinli' %}
-                                            <span class="badge bg-warning">İzinli</span>
-                                            {% else %}
-                                            <span class="badge bg-secondary">{{ c.durum.value }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <a href="{{ url_for('ik.detay', id=c.id) }}" class="btn btn-outline-primary btn-sm">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
+        </div>
+        
+        <!-- Çalışanlar Tab -->
+        <div class="tab-content hidden" id="calisanlar">
+            <div class="bg-white dark:bg-card-dark rounded-b-xl shadow-sm border border-t-0 border-gray-200 dark:border-border-dark">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 dark:bg-[#111418]">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Sicil</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Ad Soyad</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">İletişim</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">İşe Başlama</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark w-20"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                            {% for c in calisanlar %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                                <td class="px-4 py-3 font-semibold text-[#111418] dark:text-white">{{ c.sicil_no or '-' }}</td>
+                                <td class="px-4 py-3">{{ c.full_name }}</td>
+                                <td class="px-4 py-3 text-xs text-text-muted dark:text-text-muted-dark">
+                                    {% if c.email %}{{ c.email }}<br>{% endif %}
+                                    {% if c.telefon %}{{ c.telefon }}{% endif %}
+                                </td>
+                                <td class="px-4 py-3">{{ c.ise_baslama.strftime('%d.%m.%Y') if c.ise_baslama else '-' }}</td>
+                                <td class="px-4 py-3">
+                                    {% if c.durum.value == 'aktif' %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
+                                    {% elif c.durum.value == 'izinli' %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">İzinli</span>
                                     {% else %}
-                                    <tr>
-                                        <td colspan="6" class="text-center text-muted py-4">
-                                            Henüz çalışan yok
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">{{ c.durum.value }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <a href="{{ url_for('ik.detay', id=c.id) }}" class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg">
+                                        <span class="material-symbols-outlined">visibility</span>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz çalışan yok</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-4">
+    <div class="space-y-4">
         <!-- Kadro Bilgileri -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-briefcase me-2"></i>Kadro Bilgileri</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">work</span>Kadro Bilgileri
+                </h6>
             </div>
-            <div class="card-body">
-                <table class="table table-sm mb-0">
+            <div class="p-4">
+                <table class="w-full text-sm">
                     <tr>
-                        <td class="text-muted">Proje</td>
-                        <td class="text-end">
-                            <a href="{{ url_for('proje.proje_detay', id=kadro.proje_id) }}">
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Proje</td>
+                        <td class="text-right py-1">
+                            <a href="{{ url_for('proje.proje_detay', id=kadro.proje_id) }}" class="text-blue-600 hover:underline">
                                 {{ kadro.proje.ad }}
                             </a>
                         </td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Müşteri</td>
-                        <td class="text-end">{{ kadro.proje.musteri.display_name }}</td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Müşteri</td>
+                        <td class="text-right py-1">{{ kadro.proje.musteri.display_name }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Lokasyon</td>
-                        <td class="text-end">{{ kadro.il or '-' }}{% if kadro.ilce %} / {{ kadro.ilce }}{% endif %}</td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Lokasyon</td>
+                        <td class="text-right py-1">{{ kadro.il or '-' }}{% if kadro.ilce %} / {{ kadro.ilce }}{% endif %}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Öncelik</td>
-                        <td class="text-end">
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Öncelik</td>
+                        <td class="text-right py-1">
                             {% if kadro.oncelik <= 3 %}
-                            <span class="badge bg-danger">Acil ({{ kadro.oncelik }})</span>
+                            <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Acil ({{ kadro.oncelik }})</span>
                             {% elif kadro.oncelik <= 5 %}
-                            <span class="badge bg-warning">Normal ({{ kadro.oncelik }})</span>
+                            <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Normal ({{ kadro.oncelik }})</span>
                             {% else %}
-                            <span class="badge bg-secondary">Düşük ({{ kadro.oncelik }})</span>
+                            <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Düşük ({{ kadro.oncelik }})</span>
                             {% endif %}
                         </td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Doluluk</td>
-                        <td class="text-end">
-                            <div class="progress mb-1" style="height: 8px;">
-                                <div class="progress-bar {% if kadro.doluluk_orani >= 80 %}bg-success{% elif kadro.doluluk_orani >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
-                                     style="width: {{ kadro.doluluk_orani }}%"></div>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Doluluk</td>
+                        <td class="text-right py-1">
+                            <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
+                                <div class="h-2 rounded-full {% if kadro.doluluk_orani >= 80 %}bg-green-500{% elif kadro.doluluk_orani >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ kadro.doluluk_orani }}%"></div>
                             </div>
                             <strong>{{ kadro.doluluk_orani }}%</strong>
                         </td>
@@ -256,40 +231,42 @@
         </div>
         
         <!-- Gereksinimler -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-list-check me-2"></i>Gereksinimler</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">checklist</span>Gereksinimler
+                </h6>
             </div>
-            <div class="card-body">
-                <table class="table table-sm mb-0">
+            <div class="p-4">
+                <table class="w-full text-sm">
                     {% if kadro.min_tecrube_yil %}
                     <tr>
-                        <td class="text-muted">Tecrübe</td>
-                        <td class="text-end">Min. {{ kadro.min_tecrube_yil }} yıl</td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Tecrübe</td>
+                        <td class="text-right py-1">Min. {{ kadro.min_tecrube_yil }} yıl</td>
                     </tr>
                     {% endif %}
                     {% if kadro.egitim_seviyesi %}
                     <tr>
-                        <td class="text-muted">Eğitim</td>
-                        <td class="text-end">{{ kadro.egitim_seviyesi|title }}</td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Eğitim</td>
+                        <td class="text-right py-1">{{ kadro.egitim_seviyesi|title }}</td>
                     </tr>
                     {% endif %}
                     {% if kadro.ehliyet_gerekli %}
                     <tr>
-                        <td class="text-muted">Ehliyet</td>
-                        <td class="text-end">{{ kadro.ehliyet_sinifi or 'Gerekli' }}</td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Ehliyet</td>
+                        <td class="text-right py-1">{{ kadro.ehliyet_sinifi or 'Gerekli' }}</td>
                     </tr>
                     {% endif %}
                     {% if kadro.yas_min or kadro.yas_max %}
                     <tr>
-                        <td class="text-muted">Yaş</td>
-                        <td class="text-end">{{ kadro.yas_min or '?' }} - {{ kadro.yas_max or '?' }}</td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Yaş</td>
+                        <td class="text-right py-1">{{ kadro.yas_min or '?' }} - {{ kadro.yas_max or '?' }}</td>
                     </tr>
                     {% endif %}
                     {% if kadro.maas_min or kadro.maas_max %}
                     <tr>
-                        <td class="text-muted">Maaş</td>
-                        <td class="text-end">
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Maaş</td>
+                        <td class="text-right py-1">
                             ₺{{ '{:,.0f}'.format(kadro.maas_min) if kadro.maas_min else '?' }} - 
                             ₺{{ '{:,.0f}'.format(kadro.maas_max) if kadro.maas_max else '?' }}
                         </td>
@@ -300,28 +277,44 @@
         </div>
         
         <!-- Aksiyonlar -->
-        <div class="card">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Aksiyonlar</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">bolt</span>Aksiyonlar
+                </h6>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    {% if has_permission('proje.edit') %}
-                    <a href="{{ url_for('proje.kadro_duzenle', id=kadro.id) }}" class="btn btn-primary">
-                        <i class="bi bi-pencil me-1"></i>Düzenle
-                    </a>
-                    {% endif %}
-                    {% if has_permission('ik.create') %}
-                    <a href="{{ url_for('proje.kadro_aday_ekle', id=kadro.id) }}" class="btn btn-success">
-                        <i class="bi bi-person-plus me-1"></i>Aday Ekle
-                    </a>
-                    {% endif %}
-                    <a href="{{ url_for('proje.proje_detay', id=kadro.proje_id) }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Projeye Dön
-                    </a>
-                </div>
+            <div class="p-4 space-y-2">
+                {% if has_permission('proje.edit') %}
+                <a href="{{ url_for('proje.kadro_duzenle', id=kadro.id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                    <span class="material-symbols-outlined">edit</span>Düzenle
+                </a>
+                {% endif %}
+                {% if has_permission('ik.create') %}
+                <a href="{{ url_for('proje.kadro_aday_ekle', id=kadro.id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                    <span class="material-symbols-outlined">person_add</span>Aday Ekle
+                </a>
+                {% endif %}
+                <a href="{{ url_for('proje.proje_detay', id=kadro.proje_id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <span class="material-symbols-outlined">arrow_back</span>Projeye Dön
+                </a>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('active', 'border-blue-600', 'text-blue-600');
+            b.classList.add('border-transparent', 'text-text-muted dark:text-text-muted-dark');
+        });
+        this.classList.add('active', 'border-blue-600', 'text-blue-600');
+        this.classList.remove('border-transparent', 'text-text-muted dark:text-text-muted-dark');
+        
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById(this.dataset.target).classList.remove('hidden');
+    });
+});
+</script>
 {% endblock %}

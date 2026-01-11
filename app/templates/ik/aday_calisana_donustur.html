@@ -4,162 +4,154 @@
 {% block page_title %}Adayı Çalışana Dönüştür{% endblock %}
 
 {% block content %}
-<div class="row">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Sol: Aday Bilgileri -->
-    <div class="col-lg-4">
-        <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <h6 class="mb-0"><i class="bi bi-person me-2"></i>Aday Bilgileri</h6>
+    <div class="space-y-4">
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 bg-cyan-600 text-white rounded-t-lg">
+                <h3 class="font-semibold flex items-center gap-2">
+                    <span class="material-symbols-outlined">person</span>
+                    Aday Bilgileri
+                </h3>
             </div>
-            <div class="card-body">
-                <table class="table table-sm table-borderless mb-0">
-                    <tr>
-                        <td class="text-muted">Ad Soyad</td>
-                        <td><strong>{{ aday.full_name }}</strong></td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">TC Kimlik</td>
-                        <td>{{ aday.tc_kimlik or '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Telefon</td>
-                        <td>{{ aday.telefon or '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">E-posta</td>
-                        <td>{{ aday.email or '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Doğum Tarihi</td>
-                        <td>{{ aday.dogum_tarihi.strftime('%d.%m.%Y') if aday.dogum_tarihi else '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">İl/İlçe</td>
-                        <td>{{ aday.il or '' }} {{ ('/ ' + aday.ilce) if aday.ilce else '' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Pozisyon</td>
-                        <td>{{ aday.pozisyon.ad if aday.pozisyon else '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Başvuru Tarihi</td>
-                        <td>{{ aday.basvuru_tarihi.strftime('%d.%m.%Y') if aday.basvuru_tarihi else '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">KVKK Onayı</td>
-                        <td>
-                            {% if aday.kvkk_onay %}
-                            <span class="badge bg-success">Onaylı</span>
-                            {% else %}
-                            <span class="badge bg-danger">Onay Yok</span>
-                            {% endif %}
-                        </td>
-                    </tr>
+            <div class="p-5">
+                <table class="w-full text-sm">
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        <tr>
+                            <td class="py-2 text-text-muted dark:text-text-muted-dark">Ad Soyad</td>
+                            <td class="py-2 font-semibold text-text-primary dark:text-text-primary-dark">{{ aday.full_name }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-text-muted dark:text-text-muted-dark">TC Kimlik</td>
+                            <td class="py-2 text-text-primary dark:text-text-primary-dark">{{ aday.tc_kimlik or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-text-muted dark:text-text-muted-dark">Telefon</td>
+                            <td class="py-2 text-text-primary dark:text-text-primary-dark">{{ aday.telefon or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-text-muted dark:text-text-muted-dark">E-posta</td>
+                            <td class="py-2 text-text-primary dark:text-text-primary-dark">{{ aday.email or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-text-muted dark:text-text-muted-dark">Doğum Tarihi</td>
+                            <td class="py-2 text-text-primary dark:text-text-primary-dark">{{ aday.dogum_tarihi.strftime('%d.%m.%Y') if aday.dogum_tarihi else '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-text-muted dark:text-text-muted-dark">İl/İlçe</td>
+                            <td class="py-2 text-text-primary dark:text-text-primary-dark">{{ aday.il or '' }} {{ ('/ ' + aday.ilce) if aday.ilce else '' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-text-muted dark:text-text-muted-dark">Pozisyon</td>
+                            <td class="py-2 text-text-primary dark:text-text-primary-dark">{{ aday.pozisyon.ad if aday.pozisyon else '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-text-muted dark:text-text-muted-dark">Başvuru Tarihi</td>
+                            <td class="py-2 text-text-primary dark:text-text-primary-dark">{{ aday.basvuru_tarihi.strftime('%d.%m.%Y') if aday.basvuru_tarihi else '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 text-text-muted dark:text-text-muted-dark">KVKK Onayı</td>
+                            <td class="py-2">
+                                {% if aday.kvkk_onay %}
+                                <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Onaylı</span>
+                                {% else %}
+                                <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Onay Yok</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
         </div>
         
         <!-- Evraklar -->
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-folder me-2"></i>Onaylı Evraklar</h6>
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">folder</span>
+                    Onaylı Evraklar
+                </h3>
             </div>
-            <div class="card-body p-0">
-                <ul class="list-group list-group-flush">
-                    {% for evrak in aday.evraklar.filter_by(durum='onaylandi').all() %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>
-                            <i class="bi bi-file-earmark-check text-success me-2"></i>
-                            {{ evrak.evrak_tipi.ad if evrak.evrak_tipi else evrak.dosya_adi }}
-                        </span>
-                        <span class="badge bg-success">Onaylı</span>
-                    </li>
-                    {% else %}
-                    <li class="list-group-item text-muted text-center">Onaylı evrak yok</li>
-                    {% endfor %}
-                </ul>
-            </div>
+            <ul class="divide-y divide-border-light dark:divide-border-dark">
+                {% for evrak in aday.evraklar.filter_by(durum='onaylandi').all() %}
+                <li class="px-5 py-3 flex justify-between items-center">
+                    <span class="flex items-center gap-2 text-sm">
+                        <span class="material-symbols-outlined text-green-500 text-lg">task</span>
+                        {{ evrak.evrak_tipi.ad if evrak.evrak_tipi else evrak.dosya_adi }}
+                    </span>
+                    <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Onaylı</span>
+                </li>
+                {% else %}
+                <li class="px-5 py-4 text-center text-text-muted dark:text-text-muted-dark text-sm">Onaylı evrak yok</li>
+                {% endfor %}
+            </ul>
         </div>
     </div>
     
     <!-- Sağ: Çalışan Bilgileri Formu -->
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h6 class="mb-0"><i class="bi bi-person-check me-2"></i>Çalışan Kaydı Oluştur</h6>
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 bg-green-600 text-white rounded-t-lg">
+                <h3 class="font-semibold flex items-center gap-2">
+                    <span class="material-symbols-outlined">how_to_reg</span>
+                    Çalışan Kaydı Oluştur
+                </h3>
             </div>
-            <div class="card-body">
+            <div class="p-6">
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i>
-                        Aday bilgileri otomatik olarak aktarılacaktır. Aşağıdaki ek bilgileri doldurun.
+                    <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600">info</span>
+                        <span class="text-sm text-blue-800 dark:text-blue-300">Aday bilgileri otomatik olarak aktarılacaktır. Aşağıdaki ek bilgileri doldurun.</span>
                     </div>
                     
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Sicil No *</label>
-                                <input type="text" name="sicil_no" class="form-control" required
-                                       placeholder="Örn: TG-2024-001">
-                            </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Sicil No *</label>
+                            <input type="text" name="sicil_no" required placeholder="Örn: TG-2024-001"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">İşe Başlama Tarihi *</label>
-                                <input type="date" name="ise_baslama" class="form-control" required
-                                       value="{{ now().strftime('%Y-%m-%d') if now else '' }}">
-                            </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">İşe Başlama Tarihi *</label>
+                            <input type="date" name="ise_baslama" required value="{{ now().strftime('%Y-%m-%d') if now else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Departman</label>
-                                <select name="departman_id" class="form-select">
-                                    <option value="">Seçin...</option>
-                                    {% for dept in departmanlar %}
-                                    <option value="{{ dept.id }}">{{ dept.ad }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Departman</label>
+                            <select name="departman_id" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seçin...</option>
+                                {% for dept in departmanlar %}
+                                <option value="{{ dept.id }}">{{ dept.ad }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Pozisyon</label>
-                                <select name="pozisyon_id" class="form-select">
-                                    <option value="">Seçin...</option>
-                                    {% for poz in pozisyonlar %}
-                                    <option value="{{ poz.id }}" {{ 'selected' if aday.pozisyon_id == poz.id }}>{{ poz.ad }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Pozisyon</label>
+                            <select name="pozisyon_id" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seçin...</option>
+                                {% for poz in pozisyonlar %}
+                                <option value="{{ poz.id }}" {{ 'selected' if aday.pozisyon_id == poz.id }}>{{ poz.ad }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Çalışma Tipi</label>
-                                <select name="calisma_tipi" class="form-select">
-                                    <option value="tam_zamanli">Tam Zamanlı</option>
-                                    <option value="yari_zamanli">Yarı Zamanlı</option>
-                                    <option value="stajyer">Stajyer</option>
-                                    <option value="sozlesmeli">Sözleşmeli</option>
-                                </select>
-                            </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Çalışma Tipi</label>
+                            <select name="calisma_tipi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="tam_zamanli">Tam Zamanlı</option>
+                                <option value="yari_zamanli">Yarı Zamanlı</option>
+                                <option value="stajyer">Stajyer</option>
+                                <option value="sozlesmeli">Sözleşmeli</option>
+                            </select>
                         </div>
                     </div>
                     
-                    <hr>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-person-check me-1"></i>Çalışan Olarak Kaydet
+                    <div class="flex items-center gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <span class="material-symbols-outlined text-sm">how_to_reg</span>
+                            Çalışan Olarak Kaydet
                         </button>
-                        <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="btn btn-outline-secondary">İptal</a>
+                        <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="px-4 py-2 border border-border-light dark:border-border-dark text-text-primary dark:text-text-primary-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</a>
                     </div>
                 </form>
             </div>

@@ -4,49 +4,47 @@
 {% block page_title %}Adayı İşe Al{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
         <form method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-person-check me-2"></i>İşe Alma Bilgileri</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">person_check</span>İşe Alma Bilgileri
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-info mb-4">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <strong>{{ aday.full_name }}</strong> adayını işe alıyorsunuz. 
-                        Aşağıdaki bilgileri tamamlayın.
+                <div class="p-4">
+                    <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-lg p-4 mb-4 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">info</span>
+                        <span><strong>{{ aday.full_name }}</strong> adayını işe alıyorsunuz. Aşağıdaki bilgileri tamamlayın.</span>
                     </div>
                     
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Ad</label>
-                            <input type="text" class="form-control" value="{{ aday.ad }}" disabled>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Ad</label>
+                            <input type="text" class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-gray-100 dark:bg-gray-800" value="{{ aday.ad }}" disabled>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Soyad</label>
-                            <input type="text" class="form-control" value="{{ aday.soyad }}" disabled>
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Soyad</label>
+                            <input type="text" class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-gray-100 dark:bg-gray-800" value="{{ aday.soyad }}" disabled>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Sicil No <span class="text-danger">*</span></label>
-                            <input type="text" name="sicil_no" class="form-control" required
-                                   placeholder="TG-001">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Sicil No <span class="text-red-500">*</span></label>
+                            <input type="text" name="sicil_no" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required placeholder="TG-001">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">TC Kimlik No</label>
-                            <input type="text" name="tc_kimlik" class="form-control" maxlength="11"
-                                   placeholder="12345678901">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">TC Kimlik No</label>
+                            <input type="text" name="tc_kimlik" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" maxlength="11" placeholder="12345678901">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">İşe Başlama Tarihi <span class="text-danger">*</span></label>
-                            <input type="date" name="ise_baslama" class="form-control" required
-                                   value="{{ today.strftime('%Y-%m-%d') if today else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">İşe Başlama Tarihi <span class="text-red-500">*</span></label>
+                            <input type="date" name="ise_baslama" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="{{ today.strftime('%Y-%m-%d') if today else '' }}">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Çalışma Tipi</label>
-                            <select name="calisma_tipi" class="form-select">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Çalışma Tipi</label>
+                            <select name="calisma_tipi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="tam_zamanli">Tam Zamanlı</option>
                                 <option value="yari_zamanli">Yarı Zamanlı</option>
                                 <option value="sozlesmeli">Sözleşmeli</option>
@@ -55,43 +53,43 @@
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-white">
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ url_for('proje.kadro_detay', id=aday.kadro_id) if aday.kadro_id else url_for('proje.proje_liste') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>İptal
-                        </a>
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-check-lg me-1"></i>İşe Al
-                        </button>
-                    </div>
+                <div class="px-4 py-3 border-t border-border-light dark:border-border-dark bg-gray-50 rounded-b-xl flex justify-between">
+                    <a href="{{ url_for('proje.kadro_detay', id=aday.kadro_id) if aday.kadro_id else url_for('proje.proje_liste') }}" class="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-100 transition-colors">
+                        <span class="material-symbols-outlined">arrow_back</span>İptal
+                    </a>
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                        <span class="material-symbols-outlined">check</span>İşe Al
+                    </button>
                 </div>
             </div>
         </form>
     </div>
     
-    <div class="col-lg-4">
+    <div class="space-y-4">
         <!-- Aday Bilgisi -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-person me-2"></i>Aday Bilgisi</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">person</span>Aday Bilgisi
+                </h6>
             </div>
-            <div class="card-body">
-                <table class="table table-sm mb-0">
+            <div class="p-4">
+                <table class="w-full text-sm">
                     <tr>
-                        <td class="text-muted">Email</td>
-                        <td class="text-end">{{ aday.email or '-' }}</td>
+                        <td class="text-gray-500 py-1">Email</td>
+                        <td class="text-right py-1">{{ aday.email or '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Telefon</td>
-                        <td class="text-end">{{ aday.telefon or '-' }}</td>
+                        <td class="text-gray-500 py-1">Telefon</td>
+                        <td class="text-right py-1">{{ aday.telefon or '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Kaynak</td>
-                        <td class="text-end">{{ aday.kaynak or '-' }}</td>
+                        <td class="text-gray-500 py-1">Kaynak</td>
+                        <td class="text-right py-1">{{ aday.kaynak or '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Başvuru</td>
-                        <td class="text-end">{{ aday.basvuru_tarihi.strftime('%d.%m.%Y') if aday.basvuru_tarihi else '-' }}</td>
+                        <td class="text-gray-500 py-1">Başvuru</td>
+                        <td class="text-right py-1">{{ aday.basvuru_tarihi.strftime('%d.%m.%Y') if aday.basvuru_tarihi else '-' }}</td>
                     </tr>
                 </table>
             </div>
@@ -99,31 +97,33 @@
         
         <!-- Kadro Bilgisi -->
         {% if aday.kadro %}
-        <div class="card">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-briefcase me-2"></i>Kadro Bilgisi</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">work</span>Kadro Bilgisi
+                </h6>
             </div>
-            <div class="card-body">
-                <table class="table table-sm mb-0">
+            <div class="p-4">
+                <table class="w-full text-sm">
                     <tr>
-                        <td class="text-muted">Pozisyon</td>
-                        <td class="text-end"><strong>{{ aday.kadro.pozisyon_adi }}</strong></td>
+                        <td class="text-gray-500 py-1">Pozisyon</td>
+                        <td class="text-right py-1 font-semibold text-[#111418] dark:text-white">{{ aday.kadro.pozisyon_adi }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Proje</td>
-                        <td class="text-end">{{ aday.kadro.proje.ad }}</td>
+                        <td class="text-gray-500 py-1">Proje</td>
+                        <td class="text-right py-1">{{ aday.kadro.proje.ad }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Müşteri</td>
-                        <td class="text-end">{{ aday.kadro.proje.musteri.display_name }}</td>
+                        <td class="text-gray-500 py-1">Müşteri</td>
+                        <td class="text-right py-1">{{ aday.kadro.proje.musteri.display_name }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Lokasyon</td>
-                        <td class="text-end">{{ aday.kadro.il or '-' }}</td>
+                        <td class="text-gray-500 py-1">Lokasyon</td>
+                        <td class="text-right py-1">{{ aday.kadro.il or '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Maaş Aralığı</td>
-                        <td class="text-end">
+                        <td class="text-gray-500 py-1">Maaş Aralığı</td>
+                        <td class="text-right py-1">
                             {% if aday.kadro.maas_min and aday.kadro.maas_max %}
                             ₺{{ '{:,.0f}'.format(aday.kadro.maas_min) }} - ₺{{ '{:,.0f}'.format(aday.kadro.maas_max) }}
                             {% else %}-{% endif %}

@@ -4,72 +4,125 @@
 {% block page_title %}Taleplerim{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">Onay Taleplerim</h6>
-            <div class="btn-group btn-group-sm">
-                <a href="{{ url_for('onay.taleplerim') }}" class="btn btn-{{ 'primary' if not request.args.get('durum') else 'outline-primary' }}">Tümü</a>
-                <a href="{{ url_for('onay.taleplerim', durum='bekliyor') }}" class="btn btn-{{ 'warning' if request.args.get('durum') == 'bekliyor' else 'outline-warning' }}">Bekleyen</a>
-                <a href="{{ url_for('onay.taleplerim', durum='onaylandi') }}" class="btn btn-{{ 'success' if request.args.get('durum') == 'onaylandi' else 'outline-success' }}">Onaylanan</a>
-                <a href="{{ url_for('onay.taleplerim', durum='reddedildi') }}" class="btn btn-{{ 'danger' if request.args.get('durum') == 'reddedildi' else 'outline-danger' }}">Reddedilen</a>
+{% set badge_map = {
+  'primary': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  'success': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  'warning': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  'danger':  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  'info':    'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
+  'secondary':'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-200'
+} %}
+
+<div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+
+  <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+    <h3 class="font-bold text-[#111418] dark:text-white">Onay Taleplerim</h3>
+
+    <div class="flex flex-wrap gap-2">
+      <a href="{{ url_for('onay.taleplerim') }}"
+         class="px-3 py-2 rounded-lg text-sm font-semibold border border-border-light dark:border-border-dark
+                {{ 'bg-primary text-white border-transparent' if not request.args.get('durum') else 'hover:bg-gray-50 dark:hover:bg-[#252b36]' }}">
+        Tümü
+      </a>
+
+      <a href="{{ url_for('onay.taleplerim', durum='bekliyor') }}"
+         class="px-3 py-2 rounded-lg text-sm font-semibold border border-border-light dark:border-border-dark
+                {{ 'bg-amber-500 text-black border-transparent' if request.args.get('durum') == 'bekliyor' else 'hover:bg-gray-50 dark:hover:bg-[#252b36]' }}">
+        Bekleyen
+      </a>
+
+      <a href="{{ url_for('onay.taleplerim', durum='onaylandi') }}"
+         class="px-3 py-2 rounded-lg text-sm font-semibold border border-border-light dark:border-border-dark
+                {{ 'bg-green-600 text-white border-transparent' if request.args.get('durum') == 'onaylandi' else 'hover:bg-gray-50 dark:hover:bg-[#252b36]' }}">
+        Onaylanan
+      </a>
+
+      <a href="{{ url_for('onay.taleplerim', durum='reddedildi') }}"
+         class="px-3 py-2 rounded-lg text-sm font-semibold border border-border-light dark:border-border-dark
+                {{ 'bg-red-600 text-white border-transparent' if request.args.get('durum') == 'reddedildi' else 'hover:bg-gray-50 dark:hover:bg-[#252b36]' }}">
+        Reddedilen
+      </a>
+    </div>
+  </div>
+
+  {% if talepler %}
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-[#111418] text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">
+        <tr>
+          <th class="px-5 py-3 text-left">#</th>
+          <th class="px-5 py-3 text-left">Tip</th>
+          <th class="px-5 py-3 text-left whitespace-nowrap">Tarih</th>
+          <th class="px-5 py-3 text-left">Mevcut Adım</th>
+          <th class="px-5 py-3 text-left">Durum</th>
+          <th class="px-5 py-3 text-right">İşlem</th>
+        </tr>
+      </thead>
+
+      <tbody class="divide-y divide-border-light dark:divide-border-dark">
+        {% for talep in talepler %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+          <td class="px-5 py-3">{{ talep.id }}</td>
+
+          <td class="px-5 py-3">
+            {% set modul = talep.onay_tipi.modul or 'secondary' %}
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map.get(modul, badge_map['secondary']) }}">
+                {{ talep.onay_tipi.ad }}
+              </span>
+              {% if talep.acil %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['danger'] }}">ACİL</span>
+              {% endif %}
             </div>
-        </div>
+          </td>
+
+          <td class="px-5 py-3 text-text-muted dark:text-text-muted-dark whitespace-nowrap">
+            {{ talep.talep_tarihi.strftime('%d.%m.%Y %H:%M') }}
+          </td>
+
+          <td class="px-5 py-3">
+            {% if talep.durum == 'bekliyor' %}
+              {% set bekleyen = talep.bekleyen_onaycilar %}
+              {% if bekleyen %}
+                <div class="font-semibold text-[#111418] dark:text-white">{{ bekleyen[0].adim.ad }}</div>
+                <div class="text-xs text-text-muted dark:text-text-muted-dark">
+                  ({{ bekleyen[0].onaylayici.username if bekleyen[0].onaylayici else '?' }})
+                </div>
+              {% else %}
+                -
+              {% endif %}
+            {% else %}
+              -
+            {% endif %}
+          </td>
+
+          <td class="px-5 py-3">
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map.get(talep.durum_renk, badge_map['secondary']) }}">
+              {{ talep.durum_text }}
+            </span>
+          </td>
+
+          <td class="px-5 py-3 text-right">
+            <a href="{{ url_for('onay.talep_detay', id=talep.id) }}"
+               class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-border-light dark:border-border-dark
+                      hover:bg-gray-50 dark:hover:bg-[#252b36] transition"
+               title="Görüntüle">
+              <span class="material-symbols-outlined text-[18px]">visibility</span>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="p-10 text-center">
+    <div class="mx-auto w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+      <span class="material-symbols-outlined text-primary">inbox</span>
     </div>
-    
-    <div class="card-body p-0">
-        {% if talepler %}
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>#</th>
-                        <th>Tip</th>
-                        <th>Tarih</th>
-                        <th>Mevcut Adım</th>
-                        <th>Durum</th>
-                        <th class="text-end">İşlem</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for talep in talepler %}
-                    <tr>
-                        <td>{{ talep.id }}</td>
-                        <td>
-                            <span class="badge bg-{{ talep.onay_tipi.modul or 'secondary' }}">{{ talep.onay_tipi.ad }}</span>
-                            {% if talep.acil %}
-                            <span class="badge bg-danger ms-1">ACİL</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ talep.talep_tarihi.strftime('%d.%m.%Y %H:%M') }}</td>
-                        <td>
-                            {% if talep.durum == 'bekliyor' %}
-                            {% set bekleyen = talep.bekleyen_onaycilar %}
-                            {% if bekleyen %}
-                            {{ bekleyen[0].adim.ad }}
-                            <small class="text-muted">({{ bekleyen[0].onaylayici.username if bekleyen[0].onaylayici else '?' }})</small>
-                            {% endif %}
-                            {% else %}
-                            -
-                            {% endif %}
-                        </td>
-                        <td><span class="badge bg-{{ talep.durum_renk }}">{{ talep.durum_text }}</span></td>
-                        <td class="text-end">
-                            <a href="{{ url_for('onay.talep_detay', id=talep.id) }}" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% else %}
-        <div class="text-center text-muted py-5">
-            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
-            Talep bulunamadı
-        </div>
-        {% endif %}
-    </div>
+    <p class="mt-3 text-sm text-text-muted dark:text-text-muted-dark">Talep bulunamadı</p>
+  </div>
+  {% endif %}
+
 </div>
 {% endblock %}

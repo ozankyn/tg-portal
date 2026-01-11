@@ -4,49 +4,45 @@
 {% block page_title %}Sipariş Detayı{% endblock %}
 
 {% block content %}
-<div class="row g-4">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Sol: Sipariş Bilgileri -->
-    <div class="col-lg-8">
+    <div class="lg:col-span-2 space-y-4">
         <!-- Başlık -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <code class="fs-5">{{ siparis.siparis_no }}</code>
-                </div>
-                <span class="badge bg-{{ siparis.durum_renk }} fs-6">{{ siparis.durum_text }}</span>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <code class="text-lg font-semibold">{{ siparis.siparis_no }}</code>
+                <span class="px-3 py-1 text-sm font-medium rounded-full bg-{{ siparis.durum_renk }}-100 text-{{ siparis.durum_renk }}-800">{{ siparis.durum_text }}</span>
             </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="text-muted small">Tedarikçi</label>
-                        <p class="mb-0 fw-semibold">{{ siparis.tedarikci.unvan }}</p>
+            <div class="p-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Tedarikçi</label>
+                        <p class="font-semibold">{{ siparis.tedarikci.unvan }}</p>
                     </div>
-                    <div class="col-md-6">
-                        <label class="text-muted small">Toplam Tutar</label>
-                        <p class="mb-0 fs-4 fw-bold text-primary">₺{{ "%.2f"|format(siparis.toplam_tutar) }}</p>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Toplam Tutar</label>
+                        <p class="text-2xl font-bold text-blue-600">₺{{ "%.2f"|format(siparis.toplam_tutar) }}</p>
                     </div>
-                    
-                    <div class="col-md-4">
-                        <label class="text-muted small">Sipariş Tarihi</label>
-                        <p class="mb-0">{{ siparis.siparis_tarihi.strftime('%d.%m.%Y') }}</p>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Sipariş Tarihi</label>
+                        <p>{{ siparis.siparis_tarihi.strftime('%d.%m.%Y') }}</p>
                     </div>
-                    <div class="col-md-4">
-                        <label class="text-muted small">Beklenen Teslimat</label>
-                        <p class="mb-0">{{ siparis.beklenen_teslimat.strftime('%d.%m.%Y') if siparis.beklenen_teslimat else '-' }}</p>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Beklenen Teslimat</label>
+                        <p>{{ siparis.beklenen_teslimat.strftime('%d.%m.%Y') if siparis.beklenen_teslimat else '-' }}</p>
                     </div>
-                    <div class="col-md-4">
-                        <label class="text-muted small">Talep</label>
-                        <p class="mb-0">
-                            <a href="{{ url_for('satinalma.talep_detay', id=siparis.talep_id) }}">
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Talep</label>
+                        <p>
+                            <a href="{{ url_for('satinalma.talep_detay', id=siparis.talep_id) }}" class="text-blue-600 hover:underline">
                                 {{ siparis.talep.talep_no }}
                             </a>
                         </p>
                     </div>
-                    
                     {% if siparis.notlar %}
-                    <div class="col-12">
-                        <label class="text-muted small">Notlar</label>
-                        <p class="mb-0">{{ siparis.notlar }}</p>
+                    <div class="md:col-span-2">
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Notlar</label>
+                        <p>{{ siparis.notlar }}</p>
                     </div>
                     {% endif %}
                 </div>
@@ -54,83 +50,77 @@
         </div>
         
         <!-- Teslimatlar -->
-        <div class="card mt-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Teslimat Kayıtları</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-medium text-[#111418] dark:text-white">Teslimat Kayıtları</h6>
                 {% if current_user.has_permission('satinalma.admin') and siparis.durum in ['siparis_verildi', 'kismen_teslim'] %}
-                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#teslimatModal">
-                    <i class="bi bi-plus-lg me-1"></i>Teslimat Kaydet
+                <button class="inline-flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors" data-bs-toggle="modal" data-bs-target="#teslimatModal">
+                    <span class="material-symbols-outlined">add</span>Teslimat Kaydet
                 </button>
                 {% endif %}
             </div>
-            <div class="card-body p-0">
-                {% if teslimatlar %}
-                <div class="table-responsive">
-                    <table class="table mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Tarih</th>
-                                <th>Teslim Alan</th>
-                                <th>İrsaliye No</th>
-                                <th>Notlar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for t in teslimatlar %}
-                            <tr>
-                                <td>{{ t.teslimat_tarihi.strftime('%d.%m.%Y') }}</td>
-                                <td>{{ t.teslim_alan.full_name if t.teslim_alan else '-' }}</td>
-                                <td>{{ t.irsaliye_no or '-' }}</td>
-                                <td>{{ t.notlar or '-' }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted text-center py-3 mb-0">Henüz teslimat kaydı yok</p>
-                {% endif %}
+            {% if teslimatlar %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-[#111418]">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tarih</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Teslim Alan</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">İrsaliye No</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Notlar</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for t in teslimatlar %}
+                        <tr>
+                            <td class="px-4 py-3">{{ t.teslimat_tarihi.strftime('%d.%m.%Y') }}</td>
+                            <td class="px-4 py-3">{{ t.teslim_alan.full_name if t.teslim_alan else '-' }}</td>
+                            <td class="px-4 py-3">{{ t.irsaliye_no or '-' }}</td>
+                            <td class="px-4 py-3">{{ t.notlar or '-' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            {% else %}
+            <p class="text-text-muted dark:text-text-muted-dark text-center py-6">Henüz teslimat kaydı yok</p>
+            {% endif %}
         </div>
     </div>
     
     <!-- Sağ: İşlemler -->
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">İşlemler</h6>
+    <div class="space-y-4">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white">İşlemler</h6>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('satinalma.siparis_liste') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-2"></i>Listeye Dön
-                    </a>
-                </div>
+            <div class="p-4">
+                <a href="{{ url_for('satinalma.siparis_liste') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <span class="material-symbols-outlined">arrow_back</span>Listeye Dön
+                </a>
             </div>
         </div>
         
         <!-- Teklif Bilgisi -->
         {% if siparis.teklif %}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0">Seçilen Teklif</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white">Seçilen Teklif</h6>
             </div>
-            <div class="card-body">
-                <p class="mb-1"><strong>Teklif No:</strong> {{ siparis.teklif.teklif_no or '-' }}</p>
-                <p class="mb-1"><strong>Tutar:</strong> ₺{{ "%.2f"|format(siparis.teklif.toplam_tutar) }}</p>
-                <p class="mb-1"><strong>Teslimat:</strong> {{ siparis.teklif.teslimat_suresi or '-' }}</p>
-                <p class="mb-0"><strong>Ödeme:</strong> {{ siparis.teklif.odeme_kosulu or '-' }}</p>
+            <div class="p-4 text-sm space-y-2">
+                <p><strong class="text-[#111418] dark:text-white">Teklif No:</strong> {{ siparis.teklif.teklif_no or '-' }}</p>
+                <p><strong class="text-[#111418] dark:text-white">Tutar:</strong> ₺{{ "%.2f"|format(siparis.teklif.toplam_tutar) }}</p>
+                <p><strong class="text-[#111418] dark:text-white">Teslimat:</strong> {{ siparis.teklif.teslimat_suresi or '-' }}</p>
+                <p><strong class="text-[#111418] dark:text-white">Ödeme:</strong> {{ siparis.teklif.odeme_kosulu or '-' }}</p>
             </div>
         </div>
         {% endif %}
         
         <!-- Meta -->
-        <div class="card mt-4">
-            <div class="card-body small text-muted">
-                <div class="d-flex justify-content-between mb-1">
-                    <span>Oluşturulma:</span>
-                    <span>{{ siparis.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
-                </div>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm p-4 text-sm text-text-muted dark:text-text-muted-dark">
+            <div class="flex justify-between mb-1">
+                <span>Oluşturulma:</span>
+                <span>{{ siparis.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
             </div>
         </div>
     </div>
@@ -147,29 +137,29 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Teslimat Tarihi *</label>
-                        <input type="date" name="teslimat_tarihi" class="form-control" required>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Teslimat Tarihi *</label>
+                        <input type="date" name="teslimat_tarihi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">İrsaliye No</label>
-                        <input type="text" name="irsaliye_no" class="form-control">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">İrsaliye No</label>
+                        <input type="text" name="irsaliye_no" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Notlar</label>
-                        <textarea name="notlar" class="form-control" rows="2"></textarea>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Notlar</label>
+                        <textarea name="notlar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="2"></textarea>
                     </div>
-                    <div class="form-check">
-                        <input type="checkbox" name="tam_teslimat" class="form-check-input" id="tamTeslimat">
-                        <label class="form-check-label" for="tamTeslimat">
-                            <strong>Tam teslimat yapıldı</strong>
-                            <small class="text-muted d-block">Sipariş tamamlandı olarak işaretlensin</small>
-                        </label>
+                    <div class="flex items-start">
+                        <input type="checkbox" name="tam_teslimat" class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500 mt-0.5" id="tamTeslimat">
+                        <div class="ml-2">
+                            <label class="font-medium text-[#111418] dark:text-white" for="tamTeslimat">Tam teslimat yapıldı</label>
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark">Sipariş tamamlandı olarak işaretlensin</p>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-success">Kaydet</button>
+                    <button type="button" class="px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36]" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700">Kaydet</button>
                 </div>
             </form>
         </div>

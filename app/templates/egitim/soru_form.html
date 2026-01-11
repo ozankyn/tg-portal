@@ -4,59 +4,59 @@
 {% block page_title %}{% if soru %}Soru Düzenle{% else %}Yeni Soru Ekle{% endif %}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-body">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="p-6">
                 <form method="POST" id="soruForm">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
                     <!-- Soru Metni -->
-                    <div class="mb-4">
-                        <label class="form-label">Soru *</label>
-                        <textarea name="soru_metni" class="form-control" rows="3" required
-                                  placeholder="Soru metnini yazın...">{{ soru.soru_metni if soru else '' }}</textarea>
+                    <div class="mb-6">
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Soru *</label>
+                        <textarea name="soru_metni" rows="3" required placeholder="Soru metnini yazın..."
+                                  class="w-full p-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary">{{ soru.soru_metni if soru else '' }}</textarea>
                     </div>
                     
                     <!-- Soru Tipi ve Ayarlar -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label">Soru Tipi</label>
-                            <select name="soru_tipi" class="form-select" id="soruTipi" onchange="updateSecenekler()">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Soru Tipi</label>
+                            <select name="soru_tipi" id="soruTipi" onchange="updateSecenekler()" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
                                 <option value="coktan_secmeli" {{ 'selected' if not soru or soru.soru_tipi == 'coktan_secmeli' }}>Çoktan Seçmeli</option>
                                 <option value="dogru_yanlis" {{ 'selected' if soru and soru.soru_tipi == 'dogru_yanlis' }}>Doğru/Yanlış</option>
                                 <option value="coklu_secim" {{ 'selected' if soru and soru.soru_tipi == 'coklu_secim' }}>Çoklu Seçim</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Zorluk</label>
-                            <select name="zorluk" class="form-select">
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Zorluk</label>
+                            <select name="zorluk" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
                                 <option value="1" {{ 'selected' if not soru or soru.zorluk == 1 }}>Kolay</option>
                                 <option value="2" {{ 'selected' if soru and soru.zorluk == 2 }}>Orta</option>
                                 <option value="3" {{ 'selected' if soru and soru.zorluk == 3 }}>Zor</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Puan</label>
-                            <input type="number" name="puan" class="form-control" min="1" 
-                                   value="{{ soru.puan if soru else 10 }}">
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Puan</label>
+                            <input type="number" name="puan" min="1" value="{{ soru.puan if soru else 10 }}"
+                                   class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
                         </div>
                     </div>
                     
                     <!-- Kategori ve Eğitim Tipi -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label">Eğitim Tipi</label>
-                            <select name="egitim_tipi_id" class="form-select">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Eğitim Tipi</label>
+                            <select name="egitim_tipi_id" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
                                 <option value="">Genel</option>
                                 {% for tip in egitim_tipleri %}
                                 <option value="{{ tip.id }}" {{ 'selected' if soru and soru.egitim_tipi_id == tip.id }}>{{ tip.ad }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Kategori</label>
-                            <select name="kategori_id" class="form-select">
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Kategori</label>
+                            <select name="kategori_id" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
                                 <option value="">Kategorisiz</option>
                                 {% for kat in kategoriler %}
                                 <option value="{{ kat.id }}" {{ 'selected' if soru and soru.kategori_id == kat.id }}>{{ kat.ad }}</option>
@@ -66,107 +66,108 @@
                     </div>
                     
                     <!-- Seçenekler -->
-                    <div class="mb-4">
-                        <label class="form-label d-flex justify-content-between align-items-center">
-                            <span>Seçenekler *</span>
-                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addSecenek()" id="addSecenekBtn">
-                                <i class="bi bi-plus-lg me-1"></i> Seçenek Ekle
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-3">
+                            <label class="text-sm font-medium text-[#111418] dark:text-white">Seçenekler *</label>
+                            <button type="button" id="addSecenekBtn" onclick="addSecenek()" class="px-3 py-1.5 border border-primary text-primary hover:bg-primary/10 font-medium text-xs rounded-lg transition-colors flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">add</span>Seçenek Ekle
                             </button>
-                        </label>
+                        </div>
                         
-                        <div id="seceneklerContainer">
+                        <div id="seceneklerContainer" class="space-y-2">
                             {% if soru %}
                                 {% for secenek in soru.secenekler %}
-                                <div class="input-group mb-2 secenek-row">
-                                    <div class="input-group-text">
+                                <div class="flex items-center gap-2 secenek-row">
+                                    <div class="flex items-center justify-center w-10 h-10 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg">
                                         <input type="{{ 'checkbox' if soru.soru_tipi == 'coklu_secim' else 'radio' }}" 
                                                name="dogru_secenek" value="{{ loop.index0 }}"
-                                               class="form-check-input mt-0 dogru-check"
-                                               {{ 'checked' if secenek.dogru }}>
+                                               class="w-4 h-4 text-primary dogru-check" {{ 'checked' if secenek.dogru }}>
                                     </div>
-                                    <input type="text" name="secenek_metni" class="form-control" 
-                                           value="{{ secenek.secenek_metni }}" placeholder="Seçenek metni">
-                                    <button type="button" class="btn btn-outline-danger" onclick="removeSecenek(this)">
-                                        <i class="bi bi-x"></i>
+                                    <input type="text" name="secenek_metni" value="{{ secenek.secenek_metni }}" placeholder="Seçenek metni"
+                                           class="flex-1 p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                    <button type="button" onclick="removeSecenek(this)" class="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-lg">
+                                        <span class="material-symbols-outlined">close</span>
                                     </button>
                                 </div>
                                 {% endfor %}
                             {% else %}
-                                <!-- Default 4 seçenek -->
-                                <div class="input-group mb-2 secenek-row">
-                                    <div class="input-group-text">
-                                        <input type="radio" name="dogru_secenek" value="0" class="form-check-input mt-0 dogru-check">
+                                <div class="flex items-center gap-2 secenek-row">
+                                    <div class="flex items-center justify-center w-10 h-10 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg">
+                                        <input type="radio" name="dogru_secenek" value="0" class="w-4 h-4 text-primary dogru-check">
                                     </div>
-                                    <input type="text" name="secenek_metni" class="form-control" placeholder="A şıkkı">
-                                    <button type="button" class="btn btn-outline-danger" onclick="removeSecenek(this)"><i class="bi bi-x"></i></button>
+                                    <input type="text" name="secenek_metni" placeholder="A şıkkı" class="flex-1 p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                    <button type="button" onclick="removeSecenek(this)" class="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-lg"><span class="material-symbols-outlined">close</span></button>
                                 </div>
-                                <div class="input-group mb-2 secenek-row">
-                                    <div class="input-group-text">
-                                        <input type="radio" name="dogru_secenek" value="1" class="form-check-input mt-0 dogru-check">
+                                <div class="flex items-center gap-2 secenek-row">
+                                    <div class="flex items-center justify-center w-10 h-10 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg">
+                                        <input type="radio" name="dogru_secenek" value="1" class="w-4 h-4 text-primary dogru-check">
                                     </div>
-                                    <input type="text" name="secenek_metni" class="form-control" placeholder="B şıkkı">
-                                    <button type="button" class="btn btn-outline-danger" onclick="removeSecenek(this)"><i class="bi bi-x"></i></button>
+                                    <input type="text" name="secenek_metni" placeholder="B şıkkı" class="flex-1 p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                    <button type="button" onclick="removeSecenek(this)" class="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-lg"><span class="material-symbols-outlined">close</span></button>
                                 </div>
-                                <div class="input-group mb-2 secenek-row">
-                                    <div class="input-group-text">
-                                        <input type="radio" name="dogru_secenek" value="2" class="form-check-input mt-0 dogru-check">
+                                <div class="flex items-center gap-2 secenek-row">
+                                    <div class="flex items-center justify-center w-10 h-10 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg">
+                                        <input type="radio" name="dogru_secenek" value="2" class="w-4 h-4 text-primary dogru-check">
                                     </div>
-                                    <input type="text" name="secenek_metni" class="form-control" placeholder="C şıkkı">
-                                    <button type="button" class="btn btn-outline-danger" onclick="removeSecenek(this)"><i class="bi bi-x"></i></button>
+                                    <input type="text" name="secenek_metni" placeholder="C şıkkı" class="flex-1 p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                    <button type="button" onclick="removeSecenek(this)" class="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-lg"><span class="material-symbols-outlined">close</span></button>
                                 </div>
-                                <div class="input-group mb-2 secenek-row">
-                                    <div class="input-group-text">
-                                        <input type="radio" name="dogru_secenek" value="3" class="form-check-input mt-0 dogru-check">
+                                <div class="flex items-center gap-2 secenek-row">
+                                    <div class="flex items-center justify-center w-10 h-10 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg">
+                                        <input type="radio" name="dogru_secenek" value="3" class="w-4 h-4 text-primary dogru-check">
                                     </div>
-                                    <input type="text" name="secenek_metni" class="form-control" placeholder="D şıkkı">
-                                    <button type="button" class="btn btn-outline-danger" onclick="removeSecenek(this)"><i class="bi bi-x"></i></button>
+                                    <input type="text" name="secenek_metni" placeholder="D şıkkı" class="flex-1 p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                    <button type="button" onclick="removeSecenek(this)" class="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-lg"><span class="material-symbols-outlined">close</span></button>
                                 </div>
                             {% endif %}
                         </div>
-                        <small class="text-muted">
-                            <i class="bi bi-info-circle me-1"></i>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-2 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">info</span>
                             Doğru cevabı işaretlemek için sol taraftaki radio/checkbox'ı seçin
-                        </small>
+                        </p>
                     </div>
                     
                     <!-- Açıklama -->
-                    <div class="mb-4">
-                        <label class="form-label">Cevap Açıklaması <small class="text-muted">(opsiyonel)</small></label>
-                        <textarea name="aciklama" class="form-control" rows="2"
-                                  placeholder="Doğru cevabın açıklaması (test sonunda gösterilir)">{{ soru.aciklama if soru else '' }}</textarea>
+                    <div class="mb-6">
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">
+                            Cevap Açıklaması <span class="text-text-muted dark:text-text-muted-dark font-normal">(opsiyonel)</span>
+                        </label>
+                        <textarea name="aciklama" rows="2" placeholder="Doğru cevabın açıklaması (test sonunda gösterilir)"
+                                  class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">{{ soru.aciklama if soru else '' }}</textarea>
                     </div>
                     
-                    <div class="mt-4">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-1"></i> {{ 'Güncelle' if soru else 'Kaydet' }}
+                    <div class="flex gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+                        <button type="submit" class="px-6 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors flex items-center gap-2">
+                            <span class="material-symbols-outlined">check</span>
+                            {{ 'Güncelle' if soru else 'Kaydet' }}
                         </button>
-                        <a href="{{ url_for('egitim.soru_liste') }}" class="btn btn-secondary">İptal</a>
+                        <a href="{{ url_for('egitim.soru_liste') }}" class="px-6 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-[#111418] dark:text-white font-medium rounded-lg transition-colors">
+                            İptal
+                        </a>
                     </div>
                 </form>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
-            </div>
-            <div class="card-body">
-                <h6>Soru Tipleri:</h6>
-                <ul class="small text-muted mb-3">
-                    <li><strong>Çoktan Seçmeli:</strong> Tek doğru cevap</li>
-                    <li><strong>Doğru/Yanlış:</strong> İki seçenekli</li>
-                    <li><strong>Çoklu Seçim:</strong> Birden fazla doğru</li>
-                </ul>
-                
-                <h6>Zorluk Seviyeleri:</h6>
-                <ul class="small text-muted mb-0">
-                    <li><span class="badge bg-success">Kolay</span> Temel bilgi</li>
-                    <li><span class="badge bg-warning">Orta</span> Anlama gerektiren</li>
-                    <li><span class="badge bg-danger">Zor</span> Uygulama/analiz</li>
-                </ul>
-            </div>
+    <div>
+        <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-5">
+            <h6 class="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-2 mb-4">
+                <span class="material-symbols-outlined">info</span>
+                Bilgi
+            </h6>
+            <h6 class="font-medium text-blue-900 dark:text-blue-200 mb-2">Soru Tipleri:</h6>
+            <ul class="text-sm text-blue-800 dark:text-blue-300/80 space-y-1 mb-4">
+                <li><strong>Çoktan Seçmeli:</strong> Tek doğru cevap</li>
+                <li><strong>Doğru/Yanlış:</strong> İki seçenekli</li>
+                <li><strong>Çoklu Seçim:</strong> Birden fazla doğru</li>
+            </ul>
+            <h6 class="font-medium text-blue-900 dark:text-blue-200 mb-2">Zorluk Seviyeleri:</h6>
+            <ul class="text-sm text-blue-800 dark:text-blue-300/80 space-y-1">
+                <li><span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 text-xs rounded-full">Kolay</span> Temel bilgi</li>
+                <li><span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">Orta</span> Anlama gerektiren</li>
+                <li><span class="px-2 py-0.5 bg-rose-100 text-rose-700 text-xs rounded-full">Zor</span> Uygulama/analiz</li>
+            </ul>
         </div>
     </div>
 </div>
@@ -181,31 +182,26 @@ function updateSecenekler() {
     const container = document.getElementById('seceneklerContainer');
     
     if (tip === 'dogru_yanlis') {
-        // Doğru/Yanlış için sadece 2 seçenek
         container.innerHTML = `
-            <div class="input-group mb-2 secenek-row">
-                <div class="input-group-text">
-                    <input type="radio" name="dogru_secenek" value="0" class="form-check-input mt-0 dogru-check">
+            <div class="flex items-center gap-2 secenek-row">
+                <div class="flex items-center justify-center w-10 h-10 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg">
+                    <input type="radio" name="dogru_secenek" value="0" class="w-4 h-4 text-primary dogru-check">
                 </div>
-                <input type="text" name="secenek_metni" class="form-control" value="Doğru" readonly>
+                <input type="text" name="secenek_metni" value="Doğru" readonly class="flex-1 p-2.5 bg-gray-100 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-lg text-sm">
             </div>
-            <div class="input-group mb-2 secenek-row">
-                <div class="input-group-text">
-                    <input type="radio" name="dogru_secenek" value="1" class="form-check-input mt-0 dogru-check">
+            <div class="flex items-center gap-2 secenek-row">
+                <div class="flex items-center justify-center w-10 h-10 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg">
+                    <input type="radio" name="dogru_secenek" value="1" class="w-4 h-4 text-primary dogru-check">
                 </div>
-                <input type="text" name="secenek_metni" class="form-control" value="Yanlış" readonly>
+                <input type="text" name="secenek_metni" value="Yanlış" readonly class="flex-1 p-2.5 bg-gray-100 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-lg text-sm">
             </div>
         `;
         document.getElementById('addSecenekBtn').style.display = 'none';
         secenekIndex = 2;
     } else {
-        document.getElementById('addSecenekBtn').style.display = 'inline-block';
-        
-        // Input tipini güncelle
+        document.getElementById('addSecenekBtn').style.display = 'flex';
         const inputType = tip === 'coklu_secim' ? 'checkbox' : 'radio';
-        document.querySelectorAll('.dogru-check').forEach(el => {
-            el.type = inputType;
-        });
+        document.querySelectorAll('.dogru-check').forEach(el => el.type = inputType);
     }
 }
 
@@ -215,12 +211,12 @@ function addSecenek() {
     const inputType = tip === 'coklu_secim' ? 'checkbox' : 'radio';
     
     const html = `
-        <div class="input-group mb-2 secenek-row">
-            <div class="input-group-text">
-                <input type="${inputType}" name="dogru_secenek" value="${secenekIndex}" class="form-check-input mt-0 dogru-check">
+        <div class="flex items-center gap-2 secenek-row">
+            <div class="flex items-center justify-center w-10 h-10 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg">
+                <input type="${inputType}" name="dogru_secenek" value="${secenekIndex}" class="w-4 h-4 text-primary dogru-check">
             </div>
-            <input type="text" name="secenek_metni" class="form-control" placeholder="Yeni seçenek">
-            <button type="button" class="btn btn-outline-danger" onclick="removeSecenek(this)"><i class="bi bi-x"></i></button>
+            <input type="text" name="secenek_metni" placeholder="Yeni seçenek" class="flex-1 p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+            <button type="button" onclick="removeSecenek(this)" class="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-lg"><span class="material-symbols-outlined">close</span></button>
         </div>
     `;
     container.insertAdjacentHTML('beforeend', html);
@@ -229,10 +225,7 @@ function addSecenek() {
 
 function removeSecenek(btn) {
     const rows = document.querySelectorAll('.secenek-row');
-    if (rows.length <= 2) {
-        alert('En az 2 seçenek olmalı!');
-        return;
-    }
+    if (rows.length <= 2) { alert('En az 2 seçenek olmalı!'); return; }
     btn.closest('.secenek-row').remove();
     reindexSecenekler();
 }
@@ -244,9 +237,6 @@ function reindexSecenekler() {
     secenekIndex = document.querySelectorAll('.secenek-row').length;
 }
 
-// Sayfa yüklendiğinde
-document.addEventListener('DOMContentLoaded', function() {
-    updateSecenekler();
-});
+document.addEventListener('DOMContentLoaded', updateSecenekler);
 </script>
 {% endblock %}

@@ -4,38 +4,40 @@
 {% block page_title %}{{ musteri.display_name }}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-4">
         <!-- Temel Bilgiler -->
-        <div class="card mb-4">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-building me-2"></i>Müşteri Bilgileri</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">business</span>Müşteri Bilgileri
+                </h6>
                 {% if musteri.aktif %}
-                <span class="badge bg-success">Aktif</span>
+                <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
                 {% else %}
-                <span class="badge bg-secondary">Pasif</span>
+                <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-text-muted dark:text-text-muted-dark">Pasif</span>
                 {% endif %}
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Şirket Adı</label>
-                        <div class="fw-bold">{{ musteri.ad }}</div>
+            <div class="p-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Şirket Adı</label>
+                        <div class="font-semibold text-[#111418] dark:text-white">{{ musteri.ad }}</div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="text-muted small">Kısa Ad</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Kısa Ad</label>
                         <div>{{ musteri.kisa_ad or '-' }}</div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="text-muted small">Aktif Proje</label>
-                        <div><span class="badge bg-primary">{{ musteri.aktif_proje_sayisi }}</span></div>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Aktif Proje</label>
+                        <div><span class="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{{ musteri.aktif_proje_sayisi }}</span></div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Vergi No</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Vergi No</label>
                         <div>{{ musteri.vergi_no or '-' }}</div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Vergi Dairesi</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Vergi Dairesi</label>
                         <div>{{ musteri.vergi_dairesi or '-' }}</div>
                     </div>
                 </div>
@@ -43,40 +45,42 @@
         </div>
         
         <!-- İletişim -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-telephone me-2"></i>İletişim</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">call</span>İletişim
+                </h6>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-12 mb-3">
-                        <label class="text-muted small">Adres</label>
+            <div class="p-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="md:col-span-3">
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Adres</label>
                         <div>{{ musteri.adres or '-' }}</div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">İl / İlçe</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">İl / İlçe</label>
                         <div>{{ musteri.il or '-' }}{% if musteri.ilce %} / {{ musteri.ilce }}{% endif %}</div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Telefon</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Telefon</label>
                         <div>
                             {% if musteri.telefon %}
-                            <a href="tel:{{ musteri.telefon }}">{{ musteri.telefon }}</a>
+                            <a href="tel:{{ musteri.telefon }}" class="text-blue-600 hover:underline">{{ musteri.telefon }}</a>
                             {% else %}-{% endif %}
                         </div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Email</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Email</label>
                         <div>
                             {% if musteri.email %}
-                            <a href="mailto:{{ musteri.email }}">{{ musteri.email }}</a>
+                            <a href="mailto:{{ musteri.email }}" class="text-blue-600 hover:underline">{{ musteri.email }}</a>
                             {% else %}-{% endif %}
                         </div>
                     </div>
                     {% if musteri.web %}
-                    <div class="col-md-4">
-                        <label class="text-muted small">Web</label>
-                        <div><a href="{{ musteri.web }}" target="_blank">{{ musteri.web }}</a></div>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Web</label>
+                        <div><a href="{{ musteri.web }}" target="_blank" class="text-blue-600 hover:underline">{{ musteri.web }}</a></div>
                     </div>
                     {% endif %}
                 </div>
@@ -84,116 +88,115 @@
         </div>
         
         <!-- Projeler -->
-        <div class="card">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-folder me-2"></i>Projeler</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">folder</span>Projeler
+                </h6>
                 {% if has_permission('proje.create') %}
-                <a href="{{ url_for('proje.proje_ekle') }}?musteri_id={{ musteri.id }}" class="btn btn-success btn-sm">
-                    <i class="bi bi-plus-lg me-1"></i>Proje Ekle
+                <a href="{{ url_for('proje.proje_ekle') }}?musteri_id={{ musteri.id }}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                    <span class="material-symbols-outlined">add</span>Proje Ekle
                 </a>
                 {% endif %}
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Proje</th>
-                                <th>Kadro</th>
-                                <th>Doluluk</th>
-                                <th>Durum</th>
-                                <th width="80"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for p in projeler %}
-                            <tr>
-                                <td>
-                                    <a href="{{ url_for('proje.proje_detay', id=p.id) }}" class="text-decoration-none fw-bold">
-                                        {{ p.ad }}
-                                    </a>
-                                    {% if p.kod %}
-                                    <br><small class="text-muted">{{ p.kod }}</small>
-                                    {% endif %}
-                                </td>
-                                <td>{{ p.mevcut_calisan }} / {{ p.toplam_kadro }}</td>
-                                <td>
-                                    <div class="progress" style="height: 6px; width: 60px;">
-                                        <div class="progress-bar {% if p.doluluk_orani >= 80 %}bg-success{% elif p.doluluk_orani >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
-                                             style="width: {{ p.doluluk_orani }}%"></div>
-                                    </div>
-                                    <small>{{ p.doluluk_orani }}%</small>
-                                </td>
-                                <td>
-                                    {% if p.aktif %}
-                                    <span class="badge bg-success">Aktif</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">Pasif</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <a href="{{ url_for('proje.proje_detay', id=p.id) }}" class="btn btn-outline-primary btn-sm">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-4">
-                                    Henüz proje yok
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-[#111418]">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Proje</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Kadro</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Doluluk</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark w-20"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for p in projeler %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                            <td class="px-4 py-3">
+                                <a href="{{ url_for('proje.proje_detay', id=p.id) }}" class="font-semibold text-blue-600 hover:underline">
+                                    {{ p.ad }}
+                                </a>
+                                {% if p.kod %}
+                                <br><span class="text-xs text-text-muted dark:text-text-muted-dark">{{ p.kod }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">{{ p.mevcut_calisan }} / {{ p.toplam_kadro }}</td>
+                            <td class="px-4 py-3">
+                                <div class="w-16 bg-gray-200 rounded-full h-1.5 mb-1">
+                                    <div class="h-1.5 rounded-full {% if p.doluluk_orani >= 80 %}bg-green-500{% elif p.doluluk_orani >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ p.doluluk_orani }}%"></div>
+                                </div>
+                                <span class="text-xs">{{ p.doluluk_orani }}%</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if p.aktif %}
+                                <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
+                                {% else %}
+                                <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-text-muted dark:text-text-muted-dark">Pasif</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                <a href="{{ url_for('proje.proje_detay', id=p.id) }}" class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg">
+                                    <span class="material-symbols-outlined">visibility</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz proje yok</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-4">
+    <div class="space-y-4">
         <!-- Aksiyonlar -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Aksiyonlar</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">bolt</span>Aksiyonlar
+                </h6>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    {% if has_permission('proje.edit') %}
-                    <a href="{{ url_for('proje.musteri_duzenle', id=musteri.id) }}" class="btn btn-primary">
-                        <i class="bi bi-pencil me-1"></i>Düzenle
-                    </a>
-                    {% endif %}
-                    {% if has_permission('proje.create') %}
-                    <a href="{{ url_for('proje.proje_ekle') }}?musteri_id={{ musteri.id }}" class="btn btn-success">
-                        <i class="bi bi-folder-plus me-1"></i>Proje Ekle
-                    </a>
-                    {% endif %}
-                    <a href="{{ url_for('proje.musteri_liste') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Listeye Dön
-                    </a>
-                </div>
+            <div class="p-4 space-y-2">
+                {% if has_permission('proje.edit') %}
+                <a href="{{ url_for('proje.musteri_duzenle', id=musteri.id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                    <span class="material-symbols-outlined">edit</span>Düzenle
+                </a>
+                {% endif %}
+                {% if has_permission('proje.create') %}
+                <a href="{{ url_for('proje.proje_ekle') }}?musteri_id={{ musteri.id }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                    <span class="material-symbols-outlined">create_new_folder</span>Proje Ekle
+                </a>
+                {% endif %}
+                <a href="{{ url_for('proje.musteri_liste') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <span class="material-symbols-outlined">arrow_back</span>Listeye Dön
+                </a>
             </div>
         </div>
         
         <!-- Yetkili Kişi -->
         {% if musteri.yetkili_ad %}
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-person me-2"></i>Yetkili Kişi</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">person</span>Yetkili Kişi
+                </h6>
             </div>
-            <div class="card-body">
-                <div class="fw-bold mb-2">{{ musteri.yetkili_ad }}</div>
+            <div class="p-4">
+                <div class="font-semibold mb-2">{{ musteri.yetkili_ad }}</div>
                 {% if musteri.yetkili_telefon %}
-                <div class="mb-1">
-                    <i class="bi bi-telephone me-2"></i>
-                    <a href="tel:{{ musteri.yetkili_telefon }}">{{ musteri.yetkili_telefon }}</a>
+                <div class="mb-1 text-sm">
+                    <span class="material-symbols-outlined mr-2 text-gray-400 dark:text-text-muted dark:text-text-muted-dark">call</span>
+                    <a href="tel:{{ musteri.yetkili_telefon }}" class="text-blue-600 hover:underline">{{ musteri.yetkili_telefon }}</a>
                 </div>
                 {% endif %}
                 {% if musteri.yetkili_email %}
-                <div>
-                    <i class="bi bi-envelope me-2"></i>
-                    <a href="mailto:{{ musteri.yetkili_email }}">{{ musteri.yetkili_email }}</a>
+                <div class="text-sm">
+                    <span class="material-symbols-outlined mr-2 text-gray-400 dark:text-text-muted dark:text-text-muted-dark">mail</span>
+                    <a href="mailto:{{ musteri.yetkili_email }}" class="text-blue-600 hover:underline">{{ musteri.yetkili_email }}</a>
                 </div>
                 {% endif %}
             </div>
@@ -202,12 +205,14 @@
         
         <!-- Notlar -->
         {% if musteri.notlar %}
-        <div class="card">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-sticky me-2"></i>Notlar</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">sticky_note_2</span>Notlar
+                </h6>
             </div>
-            <div class="card-body">
-                <p class="mb-0">{{ musteri.notlar }}</p>
+            <div class="p-4">
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ musteri.notlar }}</p>
             </div>
         </div>
         {% endif %}

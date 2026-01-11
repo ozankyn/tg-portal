@@ -3,145 +3,189 @@
 {% block title %}Sözleşme Listesi - TG Portal{% endblock %}
 {% block page_title %}Sözleşme Listesi{% endblock %}
 
+{% macro badge_class(color) -%}
+  {%- if color == 'success' -%}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200
+  {%- elif color == 'danger' -%}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200
+  {%- elif color == 'warning' -%}bg-yellow-100 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-200
+  {%- elif color == 'info' -%}bg-sky-100 text-sky-900 dark:bg-sky-900/30 dark:text-sky-200
+  {%- elif color == 'primary' -%}bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-200
+  {%- else -%}bg-gray-100 text-gray-800 dark:bg-white/10 dark:text-gray-200
+  {%- endif -%}
+{%- endmacro %}
+
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <form method="GET" class="row g-2">
-                    <div class="col-auto">
-                        <input type="text" name="q" class="form-control form-control-sm" 
-                               placeholder="Ara..." value="{{ request.args.get('q', '') }}">
-                    </div>
-                    <div class="col-auto">
-                        <select name="durum" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="">Tüm Durumlar</option>
-                            <option value="aktif" {{ 'selected' if request.args.get('durum') == 'aktif' }}>Aktif</option>
-                            <option value="sona_erdi" {{ 'selected' if request.args.get('durum') == 'sona_erdi' }}>Sona Erdi</option>
-                            <option value="askida" {{ 'selected' if request.args.get('durum') == 'askida' }}>Askıda</option>
-                            <option value="iptal" {{ 'selected' if request.args.get('durum') == 'iptal' }}>İptal</option>
-                        </select>
-                    </div>
-                    <div class="col-auto">
-                        <select name="tip_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="">Tüm Tipler</option>
-                            {% for t in tipler %}
-                            <option value="{{ t.id }}" {{ 'selected' if request.args.get('tip_id')|int == t.id }}>{{ t.ad }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-auto">
-                        <select name="taraf_tipi" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="">Tüm Taraflar</option>
-                            <option value="musteri" {{ 'selected' if request.args.get('taraf_tipi') == 'musteri' }}>Müşteri</option>
-                            <option value="tedarikci" {{ 'selected' if request.args.get('taraf_tipi') == 'tedarikci' }}>Tedarikçi</option>
-                            <option value="diger" {{ 'selected' if request.args.get('taraf_tipi') == 'diger' }}>Diğer</option>
-                        </select>
-                    </div>
-                    <div class="col-auto">
-                        <button type="submit" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-search"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
-            <div class="col-md-4 text-end">
-                <a href="{{ url_for('sozlesme.ekle') }}" class="btn btn-primary btn-sm">
-                    <i class="bi bi-plus-lg me-1"></i>Yeni Sözleşme
-                </a>
-            </div>
+<div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-sm overflow-hidden">
+  <!-- Header -->
+  <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <form method="GET" class="flex flex-col sm:flex-row sm:items-center gap-2">
+        <div class="flex items-center gap-2">
+          <input
+            type="text"
+            name="q"
+            value="{{ request.args.get('q', '') }}"
+            placeholder="Ara..."
+            class="w-full sm:w-72 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm"
+          />
+          <button
+            type="submit"
+            class="inline-flex items-center justify-center rounded-lg border border-border-light dark:border-border-dark px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-[#252b36]"
+            title="Ara"
+          >
+            <span class="material-symbols-outlined">search</span>
+          </button>
         </div>
+
+        <div class="flex flex-col sm:flex-row gap-2">
+          <select name="durum" class="rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm" onchange="this.form.submit()">
+            <option value="">Tüm Durumlar</option>
+            <option value="aktif" {{ 'selected' if request.args.get('durum') == 'aktif' }}>Aktif</option>
+            <option value="sona_erdi" {{ 'selected' if request.args.get('durum') == 'sona_erdi' }}>Sona Erdi</option>
+            <option value="askida" {{ 'selected' if request.args.get('durum') == 'askida' }}>Askıda</option>
+            <option value="iptal" {{ 'selected' if request.args.get('durum') == 'iptal' }}>İptal</option>
+          </select>
+
+          <select name="tip_id" class="rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm" onchange="this.form.submit()">
+            <option value="">Tüm Tipler</option>
+            {% for t in tipler %}
+            <option value="{{ t.id }}" {{ 'selected' if request.args.get('tip_id')|int == t.id }}>{{ t.ad }}</option>
+            {% endfor %}
+          </select>
+
+          <select name="taraf_tipi" class="rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm" onchange="this.form.submit()">
+            <option value="">Tüm Taraflar</option>
+            <option value="musteri" {{ 'selected' if request.args.get('taraf_tipi') == 'musteri' }}>Müşteri</option>
+            <option value="tedarikci" {{ 'selected' if request.args.get('taraf_tipi') == 'tedarikci' }}>Tedarikçi</option>
+            <option value="diger" {{ 'selected' if request.args.get('taraf_tipi') == 'diger' }}>Diğer</option>
+          </select>
+        </div>
+      </form>
+
+      <div class="flex justify-end">
+        <a
+          href="{{ url_for('sozlesme.ekle') }}"
+          class="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark"
+        >
+          <span class="material-symbols-outlined">add</span>
+          Yeni Sözleşme
+        </a>
+      </div>
     </div>
-    
-    <div class="card-body p-0">
-        {% if sozlesmeler %}
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>No</th>
-                        <th>Sözleşme</th>
-                        <th>Tip</th>
-                        <th>Taraf</th>
-                        <th>Başlangıç</th>
-                        <th>Bitiş</th>
-                        <th>Kalan</th>
-                        <th>Tutar</th>
-                        <th>Durum</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for s in sozlesmeler %}
-                    <tr>
-                        <td><code>{{ s.sozlesme_no or s.id }}</code></td>
-                        <td>
-                            <a href="{{ url_for('sozlesme.detay', id=s.id) }}" class="text-decoration-none fw-semibold">
-                                {{ s.baslik|truncate(30) }}
-                            </a>
-                        </td>
-                        <td><span class="badge bg-secondary">{{ s.tip.ad if s.tip else '-' }}</span></td>
-                        <td>
-                            {{ s.taraf_adi|truncate(20) }}
-                            <small class="text-muted d-block">
-                                {% if s.musteri_id %}Müşteri{% elif s.tedarikci_id %}Tedarikçi{% else %}Diğer{% endif %}
-                            </small>
-                        </td>
-                        <td>{{ s.baslangic_tarihi.strftime('%d.%m.%Y') }}</td>
-                        <td>{{ s.bitis_tarihi.strftime('%d.%m.%Y') }}</td>
-                        <td>
-                            {% if s.durum == 'aktif' %}
-                            <span class="badge bg-{{ s.kalan_gun_renk }}">
-                                {% if s.kalan_gun < 0 %}
-                                {{ s.kalan_gun|abs }} gün geçti
-                                {% else %}
-                                {{ s.kalan_gun }} gün
-                                {% endif %}
-                            </span>
-                            {% else %}
-                            -
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if s.tutar %}
-                            {% if s.para_birimi == 'TRY' %}₺{% elif s.para_birimi == 'USD' %}${% elif s.para_birimi == 'EUR' %}€{% endif %}{{ "%.2f"|format(s.tutar) }}
-                            {% else %}-{% endif %}
-                        </td>
-                        <td><span class="badge bg-{{ s.durum_renk }}">{{ s.durum_text }}</span></td>
-                        <td>
-                            <a href="{{ url_for('sozlesme.detay', id=s.id) }}" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        {% if pagination.pages > 1 %}
-        <div class="card-footer">
-            <nav>
-                <ul class="pagination pagination-sm mb-0 justify-content-center">
-                    {% for p in pagination.iter_pages() %}
-                    {% if p %}
-                    <li class="page-item {{ 'active' if p == pagination.page }}">
-                        <a class="page-link" href="{{ url_for('sozlesme.liste', page=p, durum=request.args.get('durum'), tip_id=request.args.get('tip_id'), taraf_tipi=request.args.get('taraf_tipi'), q=request.args.get('q')) }}">{{ p }}</a>
-                    </li>
-                    {% else %}
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                    {% endif %}
-                    {% endfor %}
-                </ul>
-            </nav>
-        </div>
-        {% endif %}
+  </div>
+
+  <!-- Table -->
+  <div class="overflow-x-auto">
+    {% if sozlesmeler %}
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark">
+        <tr class="text-left">
+          <th class="px-6 py-3 font-semibold">No</th>
+          <th class="px-6 py-3 font-semibold">Sözleşme</th>
+          <th class="px-6 py-3 font-semibold">Tip</th>
+          <th class="px-6 py-3 font-semibold">Taraf</th>
+          <th class="px-6 py-3 font-semibold">Başlangıç</th>
+          <th class="px-6 py-3 font-semibold">Bitiş</th>
+          <th class="px-6 py-3 font-semibold">Kalan</th>
+          <th class="px-6 py-3 font-semibold">Tutar</th>
+          <th class="px-6 py-3 font-semibold">Durum</th>
+          <th class="px-6 py-3 font-semibold"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-border-light dark:divide-border-dark">
+        {% for s in sozlesmeler %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+          <td class="px-6 py-3">
+            {% if s.sozlesme_no %}<code class="text-xs">{{ s.sozlesme_no }}</code>{% else %}-{% endif %}
+          </td>
+
+          <td class="px-6 py-3">
+            <div class="font-semibold">{{ s.baslik }}</div>
+            <div class="text-xs text-text-muted dark:text-text-muted-dark">
+              {{ s.created_at.strftime('%d.%m.%Y') }}
+            </div>
+          </td>
+
+          <td class="px-6 py-3">
+            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs bg-gray-100 dark:bg-white/10">
+              {{ s.tip.ad if s.tip else '-' }}
+            </span>
+          </td>
+
+          <td class="px-6 py-3">
+            <div class="font-medium">{{ s.taraf_adi }}</div>
+            <div class="text-xs text-text-muted dark:text-text-muted-dark">
+              {% if s.musteri_id %}Müşteri{% elif s.tedarikci_id %}Tedarikçi{% else %}Diğer{% endif %}
+            </div>
+          </td>
+
+          <td class="px-6 py-3">{{ s.baslangic_tarihi.strftime('%d.%m.%Y') }}</td>
+          <td class="px-6 py-3">{{ s.bitis_tarihi.strftime('%d.%m.%Y') }}</td>
+
+          <td class="px-6 py-3">
+            {% if s.kalan_gun is not none %}
+            <span class="font-semibold">
+              {% if s.kalan_gun < 0 %}
+                {{ s.kalan_gun|abs }} gün geçti
+              {% else %}
+                {{ s.kalan_gun }} gün
+              {% endif %}
+            </span>
+            {% else %}-{% endif %}
+          </td>
+
+          <td class="px-6 py-3">
+            {% if s.tutar %}
+              {% if s.para_birimi == 'TRY' %}₺{% elif s.para_birimi == 'USD' %}${% elif s.para_birimi == 'EUR' %}€{% endif %}{{ "%.2f"|format(s.tutar) }}
+            {% else %}-{% endif %}
+          </td>
+
+          <td class="px-6 py-3">
+            <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs {{ badge_class(s.durum_renk) }}">
+              {{ s.durum_text }}
+            </span>
+          </td>
+
+          <td class="px-6 py-3 text-right">
+            <a
+              href="{{ url_for('sozlesme.detay', id=s.id) }}"
+              class="inline-flex items-center justify-center rounded-lg border border-border-light dark:border-border-dark px-3 py-2 hover:bg-gray-50 dark:hover:bg-[#252b36]"
+              title="Görüntüle"
+            >
+              <span class="material-symbols-outlined">visibility</span>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="p-10 text-center text-text-muted dark:text-text-muted-dark">
+      <div class="mx-auto mb-2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+        <span class="material-symbols-outlined">description</span>
+      </div>
+      <div class="font-medium">Sözleşme bulunamadı</div>
+      <div class="text-sm">Filtreleri değiştirip tekrar deneyebilirsin.</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Pagination -->
+  {% if pagination and pagination.pages > 1 %}
+  <div class="px-6 py-4 border-t border-border-light dark:border-border-dark">
+    <div class="flex flex-wrap items-center justify-center gap-2">
+      {% for p in pagination.iter_pages() %}
+        {% if p %}
+          <a
+            href="{{ url_for('sozlesme.liste', page=p, durum=request.args.get('durum'), tip_id=request.args.get('tip_id'), taraf_tipi=request.args.get('taraf_tipi'), q=request.args.get('q')) }}"
+            class="min-w-[40px] text-center rounded-lg px-3 py-2 text-sm border border-border-light dark:border-border-dark
+                   {% if p == pagination.page %}bg-primary text-white border-primary{% else %}hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}"
+          >{{ p }}</a>
         {% else %}
-        <div class="text-center text-muted py-5">
-            <i class="bi bi-file-earmark-text fs-1 d-block mb-2"></i>
-            Sözleşme bulunamadı
-        </div>
+          <span class="px-2 text-text-muted dark:text-text-muted-dark">…</span>
         {% endif %}
+      {% endfor %}
     </div>
+  </div>
+  {% endif %}
 </div>
 {% endblock %}

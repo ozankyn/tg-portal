@@ -4,36 +4,39 @@
 {% block page_title %}Sınava Başla{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header text-center">
-                <h5 class="mb-0">{{ test.baslik }}</h5>
+<div class="flex justify-center">
+    <div class="w-full max-w-lg">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-6 py-5 text-center border-b border-border-light dark:border-border-dark">
+                <h5 class="text-lg font-bold text-[#111418] dark:text-white">{{ test.baslik }}</h5>
             </div>
-            <div class="card-body">
+            <div class="p-6">
                 {% if test.aciklama %}
-                <p class="text-muted">{{ test.aciklama }}</p>
-                <hr>
+                <p class="text-text-muted dark:text-text-muted-dark text-sm mb-4">{{ test.aciklama }}</p>
+                <div class="border-t border-border-light dark:border-border-dark mb-6"></div>
                 {% endif %}
                 
-                <div class="row text-center mb-4">
-                    <div class="col-4">
-                        <div class="fs-2 fw-bold text-primary">{{ test.soru_sayisi }}</div>
-                        <div class="text-muted small">Soru</div>
+                <div class="grid grid-cols-3 text-center mb-6">
+                    <div>
+                        <div class="text-3xl font-bold text-primary">{{ test.soru_sayisi }}</div>
+                        <div class="text-text-muted dark:text-text-muted-dark text-xs">Soru</div>
                     </div>
-                    <div class="col-4">
-                        <div class="fs-2 fw-bold text-warning">{{ test.sure_dakika or '∞' }}</div>
-                        <div class="text-muted small">Dakika</div>
+                    <div>
+                        <div class="text-3xl font-bold text-amber-500">{{ test.sure_dakika or '∞' }}</div>
+                        <div class="text-text-muted dark:text-text-muted-dark text-xs">Dakika</div>
                     </div>
-                    <div class="col-4">
-                        <div class="fs-2 fw-bold text-success">%{{ test.gecme_puani }}</div>
-                        <div class="text-muted small">Geçme</div>
+                    <div>
+                        <div class="text-3xl font-bold text-emerald-500">%{{ test.gecme_puani }}</div>
+                        <div class="text-text-muted dark:text-text-muted-dark text-xs">Geçme</div>
                     </div>
                 </div>
                 
-                <div class="alert alert-info">
-                    <h6><i class="bi bi-info-circle me-2"></i>Sınav Kuralları</h6>
-                    <ul class="mb-0 small">
+                <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-4 mb-6">
+                    <h6 class="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-2 mb-3">
+                        <span class="material-symbols-outlined text-lg">info</span>
+                        Sınav Kuralları
+                    </h6>
+                    <ul class="text-sm text-blue-800 dark:text-blue-300/80 space-y-1 list-disc pl-5">
                         {% if test.sure_dakika %}
                         <li>Sınav süresi <strong>{{ test.sure_dakika }} dakika</strong>dır. Süre dolduğunda sınav otomatik biter.</li>
                         {% else %}
@@ -52,12 +55,13 @@
                 
                 <form method="POST" class="text-center">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-success btn-lg">
-                        <i class="bi bi-play-circle me-2"></i> Sınava Başla
+                    <button type="submit" class="px-8 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg rounded-xl transition-colors flex items-center gap-2 mx-auto">
+                        <span class="material-symbols-outlined">play_circle</span>
+                        Sınava Başla
                     </button>
                 </form>
                 
-                <p class="text-muted text-center small mt-3 mb-0">
+                <p class="text-text-muted dark:text-text-muted-dark text-center text-xs mt-4">
                     Başla butonuna tıkladığınızda süre başlayacaktır.
                 </p>
             </div>

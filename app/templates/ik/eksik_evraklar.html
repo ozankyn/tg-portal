@@ -4,70 +4,72 @@
 {% block page_title %}Eksik Evraklar{% endblock %}
 
 {% block content %}
-<div class="alert alert-warning mb-4">
-    <i class="bi bi-exclamation-triangle me-2"></i>
-    Aşağıdaki adaylarda zorunlu evraklar eksik. İşe alım için tüm zorunlu evrakların yüklenmesi ve onaylanması gerekir.
+<div class="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6 flex items-center gap-3">
+    <span class="material-symbols-outlined text-yellow-600 text-xl">warning</span>
+    <span class="text-yellow-800 dark:text-yellow-300">Aşağıdaki adaylarda zorunlu evraklar eksik. İşe alım için tüm zorunlu evrakların yüklenmesi ve onaylanması gerekir.</span>
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover">
-                <thead>
-                    <tr>
-                        <th>Aday</th>
-                        <th>Pozisyon</th>
-                        <th>Durum</th>
-                        <th>Evrak Durumu</th>
-                        <th>Eksik Evraklar</th>
-                        <th class="text-end">İşlem</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in adaylar %}
-                    <tr>
-                        <td>
-                            <a href="{{ url_for('ik.aday_detay', id=item.aday.id) }}" class="text-decoration-none fw-semibold">
-                                {{ item.aday.full_name }}
-                            </a>
-                            <div class="small text-muted">{{ item.aday.telefon }}</div>
-                        </td>
-                        <td>{{ item.aday.pozisyon.ad if item.aday.pozisyon else '-' }}</td>
-                        <td><span class="badge bg-{{ item.aday.durum_renk }}">{{ item.aday.basvuru_durumu_text }}</span></td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="progress progress-sm flex-grow-1 me-2" style="width: 80px; height: 8px;">
-                                    <div class="progress-bar bg-{{ 'success' if item.oran == 100 else 'warning' }}" 
-                                         style="width: {{ item.oran }}%"></div>
-                                </div>
-                                <small class="text-muted">%{{ item.oran }}</small>
+<div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-[#252b36] text-xs text-text-muted dark:text-text-muted-dark uppercase">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium">Aday</th>
+                    <th class="px-4 py-3 text-left font-medium">Pozisyon</th>
+                    <th class="px-4 py-3 text-left font-medium">Durum</th>
+                    <th class="px-4 py-3 text-left font-medium">Evrak Durumu</th>
+                    <th class="px-4 py-3 text-left font-medium">Eksik Evraklar</th>
+                    <th class="px-4 py-3 text-right font-medium">İşlem</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for item in adaylar %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('ik.aday_detay', id=item.aday.id) }}" class="font-semibold text-blue-600 hover:text-blue-700">
+                            {{ item.aday.full_name }}
+                        </a>
+                        <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ item.aday.telefon }}</p>
+                    </td>
+                    <td class="px-4 py-3 text-sm">{{ item.aday.pozisyon.ad if item.aday.pozisyon else '-' }}</td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-{{ item.aday.durum_renk }}-100 text-{{ item.aday.durum_renk }}-700 dark:bg-{{ item.aday.durum_renk }}-900/30 dark:text-{{ item.aday.durum_renk }}-400">
+                            {{ item.aday.basvuru_durumu_text }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2 w-20">
+                                <div class="h-2 rounded-full {% if item.oran == 100 %}bg-green-500{% else %}bg-yellow-500{% endif %}" style="width: {{ item.oran }}%"></div>
                             </div>
-                        </td>
-                        <td>
-                            {% for evrak in item.eksik[:3] %}
-                            <span class="badge bg-light text-dark me-1">{{ evrak.ad }}</span>
-                            {% endfor %}
-                            {% if item.eksik|length > 3 %}
-                            <span class="badge bg-secondary">+{{ item.eksik|length - 3 }}</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-end">
-                            <a href="{{ url_for('ik.aday_detay', id=item.aday.id) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-folder-plus"></i> Evrak Yükle
-                            </a>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
-                            <i class="bi bi-check-circle fs-1 text-success d-block mb-2"></i>
-                            Tüm adaylarda evraklar tam!
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                            <span class="text-xs text-text-muted dark:text-text-muted-dark">%{{ item.oran }}</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">
+                        {% for evrak in item.eksik[:3] %}
+                        <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 mr-1">{{ evrak.ad }}</span>
+                        {% endfor %}
+                        {% if item.eksik|length > 3 %}
+                        <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-200 text-text-muted dark:text-text-muted-dark">+{{ item.eksik|length - 3 }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <a href="{{ url_for('ik.aday_detay', id=item.aday.id) }}" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                            <span class="material-symbols-outlined text-sm">folder_open</span>
+                            Evrak Yükle
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-4 py-12 text-center text-text-muted dark:text-text-muted-dark">
+                        <span class="material-symbols-outlined text-4xl text-green-500 mb-2 block">check_circle</span>
+                        Tüm adaylarda evraklar tam!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

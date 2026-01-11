@@ -4,53 +4,69 @@
 {% block page_title %}Yetki Devri Oluştur{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-body">
-                <form method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Yetki Devredilecek Kişi *</label>
-                        <select name="devralan_id" class="form-select" required>
-                            <option value="">Seçin...</option>
-                            {% for kullanici in kullanicilar %}
-                            <option value="{{ kullanici.id }}">{{ kullanici.username }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Başlangıç Tarihi *</label>
-                            <input type="date" name="baslangic_tarihi" class="form-control" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Bitiş Tarihi *</label>
-                            <input type="date" name="bitis_tarihi" class="form-control" required>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Neden (opsiyonel)</label>
-                        <input type="text" name="neden" class="form-control" placeholder="Örn: Yıllık izin, iş seyahati">
-                    </div>
-                    
-                    <div class="alert alert-info small">
-                        <i class="bi bi-info-circle me-2"></i>
-                        Belirtilen tarihler arasında size gelen tüm onay talepleri, seçtiğiniz kişiye yönlendirilecektir.
-                    </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-1"></i> Oluştur
-                        </button>
-                        <a href="{{ url_for('onay.yetki_devri_liste') }}" class="btn btn-secondary">İptal</a>
-                    </div>
-                </form>
-            </div>
-        </div>
+<div class="max-w-2xl mx-auto">
+  <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+      <h3 class="font-bold text-[#111418] dark:text-white">Yetki Devri Oluştur</h3>
     </div>
+
+    <div class="p-5">
+      <form method="POST" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Yetki Devredilecek Kişi *</label>
+          <select name="devralan_id" required
+                  class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+            <option value="">Seçin...</option>
+            {% for kullanici in kullanicilar %}
+            <option value="{{ kullanici.id }}">{{ kullanici.username }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Başlangıç Tarihi *</label>
+            <input type="date" name="baslangic_tarihi" required
+                   class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Bitiş Tarihi *</label>
+            <input type="date" name="bitis_tarihi" required
+                   class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Neden (opsiyonel)</label>
+          <input type="text" name="neden" placeholder="Örn: Yıllık izin, iş seyahati"
+                 class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+        </div>
+
+        <div class="rounded-xl border border-sky-200 dark:border-sky-900/40 bg-sky-50 dark:bg-sky-900/10 p-4 text-sm text-sky-800 dark:text-sky-200">
+          <div class="flex items-start gap-2">
+            <span class="material-symbols-outlined text-[20px]">info</span>
+            <p>Belirtilen tarihler arasında size gelen tüm onay talepleri, seçtiğiniz kişiye yönlendirilecektir.</p>
+          </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-3">
+          <button type="submit"
+                  class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 font-semibold text-white hover:bg-primary-dark transition">
+            <span class="material-symbols-outlined text-[18px]">check</span>
+            Oluştur
+          </button>
+
+          <a href="{{ url_for('onay.yetki_devri_liste') }}"
+             class="inline-flex items-center justify-center gap-2 rounded-xl border border-border-light dark:border-border-dark px-4 py-2.5 font-semibold
+                    hover:bg-gray-50 dark:hover:bg-[#252b36] transition">
+            İptal
+          </a>
+        </div>
+
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}

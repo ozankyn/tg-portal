@@ -4,47 +4,66 @@
 {% block page_title %}Aday Davet Et{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-person-plus me-2"></i>Yeni Aday Davet Et</h6>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div class="lg:col-span-8 space-y-6">
+        <!-- Tekli Davet -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">person_add</span>
+                    Yeni Aday Davet Et
+                </h6>
             </div>
-            <div class="card-body">
+            <div class="p-6">
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Ad <span class="text-danger">*</span></label>
-                            <input type="text" name="ad" class="form-control" required>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                                Ad <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="ad" required
+                                   class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Soyad <span class="text-danger">*</span></label>
-                            <input type="text" name="soyad" class="form-control" required>
+                        <div>
+                            <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                                Soyad <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="soyad" required
+                                   class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary">
                         </div>
-                        <div class="col-md-8">
-                            <label class="form-label">Telefon veya E-posta <span class="text-danger">*</span></label>
-                            <input type="text" name="iletisim" class="form-control" required
-                                   placeholder="05XX XXX XX XX veya email@example.com">
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="md:col-span-2">
+                            <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                                Telefon veya E-posta <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="iletisim" required
+                                   placeholder="05XX XXX XX XX veya email@example.com"
+                                   class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Davet Türü</label>
-                            <select name="davet_tipi" class="form-select">
+                        <div>
+                            <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                                Davet Türü
+                            </label>
+                            <select name="davet_tipi" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary">
                                 <option value="sms">SMS</option>
                                 <option value="email">E-posta</option>
                             </select>
                         </div>
                     </div>
                     
-                    <hr class="my-4">
-                    
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ url_for('proje.kadro_detay', id=kadro.id) }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>İptal
+                    <div class="flex justify-between items-center pt-4 border-t border-border-light dark:border-border-dark">
+                        <a href="{{ url_for('proje.kadro_detay', id=kadro.id) }}" 
+                           class="px-4 py-2 text-sm font-medium text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-colors">
+                            <span class="material-symbols-outlined text-base align-middle mr-1">arrow_back</span>
+                            İptal
                         </a>
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-send me-1"></i>Davet Gönder
+                        <button type="submit" class="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm rounded-lg transition-colors flex items-center gap-2">
+                            <span class="material-symbols-outlined text-lg">send</span>
+                            Davet Gönder
                         </button>
                     </div>
                 </form>
@@ -52,105 +71,112 @@
         </div>
         
         <!-- Toplu Davet -->
-        <div class="card mt-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-people me-2"></i>Toplu Aday Davet</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">groups</span>
+                    Toplu Aday Davet
+                </h6>
             </div>
-            <div class="card-body">
+            <div class="p-6">
                 <form method="POST" action="{{ url_for('basvuru.toplu_davet', kadro_id=kadro.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
-                    <div class="mb-3">
-                        <label class="form-label">Kişi Listesi</label>
-                        <textarea name="kisi_listesi" class="form-control" rows="6" 
+                    <div class="mb-4">
+                        <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                            Kişi Listesi
+                        </label>
+                        <textarea name="kisi_listesi" rows="6"
                                   placeholder="Her satıra bir kişi: Ad, Soyad, Telefon/Email
 Örnek:
 Ahmet, Yılmaz, 05321234567
 Mehmet, Demir, mehmet@email.com
-Ayşe, Kaya, 05339876543"></textarea>
-                        <small class="text-muted">Her satıra: Ad, Soyad, Telefon/Email (virgülle ayırarak)</small>
+Ayşe, Kaya, 05339876543"
+                                  class="w-full p-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary font-mono"></textarea>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Her satıra: Ad, Soyad, Telefon/Email (virgülle ayırarak)</p>
                     </div>
                     
-                    <div class="row">
-                        <div class="col-md-4">
-                            <label class="form-label">Davet Türü</label>
-                            <select name="davet_tipi" class="form-select">
+                    <div class="flex flex-wrap items-end gap-4">
+                        <div class="w-40">
+                            <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                                Davet Türü
+                            </label>
+                            <select name="davet_tipi" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary">
                                 <option value="sms">SMS</option>
                                 <option value="email">E-posta</option>
                             </select>
                         </div>
-                        <div class="col-md-8 d-flex align-items-end">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-send me-1"></i>Toplu Davet Gönder
-                            </button>
-                        </div>
+                        <button type="submit" class="px-5 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold text-sm rounded-lg transition-colors flex items-center gap-2">
+                            <span class="material-symbols-outlined text-lg">send</span>
+                            Toplu Davet Gönder
+                        </button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-4">
+    <div class="lg:col-span-4 space-y-6">
         <!-- Kadro Bilgisi -->
-        <div class="card">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-briefcase me-2"></i>Kadro Bilgisi</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">work</span>
+                    Kadro Bilgisi
+                </h6>
             </div>
-            <div class="card-body">
-                <table class="table table-sm">
-                    <tr>
-                        <td class="text-muted">Pozisyon</td>
-                        <td class="text-end"><strong>{{ kadro.pozisyon_adi }}</strong></td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Proje</td>
-                        <td class="text-end">{{ kadro.proje.ad }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Müşteri</td>
-                        <td class="text-end">{{ kadro.proje.musteri.display_name }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Lokasyon</td>
-                        <td class="text-end">{{ kadro.il or '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Hedef / Mevcut</td>
-                        <td class="text-end">
-                            <span class="badge bg-primary">{{ kadro.mevcut_sayi }} / {{ kadro.hedef_sayi }}</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Eksik</td>
-                        <td class="text-end">
-                            <span class="badge bg-danger">{{ kadro.eksik_sayi }}</span>
-                        </td>
-                    </tr>
+            <div class="p-4">
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+                        <span class="text-text-muted dark:text-text-muted-dark">Pozisyon</span>
+                        <strong class="text-[#111418] dark:text-white">{{ kadro.pozisyon_adi }}</strong>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+                        <span class="text-text-muted dark:text-text-muted-dark">Proje</span>
+                        <span class="text-[#111418] dark:text-white">{{ kadro.proje.ad }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+                        <span class="text-text-muted dark:text-text-muted-dark">Müşteri</span>
+                        <span class="text-[#111418] dark:text-white">{{ kadro.proje.musteri.display_name }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+                        <span class="text-text-muted dark:text-text-muted-dark">Lokasyon</span>
+                        <span class="text-[#111418] dark:text-white">{{ kadro.il or '-' }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+                        <span class="text-text-muted dark:text-text-muted-dark">Hedef / Mevcut</span>
+                        <span class="px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-bold">{{ kadro.mevcut_sayi }} / {{ kadro.hedef_sayi }}</span>
+                    </div>
+                    <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+                        <span class="text-text-muted dark:text-text-muted-dark">Eksik</span>
+                        <span class="px-2.5 py-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded-full text-xs font-bold">{{ kadro.eksik_sayi }}</span>
+                    </div>
                     {% if kadro.maas_min or kadro.maas_max %}
-                    <tr>
-                        <td class="text-muted">Maaş Aralığı</td>
-                        <td class="text-end">
+                    <div class="flex justify-between py-2">
+                        <span class="text-text-muted dark:text-text-muted-dark">Maaş Aralığı</span>
+                        <span class="text-[#111418] dark:text-white">
                             ₺{{ '{:,.0f}'.format(kadro.maas_min) if kadro.maas_min else '?' }} - 
                             ₺{{ '{:,.0f}'.format(kadro.maas_max) if kadro.maas_max else '?' }}
-                        </td>
-                    </tr>
+                        </span>
+                    </div>
                     {% endif %}
-                </table>
+                </div>
             </div>
         </div>
         
         <!-- Bilgi -->
-        <div class="card mt-4">
-            <div class="card-body">
-                <h6><i class="bi bi-info-circle me-2"></i>Nasıl Çalışır?</h6>
-                <ol class="small mb-0">
-                    <li>Aday bilgilerini girin</li>
-                    <li>SMS veya E-posta ile davet linki gönderilir</li>
-                    <li>Aday KVKK metnini onaylar</li>
-                    <li>Aday başvuru formunu doldurur</li>
-                    <li>Başvuru sisteme kaydedilir</li>
-                </ol>
-            </div>
+        <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-5">
+            <h6 class="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-2 mb-3">
+                <span class="material-symbols-outlined">info</span>
+                Nasıl Çalışır?
+            </h6>
+            <ol class="text-sm text-blue-800 dark:text-blue-300/80 space-y-1 list-decimal pl-5">
+                <li>Aday bilgilerini girin</li>
+                <li>SMS veya E-posta ile davet linki gönderilir</li>
+                <li>Aday KVKK metnini onaylar</li>
+                <li>Aday başvuru formunu doldurur</li>
+                <li>Başvuru sisteme kaydedilir</li>
+            </ol>
         </div>
     </div>
 </div>

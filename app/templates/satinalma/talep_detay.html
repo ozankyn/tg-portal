@@ -4,68 +4,63 @@
 {% block page_title %}Talep Detayı{% endblock %}
 
 {% block content %}
-<div class="row g-4">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Sol: Talep Bilgileri -->
-    <div class="col-lg-8">
+    <div class="lg:col-span-2 space-y-4">
         <!-- Başlık -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
                 <div>
-                    <code class="fs-6">{{ talep.talep_no }}</code>
-                    <h5 class="mb-0 mt-1">{{ talep.baslik }}</h5>
+                    <code class="text-sm bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{{ talep.talep_no }}</code>
+                    <h5 class="text-lg font-semibold mt-1">{{ talep.baslik }}</h5>
                 </div>
-                <div>
-                    <span class="badge bg-{{ talep.oncelik_renk }} me-1">{{ talep.oncelik_text }}</span>
-                    <span class="badge bg-{{ talep.durum_renk }} fs-6">{{ talep.durum_text }}</span>
+                <div class="flex items-center gap-2">
+                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-{{ talep.oncelik_renk }}-100 text-{{ talep.oncelik_renk }}-800">{{ talep.oncelik_text }}</span>
+                    <span class="px-3 py-1 text-sm font-medium rounded-full bg-{{ talep.durum_renk }}-100 text-{{ talep.durum_renk }}-800">{{ talep.durum_text }}</span>
                 </div>
             </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="text-muted small">Kategori</label>
-                        <p class="mb-0">{{ talep.kategori.ad if talep.kategori else '-' }}</p>
+            <div class="p-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Kategori</label>
+                        <p>{{ talep.kategori.ad if talep.kategori else '-' }}</p>
                     </div>
-                    <div class="col-md-4">
-                        <label class="text-muted small">Talep Eden</label>
-                        <p class="mb-0">{{ talep.talep_eden.full_name }}</p>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Talep Eden</label>
+                        <p>{{ talep.talep_eden.full_name }}</p>
                     </div>
-                    <div class="col-md-4">
-                        <label class="text-muted small">Talep Tarihi</label>
-                        <p class="mb-0">{{ talep.talep_tarihi.strftime('%d.%m.%Y') }}</p>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Talep Tarihi</label>
+                        <p>{{ talep.talep_tarihi.strftime('%d.%m.%Y') }}</p>
                     </div>
-                    
                     {% if talep.istenen_tarih %}
-                    <div class="col-md-4">
-                        <label class="text-muted small">İstenen Tarih</label>
-                        <p class="mb-0">{{ talep.istenen_tarih.strftime('%d.%m.%Y') }}</p>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">İstenen Tarih</label>
+                        <p>{{ talep.istenen_tarih.strftime('%d.%m.%Y') }}</p>
                     </div>
                     {% endif %}
-                    
                     {% if talep.departman %}
-                    <div class="col-md-4">
-                        <label class="text-muted small">Departman</label>
-                        <p class="mb-0">{{ talep.departman }}</p>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Departman</label>
+                        <p>{{ talep.departman }}</p>
                     </div>
                     {% endif %}
-                    
                     {% if talep.proje %}
-                    <div class="col-md-4">
-                        <label class="text-muted small">Proje</label>
-                        <p class="mb-0">{{ talep.proje.ad }}</p>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Proje</label>
+                        <p>{{ talep.proje.ad }}</p>
                     </div>
                     {% endif %}
-                    
                     {% if talep.aciklama %}
-                    <div class="col-12">
-                        <label class="text-muted small">Açıklama</label>
-                        <p class="mb-0">{{ talep.aciklama }}</p>
+                    <div class="md:col-span-3">
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Açıklama</label>
+                        <p>{{ talep.aciklama }}</p>
                     </div>
                     {% endif %}
-                    
                     {% if talep.gerekce %}
-                    <div class="col-12">
-                        <label class="text-muted small">Gerekçe</label>
-                        <p class="mb-0">{{ talep.gerekce }}</p>
+                    <div class="md:col-span-3">
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Gerekçe</label>
+                        <p>{{ talep.gerekce }}</p>
                     </div>
                     {% endif %}
                 </div>
@@ -73,174 +68,164 @@
         </div>
         
         <!-- Kalemler -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0">Talep Kalemleri</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white">Talep Kalemleri</h6>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Ürün/Hizmet</th>
-                                <th>Miktar</th>
-                                <th>Birim</th>
-                                <th>Birim Fiyat</th>
-                                <th>Tutar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for kalem in kalemler %}
-                            <tr>
-                                <td>{{ kalem.urun_adi }}</td>
-                                <td>{{ kalem.miktar }}</td>
-                                <td>{{ kalem.birim }}</td>
-                                <td>{% if kalem.birim_fiyat %}₺{{ "%.2f"|format(kalem.birim_fiyat) }}{% else %}-{% endif %}</td>
-                                <td>{% if kalem.tutar %}₺{{ "%.2f"|format(kalem.tutar) }}{% else %}-{% endif %}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                        {% if talep.tahmini_tutar %}
-                        <tfoot class="table-light">
-                            <tr>
-                                <th colspan="4" class="text-end">Tahmini Toplam:</th>
-                                <th>₺{{ "%.2f"|format(talep.tahmini_tutar) }}</th>
-                            </tr>
-                        </tfoot>
-                        {% endif %}
-                    </table>
-                </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-[#111418]">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Ürün/Hizmet</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Miktar</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Birim</th>
+                            <th class="px-4 py-3 text-right font-medium text-text-muted dark:text-text-muted-dark">Birim Fiyat</th>
+                            <th class="px-4 py-3 text-right font-medium text-text-muted dark:text-text-muted-dark">Tutar</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for kalem in kalemler %}
+                        <tr>
+                            <td class="px-4 py-3">{{ kalem.urun_adi }}</td>
+                            <td class="px-4 py-3">{{ kalem.miktar }}</td>
+                            <td class="px-4 py-3">{{ kalem.birim }}</td>
+                            <td class="px-4 py-3 text-right">{% if kalem.birim_fiyat %}₺{{ "%.2f"|format(kalem.birim_fiyat) }}{% else %}-{% endif %}</td>
+                            <td class="px-4 py-3 text-right">{% if kalem.tutar %}₺{{ "%.2f"|format(kalem.tutar) }}{% else %}-{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if talep.tahmini_tutar %}
+                    <tfoot class="bg-gray-50 dark:bg-[#111418]">
+                        <tr>
+                            <th colspan="4" class="px-4 py-3 text-right font-medium">Tahmini Toplam:</th>
+                            <th class="px-4 py-3 text-right font-semibold">₺{{ "%.2f"|format(talep.tahmini_tutar) }}</th>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
             </div>
         </div>
         
         <!-- Teklifler -->
         {% if teklifler or talep.durum in ['onaylandi', 'teklif_asamasinda'] %}
-        <div class="card mt-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Teklifler</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-medium text-[#111418] dark:text-white">Teklifler</h6>
                 {% if current_user.has_permission('satinalma.admin') and talep.durum in ['onaylandi', 'teklif_asamasinda'] %}
-                <a href="{{ url_for('satinalma.teklif_ekle', talep_id=talep.id) }}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-plus-lg me-1"></i>Teklif Ekle
+                <a href="{{ url_for('satinalma.teklif_ekle', talep_id=talep.id) }}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                    <span class="material-symbols-outlined">add</span>Teklif Ekle
                 </a>
                 {% endif %}
             </div>
-            <div class="card-body p-0">
-                {% if teklifler %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Tedarikçi</th>
-                                <th>Teklif No</th>
-                                <th>Tutar</th>
-                                <th>Teslimat</th>
-                                <th>Durum</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for teklif in teklifler %}
-                            <tr>
-                                <td>{{ teklif.tedarikci.unvan }}</td>
-                                <td>{{ teklif.teklif_no or '-' }}</td>
-                                <td>
-                                    <strong>₺{{ "%.2f"|format(teklif.toplam_tutar) }}</strong>
-                                    <small class="text-muted">({{ 'KDV Dahil' if teklif.kdv_dahil else 'KDV Hariç' }})</small>
-                                </td>
-                                <td>{{ teklif.teslimat_suresi or '-' }}</td>
-                                <td><span class="badge bg-{{ teklif.durum_renk }}">{{ teklif.durum_text }}</span></td>
-                                <td>
-                                    {% if current_user.has_permission('satinalma.admin') and teklif.durum == 'beklemede' %}
-                                    <form method="POST" action="{{ url_for('satinalma.teklif_sec', id=teklif.id) }}" class="d-inline"
-                                          onsubmit="return confirm('Bu teklifi seçip sipariş oluşturmak istiyor musunuz?')">
-                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <button type="submit" class="btn btn-sm btn-success">
-                                            <i class="bi bi-check-lg"></i> Seç
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted text-center py-3 mb-0">Henüz teklif yok</p>
-                {% endif %}
+            {% if teklifler %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-[#111418]">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tedarikçi</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Teklif No</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tutar</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Teslimat</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+                            <th class="px-4 py-3 text-left font-medium text-gray-700 w-20"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for teklif in teklifler %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                            <td class="px-4 py-3">{{ teklif.tedarikci.unvan }}</td>
+                            <td class="px-4 py-3">{{ teklif.teklif_no or '-' }}</td>
+                            <td class="px-4 py-3">
+                                <strong class="text-[#111418] dark:text-white">₺{{ "%.2f"|format(teklif.toplam_tutar) }}</strong>
+                                <span class="text-xs text-text-muted dark:text-text-muted-dark">({{ 'KDV Dahil' if teklif.kdv_dahil else 'KDV Hariç' }})</span>
+                            </td>
+                            <td class="px-4 py-3">{{ teklif.teslimat_suresi or '-' }}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-{{ teklif.durum_renk }}-100 text-{{ teklif.durum_renk }}-800">{{ teklif.durum_text }}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if current_user.has_permission('satinalma.admin') and teklif.durum == 'beklemede' %}
+                                <form method="POST" action="{{ url_for('satinalma.teklif_sec', id=teklif.id) }}" class="inline" onsubmit="return confirm('Bu teklifi seçip sipariş oluşturmak istiyor musunuz?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="inline-flex items-center gap-1 px-2 py-1 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700">
+                                        <span class="material-symbols-outlined">check</span>Seç
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            {% else %}
+            <p class="text-text-muted dark:text-text-muted-dark text-center py-6">Henüz teklif yok</p>
+            {% endif %}
         </div>
         {% endif %}
     </div>
     
     <!-- Sağ: İşlemler -->
-    <div class="col-lg-4">
+    <div class="space-y-4">
         <!-- İşlemler -->
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">İşlemler</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white">İşlemler</h6>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    {% if talep.durum in ['taslak', 'reddedildi'] and talep.talep_eden_id == current_user.id %}
-                    <form method="POST" action="{{ url_for('satinalma.talep_onaya_gonder', id=talep.id) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="bi bi-send me-2"></i>Onaya Gönder
-                        </button>
-                    </form>
-                    {% endif %}
-                    
-                    {% if talep.durum not in ['siparis_verildi', 'tamamlandi', 'iptal'] %}
-                    <form method="POST" action="{{ url_for('satinalma.talep_iptal', id=talep.id) }}"
-                          onsubmit="return confirm('Talebi iptal etmek istiyor musunuz?')">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-outline-danger w-100">
-                            <i class="bi bi-x-lg me-2"></i>İptal Et
-                        </button>
-                    </form>
-                    {% endif %}
-                    
-                    <a href="{{ url_for('satinalma.talep_liste') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-2"></i>Listeye Dön
-                    </a>
-                </div>
+            <div class="p-4 space-y-2">
+                {% if talep.durum in ['taslak', 'reddedildi'] and talep.talep_eden_id == current_user.id %}
+                <form method="POST" action="{{ url_for('satinalma.talep_onaya_gonder', id=talep.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                        <span class="material-symbols-outlined">send</span>Onaya Gönder
+                    </button>
+                </form>
+                {% endif %}
+                
+                {% if talep.durum not in ['siparis_verildi', 'tamamlandi', 'iptal'] %}
+                <form method="POST" action="{{ url_for('satinalma.talep_iptal', id=talep.id) }}" onsubmit="return confirm('Talebi iptal etmek istiyor musunuz?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-red-300 text-red-600 font-medium rounded-lg hover:bg-red-50 transition-colors">
+                        <span class="material-symbols-outlined">close</span>İptal Et
+                    </button>
+                </form>
+                {% endif %}
+                
+                <a href="{{ url_for('satinalma.talep_liste') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <span class="material-symbols-outlined">arrow_back</span>Listeye Dön
+                </a>
             </div>
         </div>
         
         <!-- Siparişler -->
         {% if talep.siparisler.count() > 0 %}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0">Siparişler</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white">Siparişler</h6>
             </div>
-            <div class="card-body p-0">
-                <div class="list-group list-group-flush">
-                    {% for siparis in talep.siparisler %}
-                    <a href="{{ url_for('satinalma.siparis_detay', id=siparis.id) }}" class="list-group-item list-group-item-action">
-                        <div class="d-flex justify-content-between">
-                            <strong>{{ siparis.siparis_no }}</strong>
-                            <span class="badge bg-{{ siparis.durum_renk }}">{{ siparis.durum_text }}</span>
-                        </div>
-                        <small class="text-muted">₺{{ "%.2f"|format(siparis.toplam_tutar) }}</small>
-                    </a>
-                    {% endfor %}
-                </div>
+            <div class="divide-y divide-border-light dark:divide-border-dark">
+                {% for siparis in talep.siparisler %}
+                <a href="{{ url_for('satinalma.siparis_detay', id=siparis.id) }}" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <div class="flex justify-between items-center">
+                        <strong class="text-[#111418] dark:text-white">{{ siparis.siparis_no }}</strong>
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-{{ siparis.durum_renk }}-100 text-{{ siparis.durum_renk }}-800">{{ siparis.durum_text }}</span>
+                    </div>
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">₺{{ "%.2f"|format(siparis.toplam_tutar) }}</span>
+                </a>
+                {% endfor %}
             </div>
         </div>
         {% endif %}
         
         <!-- Meta -->
-        <div class="card mt-4">
-            <div class="card-body small text-muted">
-                <div class="d-flex justify-content-between mb-1">
-                    <span>Oluşturulma:</span>
-                    <span>{{ talep.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <span>Güncelleme:</span>
-                    <span>{{ talep.updated_at.strftime('%d.%m.%Y %H:%M') }}</span>
-                </div>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm p-4 text-sm text-text-muted dark:text-text-muted-dark">
+            <div class="flex justify-between mb-1">
+                <span>Oluşturulma:</span>
+                <span>{{ talep.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span>Güncelleme:</span>
+                <span>{{ talep.updated_at.strftime('%d.%m.%Y %H:%M') }}</span>
             </div>
         </div>
     </div>

@@ -3,65 +3,38 @@
 {% block title %}Sınav Sonucu - {{ test.baslik }}{% endblock %}
 {% block page_title %}Sınav Sonucu{% endblock %}
 
-{% block extra_css %}
-<style>
-    .result-card {
-        text-align: center;
-        padding: 2rem;
-    }
-    .result-icon {
-        font-size: 5rem;
-        margin-bottom: 1rem;
-    }
-    .result-passed .result-icon { color: #198754; }
-    .result-failed .result-icon { color: #dc3545; }
-    .progress-lg {
-        height: 25px;
-        border-radius: 12px;
-    }
-    .soru-result {
-        border-left: 4px solid;
-        margin-bottom: 1rem;
-    }
-    .soru-result.correct { border-color: #198754; }
-    .soru-result.wrong { border-color: #dc3545; }
-    .soru-result.empty { border-color: #6c757d; }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="row justify-content-center mb-4">
-    <div class="col-lg-8">
+<div class="flex justify-center mb-6">
+    <div class="w-full max-w-2xl">
         <!-- Ana Sonuç Kartı -->
-        <div class="card {{ 'result-passed' if sonuc.gecti else 'result-failed' }}">
-            <div class="card-body result-card">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
+            <div class="p-8 text-center">
                 {% if sonuc.gecti %}
-                <div class="result-icon"><i class="bi bi-trophy-fill"></i></div>
-                <h2 class="text-success mb-3">Tebrikler! Sınavı Geçtiniz</h2>
+                <span class="material-symbols-outlined text-7xl text-emerald-500 mb-4">trophy</span>
+                <h2 class="text-2xl font-bold text-emerald-600 mb-4">Tebrikler! Sınavı Geçtiniz</h2>
                 {% else %}
-                <div class="result-icon"><i class="bi bi-x-circle-fill"></i></div>
-                <h2 class="text-danger mb-3">Maalesef Geçemediniz</h2>
+                <span class="material-symbols-outlined text-7xl text-rose-500 mb-4">cancel</span>
+                <h2 class="text-2xl font-bold text-rose-600 mb-4">Maalesef Geçemediniz</h2>
                 {% endif %}
                 
-                <h1 class="display-1 fw-bold mb-4">%{{ sonuc.yuzde }}</h1>
+                <div class="text-6xl font-bold text-[#111418] dark:text-white mb-6">%{{ sonuc.yuzde }}</div>
                 
-                <div class="progress progress-lg mb-4">
-                    <div class="progress-bar {{ 'bg-success' if sonuc.gecti else 'bg-danger' }}" 
-                         style="width: {{ sonuc.yuzde }}%"></div>
+                <div class="w-full h-6 bg-gray-200 dark:bg-gray-700 rounded-full mb-6 overflow-hidden">
+                    <div class="h-full {{ 'bg-emerald-500' if sonuc.gecti else 'bg-rose-500' }} rounded-full transition-all" style="width: {{ sonuc.yuzde }}%"></div>
                 </div>
                 
-                <div class="row text-center">
-                    <div class="col-4">
-                        <div class="fs-3 fw-bold text-success">{{ sonuc.dogru_sayisi }}</div>
-                        <div class="text-muted">Doğru</div>
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <div class="text-3xl font-bold text-emerald-500">{{ sonuc.dogru_sayisi }}</div>
+                        <div class="text-text-muted dark:text-text-muted-dark text-sm">Doğru</div>
                     </div>
-                    <div class="col-4">
-                        <div class="fs-3 fw-bold text-danger">{{ sonuc.yanlis_sayisi }}</div>
-                        <div class="text-muted">Yanlış</div>
+                    <div>
+                        <div class="text-3xl font-bold text-rose-500">{{ sonuc.yanlis_sayisi }}</div>
+                        <div class="text-text-muted dark:text-text-muted-dark text-sm">Yanlış</div>
                     </div>
-                    <div class="col-4">
-                        <div class="fs-3 fw-bold text-secondary">{{ sonuc.bos_sayisi }}</div>
-                        <div class="text-muted">Boş</div>
+                    <div>
+                        <div class="text-3xl font-bold text-gray-500">{{ sonuc.bos_sayisi }}</div>
+                        <div class="text-text-muted dark:text-text-muted-dark text-sm">Boş</div>
                     </div>
                 </div>
             </div>
@@ -69,101 +42,115 @@
     </div>
 </div>
 
-<div class="row">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Detaylı İstatistikler -->
-    <div class="col-lg-4">
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>İstatistikler</h6>
+    <div>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mb-6">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">bar_chart</span>
+                    İstatistikler
+                </h6>
             </div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Toplam Puan</span>
-                    <strong>{{ sonuc.alinan_puan }} / {{ sonuc.toplam_puan }}</strong>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Geçme Puanı</span>
-                    <strong>%{{ test.gecme_puani }}</strong>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Süre</span>
-                    <strong>{{ sonuc.sure_text }}</strong>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Başlangıç</span>
-                    <span>{{ sonuc.baslangic_zamani.strftime('%d.%m.%Y %H:%M') }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Bitiş</span>
-                    <span>{{ sonuc.bitis_zamani.strftime('%d.%m.%Y %H:%M') if sonuc.bitis_zamani else '-' }}</span>
-                </li>
-            </ul>
+            <div class="divide-y divide-border-light dark:divide-border-dark">
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark text-sm">Toplam Puan</span>
+                    <strong class="text-[#111418] dark:text-white">{{ sonuc.alinan_puan }} / {{ sonuc.toplam_puan }}</strong>
+                </div>
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark text-sm">Geçme Puanı</span>
+                    <strong class="text-[#111418] dark:text-white">%{{ test.gecme_puani }}</strong>
+                </div>
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark text-sm">Süre</span>
+                    <strong class="text-[#111418] dark:text-white">{{ sonuc.sure_text }}</strong>
+                </div>
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark text-sm">Başlangıç</span>
+                    <span class="text-[#111418] dark:text-white text-sm">{{ sonuc.baslangic_zamani.strftime('%d.%m.%Y %H:%M') }}</span>
+                </div>
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark text-sm">Bitiş</span>
+                    <span class="text-[#111418] dark:text-white text-sm">{{ sonuc.bitis_zamani.strftime('%d.%m.%Y %H:%M') if sonuc.bitis_zamani else '-' }}</span>
+                </div>
+            </div>
         </div>
         
-        <div class="d-grid gap-2">
+        <div class="space-y-3">
             {% if not sonuc.gecti and test.tekrar_hak %}
                 {% set cozum_sayisi = test.sonuclar.filter_by(calisan_id=sonuc.calisan_id, tamamlandi=True).count() %}
                 {% if cozum_sayisi < test.tekrar_hak %}
-                <a href="{{ url_for('egitim.test_baslat', id=test.id) }}" class="btn btn-primary">
-                    <i class="bi bi-arrow-repeat me-1"></i> Tekrar Dene ({{ test.tekrar_hak - cozum_sayisi }} hak)
+                <a href="{{ url_for('egitim.test_baslat', id=test.id) }}" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors">
+                    <span class="material-symbols-outlined">refresh</span>
+                    Tekrar Dene ({{ test.tekrar_hak - cozum_sayisi }} hak)
                 </a>
                 {% endif %}
             {% endif %}
             
             {% if test.egitim_id %}
-            <a href="{{ url_for('egitim.detay', id=test.egitim_id) }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Eğitime Dön
+            <a href="{{ url_for('egitim.detay', id=test.egitim_id) }}" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#252b36] font-medium rounded-lg transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+                Eğitime Dön
             </a>
             {% else %}
-            <a href="{{ url_for('egitim.test_liste') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Testlere Dön
+            <a href="{{ url_for('egitim.test_liste') }}" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#252b36] font-medium rounded-lg transition-colors">
+                <span class="material-symbols-outlined">arrow_back</span>
+                Testlere Dön
             </a>
             {% endif %}
         </div>
     </div>
     
     <!-- Soru Bazlı Sonuçlar -->
-    <div class="col-lg-8">
+    <div class="lg:col-span-2">
         {% if test.sonucu_goster %}
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-list-check me-2"></i>Soru Detayları</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">fact_check</span>
+                    Soru Detayları
+                </h6>
             </div>
-            <div class="card-body">
+            <div class="p-5 space-y-4">
                 {% for item in cevaplar %}
                 {% set soru = item.soru %}
                 {% set cevap = item.cevap %}
-                <div class="soru-result {{ 'correct' if cevap and cevap.dogru else ('wrong' if cevap and cevap.secilen_secenek_id else 'empty') }} p-3 bg-light rounded">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <strong>Soru {{ loop.index }}</strong>
+                <div class="border-l-4 {{ 'border-emerald-500' if cevap and cevap.dogru else ('border-rose-500' if cevap and cevap.secilen_secenek_id else 'border-gray-400') }} bg-gray-50 dark:bg-[#111418] rounded-r-lg p-4">
+                    <div class="flex justify-between items-start mb-2">
+                        <strong class="text-[#111418] dark:text-white">Soru {{ loop.index }}</strong>
                         {% if cevap and cevap.dogru %}
-                        <span class="badge bg-success"><i class="bi bi-check"></i> Doğru (+{{ cevap.alinan_puan }})</span>
+                        <span class="px-2 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">check</span>Doğru (+{{ cevap.alinan_puan }})
+                        </span>
                         {% elif cevap and cevap.secilen_secenek_id %}
-                        <span class="badge bg-danger"><i class="bi bi-x"></i> Yanlış</span>
+                        <span class="px-2 py-1 text-xs font-bold rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">close</span>Yanlış
+                        </span>
                         {% else %}
-                        <span class="badge bg-secondary">Boş</span>
+                        <span class="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Boş</span>
                         {% endif %}
                     </div>
                     
-                    <p class="mb-2">{{ soru.soru_metni }}</p>
+                    <p class="text-[#111418] dark:text-white text-sm mb-3">{{ soru.soru_metni }}</p>
                     
                     {% if test.dogru_cevaplari_goster %}
-                    <div class="small">
+                    <div class="text-sm space-y-1">
                         {% if cevap and cevap.secilen_secenek %}
-                        <div class="{{ 'text-success' if cevap.dogru else 'text-danger' }}">
+                        <div class="{{ 'text-emerald-600' if cevap.dogru else 'text-rose-600' }}">
                             <strong>Cevabınız:</strong> {{ cevap.secilen_secenek.secenek_metni }}
                         </div>
                         {% endif %}
                         
                         {% if not cevap or not cevap.dogru %}
-                        <div class="text-success">
+                        <div class="text-emerald-600">
                             <strong>Doğru Cevap:</strong> {{ soru.dogru_secenek.secenek_metni if soru.dogru_secenek else '-' }}
                         </div>
                         {% endif %}
                         
                         {% if soru.aciklama %}
-                        <div class="text-muted mt-2">
-                            <i class="bi bi-info-circle me-1"></i> {{ soru.aciklama }}
+                        <div class="text-text-muted dark:text-text-muted-dark mt-2 flex items-start gap-1">
+                            <span class="material-symbols-outlined text-sm mt-0.5">info</span>
+                            {{ soru.aciklama }}
                         </div>
                         {% endif %}
                     </div>
@@ -173,10 +160,10 @@
             </div>
         </div>
         {% else %}
-        <div class="card">
-            <div class="card-body text-center text-muted py-5">
-                <i class="bi bi-eye-slash fs-1 d-block mb-3"></i>
-                <p>Soru detayları bu test için gösterilmiyor.</p>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="py-12 text-center">
+                <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-2">visibility_off</span>
+                <p class="text-text-muted dark:text-text-muted-dark">Soru detayları bu test için gösterilmiyor.</p>
             </div>
         </div>
         {% endif %}

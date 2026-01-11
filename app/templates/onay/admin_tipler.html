@@ -4,58 +4,72 @@
 {% block page_title %}Onay Tipleri{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <h6 class="mb-0">Onay Tipleri</h6>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Kod</th>
-                        <th>Ad</th>
-                        <th>Modül</th>
-                        <th>Akış Sayısı</th>
-                        <th>Durum</th>
-                        <th class="text-end">İşlem</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for tip in tipler %}
-                    <tr>
-                        <td><code>{{ tip.kod }}</code></td>
-                        <td>{{ tip.ad }}</td>
-                        <td>
-                            {% if tip.modul %}
-                            <span class="badge bg-secondary">{{ tip.modul }}</span>
-                            {% else %}
-                            -
-                            {% endif %}
-                        </td>
-                        <td>{{ tip.akislar.count() }}</td>
-                        <td>
-                            {% if tip.aktif %}
-                            <span class="badge bg-success">Aktif</span>
-                            {% else %}
-                            <span class="badge bg-secondary">Pasif</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-end">
-                            <a href="{{ url_for('onay.admin_akislar', id=tip.id) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-diagram-3 me-1"></i> Akışlar
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+{% set badge_map = {
+  'success': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  'secondary':'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-200'
+} %}
+
+<div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+  <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+    <h3 class="font-bold text-[#111418] dark:text-white">Onay Tipleri</h3>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-50 dark:bg-[#111418] text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">
+        <tr>
+          <th class="px-5 py-3 text-left">Kod</th>
+          <th class="px-5 py-3 text-left">Ad</th>
+          <th class="px-5 py-3 text-left">Modül</th>
+          <th class="px-5 py-3 text-left">Akış Sayısı</th>
+          <th class="px-5 py-3 text-left">Durum</th>
+          <th class="px-5 py-3 text-right">İşlem</th>
+        </tr>
+      </thead>
+
+      <tbody class="divide-y divide-border-light dark:divide-border-dark">
+        {% for tip in tipler %}
+        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+          <td class="px-5 py-3"><code class="text-xs">{{ tip.kod }}</code></td>
+          <td class="px-5 py-3 font-semibold text-[#111418] dark:text-white">{{ tip.ad }}</td>
+
+          <td class="px-5 py-3">
+            {% if tip.modul %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['secondary'] }}">{{ tip.modul }}</span>
+            {% else %}
+              <span class="text-text-muted dark:text-text-muted-dark">-</span>
+            {% endif %}
+          </td>
+
+          <td class="px-5 py-3 text-text-muted dark:text-text-muted-dark">{{ tip.akislar.count() }}</td>
+
+          <td class="px-5 py-3">
+            {% if tip.aktif %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['success'] }}">Aktif</span>
+            {% else %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['secondary'] }}">Pasif</span>
+            {% endif %}
+          </td>
+
+          <td class="px-5 py-3 text-right">
+            <a href="{{ url_for('onay.admin_akislar', id=tip.id) }}"
+               class="inline-flex items-center gap-2 rounded-lg border border-border-light dark:border-border-dark px-3 py-2 text-sm font-semibold
+                      hover:bg-gray-50 dark:hover:bg-[#252b36] transition">
+              <span class="material-symbols-outlined text-[18px]">schema</span>
+              Akışlar
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 
-<div class="alert alert-info mt-4">
-    <i class="bi bi-info-circle me-2"></i>
-    Yeni onay tipi eklemek için veritabanına seed data eklenmeli.
+<div class="mt-6 rounded-xl border border-sky-200 dark:border-sky-900/40 bg-sky-50 dark:bg-sky-900/10 p-4 text-sm text-sky-800 dark:text-sky-200">
+  <div class="flex items-start gap-2">
+    <span class="material-symbols-outlined text-[20px]">info</span>
+    <p>Yeni onay tipi eklemek için veritabanına seed data eklenmeli.</p>
+  </div>
 </div>
 {% endblock %}

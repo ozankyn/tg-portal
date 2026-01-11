@@ -5,176 +5,180 @@
 
 {% block content %}
 <!-- İstatistik Kartları -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card h-100 border-warning">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">Devam Eden</div>
-                        <div class="fs-3 fw-bold text-warning">{{ devam_eden }}</div>
-                    </div>
-                    <div class="bg-warning bg-opacity-10 p-3 rounded">
-                        <i class="bi bi-play-circle text-warning fs-4"></i>
-                    </div>
-                </div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-card-dark rounded-xl border-l-4 border-amber-500 p-4 shadow-sm">
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="text-text-muted dark:text-text-muted-dark text-xs">Devam Eden</p>
+                <p class="text-3xl font-bold text-amber-600">{{ devam_eden }}</p>
+            </div>
+            <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-amber-600">play_circle</span>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card h-100 border-success">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">Bu Ay Tamamlanan</div>
-                        <div class="fs-3 fw-bold text-success">{{ tamamlanan_bu_ay }}</div>
-                    </div>
-                    <div class="bg-success bg-opacity-10 p-3 rounded">
-                        <i class="bi bi-check-circle text-success fs-4"></i>
-                    </div>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-xl border-l-4 border-emerald-500 p-4 shadow-sm">
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="text-text-muted dark:text-text-muted-dark text-xs">Bu Ay Tamamlanan</p>
+                <p class="text-3xl font-bold text-emerald-600">{{ tamamlanan_bu_ay }}</p>
+            </div>
+            <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-emerald-600">check_circle</span>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card h-100 border-primary">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">Eğitim Alan (Yıl)</div>
-                        <div class="fs-3 fw-bold text-primary">{{ egitim_alan_calisan }}</div>
-                    </div>
-                    <div class="bg-primary bg-opacity-10 p-3 rounded">
-                        <i class="bi bi-people text-primary fs-4"></i>
-                    </div>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-xl border-l-4 border-blue-500 p-4 shadow-sm">
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="text-text-muted dark:text-text-muted-dark text-xs">Eğitim Alan (Yıl)</p>
+                <p class="text-3xl font-bold text-blue-600">{{ egitim_alan_calisan }}</p>
+            </div>
+            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-blue-600">groups</span>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card h-100 border-danger">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">Eksik Zorunlu</div>
-                        <div class="fs-3 fw-bold text-danger">{{ eksik_zorunlu }}</div>
-                    </div>
-                    <div class="bg-danger bg-opacity-10 p-3 rounded">
-                        <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
-                    </div>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-xl border-l-4 border-rose-500 p-4 shadow-sm">
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="text-text-muted dark:text-text-muted-dark text-xs">Eksik Zorunlu</p>
+                <p class="text-3xl font-bold text-rose-600">{{ eksik_zorunlu }}</p>
+            </div>
+            <div class="w-12 h-12 bg-rose-100 dark:bg-rose-900/30 rounded-lg flex items-center justify-center">
+                <span class="material-symbols-outlined text-rose-600">warning</span>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-4">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Yaklaşan Eğitimler -->
-    <div class="col-lg-8">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Yaklaşan Eğitimler (7 Gün)</h6>
-                <a href="{{ url_for('egitim.liste', tarih='gelecek') }}" class="btn btn-sm btn-outline-primary">Tümü</a>
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">event</span>
+                    Yaklaşan Eğitimler (7 Gün)
+                </h6>
+                <a href="{{ url_for('egitim.liste', tarih='gelecek') }}" class="text-sm text-primary hover:underline">Tümü</a>
             </div>
-            <div class="card-body p-0">
-                {% if yaklasan_egitimler %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Eğitim</th>
-                                <th>Tip</th>
-                                <th>Tarih</th>
-                                <th>Lokasyon</th>
-                                <th>Katılımcı</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for egitim in yaklasan_egitimler %}
-                            <tr>
-                                <td>
-                                    <a href="{{ url_for('egitim.detay', id=egitim.id) }}" class="text-decoration-none fw-semibold">
-                                        {{ egitim.baslik }}
-                                    </a>
-                                    {% if egitim.proje %}
-                                    <div class="small text-muted">{{ egitim.proje.musteri.display_name }} - {{ egitim.proje.ad }}</div>
-                                    {% endif %}
-                                </td>
-                                <td><span class="badge bg-secondary">{{ egitim.egitim_tipi.ad }}</span></td>
-                                <td>
-                                    <div>{{ egitim.baslangic_tarihi.strftime('%d.%m.%Y') }}</div>
-                                    <div class="small text-muted">{{ egitim.baslangic_tarihi.strftime('%H:%M') }}</div>
-                                </td>
-                                <td>
-                                    {% if egitim.lokasyon_tipi == 'online' %}
-                                    <span class="badge bg-info"><i class="bi bi-camera-video me-1"></i>Online</span>
-                                    {% elif egitim.lokasyon_tipi == 'hibrit' %}
-                                    <span class="badge bg-warning"><i class="bi bi-diagram-3 me-1"></i>Hibrit</span>
-                                    {% else %}
-                                    <span class="badge bg-primary"><i class="bi bi-geo-alt me-1"></i>Yüz yüze</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <span class="badge bg-light text-dark">{{ egitim.katilimci_sayisi }}{% if egitim.kontenjan %}/{{ egitim.kontenjan }}{% endif %}</span>
-                                </td>
-                                <td>
-                                    <a href="{{ url_for('egitim.detay', id=egitim.id) }}" class="btn btn-sm btn-outline-secondary">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="text-center text-muted py-5">
-                    <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
-                    Yaklaşan eğitim bulunmuyor
-                </div>
-                {% endif %}
+            {% if yaklasan_egitimler %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-[#111418]">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Eğitim</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Tip</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Tarih</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Lokasyon</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Katılımcı</th>
+                            <th class="px-4 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for egitim in yaklasan_egitimler %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                            <td class="px-4 py-3">
+                                <a href="{{ url_for('egitim.detay', id=egitim.id) }}" class="font-semibold text-[#111418] dark:text-white hover:text-primary">
+                                    {{ egitim.baslik }}
+                                </a>
+                                {% if egitim.proje %}
+                                <p class="text-xs text-text-muted dark:text-text-muted-dark">{{ egitim.proje.musteri.display_name }} - {{ egitim.proje.ad }}</p>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded-full">{{ egitim.egitim_tipi.ad }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-sm">
+                                <div class="text-[#111418] dark:text-white">{{ egitim.baslangic_tarihi.strftime('%d.%m.%Y') }}</div>
+                                <div class="text-text-muted dark:text-text-muted-dark text-xs">{{ egitim.baslangic_tarihi.strftime('%H:%M') }}</div>
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if egitim.lokasyon_tipi == 'online' %}
+                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 text-xs rounded-full">
+                                    <span class="material-symbols-outlined text-sm">videocam</span>Online
+                                </span>
+                                {% elif egitim.lokasyon_tipi == 'hibrit' %}
+                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs rounded-full">
+                                    <span class="material-symbols-outlined text-sm">hub</span>Hibrit
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs rounded-full">
+                                    <span class="material-symbols-outlined text-sm">location_on</span>Yüz yüze
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded-full">
+                                    {{ egitim.katilimci_sayisi }}{% if egitim.kontenjan %}/{{ egitim.kontenjan }}{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <a href="{{ url_for('egitim.detay', id=egitim.id) }}" class="p-1.5 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-colors inline-flex">
+                                    <span class="material-symbols-outlined text-text-muted">visibility</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            {% else %}
+            <div class="py-12 text-center">
+                <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-2">event_busy</span>
+                <p class="text-text-muted dark:text-text-muted-dark">Yaklaşan eğitim bulunmuyor</p>
+            </div>
+            {% endif %}
         </div>
     </div>
     
     <!-- Sağ Panel -->
-    <div class="col-lg-4">
+    <div class="space-y-6">
         <!-- Hızlı İşlemler -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Hızlı İşlemler</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">bolt</span>
+                    Hızlı İşlemler
+                </h6>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('egitim.ekle') }}" class="btn btn-primary">
-                        <i class="bi bi-plus-lg me-2"></i>Yeni Eğitim Planla
-                    </a>
-                    <a href="{{ url_for('egitim.zorunlu_egitim_takip') }}" class="btn btn-outline-danger">
-                        <i class="bi bi-exclamation-triangle me-2"></i>Zorunlu Eğitim Takibi
-                    </a>
-                    <a href="{{ url_for('egitim.tip_liste') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-tags me-2"></i>Eğitim Tipleri
-                    </a>
-                </div>
+            <div class="p-4 space-y-2">
+                <a href="{{ url_for('egitim.ekle') }}" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors">
+                    <span class="material-symbols-outlined">add</span>
+                    Yeni Eğitim Planla
+                </a>
+                <a href="{{ url_for('egitim.zorunlu_egitim_takip') }}" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-rose-500 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 font-bold rounded-lg transition-colors">
+                    <span class="material-symbols-outlined">warning</span>
+                    Zorunlu Eğitim Takibi
+                </a>
+                <a href="{{ url_for('egitim.tip_liste') }}" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#252b36] font-medium rounded-lg transition-colors">
+                    <span class="material-symbols-outlined">label</span>
+                    Eğitim Tipleri
+                </a>
             </div>
         </div>
         
         <!-- Eğitim Tipi Dağılımı -->
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Tip Dağılımı (Yıl)</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">pie_chart</span>
+                    Tip Dağılımı (Yıl)
+                </h6>
             </div>
-            <div class="card-body">
+            <div class="p-4">
                 {% if tip_dagilim %}
-                {% for tip_ad, sayi in tip_dagilim %}
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span>{{ tip_ad }}</span>
-                    <span class="badge bg-primary">{{ sayi }}</span>
+                <div class="space-y-3">
+                    {% for tip_ad, sayi in tip_dagilim %}
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-[#111418] dark:text-white">{{ tip_ad }}</span>
+                        <span class="px-2 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full">{{ sayi }}</span>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% endfor %}
                 {% else %}
-                <div class="text-center text-muted py-3">
+                <div class="py-6 text-center text-text-muted dark:text-text-muted-dark">
                     Henüz eğitim verisi yok
                 </div>
                 {% endif %}

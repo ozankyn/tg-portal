@@ -2,122 +2,16 @@
 """
 TG Portal - Public Başvuru Routes
 Aday başvuru sistemi - Login gerektirmez
-SMS Provider: NetGSM
+Güncelleme: davet_eden_id takibi eklendi
 """
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from datetime import datetime
 from app import db
 from app.models.ik import Aday
-import requests
-import urllib.parse
 
 basvuru_bp = Blueprint('basvuru', __name__)
 
-
-# ==================== NetGSM SMS Fonksiyonları ====================
-
-def send_netgsm_sms(telefon, mesaj):
-    """NetGSM ile SMS gönder"""
-    try:
-        usercode = current_app.config.get('NETGSM_USERCODE')
-        password = current_app.config.get('NETGSM_PASSWORD')
-        header = current_app.config.get('NETGSM_HEADER')
-        
-        if not all([usercode, password, header]):
-            current_app.logger.error("NetGSM yapılandırması eksik")
-            return {'success': False, 'error': 'SMS servisi yapılandırılmamış'}
-        
-        # Telefon numarasını formatla (başında 0 olmadan, 10 hane)
-        telefon = telefon.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
-        if telefon.startswith('+90'):
-            telefon = telefon[3:]
-        elif telefon.startswith('90'):
-            telefon = telefon[2:]
-        elif telefon.startswith('0'):
-            telefon = telefon[1:]
-        
-        # NetGSM API - GET metodu
-        url = "https://api.netgsm.com.tr/sms/send/get/"
-        params = {
-            'usercode': usercode,
-            'password': password,
-            'gsmno': telefon,
-            'message': mesaj,
-            'msgheader': header,
-            'dil': 'TR'
-        }
-        
-        response = requests.get(url, params=params, timeout=30)
-        result = response.text.strip()
-        
-        # NetGSM yanıt kodları
-        # 00: Başarılı, 01: Başarılı (Rapor bekliyor)
-        # 20: Post hata, 30: Geçersiz kullanıcı/şifre, 40: Mesaj başlığı bulunamadı
-        # 50: IYS kontrolü yapılmadı, 51: IYS ret, 70: Geçersiz parametre
-        
-        if result.startswith('00') or result.startswith('01'):
-            # Başarılı - bulk_id döner: "00 12345678"
-            parts = result.split(' ')
-            bulk_id = parts[1] if len(parts) > 1 else result
-            current_app.logger.info(f"SMS gönderildi: {telefon} - ID: {bulk_id}")
-            return {'success': True, 'message_id': bulk_id}
-        else:
-            error_codes = {
-                '20': 'Post hatası',
-                '30': 'Geçersiz kullanıcı/şifre',
-                '40': 'Mesaj başlığı bulunamadı',
-                '50': 'IYS kontrolü yapılmadı',
-                '51': 'IYS listesinde değil (Numara reddetti)',
-                '70': 'Geçersiz parametre',
-                '80': 'Gönderim sınır aşımı',
-                '85': 'Mükerrer gönderim'
-            }
-            error_msg = error_codes.get(result[:2], f'Bilinmeyen hata: {result}')
-            current_app.logger.error(f"SMS hata: {telefon} - {error_msg}")
-            return {'success': False, 'error': error_msg}
-            
-    except requests.exceptions.Timeout:
-        current_app.logger.error("NetGSM timeout hatası")
-        return {'success': False, 'error': 'SMS servisi zaman aşımı'}
-    except Exception as e:
-        current_app.logger.error(f"SMS gönderim hatası: {str(e)}")
-        return {'success': False, 'error': str(e)}
-
-
-def send_sms_davet(aday, basvuru_link):
-    """SMS ile davet gönder"""
-    # Kadro bilgisi
-    kadro_bilgi = ""
-    if aday.kadro:
-        musteri_ad = aday.kadro.proje.musteri.kisa_ad or aday.kadro.proje.musteri.ad
-        kadro_bilgi = f"{musteri_ad} - {aday.kadro.pozisyon_adi} "
-    
-    mesaj = (
-        f"Sayin {aday.ad} {aday.soyad}, "
-        f"{kadro_bilgi}pozisyonu icin is basvuru davetiniz: {basvuru_link} "
-        f"Link 72 saat gecerlidir. - Team Guerilla IK"
-    )
-    
-    return send_netgsm_sms(aday.telefon, mesaj)
-
-
-def send_otp_sms(aday):
-    """SMS ile OTP kodu gönder"""
-    kod = aday.generate_otp()
-    mesaj = f"Team Guerilla is basvuru dogrulama kodunuz: {kod} - Bu kod 5 dakika gecerlidir."
-    
-    return send_netgsm_sms(aday.telefon, mesaj)
-
-
-def send_email_davet(aday, basvuru_link):
-    """Email ile davet gönder"""
-    # TODO: Flask-Mail entegrasyonu
-    current_app.logger.info(f"Email gönderilecek: {aday.email} - Link: {basvuru_link}")
-    return {'success': True, 'info': 'Email simüle edildi'}
-
-
-# ==================== Public Routes ====================
 
 @basvuru_bp.route('/<token>')
 def basvuru_giris(token):
@@ -285,6 +179,61 @@ from flask_login import login_required, current_user
 from app.utils import permission_required
 
 
+def send_sms_davet(aday, basvuru_link):
+    """SMS ile davet gönder (Twilio)"""
+    try:
+        from twilio.rest import Client
+        
+        account_sid = current_app.config.get('TWILIO_ACCOUNT_SID')
+        auth_token = current_app.config.get('TWILIO_AUTH_TOKEN')
+        from_number = current_app.config.get('TWILIO_PHONE_NUMBER')
+        
+        if not all([account_sid, auth_token, from_number]):
+            current_app.logger.error("Twilio yapılandırması eksik")
+            return {'success': False, 'error': 'SMS servisi yapılandırılmamış'}
+        
+        client = Client(account_sid, auth_token)
+        
+        # Telefon numarasını formatla
+        telefon = aday.telefon.replace(' ', '').replace('-', '')
+        if telefon.startswith('0'):
+            telefon = '+90' + telefon[1:]
+        elif not telefon.startswith('+'):
+            telefon = '+90' + telefon
+        
+        # Kadro bilgisi
+        kadro_bilgi = ""
+        if aday.kadro:
+            musteri_ad = aday.kadro.proje.musteri.kisa_ad or aday.kadro.proje.musteri.ad
+            kadro_bilgi = f"{musteri_ad} - {aday.kadro.pozisyon_adi} "
+        
+        mesaj = (
+            f"Sayin {aday.ad} {aday.soyad}, "
+            f"{kadro_bilgi}pozisyonu icin is basvuru davetiniz: {basvuru_link} "
+            f"Link 72 saat gecerlidir. - Team Guerilla IK"
+        )
+        
+        message = client.messages.create(
+            body=mesaj,
+            from_=from_number,
+            to=telefon
+        )
+        
+        current_app.logger.info(f"SMS gönderildi: {telefon} - SID: {message.sid}")
+        return {'success': True, 'message_sid': message.sid}
+        
+    except Exception as e:
+        current_app.logger.error(f"SMS gönderim hatası: {str(e)}")
+        return {'success': False, 'error': str(e)}
+
+
+def send_email_davet(aday, basvuru_link):
+    """Email ile davet gönder"""
+    # TODO: Flask-Mail entegrasyonu
+    current_app.logger.info(f"Email gönderilecek: {aday.email} - Link: {basvuru_link}")
+    return {'success': True, 'info': 'Email simüle edildi'}
+
+
 @basvuru_bp.route('/davet/<int:kadro_id>', methods=['GET', 'POST'])
 @login_required
 @permission_required('ik.create')
@@ -313,7 +262,7 @@ def aday_davet(kadro_id):
             davet_tipi=davet_tipi,
             kaynak=f'{davet_tipi}_davet',
             durum='davet_gonderildi',
-            davet_eden_id=current_user.id
+            davet_eden_id=current_user.id  # *** YENİ: Daveti gönderen kullanıcı ***
         )
         
         if davet_tipi == 'email':
@@ -379,7 +328,7 @@ def toplu_davet(kadro_id):
                     davet_tipi=davet_tipi,
                     kaynak=f'{davet_tipi}_davet',
                     durum='davet_gonderildi',
-                    davet_eden_id=current_user.id
+                    davet_eden_id=current_user.id  # *** YENİ: Daveti gönderen kullanıcı ***
                 )
                 
                 if davet_tipi == 'email':
@@ -425,7 +374,7 @@ def davet_tekrar(aday_id):
     aday.generate_token()
     aday.davet_gonderim_tarihi = datetime.utcnow()
     aday.durum = 'davet_gonderildi'
-    aday.davet_eden_id = current_user.id
+    aday.davet_eden_id = current_user.id  # *** YENİ: Tekrar gönderen de kaydedilsin ***
     
     db.session.commit()
     
@@ -451,6 +400,37 @@ def davet_tekrar(aday_id):
 
 # ==================== SMS Doğrulama ====================
 
+def send_otp_sms(aday):
+    """SMS ile OTP kodu gönder"""
+    try:
+        from twilio.rest import Client
+        
+        account_sid = current_app.config.get('TWILIO_ACCOUNT_SID')
+        auth_token = current_app.config.get('TWILIO_AUTH_TOKEN')
+        from_number = current_app.config.get('TWILIO_PHONE_NUMBER')
+        
+        if not all([account_sid, auth_token, from_number]):
+            return {'success': False, 'error': 'SMS servisi yapılandırılmamış'}
+        
+        client = Client(account_sid, auth_token)
+        
+        telefon = aday.telefon.replace(' ', '').replace('-', '')
+        if telefon.startswith('0'):
+            telefon = '+90' + telefon[1:]
+        elif not telefon.startswith('+'):
+            telefon = '+90' + telefon
+        
+        kod = aday.generate_otp()
+        mesaj = f"Team Guerilla is basvuru dogrulama kodunuz: {kod} - Bu kod 5 dakika gecerlidir."
+        
+        message = client.messages.create(body=mesaj, from_=from_number, to=telefon)
+        return {'success': True, 'message_sid': message.sid}
+        
+    except Exception as e:
+        current_app.logger.error(f"OTP SMS hatası: {str(e)}")
+        return {'success': False, 'error': str(e)}
+
+
 @basvuru_bp.route('/<token>/telefon-dogrula', methods=['GET', 'POST'])
 def telefon_dogrula(token):
     """Telefon doğrulama sayfası"""
@@ -464,9 +444,6 @@ def telefon_dogrula(token):
         return redirect(url_for('basvuru.basvuru_giris', token=token))
     
     if aday.telefon_dogrulandi:
-        # Kariyer başvurusu ise kariyer formuna yönlendir
-        if aday.kaynak == 'acik_basvuru':
-            return redirect(url_for('kariyer.basvuru_form', token=token))
         return redirect(url_for('basvuru.basvuru_form', token=token))
     
     if request.method == 'POST':
@@ -503,12 +480,9 @@ def telefon_dogrula(token):
             
             if success:
                 flash('Telefonunuz doğrulandı!', 'success')
-                # Kariyer başvurusu ise kariyer formuna yönlendir
-                if aday.kaynak == 'acik_basvuru':
-                    return redirect(url_for('kariyer.basvuru_form', token=token))
                 return redirect(url_for('basvuru.basvuru_form', token=token))
             else:
-                            flash(message, 'danger')
+                flash(message, 'danger')
     
     return render_template('basvuru/telefon_dogrula.html', aday=aday)
 

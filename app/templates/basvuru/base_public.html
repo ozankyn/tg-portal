@@ -5,146 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Başvuru{% endblock %} - Team Guerilla</title>
     
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwindcss.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#00a651',
+                        'primary-dark': '#008c44',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --tg-primary: #00a651;
-            --tg-secondary: #2c3e50;
-        }
-        
         body {
+            font-family: 'Manrope', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
-        
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
-        
-        .card-header {
-            background: var(--tg-primary);
-            color: white;
-            border-radius: 15px 15px 0 0 !important;
-            padding: 1.5rem;
-        }
-        
-        .btn-primary {
-            background: var(--tg-primary);
-            border-color: var(--tg-primary);
-        }
-        
-        .btn-primary:hover {
-            background: #008c44;
-            border-color: #008c44;
-        }
-        
-        .form-control:focus, .form-select:focus {
-            border-color: var(--tg-primary);
-            box-shadow: 0 0 0 0.2rem rgba(0, 166, 81, 0.25);
-        }
-        
-        .logo-container {
-            text-align: center;
-            padding: 2rem 0;
-        }
-        
-        .logo-container img {
-            max-width: 200px;
-        }
-        
-        .logo-text {
-            color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-top: 1rem;
-        }
-        
-        .progress-steps {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 2rem;
-        }
-        
-        .step {
-            display: flex;
-            align-items: center;
-            color: white;
-            opacity: 0.5;
-        }
-        
-        .step.active {
-            opacity: 1;
-        }
-        
-        .step.completed {
-            opacity: 1;
-        }
-        
-        .step-number {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 0.5rem;
-        }
-        
-        .step.active .step-number,
-        .step.completed .step-number {
-            background: white;
-            color: var(--tg-primary);
-        }
-        
-        .step-line {
-            width: 50px;
-            height: 2px;
-            background: rgba(255,255,255,0.3);
-            margin: 0 1rem;
-        }
-        
-        .step.completed + .step-line,
-        .step-line.completed {
-            background: white;
-        }
-        
         .kvkk-text {
             max-height: 400px;
             overflow-y: auto;
-            background: #f8f9fa;
-            padding: 1rem;
-            border-radius: 10px;
-            font-size: 0.9rem;
         }
-        
-        .section-title {
-            color: var(--tg-primary);
-            border-bottom: 2px solid var(--tg-primary);
-            padding-bottom: 0.5rem;
-            margin-bottom: 1rem;
+        .kvkk-text::-webkit-scrollbar {
+            width: 6px;
         }
-        
-        .required::after {
-            content: " *";
-            color: red;
+        .kvkk-text::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        .kvkk-text::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
         }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body>
-    <div class="container py-4">
+<body class="py-6 px-4">
+    <div class="max-w-3xl mx-auto">
         <!-- Logo -->
-        <div class="logo-container">
-            <div class="logo-text">
-                <i class="bi bi-building"></i> Team Guerilla
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center gap-3 text-white text-2xl font-bold">
+                <span class="material-symbols-outlined text-4xl">business</span>
+                Team Guerilla
             </div>
-            <small class="text-white-50">İş Başvuru Sistemi</small>
+            <p class="text-white/60 text-sm mt-1">İş Başvuru Sistemi</p>
         </div>
         
         {% block progress %}{% endblock %}
@@ -153,9 +65,18 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show mx-auto" style="max-width: 800px;">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div class="mb-4 p-4 rounded-xl flex items-center gap-3
+                    {% if category == 'success' %}bg-emerald-100 text-emerald-800 border border-emerald-200
+                    {% elif category == 'danger' or category == 'error' %}bg-red-100 text-red-800 border border-red-200
+                    {% elif category == 'warning' %}bg-amber-100 text-amber-800 border border-amber-200
+                    {% else %}bg-blue-100 text-blue-800 border border-blue-200{% endif %}">
+                    <span class="material-symbols-outlined">
+                        {% if category == 'success' %}check_circle
+                        {% elif category == 'danger' or category == 'error' %}error
+                        {% elif category == 'warning' %}warning
+                        {% else %}info{% endif %}
+                    </span>
+                    <span class="flex-1">{{ message }}</span>
                 </div>
                 {% endfor %}
             {% endif %}
@@ -164,13 +85,11 @@
         {% block content %}{% endblock %}
         
         <!-- Footer -->
-        <div class="text-center text-white-50 mt-4">
-            <small>&copy; 2024 Team Guerilla - Tüm hakları saklıdır</small>
+        <div class="text-center text-white/50 mt-8 text-sm">
+            &copy; 2024 Team Guerilla - Tüm hakları saklıdır
         </div>
     </div>
     
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

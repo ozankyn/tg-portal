@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Trafik Cezaları - TG Portal{% endblock %}
+{% block page_title %}Trafik Cezaları{% endblock %}
+
+{% block content %}
+{% if bekleyen_sayisi is defined and bekleyen_sayisi > 0 %}
+<div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-lg p-4 mb-4 flex items-center gap-2">
+    <span class="material-symbols-outlined text-amber-600">hourglass_empty</span>
+    <span><strong class="text-[#111418] dark:text-white">{{ bekleyen_sayisi }}</strong> ceza ödeme bekliyor.</span>
+</div>
+{% endif %}
+
+<div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+    <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex flex-wrap items-center justify-between gap-2">
+        <form method="GET" class="flex flex-wrap items-center gap-2">
+            <select name="arac_id" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                <option value="">Tüm Araçlar</option>
+                {% for arac in araclar %}
+                <option value="{{ arac.id }}" {{ 'selected' if request.args.get('arac_id')|int == arac.id }}>
+                    {{ arac.plaka }}
+                </option>
+                {% endfor %}
+            </select>
+            <select name="durum" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                <option value="">Tüm Durumlar</option>
+                <option value="bekliyor" {{ 'selected' if request.args.get('durum') == 'bekliyor' }}>Bekliyor</option>
+                <option value="odendi" {{ 'selected' if request.args.get('durum') == 'odendi' }}>Ödendi</option>
+                <option value="itiraz" {{ 'selected' if request.args.get('durum') == 'itiraz' }}>İtiraz</option>
+            </select>
+        </form>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-[#111418]">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tarih</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Araç</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Sürücü</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Ceza Türü</th>
+                    <th class="px-4 py-3 text-right font-medium text-text-muted dark:text-text-muted-dark">Tutar</th>
+                    <th class="px-4 py-3 text-center font-medium text-text-muted dark:text-text-muted-dark">Puan</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for ceza in cezalar %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                    <td class="px-4 py-3">{{ ceza.ceza_tarihi.strftime('%d.%m.%Y') }}</td>
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('filo.detay', id=ceza.arac_id) }}" class="text-blue-600 hover:underline font-medium">
+                            {{ ceza.arac.plaka }}
+                        </a>
+                    </td>
+                    <td class="px-4 py-3 text-text-muted dark:text-text-muted-dark">{{ ceza.surucu.full_name if ceza.surucu else '-' }}</td>
+                    <td class="px-4 py-3">{{ ceza.ceza_turu or '-' }}</td>
+                    <td class="px-4 py-3 text-right font-semibold text-rose-600 dark:text-rose-400">{{ "%.2f"|format(ceza.ceza_tutari) }} ₺</td>
+                    <td class="px-4 py-3 text-center">
+                        {% if ceza.ceza_puani %}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">{{ ceza.ceza_puani }}</span>
+                        {% else %}-{% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full 
+                            {% if ceza.durum == 'odendi' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400
+                            {% elif ceza.durum == 'itiraz' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+                            {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% endif %}">
+                            {{ ceza.durum|capitalize if ceza.durum else 'Bekliyor' }}
+                        </span>
+                        {% if ceza.surucuye_yansitildi %}
+                        <span class="ml-1 px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">Yansıtıldı</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('filo.ceza_detay', id=ceza.id) }}" class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors">
+                            <span class="material-symbols-outlined text-lg">visibility</span>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Trafik cezası bulunamadı</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if pagination and pagination.pages > 1 %}
+<nav class="mt-4 flex justify-center">
+    <ul class="inline-flex items-center gap-1">
+        {% for p in pagination.iter_pages() %}
+        {% if p %}
+        <li>
+            <a href="{{ url_for('filo.ceza_liste', page=p, **request.args) }}" class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white dark:bg-card-dark border border-border-light dark:border-border-dark text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

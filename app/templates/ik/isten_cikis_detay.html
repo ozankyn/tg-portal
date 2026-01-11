@@ -4,117 +4,125 @@
 {% block page_title %}İşten Çıkış Detay{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6">
         <!-- Çıkış Bilgileri -->
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Çıkış Bilgileri</h6>
-                <span class="badge bg-{{ cikis.durum_renk }}">{{ cikis.durum|title }}</span>
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">info</span>
+                    Çıkış Bilgileri
+                </h3>
+                <span class="inline-flex px-3 py-1 text-sm font-medium rounded-full bg-{{ cikis.durum_renk }}-100 text-{{ cikis.durum_renk }}-700 dark:bg-{{ cikis.durum_renk }}-900/30 dark:text-{{ cikis.durum_renk }}-400">{{ cikis.durum|title }}</span>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <table class="table table-sm table-borderless">
+            <div class="p-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <table class="w-full text-sm">
                             <tr>
-                                <td class="text-muted" width="40%">Çıkış Tipi</td>
-                                <td><strong>{{ cikis.cikis_tipi|title }}</strong></td>
+                                <td class="py-2 text-text-muted dark:text-text-muted-dark w-2/5">Çıkış Tipi</td>
+                                <td class="py-2 font-semibold text-text-primary dark:text-text-primary-dark">{{ cikis.cikis_tipi|title }}</td>
                             </tr>
                             <tr>
-                                <td class="text-muted">Çıkış Sebebi</td>
-                                <td>{{ cikis.cikis_sebebi or '-' }}</td>
+                                <td class="py-2 text-text-muted dark:text-text-muted-dark">Çıkış Sebebi</td>
+                                <td class="py-2 text-text-primary dark:text-text-primary-dark">{{ cikis.cikis_sebebi or '-' }}</td>
                             </tr>
                             <tr>
-                                <td class="text-muted">Talep Tarihi</td>
-                                <td>{{ cikis.talep_tarihi.strftime('%d.%m.%Y') if cikis.talep_tarihi else '-' }}</td>
+                                <td class="py-2 text-text-muted dark:text-text-muted-dark">Talep Tarihi</td>
+                                <td class="py-2 text-text-primary dark:text-text-primary-dark">{{ cikis.talep_tarihi.strftime('%d.%m.%Y') if cikis.talep_tarihi else '-' }}</td>
                             </tr>
                         </table>
                     </div>
-                    <div class="col-md-6">
-                        <table class="table table-sm table-borderless">
+                    <div>
+                        <table class="w-full text-sm">
                             <tr>
-                                <td class="text-muted" width="40%">Planlanan Tarih</td>
-                                <td>{{ cikis.planlanan_cikis_tarihi.strftime('%d.%m.%Y') }}</td>
+                                <td class="py-2 text-text-muted dark:text-text-muted-dark w-2/5">Planlanan Tarih</td>
+                                <td class="py-2 text-text-primary dark:text-text-primary-dark">{{ cikis.planlanan_cikis_tarihi.strftime('%d.%m.%Y') }}</td>
                             </tr>
                             <tr>
-                                <td class="text-muted">Gerçekleşen</td>
-                                <td>{{ cikis.gerceklesen_cikis_tarihi.strftime('%d.%m.%Y') if cikis.gerceklesen_cikis_tarihi else '-' }}</td>
+                                <td class="py-2 text-text-muted dark:text-text-muted-dark">Gerçekleşen</td>
+                                <td class="py-2 text-text-primary dark:text-text-primary-dark">{{ cikis.gerceklesen_cikis_tarihi.strftime('%d.%m.%Y') if cikis.gerceklesen_cikis_tarihi else '-' }}</td>
                             </tr>
                         </table>
                     </div>
                 </div>
                 {% if cikis.detay_notu %}
-                <div class="mt-3">
-                    <strong>Detay:</strong>
-                    <p class="text-muted mb-0">{{ cikis.detay_notu }}</p>
+                <div class="mt-4 pt-4 border-t border-gray-100">
+                    <p class="text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Detay:</p>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ cikis.detay_notu }}</p>
                 </div>
                 {% endif %}
             </div>
         </div>
         
         <!-- Checklist -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-check2-square me-2"></i>Çıkış Kontrol Listesi</h6>
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">checklist</span>
+                    Çıkış Kontrol Listesi
+                </h3>
             </div>
-            <div class="card-body">
+            <div class="p-6">
                 <form method="POST" action="{{ url_for('ik.isten_cikis_guncelle', id=cikis.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <div class="form-check form-switch">
-                                <input type="checkbox" name="zimmet_teslim" class="form-check-input" id="zimmetCheck" 
-                                       {{ 'checked' if cikis.zimmet_teslim }}>
-                                <label class="form-check-label" for="zimmetCheck">
-                                    <strong>Zimmet Teslimi</strong>
-                                    <small class="text-muted d-block">Şirket malzemeleri (bilgisayar, telefon, araç vb.) teslim alındı</small>
-                                </label>
+                    <div class="space-y-5">
+                        <div>
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" name="zimmet_teslim" {{ 'checked' if cikis.zimmet_teslim }}
+                                       class="w-5 h-5 mt-0.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <div>
+                                    <span class="font-medium text-text-primary dark:text-text-primary-dark">Zimmet Teslimi</span>
+                                    <span class="block text-sm text-text-muted dark:text-text-muted-dark">Şirket malzemeleri (bilgisayar, telefon, araç vb.) teslim alındı</span>
+                                </div>
+                            </label>
+                            <input type="text" name="zimmet_notu" placeholder="Zimmet notu..." value="{{ cikis.zimmet_notu or '' }}"
+                                   class="mt-2 w-full px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" name="sgk_cikis_bildirimi" {{ 'checked' if cikis.sgk_cikis_bildirimi }}
+                                       class="w-5 h-5 mt-0.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <div>
+                                    <span class="font-medium text-text-primary dark:text-text-primary-dark">SGK Çıkış Bildirimi</span>
+                                    <span class="block text-sm text-text-muted dark:text-text-muted-dark">SGK işten ayrılış bildirimi yapıldı</span>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" name="cikis_mulakati_yapildi" {{ 'checked' if cikis.cikis_mulakati_yapildi }}
+                                       class="w-5 h-5 mt-0.5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <div>
+                                    <span class="font-medium text-text-primary dark:text-text-primary-dark">Çıkış Mülakatı</span>
+                                    <span class="block text-sm text-text-muted dark:text-text-muted-dark">Çalışan ile çıkış mülakatı gerçekleştirildi</span>
+                                </div>
+                            </label>
+                            <textarea name="cikis_mulakat_notu" rows="2" placeholder="Mülakat notları..."
+                                      class="mt-2 w-full px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ cikis.cikis_mulakat_notu or '' }}</textarea>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                            <div>
+                                <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Kıdem Tazminatı (₺)</label>
+                                <input type="number" name="kidem_tazminati" step="0.01" value="{{ cikis.kidem_tazminati or '' }}"
+                                       class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             </div>
-                            <input type="text" name="zimmet_notu" class="form-control form-control-sm mt-2" 
-                                   placeholder="Zimmet notu..." value="{{ cikis.zimmet_notu or '' }}">
-                        </div>
-                        
-                        <div class="col-12">
-                            <div class="form-check form-switch">
-                                <input type="checkbox" name="sgk_cikis_bildirimi" class="form-check-input" id="sgkCheck"
-                                       {{ 'checked' if cikis.sgk_cikis_bildirimi }}>
-                                <label class="form-check-label" for="sgkCheck">
-                                    <strong>SGK Çıkış Bildirimi</strong>
-                                    <small class="text-muted d-block">SGK işten ayrılış bildirimi yapıldı</small>
-                                </label>
+                            <div>
+                                <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">İhbar Tazminatı (₺)</label>
+                                <input type="number" name="ihbar_tazminati" step="0.01" value="{{ cikis.ihbar_tazminati or '' }}"
+                                       class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             </div>
-                        </div>
-                        
-                        <div class="col-12">
-                            <div class="form-check form-switch">
-                                <input type="checkbox" name="cikis_mulakati_yapildi" class="form-check-input" id="mulakatCheck"
-                                       {{ 'checked' if cikis.cikis_mulakati_yapildi }}>
-                                <label class="form-check-label" for="mulakatCheck">
-                                    <strong>Çıkış Mülakatı</strong>
-                                    <small class="text-muted d-block">Çalışan ile çıkış mülakatı gerçekleştirildi</small>
-                                </label>
-                            </div>
-                            <textarea name="cikis_mulakat_notu" class="form-control form-control-sm mt-2" rows="2"
-                                      placeholder="Mülakat notları...">{{ cikis.cikis_mulakat_notu or '' }}</textarea>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label">Kıdem Tazminatı (₺)</label>
-                            <input type="number" name="kidem_tazminati" class="form-control" step="0.01"
-                                   value="{{ cikis.kidem_tazminati or '' }}">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label">İhbar Tazminatı (₺)</label>
-                            <input type="number" name="ihbar_tazminati" class="form-control" step="0.01"
-                                   value="{{ cikis.ihbar_tazminati or '' }}">
                         </div>
                     </div>
                     
-                    <div class="mt-4">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-2"></i>Kaydet
+                    <div class="mt-6 pt-4 border-t border-border-light dark:border-border-dark">
+                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <span class="material-symbols-outlined text-sm">check</span>
+                            Kaydet
                         </button>
                     </div>
                 </form>
@@ -123,64 +131,68 @@
         
         <!-- Tamamla -->
         {% if cikis.durum != 'tamamlandi' %}
-        <div class="card">
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('ik.isten_cikis_tamamla', id=cikis.id) }}" 
-                      onsubmit="return confirm('İşten çıkış işlemini tamamlamak istediğinize emin misiniz? Bu işlem çalışanın durumunu AYRILDI olarak değiştirecektir.')">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-check-circle me-2"></i>İşten Çıkışı Tamamla
-                    </button>
-                </form>
-            </div>
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-5">
+            <form method="POST" action="{{ url_for('ik.isten_cikis_tamamla', id=cikis.id) }}" 
+                  onsubmit="return confirm('İşten çıkış işlemini tamamlamak istediğinize emin misiniz? Bu işlem çalışanın durumunu AYRILDI olarak değiştirecektir.')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                    <span class="material-symbols-outlined text-sm">check_circle</span>
+                    İşten Çıkışı Tamamla
+                </button>
+            </form>
         </div>
         {% endif %}
     </div>
     
-    <div class="col-lg-4">
+    <div class="space-y-6">
         <!-- Çalışan Bilgileri -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-person me-2"></i>Çalışan</h6>
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">person</span>
+                    Çalışan
+                </h3>
             </div>
-            <div class="card-body text-center">
-                <div class="rounded-circle bg-secondary d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
-                    <i class="bi bi-person fs-3 text-white"></i>
+            <div class="p-5 text-center">
+                <div class="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <span class="material-symbols-outlined text-3xl text-text-muted dark:text-text-muted-dark">person</span>
                 </div>
-                <h5>{{ cikis.calisan.full_name }}</h5>
-                <p class="text-muted mb-0">{{ cikis.calisan.pozisyon.ad if cikis.calisan.pozisyon else '-' }}</p>
+                <h4 class="text-lg font-semibold text-text-primary dark:text-text-primary-dark">{{ cikis.calisan.full_name }}</h4>
+                <p class="text-text-muted dark:text-text-muted-dark">{{ cikis.calisan.pozisyon.ad if cikis.calisan.pozisyon else '-' }}</p>
             </div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Sicil No</span>
-                    <strong>{{ cikis.calisan.sicil_no or '-' }}</strong>
+            <ul class="divide-y divide-border-light dark:divide-border-dark">
+                <li class="px-5 py-3 flex justify-between text-sm">
+                    <span class="text-text-muted dark:text-text-muted-dark">Sicil No</span>
+                    <span class="font-medium text-text-primary dark:text-text-primary-dark">{{ cikis.calisan.sicil_no or '-' }}</span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>İşe Giriş</span>
-                    <span>{{ cikis.calisan.ise_baslama.strftime('%d.%m.%Y') if cikis.calisan.ise_baslama else '-' }}</span>
+                <li class="px-5 py-3 flex justify-between text-sm">
+                    <span class="text-text-muted dark:text-text-muted-dark">İşe Giriş</span>
+                    <span class="text-text-primary dark:text-text-primary-dark">{{ cikis.calisan.ise_baslama.strftime('%d.%m.%Y') if cikis.calisan.ise_baslama else '-' }}</span>
                 </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Kıdem</span>
-                    <span>{{ cikis.calisan.kidem_yili }} yıl</span>
+                <li class="px-5 py-3 flex justify-between text-sm">
+                    <span class="text-text-muted dark:text-text-muted-dark">Kıdem</span>
+                    <span class="text-text-primary dark:text-text-primary-dark">{{ cikis.calisan.kidem_yili }} yıl</span>
                 </li>
             </ul>
         </div>
         
         <!-- İlerleme -->
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>İlerleme</h6>
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">pie_chart</span>
+                    İlerleme
+                </h3>
             </div>
-            <div class="card-body">
-                <div class="text-center mb-3">
-                    <div class="display-4 fw-bold text-{{ 'success' if cikis.tamamlanma_yuzdesi == 100 else 'warning' }}">
+            <div class="p-5">
+                <div class="text-center mb-4">
+                    <p class="text-4xl font-bold {% if cikis.tamamlanma_yuzdesi == 100 %}text-green-600{% else %}text-yellow-600{% endif %}">
                         %{{ cikis.tamamlanma_yuzdesi }}
-                    </div>
-                    <small class="text-muted">Tamamlandı</small>
+                    </p>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">Tamamlandı</p>
                 </div>
-                <div class="progress" style="height: 10px;">
-                    <div class="progress-bar bg-{{ 'success' if cikis.tamamlanma_yuzdesi == 100 else 'warning' }}" 
-                         style="width: {{ cikis.tamamlanma_yuzdesi }}%"></div>
+                <div class="w-full bg-gray-100 dark:bg-gray-700 rounded-full h-2.5">
+                    <div class="h-2.5 rounded-full {% if cikis.tamamlanma_yuzdesi == 100 %}bg-green-500{% else %}bg-yellow-500{% endif %}" style="width: {{ cikis.tamamlanma_yuzdesi }}%"></div>
                 </div>
             </div>
         </div>

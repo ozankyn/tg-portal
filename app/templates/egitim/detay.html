@@ -4,131 +4,132 @@
 {% block page_title %}Eğitim Detay{% endblock %}
 
 {% block content %}
-<div class="row g-4">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Sol Panel - Eğitim Bilgileri -->
-    <div class="col-lg-4">
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-mortarboard me-2"></i>Eğitim Bilgileri</h6>
-                <span class="badge bg-{{ egitim.durum_renk }}">{{ egitim.durum|replace('_', ' ')|title }}</span>
+    <div class="space-y-6">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">school</span>
+                    Eğitim Bilgileri
+                </h6>
+                {% set durum_renk = {
+                    'planli': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                    'devam_ediyor': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                    'tamamlandi': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                    'iptal': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+                } %}
+                <span class="px-2 py-1 text-xs font-bold rounded-full {{ durum_renk.get(egitim.durum, 'bg-gray-100 text-gray-700') }}">
+                    {{ egitim.durum|replace('_', ' ')|title }}
+                </span>
             </div>
-            <div class="card-body">
-                <h5 class="card-title">{{ egitim.baslik }}</h5>
-                <p class="text-muted small mb-3">{{ egitim.aciklama or 'Açıklama girilmedi' }}</p>
+            <div class="p-5">
+                <h5 class="text-lg font-bold text-[#111418] dark:text-white mb-2">{{ egitim.baslik }}</h5>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">{{ egitim.aciklama or 'Açıklama girilmedi' }}</p>
                 
-                <ul class="list-unstyled mb-0">
-                    <li class="mb-2">
-                        <i class="bi bi-tag me-2 text-muted"></i>
-                        <strong>Tip:</strong> {{ egitim.egitim_tipi.ad }}
-                    </li>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">label</span>
+                        <div><strong>Tip:</strong> {{ egitim.egitim_tipi.ad }}</div>
+                    </div>
                     {% if egitim.proje %}
-                    <li class="mb-2">
-                        <i class="bi bi-briefcase me-2 text-muted"></i>
-                        <strong>Proje:</strong> {{ egitim.proje.musteri.display_name }} - {{ egitim.proje.ad }}
-                    </li>
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">work</span>
+                        <div><strong>Proje:</strong> {{ egitim.proje.musteri.display_name }} - {{ egitim.proje.ad }}</div>
+                    </div>
                     {% endif %}
-                    <li class="mb-2">
-                        <i class="bi bi-calendar me-2 text-muted"></i>
-                        <strong>Tarih:</strong> {{ egitim.baslangic_tarihi.strftime('%d.%m.%Y %H:%M') }}
-                        {% if egitim.bitis_tarihi %} - {{ egitim.bitis_tarihi.strftime('%H:%M') }}{% endif %}
-                    </li>
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">event</span>
+                        <div><strong>Tarih:</strong> {{ egitim.baslangic_tarihi.strftime('%d.%m.%Y %H:%M') }}{% if egitim.bitis_tarihi %} - {{ egitim.bitis_tarihi.strftime('%H:%M') }}{% endif %}</div>
+                    </div>
                     {% if egitim.sure_saat %}
-                    <li class="mb-2">
-                        <i class="bi bi-clock me-2 text-muted"></i>
-                        <strong>Süre:</strong> {{ egitim.sure_saat }} saat
-                    </li>
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">schedule</span>
+                        <div><strong>Süre:</strong> {{ egitim.sure_saat }} saat</div>
+                    </div>
                     {% endif %}
-                    <li class="mb-2">
-                        <i class="bi bi-geo-alt me-2 text-muted"></i>
-                        <strong>Lokasyon:</strong>
-                        {% if egitim.lokasyon_tipi == 'online' %}
-                        <span class="badge bg-info">Online</span>
-                        {% elif egitim.lokasyon_tipi == 'hibrit' %}
-                        <span class="badge bg-warning">Hibrit</span>
-                        {% else %}
-                        <span class="badge bg-primary">Yüz yüze</span>
-                        {% endif %}
-                        {% if egitim.lokasyon %}
-                        <br><small class="text-muted">{{ egitim.lokasyon }}</small>
-                        {% endif %}
-                    </li>
-                    <li class="mb-2">
-                        <i class="bi bi-person-badge me-2 text-muted"></i>
-                        <strong>Eğitmen:</strong>
-                        {% if egitim.egitmen %}
-                        {{ egitim.egitmen.full_name }}
-                        {% elif egitim.dis_egitmen_ad %}
-                        {{ egitim.dis_egitmen_ad }} <small class="text-muted">({{ egitim.dis_egitmen_kurum or 'Dış' }})</small>
-                        {% else %}
-                        <span class="text-muted">Belirlenmedi</span>
-                        {% endif %}
-                    </li>
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">location_on</span>
+                        <div>
+                            <strong>Lokasyon:</strong>
+                            {% if egitim.lokasyon_tipi == 'online' %}
+                            <span class="ml-1 px-2 py-0.5 bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400 text-xs rounded-full">Online</span>
+                            {% elif egitim.lokasyon_tipi == 'hibrit' %}
+                            <span class="ml-1 px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs rounded-full">Hibrit</span>
+                            {% else %}
+                            <span class="ml-1 px-2 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs rounded-full">Yüz yüze</span>
+                            {% endif %}
+                            {% if egitim.lokasyon %}
+                            <p class="text-text-muted dark:text-text-muted-dark text-xs mt-1">{{ egitim.lokasyon }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">person</span>
+                        <div>
+                            <strong>Eğitmen:</strong>
+                            {% if egitim.egitmen %}{{ egitim.egitmen.full_name }}
+                            {% elif egitim.dis_egitmen_ad %}{{ egitim.dis_egitmen_ad }} <span class="text-text-muted dark:text-text-muted-dark text-xs">({{ egitim.dis_egitmen_kurum or 'Dış' }})</span>
+                            {% else %}<span class="text-text-muted dark:text-text-muted-dark">Belirlenmedi</span>{% endif %}
+                        </div>
+                    </div>
                     {% if egitim.maliyet %}
-                    <li class="mb-2">
-                        <i class="bi bi-currency-lira me-2 text-muted"></i>
-                        <strong>Maliyet:</strong> {{ "%.2f"|format(egitim.maliyet) }} ₺
-                    </li>
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">payments</span>
+                        <div><strong>Maliyet:</strong> {{ "%.2f"|format(egitim.maliyet) }} ₺</div>
+                    </div>
                     {% endif %}
-                </ul>
+                </div>
             </div>
-            <div class="card-footer">
-                <div class="btn-group w-100">
-                    <a href="{{ url_for('egitim.duzenle', id=egitim.id) }}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-pencil me-1"></i> Düzenle
-                    </a>
-                    <button type="button" class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                        Durum
+            <div class="px-5 py-4 border-t border-border-light dark:border-border-dark flex gap-2">
+                <a href="{{ url_for('egitim.duzenle', id=egitim.id) }}" class="flex-1 px-3 py-2 border border-primary text-primary hover:bg-primary/10 font-medium text-sm rounded-lg text-center transition-colors">
+                    <span class="material-symbols-outlined text-base align-middle mr-1">edit</span>Düzenle
+                </a>
+                <div class="relative" x-data="{ open: false }">
+                    <button @click="open = !open" class="px-3 py-2 border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#252b36] font-medium text-sm rounded-lg transition-colors flex items-center gap-1">
+                        Durum <span class="material-symbols-outlined text-base">expand_more</span>
                     </button>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <form method="POST" action="{{ url_for('egitim.durum_degistir', id=egitim.id, durum='planli') }}" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="dropdown-item">Planlı</button>
-                            </form>
-                        </li>
-                        <li>
-                            <form method="POST" action="{{ url_for('egitim.durum_degistir', id=egitim.id, durum='devam_ediyor') }}" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="dropdown-item">Devam Ediyor</button>
-                            </form>
-                        </li>
-                        <li>
-                            <form method="POST" action="{{ url_for('egitim.durum_degistir', id=egitim.id, durum='tamamlandi') }}" class="d-inline">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="dropdown-item">Tamamlandı</button>
-                            </form>
-                        </li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li>
-                            <button type="button" class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#iptalModal">
-                                İptal Et
-                            </button>
-                        </li>
-                    </ul>
+                    <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-40 bg-white dark:bg-card-dark rounded-lg shadow-lg border border-border-light dark:border-border-dark z-10">
+                        <form method="POST" action="{{ url_for('egitim.durum_degistir', id=egitim.id, durum='planli') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-[#252b36]">Planlı</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('egitim.durum_degistir', id=egitim.id, durum='devam_ediyor') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-[#252b36]">Devam Ediyor</button>
+                        </form>
+                        <form method="POST" action="{{ url_for('egitim.durum_degistir', id=egitim.id, durum='tamamlandi') }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-[#252b36]">Tamamlandı</button>
+                        </form>
+                        <div class="border-t border-border-light dark:border-border-dark"></div>
+                        <button onclick="document.getElementById('iptalModal').classList.remove('hidden')" class="w-full px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/10">İptal Et</button>
+                    </div>
                 </div>
             </div>
         </div>
         
         <!-- Katılım İstatistikleri -->
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Katılım</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">bar_chart</span>
+                    Katılım
+                </h6>
             </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-4">
-                        <div class="fs-4 fw-bold text-primary">{{ egitim.katilimci_sayisi }}</div>
-                        <small class="text-muted">Davetli</small>
+            <div class="p-5">
+                <div class="grid grid-cols-3 text-center gap-4">
+                    <div>
+                        <div class="text-2xl font-bold text-blue-600">{{ egitim.katilimci_sayisi }}</div>
+                        <div class="text-xs text-text-muted dark:text-text-muted-dark">Davetli</div>
                     </div>
-                    <div class="col-4">
-                        <div class="fs-4 fw-bold text-success">{{ egitim.tamamlayan_sayisi }}</div>
-                        <small class="text-muted">Başarılı</small>
+                    <div>
+                        <div class="text-2xl font-bold text-emerald-600">{{ egitim.tamamlayan_sayisi }}</div>
+                        <div class="text-xs text-text-muted dark:text-text-muted-dark">Başarılı</div>
                     </div>
-                    <div class="col-4">
-                        <div class="fs-4 fw-bold text-info">
-                            {% if egitim.kontenjan %}{{ egitim.doluluk_orani }}%{% else %}-{% endif %}
-                        </div>
-                        <small class="text-muted">Doluluk</small>
+                    <div>
+                        <div class="text-2xl font-bold text-cyan-600">{% if egitim.kontenjan %}{{ egitim.doluluk_orani }}%{% else %}-{% endif %}</div>
+                        <div class="text-xs text-text-muted dark:text-text-muted-dark">Doluluk</div>
                     </div>
                 </div>
             </div>
@@ -136,204 +137,170 @@
     </div>
     
     <!-- Sağ Panel -->
-    <div class="col-lg-8">
+    <div class="lg:col-span-2">
         <!-- Tab Menü -->
-        <ul class="nav nav-tabs mb-4" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#katilimcilar" type="button">
-                    <i class="bi bi-people me-1"></i> Katılımcılar ({{ katilimcilar|length }})
+        <div class="mb-4 border-b border-border-light dark:border-border-dark" x-data="{ tab: 'katilimcilar' }">
+            <div class="flex gap-4">
+                <button @click="tab = 'katilimcilar'" :class="tab === 'katilimcilar' ? 'border-b-2 border-primary text-primary' : 'text-text-muted dark:text-text-muted-dark'" class="pb-3 px-1 font-medium text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">groups</span>
+                    Katılımcılar ({{ katilimcilar|length }})
                 </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#materyaller" type="button">
-                    <i class="bi bi-folder me-1"></i> Materyaller ({{ materyaller|length }})
+                <button @click="tab = 'materyaller'" :class="tab === 'materyaller' ? 'border-b-2 border-primary text-primary' : 'text-text-muted dark:text-text-muted-dark'" class="pb-3 px-1 font-medium text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">folder</span>
+                    Materyaller ({{ materyaller|length }})
                 </button>
-            </li>
-        </ul>
+            </div>
         
-        <div class="tab-content">
             <!-- Katılımcılar Tab -->
-            <div class="tab-pane fade show active" id="katilimcilar" role="tabpanel">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">Katılımcı Listesi</h6>
-                            <div class="btn-group btn-group-sm">
-                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#katilimciEkleModal">
-                                    <i class="bi bi-plus-lg me-1"></i> Katılımcı Ekle
-                                </button>
-                                {% if egitim.proje %}
-                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#topluEkleModal">
-                                    <i class="bi bi-people me-1"></i> Toplu Ekle
-                                </button>
-                                {% endif %}
-                            </div>
+            <div x-show="tab === 'katilimcilar'" class="pt-4">
+                <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                        <h6 class="font-bold text-[#111418] dark:text-white">Katılımcı Listesi</h6>
+                        <div class="flex gap-2">
+                            <button onclick="document.getElementById('katilimciEkleModal').classList.remove('hidden')" class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white font-medium text-sm rounded-lg transition-colors flex items-center gap-1">
+                                <span class="material-symbols-outlined text-lg">add</span>Ekle
+                            </button>
+                            {% if egitim.proje %}
+                            <button onclick="document.getElementById('topluEkleModal').classList.remove('hidden')" class="px-3 py-1.5 border border-primary text-primary hover:bg-primary/10 font-medium text-sm rounded-lg transition-colors flex items-center gap-1">
+                                <span class="material-symbols-outlined text-lg">group_add</span>Toplu
+                            </button>
+                            {% endif %}
                         </div>
                     </div>
-                    <div class="card-body p-0">
-                        {% if katilimcilar %}
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Çalışan</th>
-                                        <th>Departman</th>
-                                        <th>Durum</th>
-                                        <th>Puan</th>
-                                        <th>Sertifika</th>
-                                        <th class="text-end">İşlem</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for k in katilimcilar %}
-                                    <tr>
-                                        <td>
-                                            <a href="{{ url_for('ik.detay', id=k.calisan_id) }}" class="text-decoration-none">
-                                                {{ k.calisan.full_name }}
-                                            </a>
-                                        </td>
-                                        <td>
-                                            <small class="text-muted">{{ k.calisan.departman.ad if k.calisan.departman else '-' }}</small>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-{{ k.durum_renk }}">{{ k.durum_text }}</span>
-                                        </td>
-                                        <td>{{ k.puan if k.puan else '-' }}</td>
-                                        <td>
-                                            {% if k.sertifika_tarihi %}
-                                            <i class="bi bi-award text-success" title="{{ k.sertifika_tarihi.strftime('%d.%m.%Y') }}"></i>
-                                            {% if k.sertifika_gecerlilik %}
-                                            <small class="text-muted">{{ k.sertifika_gecerlilik.strftime('%d.%m.%Y') }}'e kadar</small>
-                                            {% endif %}
-                                            {% else %}
-                                            -
-                                            {% endif %}
-                                        </td>
-                                        <td class="text-end">
-                                            <div class="btn-group btn-group-sm">
-                                                <button type="button" class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-                                                    İşlem
-                                                </button>
-                                                <ul class="dropdown-menu dropdown-menu-end">
-                                                    <li><h6 class="dropdown-header">Durum Değiştir</h6></li>
-                                                    <li><a class="dropdown-item" href="#" onclick="updateKatilimci({{ k.id }}, 'katildi')">Katıldı</a></li>
-                                                    <li><a class="dropdown-item" href="#" onclick="updateKatilimci({{ k.id }}, 'gecti')">Başarılı</a></li>
-                                                    <li><a class="dropdown-item" href="#" onclick="updateKatilimci({{ k.id }}, 'kaldi')">Başarısız</a></li>
-                                                    <li><a class="dropdown-item" href="#" onclick="updateKatilimci({{ k.id }}, 'mazeret')">Mazeretli</a></li>
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <li>
-                                                        <form method="POST" action="{{ url_for('egitim.katilimci_sil', id=k.id) }}" onsubmit="return confirm('Katılımcıyı silmek istediğinize emin misiniz?')">
-                                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                            <button type="submit" class="dropdown-item text-danger">Sil</button>
-                                                        </form>
-                                                    </li>
-                                                </ul>
+                    {% if katilimcilar %}
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 dark:bg-[#111418]">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Çalışan</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden md:table-cell">Departman</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Durum</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden sm:table-cell">Puan</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden lg:table-cell">Sertifika</th>
+                                    <th class="px-4 py-3 text-right text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                                {% for k in katilimcilar %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                                    <td class="px-4 py-3">
+                                        <a href="{{ url_for('ik.detay', id=k.calisan_id) }}" class="font-medium text-[#111418] dark:text-white hover:text-primary">{{ k.calisan.full_name }}</a>
+                                    </td>
+                                    <td class="px-4 py-3 hidden md:table-cell text-sm text-text-muted dark:text-text-muted-dark">{{ k.calisan.departman.ad if k.calisan.departman else '-' }}</td>
+                                    <td class="px-4 py-3">
+                                        <span class="px-2 py-1 text-xs font-bold rounded-full bg-{{ k.durum_renk }}-100 text-{{ k.durum_renk }}-700 dark:bg-{{ k.durum_renk }}-900/30 dark:text-{{ k.durum_renk }}-400">{{ k.durum_text }}</span>
+                                    </td>
+                                    <td class="px-4 py-3 hidden sm:table-cell text-sm">{{ k.puan if k.puan else '-' }}</td>
+                                    <td class="px-4 py-3 hidden lg:table-cell">
+                                        {% if k.sertifika_tarihi %}
+                                        <span class="material-symbols-outlined text-emerald-500" title="{{ k.sertifika_tarihi.strftime('%d.%m.%Y') }}">verified</span>
+                                        {% if k.sertifika_gecerlilik %}
+                                        <span class="text-xs text-text-muted dark:text-text-muted-dark">{{ k.sertifika_gecerlilik.strftime('%d.%m.%Y') }}'e kadar</span>
+                                        {% endif %}
+                                        {% else %}-{% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 text-right">
+                                        <div class="relative" x-data="{ open: false }">
+                                            <button @click="open = !open" class="p-1.5 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg">
+                                                <span class="material-symbols-outlined">more_vert</span>
+                                            </button>
+                                            <div x-show="open" @click.away="open = false" class="absolute right-0 mt-1 w-36 bg-white dark:bg-card-dark rounded-lg shadow-lg border border-border-light dark:border-border-dark z-10">
+                                                <button onclick="updateKatilimci({{ k.id }}, 'katildi')" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-[#252b36]">Katıldı</button>
+                                                <button onclick="updateKatilimci({{ k.id }}, 'gecti')" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-[#252b36]">Başarılı</button>
+                                                <button onclick="updateKatilimci({{ k.id }}, 'kaldi')" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-[#252b36]">Başarısız</button>
+                                                <button onclick="updateKatilimci({{ k.id }}, 'mazeret')" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-[#252b36]">Mazeretli</button>
+                                                <div class="border-t border-border-light dark:border-border-dark"></div>
+                                                <form method="POST" action="{{ url_for('egitim.katilimci_sil', id=k.id) }}" onsubmit="return confirm('Silmek istediğinize emin misiniz?')">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="w-full px-3 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/10">Sil</button>
+                                                </form>
                                             </div>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <div class="text-center text-muted py-5">
-                            <i class="bi bi-people fs-1 d-block mb-2"></i>
-                            Henüz katılımcı eklenmedi
-                        </div>
-                        {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
+                    {% else %}
+                    <div class="py-12 text-center">
+                        <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-2">groups</span>
+                        <p class="text-text-muted dark:text-text-muted-dark">Henüz katılımcı eklenmedi</p>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             
             <!-- Materyaller Tab -->
-            <div class="tab-pane fade" id="materyaller" role="tabpanel">
-                <div class="card">
-                    <div class="card-header">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">Eğitim Materyalleri</h6>
-                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#materyalModal">
-                                <i class="bi bi-upload me-1"></i> Materyal Ekle
-                            </button>
-                        </div>
+            <div x-show="tab === 'materyaller'" class="pt-4">
+                <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                        <h6 class="font-bold text-[#111418] dark:text-white">Eğitim Materyalleri</h6>
+                        <button onclick="document.getElementById('materyalModal').classList.remove('hidden')" class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white font-medium text-sm rounded-lg transition-colors flex items-center gap-1">
+                            <span class="material-symbols-outlined text-lg">upload</span>Ekle
+                        </button>
                     </div>
-                    <div class="card-body">
+                    <div class="p-5">
                         {% if materyaller %}
-                        <div class="row g-3">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {% for m in materyaller %}
-                            <div class="col-md-6">
-                                <div class="card h-100 border">
-                                    <div class="card-body">
-                                        <div class="d-flex align-items-start">
-                                            <div class="flex-shrink-0 me-3">
-                                                {% if m.materyal_tipi == 'video' %}
-                                                <div class="bg-danger bg-opacity-10 rounded p-2">
-                                                    <i class="bi bi-play-circle text-danger fs-4"></i>
-                                                </div>
-                                                {% elif m.materyal_tipi == 'sunum' %}
-                                                <div class="bg-warning bg-opacity-10 rounded p-2">
-                                                    <i class="bi bi-file-earmark-slides text-warning fs-4"></i>
-                                                </div>
-                                                {% elif m.materyal_tipi == 'gorsel' %}
-                                                <div class="bg-info bg-opacity-10 rounded p-2">
-                                                    <i class="bi bi-image text-info fs-4"></i>
-                                                </div>
-                                                {% elif m.materyal_tipi == 'link' %}
-                                                <div class="bg-primary bg-opacity-10 rounded p-2">
-                                                    <i class="bi bi-link-45deg text-primary fs-4"></i>
-                                                </div>
-                                                {% else %}
-                                                <div class="bg-secondary bg-opacity-10 rounded p-2">
-                                                    <i class="bi bi-file-earmark-text text-secondary fs-4"></i>
-                                                </div>
-                                                {% endif %}
-                                            </div>
-                                            <div class="flex-grow-1">
-                                                <h6 class="mb-1">{{ m.ad }}</h6>
-                                                {% if m.aciklama %}
-                                                <p class="text-muted small mb-2">{{ m.aciklama }}</p>
-                                                {% endif %}
-                                                {% if m.dosya_boyut %}
-                                                <small class="text-muted">
-                                                    {% if m.dosya_boyut > 1048576 %}
-                                                    {{ (m.dosya_boyut / 1048576)|round(2) }} MB
-                                                    {% else %}
-                                                    {{ (m.dosya_boyut / 1024)|round(1) }} KB
-                                                    {% endif %}
-                                                </small>
-                                                {% endif %}
-                                            </div>
-                                        </div>
+                            <div class="border border-border-light dark:border-border-dark rounded-xl p-4">
+                                <div class="flex items-start gap-3">
+                                    {% if m.materyal_tipi == 'video' %}
+                                    <div class="w-10 h-10 bg-rose-100 dark:bg-rose-900/30 rounded-lg flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-rose-600">play_circle</span>
                                     </div>
-                                    <div class="card-footer bg-transparent border-top-0">
-                                        <div class="btn-group btn-group-sm w-100">
-                                            <a href="{{ url_for('egitim.materyal_goruntule', id=m.id) }}" class="btn btn-outline-primary">
-                                                <i class="bi bi-eye me-1"></i> Görüntüle
-                                            </a>
-                                            {% if m.dosya_yolu %}
-                                            <a href="{{ url_for('egitim.materyal_indir', id=m.id) }}" class="btn btn-outline-secondary">
-                                                <i class="bi bi-download"></i>
-                                            </a>
-                                            {% endif %}
-                                            <form method="POST" action="{{ url_for('egitim.materyal_sil', id=m.id) }}" 
-                                                  onsubmit="return confirm('Materyali silmek istediğinize emin misiniz?')" class="d-inline">
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                <button type="submit" class="btn btn-outline-danger">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
+                                    {% elif m.materyal_tipi == 'sunum' %}
+                                    <div class="w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-amber-600">slideshow</span>
                                     </div>
+                                    {% elif m.materyal_tipi == 'gorsel' %}
+                                    <div class="w-10 h-10 bg-cyan-100 dark:bg-cyan-900/30 rounded-lg flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-cyan-600">image</span>
+                                    </div>
+                                    {% elif m.materyal_tipi == 'link' %}
+                                    <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-blue-600">link</span>
+                                    </div>
+                                    {% else %}
+                                    <div class="w-10 h-10 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-gray-600">description</span>
+                                    </div>
+                                    {% endif %}
+                                    <div class="flex-1">
+                                        <h6 class="font-medium text-[#111418] dark:text-white">{{ m.ad }}</h6>
+                                        {% if m.aciklama %}
+                                        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">{{ m.aciklama }}</p>
+                                        {% endif %}
+                                        {% if m.dosya_boyut %}
+                                        <span class="text-xs text-text-muted dark:text-text-muted-dark">
+                                            {% if m.dosya_boyut > 1048576 %}{{ (m.dosya_boyut / 1048576)|round(2) }} MB{% else %}{{ (m.dosya_boyut / 1024)|round(1) }} KB{% endif %}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 mt-3">
+                                    <a href="{{ url_for('egitim.materyal_goruntule', id=m.id) }}" class="flex-1 px-3 py-1.5 border border-primary text-primary hover:bg-primary/10 text-xs font-medium rounded-lg text-center">Görüntüle</a>
+                                    {% if m.dosya_yolu %}
+                                    <a href="{{ url_for('egitim.materyal_indir', id=m.id) }}" class="p-1.5 border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#252b36] rounded-lg">
+                                        <span class="material-symbols-outlined text-lg">download</span>
+                                    </a>
+                                    {% endif %}
+                                    <form method="POST" action="{{ url_for('egitim.materyal_sil', id=m.id) }}" onsubmit="return confirm('Silmek istediğinize emin misiniz?')">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="p-1.5 border border-rose-200 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-lg">
+                                            <span class="material-symbols-outlined text-lg">delete</span>
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                             {% endfor %}
                         </div>
                         {% else %}
-                        <div class="text-center text-muted py-5">
-                            <i class="bi bi-folder fs-1 d-block mb-2"></i>
-                            Henüz materyal eklenmedi
-                            <p class="small mt-2">
-                                PDF, PowerPoint, video veya harici link ekleyebilirsiniz.
-                            </p>
+                        <div class="py-12 text-center">
+                            <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-2">folder</span>
+                            <p class="text-text-muted dark:text-text-muted-dark">Henüz materyal eklenmedi</p>
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">PDF, PowerPoint, video veya harici link ekleyebilirsiniz.</p>
                         </div>
                         {% endif %}
                     </div>
@@ -344,180 +311,143 @@
 </div>
 
 <!-- Katılımcı Ekle Modal -->
-<div class="modal fade" id="katilimciEkleModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('egitim.katilimci_ekle', id=egitim.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                    <h5 class="modal-title">Katılımcı Ekle</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Çalışanlar</label>
-                        <select name="calisan_ids" class="form-select" multiple size="10" required>
-                            {% for c in eklenebilir_calisanlar %}
-                            <option value="{{ c.id }}">{{ c.full_name }} - {{ c.departman.ad if c.departman else 'Departman yok' }}</option>
-                            {% endfor %}
-                        </select>
-                        <small class="text-muted">Ctrl/Cmd tuşu ile birden fazla seçebilirsiniz</small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-primary">Ekle</button>
-                </div>
-            </form>
-        </div>
+<div id="katilimciEkleModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+        <form method="POST" action="{{ url_for('egitim.katilimci_ekle', id=egitim.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h5 class="font-bold text-lg text-[#111418] dark:text-white">Katılımcı Ekle</h5>
+                <button type="button" onclick="this.closest('.fixed').classList.add('hidden')" class="p-1 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6">
+                <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Çalışanlar</label>
+                <select name="calisan_ids" multiple size="10" required class="w-full p-2 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    {% for c in eklenebilir_calisanlar %}
+                    <option value="{{ c.id }}">{{ c.full_name }} - {{ c.departman.ad if c.departman else 'Departman yok' }}</option>
+                    {% endfor %}
+                </select>
+                <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Ctrl/Cmd tuşu ile birden fazla seçebilirsiniz</p>
+            </div>
+            <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3">
+                <button type="button" onclick="this.closest('.fixed').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors">İptal</button>
+                <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors">Ekle</button>
+            </div>
+        </form>
     </div>
 </div>
 
 <!-- Toplu Ekle Modal -->
 {% if egitim.proje %}
-<div class="modal fade" id="topluEkleModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('egitim.toplu_katilimci', id=egitim.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                    <h5 class="modal-title">Toplu Katılımcı Ekle</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Kaynak</label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="kaynak" value="proje" id="kaynakProje" checked>
-                            <label class="form-check-label" for="kaynakProje">
-                                Tüm proje çalışanları
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="kaynak" value="kadro" id="kaynakKadro">
-                            <label class="form-check-label" for="kaynakKadro">
-                                Belirli kadrodan
-                            </label>
-                        </div>
-                    </div>
-                    <input type="hidden" name="kaynak_id" value="{{ egitim.proje_id }}">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-primary">Tümünü Ekle</button>
-                </div>
-            </form>
-        </div>
+<div id="topluEkleModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl w-full max-w-md">
+        <form method="POST" action="{{ url_for('egitim.toplu_katilimci', id=egitim.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h5 class="font-bold text-lg text-[#111418] dark:text-white">Toplu Katılımcı Ekle</h5>
+                <button type="button" onclick="this.closest('.fixed').classList.add('hidden')" class="p-1 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6">
+                <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Kaynak</label>
+                <label class="flex items-center gap-2 mb-2 cursor-pointer">
+                    <input type="radio" name="kaynak" value="proje" checked class="w-4 h-4 text-primary">
+                    <span class="text-sm">Tüm proje çalışanları</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="kaynak" value="kadro" class="w-4 h-4 text-primary">
+                    <span class="text-sm">Belirli kadrodan</span>
+                </label>
+                <input type="hidden" name="kaynak_id" value="{{ egitim.proje_id }}">
+            </div>
+            <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3">
+                <button type="button" onclick="this.closest('.fixed').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors">İptal</button>
+                <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors">Tümünü Ekle</button>
+            </div>
+        </form>
     </div>
 </div>
 {% endif %}
 
 <!-- Materyal Ekle Modal -->
-<div class="modal fade" id="materyalModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('egitim.materyal_yukle', id=egitim.id) }}" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                    <h5 class="modal-title">Materyal Ekle</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div id="materyalModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl w-full max-w-md">
+        <form method="POST" action="{{ url_for('egitim.materyal_yukle', id=egitim.id) }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h5 class="font-bold text-lg text-[#111418] dark:text-white">Materyal Ekle</h5>
+                <button type="button" onclick="this.closest('.fixed').classList.add('hidden')" class="p-1 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-4" x-data="{ mode: 'dosya' }">
+                <div class="flex gap-2">
+                    <button type="button" @click="mode = 'dosya'" :class="mode === 'dosya' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'" class="flex-1 py-2 text-sm font-medium rounded-lg transition-colors">
+                        <span class="material-symbols-outlined text-base align-middle mr-1">upload</span>Dosya Yükle
+                    </button>
+                    <button type="button" @click="mode = 'link'" :class="mode === 'link' ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-800'" class="flex-1 py-2 text-sm font-medium rounded-lg transition-colors">
+                        <span class="material-symbols-outlined text-base align-middle mr-1">link</span>Link Ekle
+                    </button>
                 </div>
-                <div class="modal-body">
-                    <!-- Tab seçimi -->
-                    <ul class="nav nav-pills nav-justified mb-3" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#dosyaYukle" type="button">
-                                <i class="bi bi-upload me-1"></i> Dosya Yükle
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#linkEkle" type="button">
-                                <i class="bi bi-link-45deg me-1"></i> Link Ekle
-                            </button>
-                        </li>
-                    </ul>
-                    
-                    <div class="tab-content">
-                        <!-- Dosya Yükle Tab -->
-                        <div class="tab-pane fade show active" id="dosyaYukle" role="tabpanel">
-                            <div class="mb-3">
-                                <label class="form-label">Dosya *</label>
-                                <input type="file" name="dosya" class="form-control" accept=".pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.mp4,.webm,.jpg,.jpeg,.png,.gif">
-                                <small class="text-muted">PDF, Office, Video veya Görsel dosyaları</small>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Başlık</label>
-                                <input type="text" name="ad" class="form-control" placeholder="Boş bırakılırsa dosya adı kullanılır">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Açıklama</label>
-                                <textarea name="aciklama" class="form-control" rows="2" placeholder="İsteğe bağlı"></textarea>
-                            </div>
-                        </div>
-                        
-                        <!-- Link Ekle Tab -->
-                        <div class="tab-pane fade" id="linkEkle" role="tabpanel">
-                            <div class="mb-3">
-                                <label class="form-label">Link *</label>
-                                <input type="url" name="harici_link" class="form-control" placeholder="https://...">
-                                <small class="text-muted">YouTube, Vimeo, Canva, Google Docs, Loom veya herhangi bir URL</small>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Başlık *</label>
-                                <input type="text" name="ad" class="form-control" placeholder="İçeriğin başlığı">
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Tip</label>
-                                <select name="materyal_tipi" class="form-select">
-                                    <option value="link">Link</option>
-                                    <option value="video">Video</option>
-                                    <option value="sunum">Sunum</option>
-                                    <option value="dokuman">Döküman</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Açıklama</label>
-                                <textarea name="aciklama" class="form-control" rows="2"></textarea>
-                            </div>
-                        </div>
-                    </div>
+                
+                <div x-show="mode === 'dosya'">
+                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Dosya *</label>
+                    <input type="file" name="dosya" accept=".pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx,.mp4,.webm,.jpg,.jpeg,.png,.gif" class="w-full p-2 border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">PDF, Office, Video veya Görsel dosyaları</p>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-primary">Yükle</button>
+                
+                <div x-show="mode === 'link'">
+                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Link *</label>
+                    <input type="url" name="harici_link" placeholder="https://..." class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">YouTube, Vimeo, Google Docs, Loom veya herhangi bir URL</p>
                 </div>
-            </form>
-        </div>
+                
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Başlık</label>
+                    <input type="text" name="ad" placeholder="Boş bırakılırsa dosya adı kullanılır" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                </div>
+                
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Açıklama</label>
+                    <textarea name="aciklama" rows="2" placeholder="İsteğe bağlı" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm"></textarea>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3">
+                <button type="button" onclick="this.closest('.fixed').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors">İptal</button>
+                <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors">Yükle</button>
+            </div>
+        </form>
     </div>
 </div>
 
 <!-- İptal Modal -->
-<div class="modal fade" id="iptalModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('egitim.durum_degistir', id=egitim.id, durum='iptal') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                    <h5 class="modal-title">Eğitimi İptal Et</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">İptal Nedeni</label>
-                        <textarea name="iptal_nedeni" class="form-control" rows="3" required></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Vazgeç</button>
-                    <button type="submit" class="btn btn-danger">İptal Et</button>
-                </div>
-            </form>
-        </div>
+<div id="iptalModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl w-full max-w-md">
+        <form method="POST" action="{{ url_for('egitim.durum_degistir', id=egitim.id, durum='iptal') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h5 class="font-bold text-lg text-[#111418] dark:text-white">Eğitimi İptal Et</h5>
+                <button type="button" onclick="this.closest('.fixed').classList.add('hidden')" class="p-1 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6">
+                <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">İptal Nedeni</label>
+                <textarea name="iptal_nedeni" rows="3" required class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm"></textarea>
+            </div>
+            <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3">
+                <button type="button" onclick="this.closest('.fixed').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors">Vazgeç</button>
+                <button type="submit" class="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg transition-colors">İptal Et</button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script>
 function updateKatilimci(id, durum) {
     fetch(`/egitim/katilimci/${id}/durum`, {
@@ -528,9 +458,7 @@ function updateKatilimci(id, durum) {
         },
         body: `durum=${durum}`
     }).then(response => {
-        if (response.ok) {
-            location.reload();
-        }
+        if (response.ok) location.reload();
     });
 }
 </script>

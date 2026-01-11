@@ -7,132 +7,126 @@
 <form method="POST">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     
-    <div class="row">
-        <div class="col-lg-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-4">
             <!-- Temel Bilgiler -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-building me-2"></i>Temel Bilgiler</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">business</span>Temel Bilgiler
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-8">
-                            <label class="form-label">Şirket Adı <span class="text-danger">*</span></label>
-                            <input type="text" name="ad" class="form-control" required
-                                   value="{{ musteri.ad if musteri else '' }}">
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div class="md:col-span-8">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Şirket Adı <span class="text-red-500">*</span></label>
+                            <input type="text" name="ad" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="{{ musteri.ad if musteri else '' }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Kısa Ad</label>
-                            <input type="text" name="kisa_ad" class="form-control"
-                                   value="{{ musteri.kisa_ad if musteri else '' }}" placeholder="Migros">
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Kısa Ad</label>
+                            <input type="text" name="kisa_ad" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ musteri.kisa_ad if musteri else '' }}" placeholder="Migros">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Vergi No</label>
-                            <input type="text" name="vergi_no" class="form-control" maxlength="11"
-                                   value="{{ musteri.vergi_no if musteri else '' }}">
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Vergi No</label>
+                            <input type="text" name="vergi_no" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" maxlength="11" value="{{ musteri.vergi_no if musteri else '' }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Vergi Dairesi</label>
-                            <input type="text" name="vergi_dairesi" class="form-control"
-                                   value="{{ musteri.vergi_dairesi if musteri else '' }}">
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Vergi Dairesi</label>
+                            <input type="text" name="vergi_dairesi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ musteri.vergi_dairesi if musteri else '' }}">
                         </div>
                     </div>
                 </div>
             </div>
             
             <!-- İletişim -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-telephone me-2"></i>İletişim</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">call</span>İletişim
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label">Adres</label>
-                            <textarea name="adres" class="form-control" rows="2">{{ musteri.adres if musteri else '' }}</textarea>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Adres</label>
+                            <textarea name="adres" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="2">{{ musteri.adres if musteri else '' }}</textarea>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">İl</label>
-                            <input type="text" name="il" class="form-control"
-                                   value="{{ musteri.il if musteri else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">İl</label>
+                            <input type="text" name="il" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ musteri.il if musteri else '' }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">İlçe</label>
-                            <input type="text" name="ilce" class="form-control"
-                                   value="{{ musteri.ilce if musteri else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">İlçe</label>
+                            <input type="text" name="ilce" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ musteri.ilce if musteri else '' }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Telefon</label>
-                            <input type="tel" name="telefon" class="form-control"
-                                   value="{{ musteri.telefon if musteri else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Telefon</label>
+                            <input type="tel" name="telefon" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ musteri.telefon if musteri else '' }}">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Email</label>
-                            <input type="email" name="email" class="form-control"
-                                   value="{{ musteri.email if musteri else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Email</label>
+                            <input type="email" name="email" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ musteri.email if musteri else '' }}">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Web</label>
-                            <input type="url" name="web" class="form-control"
-                                   value="{{ musteri.web if musteri else '' }}">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Web</label>
+                            <input type="url" name="web" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ musteri.web if musteri else '' }}">
                         </div>
                     </div>
                 </div>
             </div>
             
             <!-- Yetkili -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-person me-2"></i>Yetkili Kişi</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">person</span>Yetkili Kişi
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Ad Soyad</label>
-                            <input type="text" name="yetkili_ad" class="form-control"
-                                   value="{{ musteri.yetkili_ad if musteri else '' }}">
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Ad Soyad</label>
+                            <input type="text" name="yetkili_ad" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ musteri.yetkili_ad if musteri else '' }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Telefon</label>
-                            <input type="tel" name="yetkili_telefon" class="form-control"
-                                   value="{{ musteri.yetkili_telefon if musteri else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Telefon</label>
+                            <input type="tel" name="yetkili_telefon" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ musteri.yetkili_telefon if musteri else '' }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Email</label>
-                            <input type="email" name="yetkili_email" class="form-control"
-                                   value="{{ musteri.yetkili_email if musteri else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Email</label>
+                            <input type="email" name="yetkili_email" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ musteri.yetkili_email if musteri else '' }}">
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <div class="col-lg-4">
+        <div>
             <!-- Durum -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Durum</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">settings</span>Durum
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="form-check form-switch mb-3">
-                        <input type="checkbox" class="form-check-input" id="aktif" name="aktif"
-                               {% if not musteri or musteri.aktif %}checked{% endif %}>
-                        <label class="form-check-label" for="aktif">Aktif</label>
+                <div class="p-4 space-y-4">
+                    <div class="flex items-center">
+                        <input type="checkbox" class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500" id="aktif" name="aktif" {% if not musteri or musteri.aktif %}checked{% endif %}>
+                        <label class="ml-2 text-sm text-text-muted dark:text-text-muted-dark" for="aktif">Aktif</label>
                     </div>
                     
-                    <label class="form-label">Notlar</label>
-                    <textarea name="notlar" class="form-control" rows="4">{{ musteri.notlar if musteri else '' }}</textarea>
-                </div>
-                <div class="card-footer bg-white">
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-1"></i>
-                            {% if musteri %}Güncelle{% else %}Kaydet{% endif %}
-                        </button>
-                        <a href="{{ url_for('proje.musteri_liste') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg me-1"></i>İptal
-                        </a>
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Notlar</label>
+                        <textarea name="notlar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="4">{{ musteri.notlar if musteri else '' }}</textarea>
                     </div>
+                </div>
+                <div class="px-4 py-3 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-[#111418] rounded-b-xl space-y-2">
+                    <button type="submit" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-symbols-outlined">check</span>{% if musteri %}Güncelle{% else %}Kaydet{% endif %}
+                    </button>
+                    <a href="{{ url_for('proje.musteri_liste') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                        <span class="material-symbols-outlined">close</span>İptal
+                    </a>
                 </div>
             </div>
         </div>

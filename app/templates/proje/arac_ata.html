@@ -4,14 +4,16 @@
 {% block page_title %}Araç Ata{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-truck me-2"></i>Projeye Araç Ata</h6>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">local_shipping</span>Projeye Araç Ata
+                </h6>
             </div>
-            <div class="card-body">
-                <p class="text-muted mb-4">
+            <div class="p-4">
+                <p class="text-text-muted dark:text-text-muted-dark mb-4">
                     <strong>{{ proje.ad }}</strong> projesine atanacak araçları seçin.
                 </p>
                 
@@ -19,34 +21,33 @@
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 dark:bg-[#111418]">
                                 <tr>
-                                    <th width="50">
-                                        <input type="checkbox" class="form-check-input" id="selectAll">
+                                    <th class="px-4 py-3 text-left w-12">
+                                        <input type="checkbox" class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500" id="selectAll">
                                     </th>
-                                    <th>Plaka</th>
-                                    <th>Araç</th>
-                                    <th>Şoför</th>
-                                    <th>Durum</th>
+                                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Plaka</th>
+                                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Araç</th>
+                                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Şoför</th>
+                                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="divide-y divide-border-light dark:divide-border-dark">
                                 {% for a in musait_araclar %}
-                                <tr>
-                                    <td>
-                                        <input type="checkbox" class="form-check-input arac-checkbox" 
-                                               name="arac_ids" value="{{ a.id }}">
+                                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                                    <td class="px-4 py-3">
+                                        <input type="checkbox" class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500 arac-checkbox" name="arac_ids" value="{{ a.id }}">
                                     </td>
-                                    <td><strong>{{ a.plaka }}</strong></td>
-                                    <td>{{ a.marka }} {{ a.model }}</td>
-                                    <td>{{ a.sofor.full_name if a.sofor else '-' }}</td>
-                                    <td>
+                                    <td class="px-4 py-3 font-semibold">{{ a.plaka }}</td>
+                                    <td class="px-4 py-3">{{ a.marka }} {{ a.model }}</td>
+                                    <td class="px-4 py-3">{{ a.sofor.full_name if a.sofor else '-' }}</td>
+                                    <td class="px-4 py-3">
                                         {% if a.durum.value == 'aktif' %}
-                                        <span class="badge bg-success">Aktif</span>
+                                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
                                         {% else %}
-                                        <span class="badge bg-secondary">{{ a.durum.value }}</span>
+                                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-[#252b36] text-text-muted dark:text-text-muted-dark">{{ a.durum.value }}</span>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -55,21 +56,21 @@
                         </table>
                     </div>
                     
-                    <div class="d-flex justify-content-between mt-4">
-                        <a href="{{ url_for('proje.proje_detay', id=proje.id) }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>İptal
+                    <div class="flex justify-between mt-6">
+                        <a href="{{ url_for('proje.proje_detay', id=proje.id) }}" class="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                            <span class="material-symbols-outlined">arrow_back</span>İptal
                         </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-1"></i>Seçilenleri Ata
+                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                            <span class="material-symbols-outlined">check</span>Seçilenleri Ata
                         </button>
                     </div>
                 </form>
                 {% else %}
-                <div class="text-center py-4">
-                    <i class="bi bi-inbox fs-1 d-block mb-2 text-muted"></i>
-                    <p class="text-muted">Atanabilecek müsait araç bulunamadı.</p>
-                    <a href="{{ url_for('proje.proje_detay', id=proje.id) }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Geri Dön
+                <div class="text-center py-8">
+                    <span class="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600 block mb-2">inbox</span>
+                    <p class="text-text-muted dark:text-text-muted-dark mb-4">Atanabilecek müsait araç bulunamadı.</p>
+                    <a href="{{ url_for('proje.proje_detay', id=proje.id) }}" class="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                        <span class="material-symbols-outlined">arrow_back</span>Geri Dön
                     </a>
                 </div>
                 {% endif %}
@@ -77,24 +78,26 @@
         </div>
     </div>
     
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Proje Bilgisi</h6>
+    <div>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">info</span>Proje Bilgisi
+                </h6>
             </div>
-            <div class="card-body">
-                <table class="table table-sm">
+            <div class="p-4">
+                <table class="w-full text-sm">
                     <tr>
-                        <td class="text-muted">Proje</td>
-                        <td class="text-end"><strong>{{ proje.ad }}</strong></td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Proje</td>
+                        <td class="text-right py-1 font-semibold">{{ proje.ad }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Müşteri</td>
-                        <td class="text-end">{{ proje.musteri.display_name }}</td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Müşteri</td>
+                        <td class="text-right py-1">{{ proje.musteri.display_name }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Mevcut Araç</td>
-                        <td class="text-end"><span class="badge bg-primary">{{ proje.araclar|length }}</span></td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Mevcut Araç</td>
+                        <td class="text-right py-1"><span class="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800">{{ proje.araclar|list|length }}</span></td>
                     </tr>
                 </table>
             </div>

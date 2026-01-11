@@ -4,40 +4,38 @@
 {% block page_title %}Aday Ekle{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
         <form method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-person-plus me-2"></i>Aday Bilgileri</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">person_add</span>Aday Bilgileri
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Ad <span class="text-danger">*</span></label>
-                            <input type="text" name="ad" class="form-control" required
-                                   value="{{ aday.ad if aday else '' }}">
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Ad <span class="text-red-500">*</span></label>
+                            <input type="text" name="ad" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="{{ aday.ad if aday else '' }}">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Soyad <span class="text-danger">*</span></label>
-                            <input type="text" name="soyad" class="form-control" required
-                                   value="{{ aday.soyad if aday else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Soyad <span class="text-red-500">*</span></label>
+                            <input type="text" name="soyad" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="{{ aday.soyad if aday else '' }}">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Email</label>
-                            <input type="email" name="email" class="form-control"
-                                   value="{{ aday.email if aday else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Email</label>
+                            <input type="email" name="email" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ aday.email if aday else '' }}">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Telefon</label>
-                            <input type="tel" name="telefon" class="form-control"
-                                   value="{{ aday.telefon if aday else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Telefon</label>
+                            <input type="tel" name="telefon" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ aday.telefon if aday else '' }}">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Kaynak</label>
-                            <select name="kaynak" class="form-select">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Kaynak</label>
+                            <select name="kaynak" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçiniz</option>
                                 <option value="kariyer_net" {% if aday and aday.kaynak == 'kariyer_net' %}selected{% endif %}>Kariyer.net</option>
                                 <option value="linkedin" {% if aday and aday.kaynak == 'linkedin' %}selected{% endif %}>LinkedIn</option>
@@ -46,52 +44,52 @@
                                 <option value="diger" {% if aday and aday.kaynak == 'diger' %}selected{% endif %}>Diğer</option>
                             </select>
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">Notlar</label>
-                            <textarea name="notlar" class="form-control" rows="3">{{ aday.notlar if aday else '' }}</textarea>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Notlar</label>
+                            <textarea name="notlar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3">{{ aday.notlar if aday else '' }}</textarea>
                         </div>
                     </div>
                 </div>
-                <div class="card-footer bg-white">
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ url_for('proje.kadro_detay', id=kadro.id) }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>İptal
-                        </a>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-1"></i>Kaydet
-                        </button>
-                    </div>
+                <div class="px-4 py-3 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-[#111418] rounded-b-xl flex justify-between">
+                    <a href="{{ url_for('proje.kadro_detay', id=kadro.id) }}" class="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                        <span class="material-symbols-outlined">arrow_back</span>İptal
+                    </a>
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-symbols-outlined">check</span>Kaydet
+                    </button>
                 </div>
             </div>
         </form>
     </div>
     
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Kadro Bilgisi</h6>
+    <div>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">info</span>Kadro Bilgisi
+                </h6>
             </div>
-            <div class="card-body">
-                <table class="table table-sm mb-0">
+            <div class="p-4">
+                <table class="w-full text-sm">
                     <tr>
-                        <td class="text-muted">Pozisyon</td>
-                        <td class="text-end"><strong>{{ kadro.pozisyon_adi }}</strong></td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Pozisyon</td>
+                        <td class="text-right py-1 font-semibold text-[#111418] dark:text-white">{{ kadro.pozisyon_adi }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Proje</td>
-                        <td class="text-end">{{ kadro.proje.ad }}</td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Proje</td>
+                        <td class="text-right py-1">{{ kadro.proje.ad }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Müşteri</td>
-                        <td class="text-end">{{ kadro.proje.musteri.display_name }}</td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Müşteri</td>
+                        <td class="text-right py-1">{{ kadro.proje.musteri.display_name }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Lokasyon</td>
-                        <td class="text-end">{{ kadro.il or '-' }}</td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Lokasyon</td>
+                        <td class="text-right py-1">{{ kadro.il or '-' }}</td>
                     </tr>
                     <tr>
-                        <td class="text-muted">Eksik Kadro</td>
-                        <td class="text-end"><span class="badge bg-danger">{{ kadro.eksik_sayi }}</span></td>
+                        <td class="text-text-muted dark:text-text-muted-dark py-1">Eksik Kadro</td>
+                        <td class="text-right py-1"><span class="px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">{{ kadro.eksik_sayi }}</span></td>
                     </tr>
                 </table>
             </div>

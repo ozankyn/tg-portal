@@ -4,262 +4,394 @@
 {% block page_title %}Talep Detayı{% endblock %}
 
 {% block content %}
-<div class="row g-4">
-    <!-- Sol: Talep Bilgileri ve Yorumlar -->
-    <div class="col-lg-8">
-        <!-- Başlık -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <code class="fs-6">{{ talep.talep_no }}</code>
-                    <span class="badge bg-{{ talep.kategori.renk }} ms-2">{{ talep.kategori.ad }}</span>
-                </div>
-                <div>
-                    <span class="badge bg-{{ talep.oncelik_renk }} me-1">{{ talep.oncelik_text }}</span>
-                    <span class="badge bg-{{ talep.durum_renk }} fs-6">{{ talep.durum_text }}</span>
-                </div>
-            </div>
-            <div class="card-body">
-                <h5 class="mb-3">{{ talep.konu }}</h5>
-                <p class="mb-3" style="white-space: pre-wrap;">{{ talep.aciklama }}</p>
-                
-                {% if talep.dosya_yolu %}
-                <div class="mt-3">
-                    <a href="{{ url_for('talep.dosya_indir', id=talep.id) }}" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-paperclip me-1"></i>{{ talep.dosya_adi }}
-                    </a>
-                </div>
-                {% endif %}
-                
-                <hr>
-                
-                <div class="row small text-muted">
-                    <div class="col-md-4">
-                        <i class="bi bi-person me-1"></i>
-                        <strong>Talep Eden:</strong> {{ talep.olusturan.full_name }}
-                    </div>
-                    <div class="col-md-4">
-                        <i class="bi bi-calendar me-1"></i>
-                        <strong>Tarih:</strong> {{ talep.created_at.strftime('%d.%m.%Y %H:%M') }}
-                    </div>
-                    <div class="col-md-4">
-                        <i class="bi bi-person-check me-1"></i>
-                        <strong>Atanan:</strong> {{ talep.atanan.full_name if talep.atanan else '-' }}
-                    </div>
-                </div>
-            </div>
+{% set badge_map = {
+  'primary': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  'success': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  'warning': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  'danger':  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  'info':    'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
+  'secondary':'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-200',
+  'dark':    'bg-gray-200 text-gray-800 dark:bg-white/10 dark:text-gray-200',
+  'light':   'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-200'
+} %}
+
+{# yorum border rengi: dahili=warning, talep sahibi yazdıysa secondary, diğerleri primary #}
+{% set yorum_border_map = {
+  'warning': 'border-amber-400 dark:border-amber-500',
+  'primary': 'border-blue-500 dark:border-blue-400',
+  'secondary': 'border-gray-300 dark:border-white/20'
+} %}
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+  <!-- Sol: Talep + Yorumlar -->
+  <div class="lg:col-span-8 space-y-6">
+
+    <!-- Talep Başlık Kartı -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <code class="text-sm font-semibold">{{ talep.talep_no }}</code>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map.get(talep.kategori.renk, badge_map['secondary']) }}">
+              {{ talep.kategori.ad }}
+            </span>
+          </div>
         </div>
-        
-        <!-- Yorumlar -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-chat-dots me-2"></i>Yorumlar ({{ yorumlar|length }})</h6>
-            </div>
-            <div class="card-body">
-                {% if yorumlar %}
-                <div class="timeline">
-                    {% for yorum in yorumlar %}
-                    <div class="mb-4 pb-3 {{ 'border-start border-3 border-warning ps-3' if yorum.dahili else 'border-start border-3 border-primary ps-3' if yorum.yazan_id != talep.olusturan_id else 'border-start border-3 border-secondary ps-3' }}">
-                        <div class="d-flex justify-content-between mb-1">
-                            <div>
-                                <strong>{{ yorum.yazan.full_name }}</strong>
-                                {% if yorum.dahili %}
-                                <span class="badge bg-warning text-dark ms-1">Dahili Not</span>
-                                {% endif %}
-                                {% if yorum.tip == 'durum_degisikligi' %}
-                                <span class="badge bg-info ms-1">Sistem</span>
-                                {% endif %}
-                            </div>
-                            <small class="text-muted">{{ yorum.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
-                        </div>
-                        <p class="mb-1" style="white-space: pre-wrap;">{{ yorum.icerik }}</p>
-                        {% if yorum.dosya_yolu %}
-                        <a href="{{ url_for('talep.yorum_dosya_indir', id=yorum.id) }}" class="btn btn-sm btn-outline-secondary">
-                            <i class="bi bi-paperclip me-1"></i>{{ yorum.dosya_adi }}
-                        </a>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <p class="text-muted text-center mb-0">Henüz yorum yok</p>
-                {% endif %}
-                
-                <!-- Yorum Ekle -->
-                {% if talep.acik_mi %}
-                <hr>
-                <form method="POST" action="{{ url_for('talep.yorum_ekle', id=talep.id) }}" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="mb-3">
-                        <label class="form-label">Yorum Ekle</label>
-                        <textarea name="icerik" class="form-control" rows="3" required
-                                  placeholder="Yanıtınızı yazın..."></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <input type="file" name="dosya" class="form-control form-control-sm">
-                        </div>
-                        <div class="col-md-6 text-end">
-                            {% if is_destek %}
-                            <div class="form-check form-check-inline">
-                                <input type="checkbox" name="dahili" class="form-check-input" id="dahiliCheck">
-                                <label class="form-check-label" for="dahiliCheck">Dahili not</label>
-                            </div>
-                            {% endif %}
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-send me-1"></i>Gönder
-                            </button>
-                        </div>
-                    </div>
-                </form>
-                {% endif %}
-            </div>
+
+        <div class="flex flex-wrap items-center gap-2 justify-end">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map.get(talep.oncelik_renk, badge_map['secondary']) }}">
+            {{ talep.oncelik_text }}
+          </span>
+          <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-extrabold {{ badge_map.get(talep.durum_renk, badge_map['secondary']) }}">
+            {{ talep.durum_text }}
+          </span>
         </div>
-    </div>
-    
-    <!-- Sağ: İşlemler -->
-    <div class="col-lg-4">
-        {% if is_destek %}
-        <!-- Durum Değiştir -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="mb-0">Durum Değiştir</h6>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('talep.durum_degistir', id=talep.id) }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="mb-3">
-                        <select name="durum" class="form-select">
-                            <option value="acik" {{ 'selected' if talep.durum == 'acik' }}>Açık</option>
-                            <option value="atandi" {{ 'selected' if talep.durum == 'atandi' }}>Atandı</option>
-                            <option value="devam_ediyor" {{ 'selected' if talep.durum == 'devam_ediyor' }}>Devam Ediyor</option>
-                            <option value="beklemede" {{ 'selected' if talep.durum == 'beklemede' }}>Beklemede</option>
-                            <option value="cozuldu" {{ 'selected' if talep.durum == 'cozuldu' }}>Çözüldü</option>
-                            <option value="kapatildi" {{ 'selected' if talep.durum == 'kapatildi' }}>Kapatıldı</option>
-                        </select>
-                    </div>
-                    <div class="mb-3" id="cozumNotuDiv" style="display:none;">
-                        <label class="form-label">Çözüm Notu</label>
-                        <textarea name="cozum_notu" class="form-control" rows="2">{{ talep.cozum_notu or '' }}</textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">Güncelle</button>
-                </form>
-            </div>
-        </div>
-        
-        <!-- Atama -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="mb-0">Atama</h6>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('talep.ata', id=talep.id) }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="mb-3">
-                        <select name="atanan_id" class="form-select">
-                            <option value="">Atanmadı</option>
-                            {% for u in destek_ekibi %}
-                            <option value="{{ u.id }}" {{ 'selected' if talep.atanan_id == u.id }}>{{ u.full_name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-outline-primary w-100">Ata</button>
-                </form>
-            </div>
-        </div>
-        
-        <!-- Öncelik -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="mb-0">Öncelik</h6>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('talep.oncelik_degistir', id=talep.id) }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="oncelik" value="dusuk" id="onc1" {{ 'checked' if talep.oncelik == 'dusuk' }}>
-                        <label class="btn btn-outline-secondary" for="onc1">Düşük</label>
-                        
-                        <input type="radio" class="btn-check" name="oncelik" value="normal" id="onc2" {{ 'checked' if talep.oncelik == 'normal' }}>
-                        <label class="btn btn-outline-info" for="onc2">Normal</label>
-                        
-                        <input type="radio" class="btn-check" name="oncelik" value="yuksek" id="onc3" {{ 'checked' if talep.oncelik == 'yuksek' }}>
-                        <label class="btn btn-outline-warning" for="onc3">Yüksek</label>
-                        
-                        <input type="radio" class="btn-check" name="oncelik" value="kritik" id="onc4" {{ 'checked' if talep.oncelik == 'kritik' }}>
-                        <label class="btn btn-outline-danger" for="onc4">Kritik</label>
-                    </div>
-                    <button type="submit" class="btn btn-sm btn-link w-100 mt-2">Kaydet</button>
-                </form>
-            </div>
+      </div>
+
+      <div class="p-5">
+        <h2 class="text-lg font-extrabold text-[#111418] dark:text-white mb-3">
+          {{ talep.konu }}
+        </h2>
+
+        <p class="text-sm text-[#111418] dark:text-white/90 whitespace-pre-wrap mb-3">
+          {{ talep.aciklama }}
+        </p>
+
+        {% if talep.dosya_yolu %}
+        <div class="mt-3">
+          <a href="{{ url_for('talep.dosya_indir', id=talep.id) }}"
+             class="inline-flex items-center gap-2 rounded-lg border border-border-light dark:border-border-dark px-3 py-2 text-sm
+                    hover:bg-gray-50 dark:hover:bg-[#252b36]">
+            <span class="material-symbols-outlined text-[18px]">attach_file</span>
+            {{ talep.dosya_adi }}
+          </a>
         </div>
         {% endif %}
-        
-        <!-- Bilgiler -->
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">Bilgiler</h6>
+
+        <div class="mt-5 pt-4 border-t border-border-light dark:border-border-dark">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-text-muted dark:text-text-muted-dark">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px]">person</span>
+              <span><span class="font-semibold">Talep Eden:</span> {{ talep.olusturan.full_name }}</span>
             </div>
-            <div class="card-body small">
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Oluşturulma:</span>
-                    <span>{{ talep.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
-                </div>
-                {% if talep.atanma_tarihi %}
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Atanma:</span>
-                    <span>{{ talep.atanma_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
-                </div>
-                {% endif %}
-                {% if talep.ilk_yanit_tarihi %}
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">İlk Yanıt:</span>
-                    <span>{{ talep.ilk_yanit_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
-                </div>
-                {% endif %}
-                {% if talep.cozum_tarihi %}
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Çözüm:</span>
-                    <span>{{ talep.cozum_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
-                </div>
-                {% endif %}
-                <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Geçen Süre:</span>
-                    <span class="{{ 'text-danger' if talep.sla_asim else '' }}">{{ talep.sure_gecti }} saat</span>
-                </div>
-                {% if talep.kategori %}
-                <div class="d-flex justify-content-between">
-                    <span class="text-muted">SLA Çözüm:</span>
-                    <span>{{ talep.kategori.sla_cozum }} saat</span>
-                </div>
-                {% endif %}
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px]">calendar_month</span>
+              <span><span class="font-semibold">Tarih:</span> {{ talep.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
             </div>
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined text-[18px]">person_check</span>
+              <span><span class="font-semibold">Atanan:</span> {{ talep.atanan.full_name if talep.atanan else '-' }}</span>
+            </div>
+          </div>
         </div>
-        
-        <!-- Geri Dön -->
-        <div class="mt-4">
-            <a href="{{ url_for('talep.liste') }}" class="btn btn-outline-secondary w-100">
-                <i class="bi bi-arrow-left me-2"></i>Listeye Dön
-            </a>
-        </div>
+      </div>
     </div>
+
+    <!-- Yorumlar -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary">chat</span>
+          <h3 class="font-bold text-[#111418] dark:text-white">Yorumlar</h3>
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['secondary'] }}">
+            {{ yorumlar|length }}
+          </span>
+        </div>
+      </div>
+
+      <div class="p-5">
+        {% if yorumlar %}
+          <div class="space-y-4">
+            {% for yorum in yorumlar %}
+              {% set border_key = 'warning' if yorum.dahili else ('secondary' if yorum.yazan_id == talep.olusturan_id else 'primary') %}
+              <div class="pl-4 border-l-4 {{ yorum_border_map[border_key] }}">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="font-bold text-[#111418] dark:text-white">{{ yorum.yazan.full_name }}</span>
+
+                      {% if yorum.dahili %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['warning'] }}">
+                          Dahili Not
+                        </span>
+                      {% endif %}
+
+                      {% if yorum.tip == 'durum_degisikligi' %}
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['info'] }}">
+                          Sistem
+                        </span>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <div class="text-xs text-text-muted dark:text-text-muted-dark whitespace-nowrap">
+                    {{ yorum.created_at.strftime('%d.%m.%Y %H:%M') }}
+                  </div>
+                </div>
+
+                <p class="mt-2 text-sm text-[#111418] dark:text-white/90 whitespace-pre-wrap">
+                  {{ yorum.icerik }}
+                </p>
+
+                {% if yorum.dosya_yolu %}
+                <div class="mt-2">
+                  <a href="{{ url_for('talep.yorum_dosya_indir', id=yorum.id) }}"
+                     class="inline-flex items-center gap-2 rounded-lg border border-border-light dark:border-border-dark px-3 py-2 text-sm
+                            hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                    <span class="material-symbols-outlined text-[18px]">attach_file</span>
+                    {{ yorum.dosya_adi }}
+                  </a>
+                </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center text-sm text-text-muted dark:text-text-muted-dark">
+            Henüz yorum yok
+          </div>
+        {% endif %}
+
+        <!-- Yorum Ekle -->
+        {% if talep.acik_mi %}
+        <div class="mt-6 pt-5 border-t border-border-light dark:border-border-dark">
+          <form method="POST" action="{{ url_for('talep.yorum_ekle', id=talep.id) }}" enctype="multipart/form-data" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div>
+              <label class="block text-sm font-medium mb-1">Yorum Ekle</label>
+              <textarea name="icerik" rows="4" required placeholder="Yanıtınızı yazın..."
+                        class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm"></textarea>
+            </div>
+
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div class="w-full md:max-w-xs">
+                <input type="file" name="dosya"
+                       class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+              </div>
+
+              <div class="flex items-center justify-between md:justify-end gap-3 w-full">
+                {% if is_destek %}
+                <label class="inline-flex items-center gap-2 text-sm text-text-muted dark:text-text-muted-dark">
+                  <input type="checkbox" name="dahili"
+                         class="w-4 h-4 rounded border-border-light dark:border-border-dark">
+                  Dahili not
+                </label>
+                {% endif %}
+
+                <button type="submit"
+                        class="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
+                  <span class="material-symbols-outlined text-[18px]">send</span>
+                  Gönder
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Sağ: İşlemler + Bilgiler -->
+  <div class="lg:col-span-4 space-y-6">
+
+    {% if is_destek %}
+    <!-- Durum Değiştir -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+        <h3 class="font-bold text-[#111418] dark:text-white">Durum Değiştir</h3>
+      </div>
+      <div class="p-5">
+        <form method="POST" action="{{ url_for('talep.durum_degistir', id=talep.id) }}" class="space-y-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div>
+            <select id="durumSelect" name="durum"
+                    class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+              <option value="acik" {{ 'selected' if talep.durum == 'acik' }}>Açık</option>
+              <option value="atandi" {{ 'selected' if talep.durum == 'atandi' }}>Atandı</option>
+              <option value="devam_ediyor" {{ 'selected' if talep.durum == 'devam_ediyor' }}>Devam Ediyor</option>
+              <option value="beklemede" {{ 'selected' if talep.durum == 'beklemede' }}>Beklemede</option>
+              <option value="cozuldu" {{ 'selected' if talep.durum == 'cozuldu' }}>Çözüldü</option>
+              <option value="kapatildi" {{ 'selected' if talep.durum == 'kapatildi' }}>Kapatıldı</option>
+            </select>
+          </div>
+
+          <div id="cozumNotuDiv" class="hidden">
+            <label class="block text-sm font-medium mb-1">Çözüm Notu</label>
+            <textarea name="cozum_notu" rows="3"
+                      class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">{{ talep.cozum_notu or '' }}</textarea>
+          </div>
+
+          <button type="submit"
+                  class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-dark">
+            Güncelle
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Atama -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+        <h3 class="font-bold text-[#111418] dark:text-white">Atama</h3>
+      </div>
+      <div class="p-5">
+        <form method="POST" action="{{ url_for('talep.ata', id=talep.id) }}" class="space-y-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <select name="atanan_id"
+                  class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+            <option value="">Atanmadı</option>
+            {% for u in destek_ekibi %}
+              <option value="{{ u.id }}" {{ 'selected' if talep.atanan_id == u.id }}>{{ u.full_name }}</option>
+            {% endfor %}
+          </select>
+
+          <button type="submit"
+                  class="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-border-light dark:border-border-dark
+                         px-4 py-2 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-[#252b36]">
+            Ata
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Öncelik -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+        <h3 class="font-bold text-[#111418] dark:text-white">Öncelik</h3>
+      </div>
+      <div class="p-5">
+        <form method="POST" action="{{ url_for('talep.oncelik_degistir', id=talep.id) }}" class="space-y-3">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="grid grid-cols-2 gap-2">
+            {% set onc = talep.oncelik %}
+            <label class="cursor-pointer">
+              <input type="radio" name="oncelik" value="dusuk" class="peer hidden" {{ 'checked' if onc == 'dusuk' }}>
+              <div class="rounded-lg border border-border-light dark:border-border-dark px-3 py-2 text-sm font-semibold
+                          peer-checked:bg-gray-100 peer-checked:dark:bg-white/10 hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                Düşük
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="oncelik" value="normal" class="peer hidden" {{ 'checked' if onc == 'normal' }}>
+              <div class="rounded-lg border border-border-light dark:border-border-dark px-3 py-2 text-sm font-semibold
+                          peer-checked:bg-sky-50 peer-checked:dark:bg-sky-900/20 hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                Normal
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="oncelik" value="yuksek" class="peer hidden" {{ 'checked' if onc == 'yuksek' }}>
+              <div class="rounded-lg border border-border-light dark:border-border-dark px-3 py-2 text-sm font-semibold
+                          peer-checked:bg-amber-50 peer-checked:dark:bg-amber-900/20 hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                Yüksek
+              </div>
+            </label>
+
+            <label class="cursor-pointer">
+              <input type="radio" name="oncelik" value="kritik" class="peer hidden" {{ 'checked' if onc == 'kritik' }}>
+              <div class="rounded-lg border border-border-light dark:border-border-dark px-3 py-2 text-sm font-semibold
+                          peer-checked:bg-red-50 peer-checked:dark:bg-red-900/20 hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                Kritik
+              </div>
+            </label>
+          </div>
+
+          <button type="submit"
+                  class="w-full inline-flex items-center justify-center rounded-lg border border-border-light dark:border-border-dark
+                         px-4 py-2 text-sm font-semibold hover:bg-gray-50 dark:hover:bg-[#252b36]">
+            Kaydet
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Bilgiler -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+        <h3 class="font-bold text-[#111418] dark:text-white">Bilgiler</h3>
+      </div>
+
+      <div class="p-5 text-sm">
+        <div class="flex items-center justify-between py-2 border-b border-border-light dark:border-border-dark">
+          <span class="text-text-muted dark:text-text-muted-dark">Oluşturulma:</span>
+          <span class="text-[#111418] dark:text-white">{{ talep.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+        </div>
+
+        {% if talep.atanma_tarihi %}
+        <div class="flex items-center justify-between py-2 border-b border-border-light dark:border-border-dark">
+          <span class="text-text-muted dark:text-text-muted-dark">Atanma:</span>
+          <span class="text-[#111418] dark:text-white">{{ talep.atanma_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
+        </div>
+        {% endif %}
+
+        {% if talep.ilk_yanit_tarihi %}
+        <div class="flex items-center justify-between py-2 border-b border-border-light dark:border-border-dark">
+          <span class="text-text-muted dark:text-text-muted-dark">İlk Yanıt:</span>
+          <span class="text-[#111418] dark:text-white">{{ talep.ilk_yanit_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
+        </div>
+        {% endif %}
+
+        {% if talep.cozum_tarihi %}
+        <div class="flex items-center justify-between py-2 border-b border-border-light dark:border-border-dark">
+          <span class="text-text-muted dark:text-text-muted-dark">Çözüm:</span>
+          <span class="text-[#111418] dark:text-white">{{ talep.cozum_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
+        </div>
+        {% endif %}
+
+        <div class="flex items-center justify-between py-2 border-b border-border-light dark:border-border-dark">
+          <span class="text-text-muted dark:text-text-muted-dark">Geçen Süre:</span>
+          <span class="{{ 'text-red-600 dark:text-red-300 font-bold' if talep.sla_asim else 'text-[#111418] dark:text-white' }}">
+            {{ talep.sure_gecti }} saat
+          </span>
+        </div>
+
+        {% if talep.kategori %}
+        <div class="flex items-center justify-between py-2">
+          <span class="text-text-muted dark:text-text-muted-dark">SLA Çözüm:</span>
+          <span class="text-[#111418] dark:text-white">{{ talep.kategori.sla_cozum }} saat</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Geri Dön -->
+    <div>
+      <a href="{{ url_for('talep.liste') }}"
+         class="w-full inline-flex items-center justify-center gap-2 rounded-xl
+                border border-border-light dark:border-border-dark px-4 py-2.5
+                font-semibold hover:bg-gray-50 dark:hover:bg-[#252b36]">
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        Listeye Dön
+      </a>
+    </div>
+
+  </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-$(document).ready(function() {
-    $('select[name="durum"]').change(function() {
-        if ($(this).val() == 'cozuldu') {
-            $('#cozumNotuDiv').show();
-        } else {
-            $('#cozumNotuDiv').hide();
-        }
-    });
-    
-    if ($('select[name="durum"]').val() == 'cozuldu') {
-        $('#cozumNotuDiv').show();
-    }
-});
+(function () {
+  const select = document.getElementById('durumSelect');
+  const div = document.getElementById('cozumNotuDiv');
+  if (!select || !div) return;
+
+  function sync() {
+    if (select.value === 'cozuldu') div.classList.remove('hidden');
+    else div.classList.add('hidden');
+  }
+
+  select.addEventListener('change', sync);
+  sync();
+})();
 </script>
 {% endblock %}

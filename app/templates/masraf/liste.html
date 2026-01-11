@@ -4,146 +4,147 @@
 {% block page_title %}Masraf Listesi{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <form method="GET" class="row g-2">
-                    <div class="col-auto">
-                        <select name="durum" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="">Tüm Durumlar</option>
-                            <option value="taslak" {{ 'selected' if request.args.get('durum') == 'taslak' }}>Taslak</option>
-                            <option value="onay_bekliyor" {{ 'selected' if request.args.get('durum') == 'onay_bekliyor' }}>Onay Bekliyor</option>
-                            <option value="onaylandi" {{ 'selected' if request.args.get('durum') == 'onaylandi' }}>Onaylandı</option>
-                            <option value="reddedildi" {{ 'selected' if request.args.get('durum') == 'reddedildi' }}>Reddedildi</option>
-                            <option value="odendi" {{ 'selected' if request.args.get('durum') == 'odendi' }}>Ödendi</option>
-                        </select>
-                    </div>
-                    <div class="col-auto">
-                        <select name="kategori_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="">Tüm Kategoriler</option>
-                            {% for k in kategoriler %}
-                            <option value="{{ k.id }}" {{ 'selected' if request.args.get('kategori_id')|int == k.id }}>{{ k.ad }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-auto">
-                        <select name="yil" class="form-select form-select-sm" onchange="this.form.submit()">
-                            <option value="">Tüm Yıllar</option>
-                            {% for y in range(2024, 2027) %}
-                            <option value="{{ y }}" {{ 'selected' if request.args.get('yil')|int == y }}>{{ y }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </form>
-            </div>
-            <div class="col-md-4 text-end">
-                <a href="{{ url_for('masraf.ekle') }}" class="btn btn-primary btn-sm">
-                    <i class="bi bi-plus-lg me-1"></i>Yeni Masraf
-                </a>
-            </div>
+<div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <form method="GET" class="flex flex-wrap gap-2">
+                <select name="durum" onchange="this.form.submit()"
+                        class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tüm Durumlar</option>
+                    <option value="taslak" {{ 'selected' if request.args.get('durum') == 'taslak' }}>Taslak</option>
+                    <option value="onay_bekliyor" {{ 'selected' if request.args.get('durum') == 'onay_bekliyor' }}>Onay Bekliyor</option>
+                    <option value="onaylandi" {{ 'selected' if request.args.get('durum') == 'onaylandi' }}>Onaylandı</option>
+                    <option value="reddedildi" {{ 'selected' if request.args.get('durum') == 'reddedildi' }}>Reddedildi</option>
+                    <option value="odendi" {{ 'selected' if request.args.get('durum') == 'odendi' }}>Ödendi</option>
+                </select>
+                <select name="kategori_id" onchange="this.form.submit()"
+                        class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tüm Kategoriler</option>
+                    {% for k in kategoriler %}
+                    <option value="{{ k.id }}" {{ 'selected' if request.args.get('kategori_id')|int == k.id }}>{{ k.ad }}</option>
+                    {% endfor %}
+                </select>
+                <select name="yil" onchange="this.form.submit()"
+                        class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tüm Yıllar</option>
+                    {% for y in range(2024, 2027) %}
+                    <option value="{{ y }}" {{ 'selected' if request.args.get('yil')|int == y }}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            <a href="{{ url_for('masraf.ekle') }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                <span class="material-symbols-outlined text-sm">add</span>
+                Yeni Masraf
+            </a>
         </div>
     </div>
     
-    <div class="card-body p-0">
-        {% if masraflar %}
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>#</th>
-                        <th>Tarih</th>
-                        <th>Açıklama</th>
-                        <th>Kategori</th>
-                        <th>Proje</th>
-                        <th class="text-end">Tutar</th>
-                        <th>Durum</th>
-                        <th>Dosya</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for masraf in masraflar %}
-                    <tr>
-                        <td>{{ masraf.id }}</td>
-                        <td>{{ masraf.masraf_tarihi.strftime('%d.%m.%Y') }}</td>
-                        <td>
-                            <a href="{{ url_for('masraf.detay', id=masraf.id) }}" class="text-decoration-none">
-                                {{ masraf.baslik|truncate(40) }}
-                            </a>
-                            {% if masraf.firma_adi %}
-                            <small class="text-muted d-block">{{ masraf.firma_adi }}</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if masraf.kategori %}
-                            <span class="badge bg-{{ masraf.kategori.renk }}">
-                                <i class="{{ masraf.kategori.ikon }} me-1"></i>{{ masraf.kategori.ad }}
-                            </span>
-                            {% else %}
-                            -
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if masraf.proje %}
-                            <small>{{ masraf.proje.ad|truncate(20) }}</small>
-                            {% else %}
-                            -
-                            {% endif %}
-                        </td>
-                        <td class="text-end">
-                            <strong>
-                                {% if masraf.para_birimi == 'TRY' %}₺{% elif masraf.para_birimi == 'USD' %}${% elif masraf.para_birimi == 'EUR' %}€{% endif %}{{ "%.2f"|format(masraf.toplam_tutar) }}
-                            </strong>
-                            {% if masraf.para_birimi != 'TRY' %}
-                            <small class="text-muted d-block">₺{{ "%.2f"|format(masraf.tl_karsiligi) }}</small>
-                            {% endif %}
-                        </td>
-                        <td><span class="badge bg-{{ masraf.durum_renk }}">{{ masraf.durum_text }}</span></td>
-                        <td>
-                            {% if masraf.dosya_yolu %}
-                            <a href="{{ url_for('masraf.dosya_indir', id=masraf.id) }}" class="text-success" title="Dosya var">
-                                <i class="bi bi-paperclip"></i>
-                            </a>
-                            {% else %}
-                            <span class="text-muted"><i class="bi bi-dash"></i></span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{{ url_for('masraf.detay', id=masraf.id) }}" class="btn btn-sm btn-outline-secondary">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Pagination -->
-        {% if pagination.pages > 1 %}
-        <div class="card-footer">
-            <nav>
-                <ul class="pagination pagination-sm mb-0 justify-content-center">
-                    {% for p in pagination.iter_pages() %}
-                    {% if p %}
-                    <li class="page-item {{ 'active' if p == pagination.page }}">
-                        <a class="page-link" href="{{ url_for('masraf.liste', page=p, durum=request.args.get('durum'), kategori_id=request.args.get('kategori_id'), yil=request.args.get('yil')) }}">{{ p }}</a>
-                    </li>
-                    {% else %}
-                    <li class="page-item disabled"><span class="page-link">...</span></li>
-                    {% endif %}
-                    {% endfor %}
-                </ul>
-            </nav>
-        </div>
-        {% endif %}
-        {% else %}
-        <div class="text-center text-muted py-5">
-            <i class="bi bi-receipt fs-1 d-block mb-2"></i>
-            Masraf bulunamadı
-        </div>
-        {% endif %}
+    {% if masraflar %}
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-[#111418] text-xs text-text-muted dark:text-text-muted-dark uppercase">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium">#</th>
+                    <th class="px-4 py-3 text-left font-medium">Tarih</th>
+                    <th class="px-4 py-3 text-left font-medium">Açıklama</th>
+                    <th class="px-4 py-3 text-left font-medium">Kategori</th>
+                    <th class="px-4 py-3 text-left font-medium">Proje</th>
+                    <th class="px-4 py-3 text-right font-medium">Tutar</th>
+                    <th class="px-4 py-3 text-left font-medium">Durum</th>
+                    <th class="px-4 py-3 text-center font-medium">Dosya</th>
+                    <th class="px-4 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for masraf in masraflar %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418]">
+                    <td class="px-4 py-3 text-sm text-text-muted dark:text-text-muted-dark">{{ masraf.id }}</td>
+                    <td class="px-4 py-3 text-sm">{{ masraf.masraf_tarihi.strftime('%d.%m.%Y') }}</td>
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('masraf.detay', id=masraf.id) }}" class="text-blue-600 hover:text-blue-700 hover:underline">
+                            {{ masraf.baslik|truncate(40) }}
+                        </a>
+                        {% if masraf.firma_adi %}
+                        <span class="block text-xs text-text-muted dark:text-text-muted-dark">{{ masraf.firma_adi }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        {% if masraf.kategori %}
+                        <span class="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-{{ masraf.kategori.renk }}-100 text-{{ masraf.kategori.renk }}-800">
+                            <i class="{{ masraf.kategori.ikon }}"></i>{{ masraf.kategori.ad }}
+                        </span>
+                        {% else %}
+                        <span class="text-gray-400 dark:text-gray-500">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                        {% if masraf.proje %}
+                        {{ masraf.proje.ad|truncate(20) }}
+                        {% else %}
+                        <span class="text-gray-400 dark:text-gray-500">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <span class="font-semibold text-[#111418] dark:text-white">
+                            {% if masraf.para_birimi == 'TRY' %}₺{% elif masraf.para_birimi == 'USD' %}${% elif masraf.para_birimi == 'EUR' %}€{% endif %}{{ "%.2f"|format(masraf.toplam_tutar) }}
+                        </span>
+                        {% if masraf.para_birimi != 'TRY' %}
+                        <span class="block text-xs text-text-muted dark:text-text-muted-dark">₺{{ "%.2f"|format(masraf.tl_karsiligi) }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-{{ masraf.durum_renk }}-100 text-{{ masraf.durum_renk }}-800">
+                            {{ masraf.durum_text }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        {% if masraf.dosya_yolu %}
+                        <a href="{{ url_for('masraf.dosya_indir', id=masraf.id) }}" class="text-green-600 hover:text-green-700" title="Dosya var">
+                            <span class="material-symbols-outlined text-lg">attach_file</span>
+                        </a>
+                        {% else %}
+                        <span class="text-gray-300 dark:text-gray-600">
+                            <span class="material-symbols-outlined text-lg">remove</span>
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('masraf.detay', id=masraf.id) }}" class="inline-flex items-center justify-center w-8 h-8 border border-border-light dark:border-border-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418] transition-colors">
+                            <span class="material-symbols-outlined text-sm text-text-muted dark:text-text-muted-dark">visibility</span>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+    
+    <!-- Pagination -->
+    {% if pagination.pages > 1 %}
+    <div class="px-5 py-4 border-t border-border-light dark:border-border-dark">
+        <nav class="flex justify-center">
+            <ul class="inline-flex items-center gap-1">
+                {% for p in pagination.iter_pages() %}
+                {% if p %}
+                <li>
+                    <a href="{{ url_for('masraf.liste', page=p, durum=request.args.get('durum'), kategori_id=request.args.get('kategori_id'), yil=request.args.get('yil')) }}" 
+                       class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">
+                        {{ p }}
+                    </a>
+                </li>
+                {% else %}
+                <li><span class="px-3 py-1.5 text-gray-400 dark:text-gray-500">...</span></li>
+                {% endif %}
+                {% endfor %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="text-center text-text-muted dark:text-text-muted-dark py-12">
+        <span class="material-symbols-outlined text-4xl mb-2 block">receipt_long</span>
+        Masraf bulunamadı
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

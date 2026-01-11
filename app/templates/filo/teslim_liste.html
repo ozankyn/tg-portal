@@ -4,92 +4,86 @@
 {% block page_title %}Teslim/İade Kayıtları{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <form method="GET" class="row g-2">
-            <div class="col-auto">
-                <select name="arac_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">Tüm Araçlar</option>
-                    {% for arac in araclar %}
-                    <option value="{{ arac.id }}" {{ 'selected' if request.args.get('arac_id')|int == arac.id }}>
-                        {{ arac.plaka }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-auto">
-                <select name="islem_tipi" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">Tüm İşlemler</option>
-                    <option value="teslim" {{ 'selected' if request.args.get('islem_tipi') == 'teslim' }}>Teslim</option>
-                    <option value="iade" {{ 'selected' if request.args.get('islem_tipi') == 'iade' }}>İade</option>
-                </select>
-            </div>
+<div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+    <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+        <form method="GET" class="flex flex-wrap items-center gap-2">
+            <select name="arac_id" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                <option value="">Tüm Araçlar</option>
+                {% for arac in araclar %}
+                <option value="{{ arac.id }}" {{ 'selected' if request.args.get('arac_id')|int == arac.id }}>
+                    {{ arac.plaka }}
+                </option>
+                {% endfor %}
+            </select>
+            <select name="islem_tipi" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                <option value="">Tüm İşlemler</option>
+                <option value="teslim" {{ 'selected' if request.args.get('islem_tipi') == 'teslim' }}>Teslim</option>
+                <option value="iade" {{ 'selected' if request.args.get('islem_tipi') == 'iade' }}>İade</option>
+            </select>
         </form>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Tarih</th>
-                        <th>Araç</th>
-                        <th>İşlem</th>
-                        <th>KM</th>
-                        <th>Yakıt</th>
-                        <th>Teslim Eden</th>
-                        <th>Teslim Alan</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for teslim in teslimler %}
-                    <tr>
-                        <td>{{ teslim.tarih.strftime('%d.%m.%Y %H:%M') }}</td>
-                        <td>
-                            <a href="{{ url_for('filo.detay', id=teslim.arac_id) }}">
-                                {{ teslim.arac.plaka }}
-                            </a>
-                        </td>
-                        <td>
-                            <span class="badge bg-{{ 'success' if teslim.islem_tipi == 'teslim' else 'warning' }}">
-                                {{ teslim.islem_tipi|upper }}
-                            </span>
-                            {% if teslim.yeni_hasar %}
-                            <span class="badge bg-danger">HASAR</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ teslim.km }}</td>
-                        <td>{{ teslim.yakit_durumu_display }}</td>
-                        <td>
-                            {{ teslim.teslim_eden_calisan.full_name if teslim.teslim_eden_calisan else '-' }}
-                        </td>
-                        <td>
-                            {{ teslim.teslim_alan_calisan.full_name if teslim.teslim_alan_calisan else '-' }}
-                        </td>
-                        <td>
-                            <a href="{{ url_for('filo.teslim_detay', id=teslim.id) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="8" class="text-center text-muted py-4">Kayıt bulunamadı</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-[#111418]">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tarih</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Araç</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">İşlem</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">KM</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Yakıt</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Teslim Eden</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Teslim Alan</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for teslim in teslimler %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418]">
+                    <td class="px-4 py-3">{{ teslim.tarih.strftime('%d.%m.%Y %H:%M') }}</td>
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('filo.detay', id=teslim.arac_id) }}" class="text-blue-600 hover:underline">
+                            {{ teslim.arac.plaka }}
+                        </a>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full {% if teslim.islem_tipi == 'teslim' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% endif %}">
+                            {{ teslim.islem_tipi|upper }}
+                        </span>
+                        {% if teslim.yeni_hasar %}
+                        <span class="ml-1 px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">HASAR</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">{{ teslim.km }}</td>
+                    <td class="px-4 py-3">{{ teslim.yakit_durumu_display }}</td>
+                    <td class="px-4 py-3">
+                        {{ teslim.teslim_eden_calisan.full_name if teslim.teslim_eden_calisan else '-' }}
+                    </td>
+                    <td class="px-4 py-3">
+                        {{ teslim.teslim_alan_calisan.full_name if teslim.teslim_alan_calisan else '-' }}
+                    </td>
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('filo.teslim_detay', id=teslim.id) }}" class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                            <span class="material-symbols-outlined">visibility</span>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Kayıt bulunamadı</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
 {% if pagination.pages > 1 %}
-<nav class="mt-3">
-    <ul class="pagination pagination-sm justify-content-center">
+<nav class="mt-4 flex justify-center">
+    <ul class="inline-flex items-center gap-1">
         {% for p in pagination.iter_pages() %}
         {% if p %}
-        <li class="page-item {{ 'active' if p == pagination.page }}">
-            <a class="page-link" href="{{ url_for('filo.teslim_liste', page=p, **request.args) }}">{{ p }}</a>
+        <li>
+            <a href="{{ url_for('filo.teslim_liste', page=p, **request.args) }}" class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
         </li>
         {% endif %}
         {% endfor %}

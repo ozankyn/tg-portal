@@ -5,118 +5,105 @@
 
 {% block content %}
 <!-- İstatistikler -->
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card stat-card warning">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="text-muted mb-1">Onay Bekleyen</h6>
-                        <h3 class="mb-0">{{ stats.bekleyen }}</h3>
-                    </div>
-                    <div class="fs-1 text-warning opacity-25">
-                        <i class="bi bi-hourglass-split"></i>
-                    </div>
-                </div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-1">Onay Bekleyen</p>
+                <p class="text-2xl font-bold text-[#111418] dark:text-white">{{ stats.bekleyen }}</p>
             </div>
+            <span class="material-symbols-outlined text-4xl text-yellow-500 opacity-50">hourglass_top</span>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card stat-card primary">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="text-muted mb-1">Bu Ay Toplam</h6>
-                        <h3 class="mb-0">₺{{ "%.2f"|format(stats.bu_ay_toplam) }}</h3>
-                    </div>
-                    <div class="fs-1 text-primary opacity-25">
-                        <i class="bi bi-wallet2"></i>
-                    </div>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-1">Bu Ay Toplam</p>
+                <p class="text-2xl font-bold text-[#111418] dark:text-white">₺{{ "%.2f"|format(stats.bu_ay_toplam) }}</p>
             </div>
+            <span class="material-symbols-outlined text-4xl text-blue-500 opacity-50">wallet</span>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card stat-card success">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="text-muted mb-1">Onaylanan</h6>
-                        <h3 class="mb-0">{{ stats.onaylanan }}</h3>
-                    </div>
-                    <div class="fs-1 text-success opacity-25">
-                        <i class="bi bi-check-circle"></i>
-                    </div>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-1">Onaylanan</p>
+                <p class="text-2xl font-bold text-[#111418] dark:text-white">{{ stats.onaylanan }}</p>
             </div>
+            <span class="material-symbols-outlined text-4xl text-green-500 opacity-50">check_circle</span>
         </div>
     </div>
 </div>
 
-<div class="row g-4">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Hızlı İşlemler -->
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Hızlı İşlemler</h6>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('masraf.liste') }}" class="btn btn-outline-primary">
-                        <i class="bi bi-list-ul me-2"></i>Tüm Masraflar
-                    </a>
-                    <a href="{{ url_for('masraf.kategori_liste') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-tags me-2"></i>Kategoriler
-                    </a>
-                    <a href="{{ url_for('masraf.rapor') }}" class="btn btn-outline-info">
-                        <i class="bi bi-bar-chart me-2"></i>Raporlar
-                    </a>
-                </div>
-            </div>
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+        <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="font-semibold text-[#111418] dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">bolt</span>
+                Hızlı İşlemler
+            </h3>
+        </div>
+        <div class="p-5 space-y-2">
+            <a href="{{ url_for('masraf.liste') }}" class="flex items-center gap-2 w-full px-4 py-2.5 border border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors">
+                <span class="material-symbols-outlined text-lg">list</span>
+                Tüm Masraflar
+            </a>
+            <a href="{{ url_for('masraf.kategori_liste') }}" class="flex items-center gap-2 w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-text-muted dark:text-text-muted-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                <span class="material-symbols-outlined text-lg">sell</span>
+                Kategoriler
+            </a>
+            <a href="{{ url_for('masraf.rapor') }}" class="flex items-center gap-2 w-full px-4 py-2.5 border border-cyan-500 text-cyan-600 rounded-lg hover:bg-cyan-50 transition-colors">
+                <span class="material-symbols-outlined text-lg">bar_chart</span>
+                Raporlar
+            </a>
         </div>
     </div>
     
     <!-- Son Masraflar -->
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Son Masraflar</h6>
-                <a href="{{ url_for('masraf.liste') }}" class="btn btn-sm btn-outline-primary">Tümü</a>
-            </div>
-            <div class="card-body p-0">
-                {% if son_masraflar %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Tarih</th>
-                                <th>Çalışan</th>
-                                <th>Açıklama</th>
-                                <th class="text-end">Tutar</th>
-                                <th>Durum</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for masraf in son_masraflar %}
-                            <tr onclick="window.location='{{ url_for('masraf.detay', id=masraf.id) }}'" style="cursor:pointer">
-                                <td>{{ masraf.masraf_tarihi.strftime('%d.%m') }}</td>
-                                <td>{{ masraf.calisan.ad_soyad if masraf.calisan else '-' }}</td>
-                                <td>{{ masraf.baslik|truncate(25) }}</td>
-                                <td class="text-end fw-semibold">₺{{ "%.2f"|format(masraf.tl_karsiligi or masraf.toplam_tutar) }}</td>
-                                <td><span class="badge bg-{{ masraf.durum_renk }}">{{ masraf.durum_text }}</span></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <div class="text-center text-muted py-5">
-                    <i class="bi bi-receipt fs-1 d-block mb-2"></i>
-                    Henüz masraf yok
-                </div>
-                {% endif %}
-            </div>
+    <div class="lg:col-span-2 bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+        <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+            <h3 class="font-semibold text-[#111418] dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">history</span>
+                Son Masraflar
+            </h3>
+            <a href="{{ url_for('masraf.liste') }}" class="text-sm text-blue-600 hover:text-blue-700">Tümü</a>
         </div>
+        {% if son_masraflar %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-[#111418] text-xs text-text-muted dark:text-text-muted-dark uppercase">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-medium">Tarih</th>
+                        <th class="px-4 py-3 text-left font-medium">Çalışan</th>
+                        <th class="px-4 py-3 text-left font-medium">Açıklama</th>
+                        <th class="px-4 py-3 text-right font-medium">Tutar</th>
+                        <th class="px-4 py-3 text-left font-medium">Durum</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                    {% for masraf in son_masraflar %}
+                    <tr onclick="window.location='{{ url_for('masraf.detay', id=masraf.id) }}'" class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418] cursor-pointer">
+                        <td class="px-4 py-3 text-sm">{{ masraf.masraf_tarihi.strftime('%d.%m') }}</td>
+                        <td class="px-4 py-3 text-sm">{{ masraf.calisan.ad_soyad if masraf.calisan else '-' }}</td>
+                        <td class="px-4 py-3 text-sm">{{ masraf.baslik|truncate(25) }}</td>
+                        <td class="px-4 py-3 text-sm text-right font-semibold">₺{{ "%.2f"|format(masraf.tl_karsiligi or masraf.toplam_tutar) }}</td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-{{ masraf.durum_renk }}-100 text-{{ masraf.durum_renk }}-800">
+                                {{ masraf.durum_text }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center text-text-muted dark:text-text-muted-dark py-12">
+            <span class="material-symbols-outlined text-4xl mb-2 block">receipt_long</span>
+            Henüz masraf yok
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

@@ -5,68 +5,52 @@
 
 {% block content %}
 <!-- İstatistik Kartları -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card stat-card primary h-100">
-            <div class="card-body py-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">Toplam Zimmet</div>
-                        <div class="fs-4 fw-bold">{{ stats.toplam }}</div>
-                    </div>
-                    <i class="bi bi-box-seam fs-2 text-primary opacity-25"></i>
-                </div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">Toplam Zimmet</p>
+                <p class="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{{ stats.toplam }}</p>
             </div>
+            <span class="material-symbols-outlined text-4xl text-blue-500 opacity-25">inventory_2</span>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card info h-100">
-            <div class="card-body py-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">Teslim Edilmiş</div>
-                        <div class="fs-4 fw-bold">{{ stats.teslim_edildi }}</div>
-                    </div>
-                    <i class="bi bi-person-check fs-2 text-info opacity-25"></i>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">Teslim Edilmiş</p>
+                <p class="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{{ stats.teslim_edildi }}</p>
             </div>
+            <span class="material-symbols-outlined text-4xl text-cyan-500 opacity-25">how_to_reg</span>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card success h-100">
-            <div class="card-body py-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">İade Edilmiş</div>
-                        <div class="fs-4 fw-bold">{{ stats.iade_edildi }}</div>
-                    </div>
-                    <i class="bi bi-check-circle fs-2 text-success opacity-25"></i>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">İade Edilmiş</p>
+                <p class="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{{ stats.iade_edildi }}</p>
             </div>
+            <span class="material-symbols-outlined text-4xl text-green-500 opacity-25">check_circle</span>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card danger h-100">
-            <div class="card-body py-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <div class="text-muted small">Kayıp</div>
-                        <div class="fs-4 fw-bold">{{ stats.kayip }}</div>
-                    </div>
-                    <i class="bi bi-exclamation-triangle fs-2 text-danger opacity-25"></i>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">Kayıp</p>
+                <p class="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{{ stats.kayip }}</p>
             </div>
+            <span class="material-symbols-outlined text-4xl text-red-500 opacity-25">warning</span>
         </div>
     </div>
 </div>
 
 <!-- Filtreler ve Liste -->
-<div class="card">
-    <div class="card-header">
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div class="d-flex gap-2 flex-wrap">
+<div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+        <div class="flex flex-wrap justify-between items-center gap-4">
+            <div class="flex flex-wrap gap-2 items-center">
                 <!-- Durum Filtresi -->
-                <select class="form-select form-select-sm" style="width: auto;" onchange="filterByDurum(this.value)">
+                <select class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500" onchange="filterByDurum(this.value)">
                     <option value="">Tüm Durumlar</option>
                     <option value="teslim_edildi" {{ 'selected' if request.args.get('durum') == 'teslim_edildi' }}>Teslim Edildi</option>
                     <option value="iade_edildi" {{ 'selected' if request.args.get('durum') == 'iade_edildi' }}>İade Edildi</option>
@@ -74,7 +58,7 @@
                 </select>
                 
                 <!-- Tip Filtresi -->
-                <select class="form-select form-select-sm" style="width: auto;" onchange="filterByTip(this.value)">
+                <select class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500" onchange="filterByTip(this.value)">
                     <option value="">Tüm Tipler</option>
                     {% for tip in zimmet_tipleri %}
                     <option value="{{ tip.id }}" {{ 'selected' if request.args.get('tip_id')|int == tip.id }}>{{ tip.ad }}</option>
@@ -82,88 +66,97 @@
                 </select>
                 
                 <!-- Arama -->
-                <form class="d-flex gap-2" method="GET">
-                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Ara..." value="{{ request.args.get('search', '') }}">
-                    <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-search"></i></button>
+                <form class="flex gap-2" method="GET">
+                    <input type="text" name="search" placeholder="Ara..." value="{{ request.args.get('search', '') }}"
+                           class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 w-40">
+                    <button type="submit" class="p-1.5 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                        <span class="material-symbols-outlined text-lg">search</span>
+                    </button>
                 </form>
             </div>
             
-            <a href="{{ url_for('ik.zimmet_ekle') }}" class="btn btn-primary btn-sm">
-                <i class="bi bi-plus-lg me-1"></i> Yeni Zimmet
+            <a href="{{ url_for('ik.zimmet_ekle') }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                <span class="material-symbols-outlined text-sm">add</span>
+                Yeni Zimmet
             </a>
         </div>
     </div>
     
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Zimmet</th>
-                        <th>Çalışan</th>
-                        <th>Tip</th>
-                        <th>Seri No</th>
-                        <th>Teslim Tarihi</th>
-                        <th>Durum</th>
-                        <th class="text-end">İşlem</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for zimmet in zimmetler %}
-                    <tr>
-                        <td>
-                            <a href="{{ url_for('ik.zimmet_detay', id=zimmet.id) }}" class="text-decoration-none fw-semibold">
-                                {{ zimmet.tanim or '-' }}
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-[#252b36] text-xs text-text-muted dark:text-text-muted-dark uppercase">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium">Zimmet</th>
+                    <th class="px-4 py-3 text-left font-medium">Çalışan</th>
+                    <th class="px-4 py-3 text-left font-medium">Tip</th>
+                    <th class="px-4 py-3 text-left font-medium">Seri No</th>
+                    <th class="px-4 py-3 text-left font-medium">Teslim Tarihi</th>
+                    <th class="px-4 py-3 text-left font-medium">Durum</th>
+                    <th class="px-4 py-3 text-right font-medium">İşlem</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for zimmet in zimmetler %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('ik.zimmet_detay', id=zimmet.id) }}" class="font-semibold text-blue-600 hover:text-blue-700">
+                            {{ zimmet.tanim or '-' }}
+                        </a>
+                        {% if zimmet.marka or zimmet.model %}
+                        <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ zimmet.marka }} {{ zimmet.model }}</p>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('ik.detay', id=zimmet.calisan_id) }}" class="text-text-primary dark:text-text-primary-dark hover:text-blue-600">
+                            {{ zimmet.calisan.full_name }}
+                        </a>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">{{ zimmet.zimmet_tipi.ad }}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <code class="text-sm text-text-muted dark:text-text-muted-dark">{{ zimmet.seri_no or '-' }}</code>
+                    </td>
+                    <td class="px-4 py-3 text-sm">{{ zimmet.teslim_tarihi.strftime('%d.%m.%Y') }}</td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-{{ zimmet.durum_renk }}-100 text-{{ zimmet.durum_renk }}-700 dark:bg-{{ zimmet.durum_renk }}-900/30 dark:text-{{ zimmet.durum_renk }}-400">{{ zimmet.durum_text }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <div class="flex items-center justify-end gap-1">
+                            <a href="{{ url_for('ik.zimmet_detay', id=zimmet.id) }}" class="p-1.5 text-text-muted dark:text-text-muted-dark hover:text-blue-600 hover:bg-blue-50 rounded" title="Detay">
+                                <span class="material-symbols-outlined text-lg">visibility</span>
                             </a>
-                            {% if zimmet.marka or zimmet.model %}
-                            <div class="small text-muted">{{ zimmet.marka }} {{ zimmet.model }}</div>
+                            {% if zimmet.durum == 'teslim_edildi' %}
+                            <a href="{{ url_for('ik.zimmet_iade', id=zimmet.id) }}" class="p-1.5 text-text-muted dark:text-text-muted-dark hover:text-green-600 hover:bg-green-50 rounded" title="İade Al">
+                                <span class="material-symbols-outlined text-lg">keyboard_return</span>
+                            </a>
                             {% endif %}
-                        </td>
-                        <td>
-                            <a href="{{ url_for('ik.detay', id=zimmet.calisan_id) }}" class="text-decoration-none">
-                                {{ zimmet.calisan.full_name }}
-                            </a>
-                        </td>
-                        <td><span class="badge bg-light text-dark">{{ zimmet.zimmet_tipi.ad }}</span></td>
-                        <td><code>{{ zimmet.seri_no or '-' }}</code></td>
-                        <td>{{ zimmet.teslim_tarihi.strftime('%d.%m.%Y') }}</td>
-                        <td><span class="badge bg-{{ zimmet.durum_renk }}">{{ zimmet.durum_text }}</span></td>
-                        <td class="text-end">
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ url_for('ik.zimmet_detay', id=zimmet.id) }}" class="btn btn-outline-secondary" title="Detay">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                {% if zimmet.durum == 'teslim_edildi' %}
-                                <a href="{{ url_for('ik.zimmet_iade', id=zimmet.id) }}" class="btn btn-outline-success" title="İade Al">
-                                    <i class="bi bi-box-arrow-in-left"></i>
-                                </a>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
-                            Zimmet kaydı bulunmuyor
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-4 py-12 text-center text-text-muted dark:text-text-muted-dark">
+                        Zimmet kaydı bulunmuyor
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
 {% if pagination.pages > 1 %}
-<nav class="mt-4">
-    <ul class="pagination justify-content-center">
+<nav class="mt-6 flex justify-center">
+    <ul class="inline-flex items-center gap-1">
         {% for p in pagination.iter_pages() %}
         {% if p %}
-        <li class="page-item {{ 'active' if p == pagination.page }}">
-            <a class="page-link" href="{{ url_for('ik.zimmet_liste', page=p, durum=request.args.get('durum'), tip_id=request.args.get('tip_id'), search=request.args.get('search')) }}">{{ p }}</a>
+        <li>
+            <a href="{{ url_for('ik.zimmet_liste', page=p, durum=request.args.get('durum'), tip_id=request.args.get('tip_id'), search=request.args.get('search')) }}" 
+               class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
         </li>
         {% else %}
-        <li class="page-item disabled"><span class="page-link">...</span></li>
+        <li><span class="px-3 py-1.5 text-gray-400 dark:text-gray-500">...</span></li>
         {% endif %}
         {% endfor %}
     </ul>

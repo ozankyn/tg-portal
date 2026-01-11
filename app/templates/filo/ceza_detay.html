@@ -4,91 +4,121 @@
 {% block page_title %}Trafik Cezası Detayı{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card mb-4">
-            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">
-                    <i class="bi bi-exclamation-octagon me-2"></i>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mb-6">
+            <div class="bg-red-600 text-white px-4 py-3 rounded-t-xl flex justify-between items-center">
+                <h6 class="font-medium flex items-center gap-2">
+                    <span class="material-symbols-outlined">error</span>
                     {{ ceza.arac.plaka }} - {{ ceza.ceza_turu or 'Trafik Cezası' }}
                 </h6>
-                <span class="badge bg-{{ 'success' if ceza.durum == 'odendi' else ('warning' if ceza.durum == 'bekliyor' else 'info') }}">
+                <span class="px-2 py-1 text-xs font-medium rounded-full {% if ceza.durum == 'odendi' %}bg-green-500{% elif ceza.durum == 'bekliyor' %}bg-yellow-500{% else %}bg-blue-500{% endif %}">
                     {{ ceza.durum|upper }}
                 </span>
             </div>
-            <div class="card-body">
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <table class="table table-sm table-borderless">
-                            <tr><td class="text-muted">Araç</td><td><a href="{{ url_for('filo.detay', id=ceza.arac_id) }}">{{ ceza.arac.plaka }}</a></td></tr>
-                            <tr><td class="text-muted">Sürücü</td><td>{{ ceza.surucu.full_name if ceza.surucu else '-' }}</td></tr>
-                            <tr><td class="text-muted">Ceza Tarihi</td><td><strong>{{ ceza.ceza_tarihi.strftime('%d.%m.%Y %H:%M') }}</strong></td></tr>
-                            <tr><td class="text-muted">Konum</td><td>{{ ceza.konum or '-' }}</td></tr>
-                            <tr><td class="text-muted">Tutanak No</td><td>{{ ceza.tutanak_no or '-' }}</td></tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <table class="table table-sm table-borderless">
-                            <tr><td class="text-muted">Ceza Tutarı</td><td><strong class="text-danger fs-5">{{ "%.2f"|format(ceza.ceza_tutari) }} ₺</strong></td></tr>
-                            {% if ceza.indirimli_tutar %}
-                            <tr><td class="text-muted">İndirimli Tutar</td><td><strong class="text-success">{{ "%.2f"|format(ceza.indirimli_tutar) }} ₺</strong></td></tr>
-                            {% endif %}
-                            <tr><td class="text-muted">Ceza Puanı</td><td>{{ ceza.ceza_puani or 0 }} puan</td></tr>
-                            <tr><td class="text-muted">Tebliğ Tarihi</td><td>{{ ceza.teblig_tarihi.strftime('%d.%m.%Y') if ceza.teblig_tarihi else '-' }}</td></tr>
-                            <tr><td class="text-muted">Son Ödeme</td><td>
+            <div class="p-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <table class="w-full text-sm">
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1 w-28">Araç</td>
+                            <td class="py-1"><a href="{{ url_for('filo.detay', id=ceza.arac_id) }}" class="text-blue-600 hover:underline">{{ ceza.arac.plaka }}</a></td>
+                        </tr>
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">Sürücü</td>
+                            <td class="py-1">{{ ceza.surucu.full_name if ceza.surucu else '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">Ceza Tarihi</td>
+                            <td class="py-1 font-semibold">{{ ceza.ceza_tarihi.strftime('%d.%m.%Y %H:%M') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">Konum</td>
+                            <td class="py-1">{{ ceza.konum or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">Tutanak No</td>
+                            <td class="py-1">{{ ceza.tutanak_no or '-' }}</td>
+                        </tr>
+                    </table>
+                    <table class="w-full text-sm">
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1 w-28">Ceza Tutarı</td>
+                            <td class="py-1 font-semibold text-rose-600 text-lg">{{ "%.2f"|format(ceza.ceza_tutari) }} ₺</td>
+                        </tr>
+                        {% if ceza.indirimli_tutar %}
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">İndirimli Tutar</td>
+                            <td class="py-1 font-semibold text-emerald-600">{{ "%.2f"|format(ceza.indirimli_tutar) }} ₺</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">Ceza Puanı</td>
+                            <td class="py-1">{{ ceza.ceza_puani or 0 }} puan</td>
+                        </tr>
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">Tebliğ Tarihi</td>
+                            <td class="py-1">{{ ceza.teblig_tarihi.strftime('%d.%m.%Y') if ceza.teblig_tarihi else '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">Son Ödeme</td>
+                            <td class="py-1">
                                 {% if ceza.son_odeme_tarihi %}
-                                <span class="{{ 'text-danger fw-bold' if ceza.gecikme_durumu == 'gecikti' else '' }}">
+                                <span class="{% if ceza.gecikme_durumu == 'gecikti' %}text-rose-600 font-bold{% endif %}">
                                     {{ ceza.son_odeme_tarihi.strftime('%d.%m.%Y') }}
                                 </span>
                                 {% else %}
                                 -
                                 {% endif %}
-                            </td></tr>
-                        </table>
-                    </div>
+                            </td>
+                        </tr>
+                    </table>
                 </div>
                 
                 {% if ceza.aciklama %}
-                <h6><i class="bi bi-file-text me-2"></i>Açıklama</h6>
-                <p>{{ ceza.aciklama }}</p>
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined">description</span>Açıklama
+                </h6>
+                <p class="text-text-muted dark:text-text-muted-dark">{{ ceza.aciklama }}</p>
                 {% endif %}
                 
                 {% if ceza.durum == 'odendi' %}
-                <div class="alert alert-success">
-                    <i class="bi bi-check-circle me-2"></i>
-                    <strong>Ödendi:</strong> {{ ceza.odeme_tarihi.strftime('%d.%m.%Y') if ceza.odeme_tarihi else '' }} - {{ "%.2f"|format(ceza.odenen_tutar) if ceza.odenen_tutar else '' }} ₺
+                <div class="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-900/30 rounded-lg p-4 mt-4">
+                    <span class="material-symbols-outlined text-emerald-600 mr-2">check_circle</span>
+                    <strong class="text-[#111418] dark:text-white">Ödendi:</strong> {{ ceza.odeme_tarihi.strftime('%d.%m.%Y') if ceza.odeme_tarihi else '' }} - {{ "%.2f"|format(ceza.odenen_tutar) if ceza.odenen_tutar else '' }} ₺
                 </div>
                 {% endif %}
                 
                 {% if ceza.surucuye_yansitildi %}
-                <div class="alert alert-info">
-                    <i class="bi bi-person-check me-2"></i>
-                    <strong>Sürücüye Yansıtıldı:</strong> {{ ceza.yansitma_tarihi.strftime('%d.%m.%Y') if ceza.yansitma_tarihi else '' }}
+                <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-lg p-4 mt-4">
+                    <span class="material-symbols-outlined text-blue-600 mr-2">person_check</span>
+                    <strong class="text-[#111418] dark:text-white">Sürücüye Yansıtıldı:</strong> {{ ceza.yansitma_tarihi.strftime('%d.%m.%Y') if ceza.yansitma_tarihi else '' }}
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
     
-    <div class="col-lg-4">
+    <div>
         {% if ceza.durum == 'bekliyor' %}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-credit-card me-2"></i>Ödeme Yap</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mb-4">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">credit_card</span>Ödeme Yap
+                </h6>
             </div>
-            <div class="card-body">
+            <div class="p-4">
                 <form method="POST" action="{{ url_for('filo.ceza_ode', id=ceza.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
-                        <label class="form-label">Ödeme Tarihi *</label>
-                        <input type="date" name="odeme_tarihi" class="form-control" required value="{{ today().strftime('%Y-%m-%d') if today else '' }}">
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Ödeme Tarihi *</label>
+                        <input type="date" name="odeme_tarihi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="{{ today().strftime('%Y-%m-%d') if today else '' }}">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Ödenen Tutar (₺)</label>
-                        <input type="number" name="odenen_tutar" class="form-control" step="0.01" value="{{ ceza.indirimli_tutar or ceza.ceza_tutari }}">
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Ödenen Tutar (₺)</label>
+                        <input type="number" name="odenen_tutar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01" value="{{ ceza.indirimli_tutar or ceza.ceza_tutari }}">
                     </div>
-                    <button type="submit" class="btn btn-success w-100">
-                        <i class="bi bi-check-lg me-1"></i>Ödendi Olarak İşaretle
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                        <span class="material-symbols-outlined">check</span>Ödendi Olarak İşaretle
                     </button>
                 </form>
             </div>
@@ -96,16 +126,18 @@
         {% endif %}
         
         {% if ceza.surucu and not ceza.surucuye_yansitildi %}
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-person-dash me-2"></i>Sürücüye Yansıt</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">person_remove</span>Sürücüye Yansıt
+                </h6>
             </div>
-            <div class="card-body">
-                <p class="small text-muted">Bu cezayı {{ ceza.surucu.full_name }} adlı sürücüye yansıtmak istiyor musunuz?</p>
+            <div class="p-4">
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-3">Bu cezayı {{ ceza.surucu.full_name }} adlı sürücüye yansıtmak istiyor musunuz?</p>
                 <form method="POST" action="{{ url_for('filo.ceza_yansit', id=ceza.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-warning w-100">
-                        <i class="bi bi-person-check me-1"></i>Sürücüye Yansıt
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-yellow-500 text-white font-medium rounded-lg hover:bg-yellow-600 transition-colors">
+                        <span class="material-symbols-outlined">person_check</span>Sürücüye Yansıt
                     </button>
                 </form>
             </div>
@@ -114,9 +146,9 @@
     </div>
 </div>
 
-<div class="mt-3">
-    <a href="{{ url_for('filo.ceza_liste') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Listeye Dön
+<div class="mt-4">
+    <a href="{{ url_for('filo.ceza_liste') }}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-[#111418] dark:text-white font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+        <span class="material-symbols-outlined">arrow_back</span>Listeye Dön
     </a>
 </div>
 {% endblock %}

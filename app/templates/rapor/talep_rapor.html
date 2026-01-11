@@ -4,175 +4,191 @@
 {% block page_title %}Talep Raporları{% endblock %}
 
 {% block content %}
-<!-- Filtre -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="GET" class="row g-2 align-items-end">
-            <div class="col-auto">
-                <label class="form-label">Yıl</label>
-                <select name="yil" class="form-select form-select-sm">
-                    {% for y in range(2024, 2027) %}
-                    <option value="{{ y }}" {{ 'selected' if y == yil }}>{{ y }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-auto">
-                <label class="form-label">Ay</label>
-                <select name="ay" class="form-select form-select-sm">
-                    <option value="">Tümü</option>
-                    {% for m in range(1, 13) %}
-                    <option value="{{ m }}" {{ 'selected' if m == ay }}>{{ m }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary btn-sm">Filtrele</button>
-            </div>
-            <div class="col-auto ms-auto">
-                <a href="{{ url_for('rapor.export_excel', modul='talep') }}" class="btn btn-outline-success btn-sm">
-                    <i class="bi bi-download me-1"></i>Excel
-                </a>
-            </div>
-        </form>
-    </div>
-</div>
+<div class="space-y-6">
 
-<!-- İstatistikler -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white">
-            <div class="card-body text-center">
-                <h2 class="mb-0">{{ stats.toplam }}</h2>
-                <small>Toplam Talep</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-danger text-white">
-            <div class="card-body text-center">
-                <h2 class="mb-0">{{ stats.acik }}</h2>
-                <small>Açık</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white">
-            <div class="card-body text-center">
-                <h2 class="mb-0">{{ stats.cozuldu }}</h2>
-                <small>Çözüldü</small>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-secondary text-white">
-            <div class="card-body text-center">
-                <h2 class="mb-0">{{ stats.kapatildi }}</h2>
-                <small>Kapatıldı</small>
-            </div>
-        </div>
-    </div>
-</div>
+  <!-- Filtre + Excel -->
+  <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+      <form method="GET" class="flex flex-col lg:flex-row lg:items-end gap-4">
+        <div class="flex flex-wrap items-end gap-4">
 
-<div class="row g-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Yıl</label>
+            <select name="yil"
+                    class="w-40 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+              {% for y in range(2024, 2027) %}
+              <option value="{{ y }}" {{ 'selected' if y == yil }}>{{ y }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Durum</label>
+            <select name="durum"
+                    class="w-44 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+              <option value="">Tümü</option>
+              <option value="acik" {{ 'selected' if request.args.get('durum') == 'acik' }}>Açık</option>
+              <option value="atandi" {{ 'selected' if request.args.get('durum') == 'atandi' }}>Atandı</option>
+              <option value="devam_ediyor" {{ 'selected' if request.args.get('durum') == 'devam_ediyor' }}>Devam Ediyor</option>
+              <option value="beklemede" {{ 'selected' if request.args.get('durum') == 'beklemede' }}>Beklemede</option>
+              <option value="cozuldu" {{ 'selected' if request.args.get('durum') == 'cozuldu' }}>Çözüldü</option>
+              <option value="kapatildi" {{ 'selected' if request.args.get('durum') == 'kapatildi' }}>Kapatıldı</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1">Öncelik</label>
+            <select name="oncelik"
+                    class="w-44 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+              <option value="">Tümü</option>
+              <option value="kritik" {{ 'selected' if request.args.get('oncelik') == 'kritik' }}>Kritik</option>
+              <option value="yuksek" {{ 'selected' if request.args.get('oncelik') == 'yuksek' }}>Yüksek</option>
+              <option value="normal" {{ 'selected' if request.args.get('oncelik') == 'normal' }}>Normal</option>
+              <option value="dusuk" {{ 'selected' if request.args.get('oncelik') == 'dusuk' }}>Düşük</option>
+            </select>
+          </div>
+
+          <button type="submit"
+                  class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-dark transition">
+            <span class="material-symbols-outlined text-[18px]">filter_alt</span>
+            Filtrele
+          </button>
+        </div>
+
+        <div class="lg:ml-auto">
+          <a href="{{ url_for('rapor.export_excel', modul='talep') }}"
+             class="inline-flex items-center justify-center gap-2 rounded-xl border border-green-300 dark:border-green-700
+                    px-4 py-2.5 text-sm font-semibold text-green-700 dark:text-green-300
+                    hover:bg-green-50 dark:hover:bg-green-900/20 transition">
+            <span class="material-symbols-outlined text-[18px]">download</span>
+            Excel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- İstatistikler -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-5">
+      <div class="text-center">
+        <div class="text-3xl font-extrabold text-[#111418] dark:text-white">{{ stats.toplam }}</div>
+        <div class="mt-1 text-sm text-text-muted dark:text-text-muted-dark">Toplam</div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-5">
+      <div class="text-center">
+        <div class="text-3xl font-extrabold text-[#111418] dark:text-white">{{ stats.acik }}</div>
+        <div class="mt-1 text-sm text-text-muted dark:text-text-muted-dark">Açık</div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-5">
+      <div class="text-center">
+        <div class="text-3xl font-extrabold text-[#111418] dark:text-white">{{ stats.cozen }}</div>
+        <div class="mt-1 text-sm text-text-muted dark:text-text-muted-dark">Çözülen</div>
+      </div>
+    </div>
+
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-5">
+      <div class="text-center">
+        <div class="text-3xl font-extrabold text-[#111418] dark:text-white">{{ stats.sla_asim }}</div>
+        <div class="mt-1 text-sm text-text-muted dark:text-text-muted-dark">SLA Aşımı</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Grafikler + Tablo -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     <!-- Kategori Dağılımı -->
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-pie-chart me-2"></i>Kategori Dağılımı</h6>
-            </div>
-            <div class="card-body">
-                <canvas id="kategoriChart" height="250"></canvas>
-            </div>
+    <div class="lg:col-span-6">
+      <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex items-center gap-2">
+          <span class="material-symbols-outlined text-[20px] text-primary">pie_chart</span>
+          <h3 class="font-bold text-[#111418] dark:text-white">Kategori Dağılımı</h3>
         </div>
-    </div>
-    
-    <!-- Öncelik Dağılımı -->
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-bar-chart me-2"></i>Öncelik Dağılımı</h6>
-            </div>
-            <div class="card-body">
-                <canvas id="oncelikChart" height="250"></canvas>
-            </div>
+        <div class="p-5">
+          <canvas id="kategoriChart" height="250"></canvas>
         </div>
+      </div>
     </div>
-    
-    <!-- Aylık Trend -->
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Aylık Talep Trendi ({{ yil }})</h6>
-            </div>
-            <div class="card-body">
-                <canvas id="trendChart" height="100"></canvas>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Tablolar -->
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">Kategori Detay</h6>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Kategori</th>
-                            <th class="text-end">Adet</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for ad, adet in kategori_dagilim %}
-                        <tr>
-                            <td>{{ ad }}</td>
-                            <td class="text-end">{{ adet }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">Öncelik Detay</h6>
-            </div>
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Öncelik</th>
-                            <th class="text-end">Adet</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for oncelik, adet in oncelik_dagilim %}
-                        <tr>
-                            <td>
-                                {% if oncelik == 'kritik' %}<span class="badge bg-danger">Kritik</span>
-                                {% elif oncelik == 'yuksek' %}<span class="badge bg-warning">Yüksek</span>
-                                {% elif oncelik == 'normal' %}<span class="badge bg-info">Normal</span>
-                                {% else %}<span class="badge bg-secondary">Düşük</span>{% endif %}
-                            </td>
-                            <td class="text-end">{{ adet }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="mt-4">
-    <a href="{{ url_for('rapor.dashboard') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Geri
+    <!-- Öncelik Dağılımı -->
+    <div class="lg:col-span-6">
+      <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex items-center gap-2">
+          <span class="material-symbols-outlined text-[20px] text-primary">stacked_bar_chart</span>
+          <h3 class="font-bold text-[#111418] dark:text-white">Öncelik Dağılımı</h3>
+        </div>
+        <div class="p-5">
+          <canvas id="oncelikChart" height="250"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLA / Ortalama Süre -->
+    <div class="lg:col-span-12">
+      <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex items-center gap-2">
+          <span class="material-symbols-outlined text-[20px] text-primary">monitoring</span>
+          <h3 class="font-bold text-[#111418] dark:text-white">Aylık Talep Trendi ({{ yil }})</h3>
+        </div>
+        <div class="p-5">
+          <canvas id="aylikChart" height="100"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- En Çok Talep Gelen Kategoriler -->
+    <div class="lg:col-span-12">
+      <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex items-center gap-2">
+          <span class="material-symbols-outlined text-[20px] text-primary">table_chart</span>
+          <h3 class="font-bold text-[#111418] dark:text-white">Kategori Detay</h3>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-[#111418] text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">
+              <tr>
+                <th class="px-5 py-3 text-left">Kategori</th>
+                <th class="px-5 py-3 text-right">Talep</th>
+                <th class="px-5 py-3 text-right">SLA Aşımı</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+              {% for ad, adet, sla_asim in kategori_detay %}
+              <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                <td class="px-5 py-3 font-semibold text-[#111418] dark:text-white">{{ ad }}</td>
+                <td class="px-5 py-3 text-right text-text-muted dark:text-text-muted-dark">{{ adet }}</td>
+                <td class="px-5 py-3 text-right">
+                  <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold
+                               {% if sla_asim > 0 %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300
+                               {% else %}bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300{% endif %}">
+                    {{ sla_asim }}
+                  </span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Geri -->
+  <div>
+    <a href="{{ url_for('rapor.dashboard') }}"
+       class="inline-flex items-center gap-2 rounded-xl border border-border-light dark:border-border-dark px-4 py-2.5 font-semibold
+              hover:bg-gray-50 dark:hover:bg-[#252b36] transition">
+      <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+      Geri
     </a>
+  </div>
+
 </div>
 {% endblock %}
 
@@ -189,57 +205,41 @@ new Chart(document.getElementById('kategoriChart'), {
             backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0', '#6f42c1']
         }]
     },
-    options: {
-        responsive: true,
-        plugins: { legend: { position: 'right' } }
-    }
+    options: { responsive: true, plugins: { legend: { position: 'right' } } }
 });
 
 // Öncelik Chart
-const oncelikLabels = {'dusuk': 'Düşük', 'normal': 'Normal', 'yuksek': 'Yüksek', 'kritik': 'Kritik'};
-const oncelikColors = {'dusuk': '#6c757d', 'normal': '#0dcaf0', 'yuksek': '#ffc107', 'kritik': '#dc3545'};
-
 new Chart(document.getElementById('oncelikChart'), {
     type: 'bar',
     data: {
-        labels: [{% for oncelik, adet in oncelik_dagilim %}oncelikLabels['{{ oncelik }}']{% if not loop.last %},{% endif %}{% endfor %}],
+        labels: ['Düşük', 'Normal', 'Yüksek', 'Kritik'],
         datasets: [{
-            data: [{% for oncelik, adet in oncelik_dagilim %}{{ adet }}{% if not loop.last %},{% endif %}{% endfor %}],
-            backgroundColor: [{% for oncelik, adet in oncelik_dagilim %}oncelikColors['{{ oncelik }}']{% if not loop.last %},{% endif %}{% endfor %}]
+            label: 'Talep',
+            data: [{{ oncelik.dusuk }}, {{ oncelik.normal }}, {{ oncelik.yuksek }}, {{ oncelik.kritik }}],
+            backgroundColor: ['#6c757d', '#0dcaf0', '#ffc107', '#dc3545']
         }]
     },
-    options: {
-        responsive: true,
-        indexAxis: 'y',
-        plugins: { legend: { display: false } },
-        scales: { x: { beginAtZero: true } }
-    }
+    options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
 });
 
-// Aylık Trend
+// Aylık Chart
+const aylikData = {{ aylik_trend|tojson }};
 const aylar = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara'];
-const trendData = {};
-{% for ay, toplam in aylik_trend %}
-trendData[{{ ay }}] = {{ toplam }};
-{% endfor %}
 
-new Chart(document.getElementById('trendChart'), {
+new Chart(document.getElementById('aylikChart'), {
     type: 'line',
     data: {
         labels: aylar,
         datasets: [{
-            label: 'Talep Sayısı',
-            data: aylar.map((_, i) => trendData[i+1] || 0),
-            borderColor: '#dc3545',
-            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+            label: 'Talep',
+            data: aylar.map((_, i) => aylikData[i+1] || 0),
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13,110,253,0.12)',
             fill: true,
             tension: 0.3
         }]
     },
-    options: {
-        responsive: true,
-        scales: { y: { beginAtZero: true } }
-    }
+    options: { responsive: true, scales: { y: { beginAtZero: true } } }
 });
 </script>
 {% endblock %}

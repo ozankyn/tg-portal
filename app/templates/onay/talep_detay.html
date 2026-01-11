@@ -3,230 +3,248 @@
 {% block title %}Onay Talebi #{{ talep.id }} - TG Portal{% endblock %}
 {% block page_title %}Onay Talebi{% endblock %}
 
-{% block extra_css %}
-<style>
-    .timeline {
-        position: relative;
-        padding-left: 30px;
-    }
-    .timeline::before {
-        content: '';
-        position: absolute;
-        left: 10px;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background: #dee2e6;
-    }
-    .timeline-item {
-        position: relative;
-        padding-bottom: 1.5rem;
-    }
-    .timeline-item::before {
-        content: '';
-        position: absolute;
-        left: -24px;
-        top: 4px;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #6c757d;
-        border: 2px solid #fff;
-    }
-    .timeline-item.success::before { background: #198754; }
-    .timeline-item.danger::before { background: #dc3545; }
-    .timeline-item.warning::before { background: #ffc107; }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="row g-4">
-    <!-- Sol: Talep Bilgileri -->
-    <div class="col-lg-4">
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Talep Bilgileri</h6>
-                <span class="badge bg-{{ talep.durum_renk }}">{{ talep.durum_text }}</span>
+{% set badge_map = {
+  'primary': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  'success': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  'warning': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  'danger':  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  'info':    'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300',
+  'secondary':'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-200'
+} %}
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+  <!-- SOL: Talep Bilgileri -->
+  <div class="lg:col-span-4 space-y-6">
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between gap-2">
+        <h3 class="font-bold text-[#111418] dark:text-white">Talep Bilgileri</h3>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map.get(talep.durum_renk, badge_map['secondary']) }}">
+          {{ talep.durum_text }}
+        </span>
+      </div>
+
+      <div class="p-5 text-sm">
+        <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+          <span class="text-text-muted dark:text-text-muted-dark">Talep No</span>
+          <strong class="text-[#111418] dark:text-white">#{{ talep.id }}</strong>
+        </div>
+        <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+          <span class="text-text-muted dark:text-text-muted-dark">Tip</span>
+          <strong class="text-[#111418] dark:text-white">{{ talep.onay_tipi.ad }}</strong>
+        </div>
+        <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+          <span class="text-text-muted dark:text-text-muted-dark">Talep Eden</span>
+          <strong class="text-[#111418] dark:text-white">{{ talep.talep_eden.username }}</strong>
+        </div>
+        <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+          <span class="text-text-muted dark:text-text-muted-dark">Tarih</span>
+          <span class="text-[#111418] dark:text-white">{{ talep.talep_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
+        </div>
+        <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+          <span class="text-text-muted dark:text-text-muted-dark">Akış</span>
+          <span class="text-[#111418] dark:text-white">{{ talep.akis.ad }}</span>
+        </div>
+
+        {% if talep.acil %}
+        <div class="pt-3">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['danger'] }}">ACİL</span>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Referans -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+        <h3 class="font-bold text-[#111418] dark:text-white">İlgili Kayıt</h3>
+      </div>
+      <div class="p-5">
+        <p class="text-xs text-text-muted dark:text-text-muted-dark mb-1">{{ referans.tablo }}</p>
+        <p class="text-sm font-semibold text-[#111418] dark:text-white mb-0">#{{ referans.id }}</p>
+        <!-- Buraya referans detayları eklenecek -->
+      </div>
+    </div>
+
+    <!-- Talep Eden İptal -->
+    {% if is_talep_eden and talep.durum == 'bekliyor' %}
+    <div class="rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-white dark:bg-card-dark shadow-sm p-5">
+      <form method="POST" action="{{ url_for('onay.talep_iptal', id=talep.id) }}"
+            onsubmit="return confirm('Talebi iptal etmek istediğinize emin misiniz?')">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit"
+                class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-amber-300 dark:border-amber-700
+                       px-4 py-2.5 font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition">
+          <span class="material-symbols-outlined text-[18px]">cancel</span>
+          Talebi İptal Et
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- SAĞ: Onay + Timeline -->
+  <div class="lg:col-span-8 space-y-6">
+    {% if bekleyen_kayit %}
+    <div class="rounded-2xl border border-primary/30 dark:border-primary/40 bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+      <div class="px-5 py-4 bg-primary text-white flex items-center gap-2">
+        <span class="material-symbols-outlined text-[20px]">fact_check</span>
+        <h3 class="font-bold">Onay Bekliyor</h3>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="text-sm">
+          <span class="font-semibold">Adım:</span> {{ bekleyen_kayit.adim.ad }}
+          {% if bekleyen_kayit.vekil_mi %}
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['info'] }} ml-2">
+            {{ bekleyen_kayit.asil_onaylayici.username }} adına vekil onay
+          </span>
+          {% endif %}
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium mb-1">Not (opsiyonel)</label>
+          <textarea id="onayNot" rows="3"
+                    class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm"
+                    placeholder="Onay/red notunuz..."></textarea>
+        </div>
+
+        <div class="flex flex-col md:flex-row gap-3">
+          <form method="POST" action="{{ url_for('onay.onayla', id=bekleyen_kayit.id) }}" class="flex-1" id="onayForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="not" id="onayNotInput">
+            <button type="submit"
+                    class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 hover:bg-green-700 text-white px-4 py-3 font-semibold transition">
+              <span class="material-symbols-outlined text-[18px]">check</span>
+              Onayla
+            </button>
+          </form>
+
+          <form method="POST" action="{{ url_for('onay.reddet', id=bekleyen_kayit.id) }}" class="md:w-auto" id="redForm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="not" id="redNotInput">
+            <button type="submit"
+                    class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-red-300 dark:border-red-700
+                           text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 px-4 py-3 font-semibold transition">
+              <span class="material-symbols-outlined text-[18px]">close</span>
+              Reddet
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Timeline -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex items-center gap-2">
+        <span class="material-symbols-outlined text-[20px] text-primary">history</span>
+        <h3 class="font-bold text-[#111418] dark:text-white">Onay Geçmişi</h3>
+      </div>
+
+      <div class="p-5">
+        <div class="relative pl-6 space-y-5">
+          <span class="absolute left-2 top-0 bottom-0 w-px bg-border-light dark:bg-border-dark"></span>
+
+          <!-- Talep Oluşturuldu -->
+          <div class="relative">
+            <span class="absolute left-[-2px] top-1.5 w-3 h-3 rounded-full bg-green-600"></span>
+            <div class="rounded-xl border border-border-light dark:border-border-dark p-4">
+              <div class="flex items-start justify-between gap-3">
+                <strong class="text-[#111418] dark:text-white">Talep Oluşturuldu</strong>
+                <span class="text-xs text-text-muted dark:text-text-muted-dark">{{ talep.talep_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
+              </div>
+              <div class="text-xs text-text-muted dark:text-text-muted-dark mt-1">{{ talep.talep_eden.username }} tarafından</div>
             </div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Talep No</span>
-                    <strong>#{{ talep.id }}</strong>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Tip</span>
-                    <strong>{{ talep.onay_tipi.ad }}</strong>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Talep Eden</span>
-                    <strong>{{ talep.talep_eden.username }}</strong>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Tarih</span>
-                    <span>{{ talep.talep_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Akış</span>
-                    <span>{{ talep.akis.ad }}</span>
-                </li>
-                {% if talep.acil %}
-                <li class="list-group-item">
-                    <span class="badge bg-danger">ACİL</span>
-                </li>
+          </div>
+
+          <!-- Onay kayıtları -->
+          {% for kayit in talep.timeline %}
+          <div class="relative">
+            {% set dot = 'bg-gray-500' %}
+            {% if kayit.durum_renk == 'success' %}{% set dot = 'bg-green-600' %}{% endif %}
+            {% if kayit.durum_renk == 'danger' %}{% set dot = 'bg-red-600' %}{% endif %}
+            {% if kayit.durum_renk == 'warning' %}{% set dot = 'bg-amber-500' %}{% endif %}
+
+            <span class="absolute left-[-2px] top-1.5 w-3 h-3 rounded-full {{ dot }}"></span>
+
+            <div class="rounded-xl border border-border-light dark:border-border-dark p-4">
+              <div class="flex items-start justify-between gap-3">
+                <strong class="text-[#111418] dark:text-white">{{ kayit.adim.ad }}</strong>
+                {% if kayit.islem_tarihi %}
+                <span class="text-xs text-text-muted dark:text-text-muted-dark">{{ kayit.islem_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
                 {% endif %}
-            </ul>
-        </div>
-        
-        <!-- Referans Kayıt Özeti -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="mb-0">İlgili Kayıt</h6>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-2 mt-2">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map.get(kayit.durum_renk, badge_map['secondary']) }}">
+                  {{ kayit.durum_text }}
+                </span>
+
+                {% if kayit.onaylayici %}
+                <span class="text-xs text-text-muted dark:text-text-muted-dark">{{ kayit.onaylayici.username }}</span>
+                {% endif %}
+
+                {% if kayit.vekil_mi %}
+                <span class="text-xs text-sky-600 dark:text-sky-300">({{ kayit.asil_onaylayici.username }} adına)</span>
+                {% endif %}
+              </div>
+
+              {% if kayit.not_ %}
+              <div class="mt-3 rounded-lg bg-gray-50 dark:bg-[#111418] p-3 text-xs text-slate-700 dark:text-slate-200">
+                {{ kayit.not_ }}
+              </div>
+              {% endif %}
             </div>
-            <div class="card-body">
-                <p class="text-muted small mb-1">{{ referans.tablo }}</p>
-                <p class="mb-0">#{{ referans.id }}</p>
-                <!-- Buraya referans detayları eklenecek -->
+          </div>
+          {% endfor %}
+
+          <!-- Sonuç -->
+          {% if talep.durum != 'bekliyor' %}
+          <div class="relative">
+            {% set dot2 = 'bg-green-600' if talep.durum == 'onaylandi' else 'bg-red-600' %}
+            <span class="absolute left-[-2px] top-1.5 w-3 h-3 rounded-full {{ dot2 }}"></span>
+
+            <div class="rounded-xl border border-border-light dark:border-border-dark p-4">
+              <div class="flex items-start justify-between gap-3">
+                <strong class="text-[#111418] dark:text-white">{{ talep.durum_text }}</strong>
+                {% if talep.sonuc_tarihi %}
+                <span class="text-xs text-text-muted dark:text-text-muted-dark">{{ talep.sonuc_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
+                {% endif %}
+              </div>
+
+              {% if talep.sonuc_notu %}
+              <div class="mt-3 rounded-lg bg-gray-50 dark:bg-[#111418] p-3 text-xs text-slate-700 dark:text-slate-200">
+                {{ talep.sonuc_notu }}
+              </div>
+              {% endif %}
             </div>
+          </div>
+          {% endif %}
+
         </div>
-        
-        <!-- Talep Eden İşlemleri -->
-        {% if is_talep_eden and talep.durum == 'bekliyor' %}
-        <div class="card border-warning">
-            <div class="card-body">
-                <form method="POST" action="{{ url_for('onay.talep_iptal', id=talep.id) }}"
-                      onsubmit="return confirm('Talebi iptal etmek istediğinize emin misiniz?')">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-outline-warning w-100">
-                        <i class="bi bi-x-circle me-2"></i> Talebi İptal Et
-                    </button>
-                </form>
-            </div>
-        </div>
-        {% endif %}
+      </div>
     </div>
-    
-    <!-- Sağ: Timeline ve Onay Formu -->
-    <div class="col-lg-8">
-        <!-- Onay/Red Formu (bekleyen onay varsa) -->
-        {% if bekleyen_kayit %}
-        <div class="card mb-4 border-primary">
-            <div class="card-header bg-primary text-white">
-                <h6 class="mb-0"><i class="bi bi-check2-square me-2"></i>Onay Bekliyor</h6>
-            </div>
-            <div class="card-body">
-                <p class="mb-3">
-                    <strong>Adım:</strong> {{ bekleyen_kayit.adim.ad }}
-                    {% if bekleyen_kayit.vekil_mi %}
-                    <span class="badge bg-info ms-2">{{ bekleyen_kayit.asil_onaylayici.username }} adına vekil onay</span>
-                    {% endif %}
-                </p>
-                
-                <div class="mb-3">
-                    <label class="form-label">Not (opsiyonel)</label>
-                    <textarea id="onayNot" class="form-control" rows="2" placeholder="Onay/red notunuz..."></textarea>
-                </div>
-                
-                <div class="d-flex gap-2">
-                    <form method="POST" action="{{ url_for('onay.onayla', id=bekleyen_kayit.id) }}" class="flex-grow-1" id="onayForm">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="not" id="onayNotInput">
-                        <button type="submit" class="btn btn-success w-100 btn-lg">
-                            <i class="bi bi-check-lg me-2"></i> Onayla
-                        </button>
-                    </form>
-                    
-                    <form method="POST" action="{{ url_for('onay.reddet', id=bekleyen_kayit.id) }}" id="redForm">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <input type="hidden" name="not" id="redNotInput">
-                        <button type="submit" class="btn btn-outline-danger btn-lg">
-                            <i class="bi bi-x-lg me-2"></i> Reddet
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-        {% endif %}
-        
-        <!-- Timeline -->
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Onay Geçmişi</h6>
-            </div>
-            <div class="card-body">
-                <div class="timeline">
-                    <!-- Talep Oluşturuldu -->
-                    <div class="timeline-item success">
-                        <div class="d-flex justify-content-between">
-                            <strong>Talep Oluşturuldu</strong>
-                            <small class="text-muted">{{ talep.talep_tarihi.strftime('%d.%m.%Y %H:%M') }}</small>
-                        </div>
-                        <small class="text-muted">{{ talep.talep_eden.username }} tarafından</small>
-                    </div>
-                    
-                    <!-- Onay Kayıtları -->
-                    {% for kayit in talep.timeline %}
-                    <div class="timeline-item {{ kayit.durum_renk }}">
-                        <div class="d-flex justify-content-between">
-                            <strong>{{ kayit.adim.ad }}</strong>
-                            {% if kayit.islem_tarihi %}
-                            <small class="text-muted">{{ kayit.islem_tarihi.strftime('%d.%m.%Y %H:%M') }}</small>
-                            {% endif %}
-                        </div>
-                        <div>
-                            <span class="badge bg-{{ kayit.durum_renk }}">{{ kayit.durum_text }}</span>
-                            {% if kayit.onaylayici %}
-                            <small class="text-muted ms-2">{{ kayit.onaylayici.username }}</small>
-                            {% endif %}
-                            {% if kayit.vekil_mi %}
-                            <small class="text-info ms-1">({{ kayit.asil_onaylayici.username }} adına)</small>
-                            {% endif %}
-                        </div>
-                        {% if kayit.not_ %}
-                        <div class="mt-1 p-2 bg-light rounded small">
-                            <i class="bi bi-chat-quote me-1"></i> {{ kayit.not_ }}
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endfor %}
-                    
-                    <!-- Sonuç -->
-                    {% if talep.durum != 'bekliyor' %}
-                    <div class="timeline-item {{ 'success' if talep.durum == 'onaylandi' else 'danger' }}">
-                        <div class="d-flex justify-content-between">
-                            <strong>{{ talep.durum_text }}</strong>
-                            {% if talep.sonuc_tarihi %}
-                            <small class="text-muted">{{ talep.sonuc_tarihi.strftime('%d.%m.%Y %H:%M') }}</small>
-                            {% endif %}
-                        </div>
-                        {% if talep.sonuc_notu %}
-                        <div class="mt-1 p-2 bg-light rounded small">
-                            {{ talep.sonuc_notu }}
-                        </div>
-                        {% endif %}
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
+  </div>
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-// Not alanını formlara aktar
 document.getElementById('onayForm')?.addEventListener('submit', function() {
-    document.getElementById('onayNotInput').value = document.getElementById('onayNot').value;
+  document.getElementById('onayNotInput').value = document.getElementById('onayNot').value;
 });
 
 document.getElementById('redForm')?.addEventListener('submit', function(e) {
-    const not = document.getElementById('onayNot').value;
-    if (!not.trim()) {
-        e.preventDefault();
-        alert('Red nedeni zorunludur.');
-        return false;
-    }
-    document.getElementById('redNotInput').value = not;
+  const not = document.getElementById('onayNot').value;
+  if (!not.trim()) {
+    e.preventDefault();
+    alert('Red nedeni zorunludur.');
+    return false;
+  }
+  document.getElementById('redNotInput').value = not;
 });
 </script>
 {% endblock %}

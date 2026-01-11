@@ -4,167 +4,170 @@
 {% block page_title %}Eğitim Tipleri{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-tags me-2"></i>Eğitim Tipleri</h6>
-                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#tipEkleModal">
-                    <i class="bi bi-plus-lg me-1"></i> Yeni Tip
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">label</span>
+                    Eğitim Tipleri
+                </h6>
+                <button onclick="document.getElementById('tipEkleModal').classList.remove('hidden')" class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white font-medium text-sm rounded-lg transition-colors flex items-center gap-1">
+                    <span class="material-symbols-outlined text-lg">add</span>Yeni Tip
                 </button>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Kod</th>
-                                <th>Ad</th>
-                                <th>Kategori</th>
-                                <th>Süre</th>
-                                <th>Geçerlilik</th>
-                                <th>Sertifika</th>
-                                <th>Durum</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for tip in egitim_tipleri %}
-                            <tr>
-                                <td><code>{{ tip.kod or '-' }}</code></td>
-                                <td>
-                                    <strong>{{ tip.ad }}</strong>
-                                    {% if tip.aciklama %}
-                                    <small class="text-muted d-block">{{ tip.aciklama|truncate(50) }}</small>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% set kategori_renkler = {'zorunlu': 'danger', 'teknik': 'primary', 'soft_skill': 'info', 'urun': 'warning'} %}
-                                    <span class="badge bg-{{ kategori_renkler.get(tip.kategori, 'secondary') }}">
-                                        {{ tip.kategori or 'Genel' }}
-                                    </span>
-                                </td>
-                                <td>{{ tip.sure_saat }} saat</td>
-                                <td>
-                                    {% if tip.gecerlilik_gun %}
-                                    {{ tip.gecerlilik_gun }} gün
-                                    {% else %}
-                                    <span class="text-muted">Süresiz</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if tip.sertifika_gerekli %}
-                                    <i class="bi bi-check-circle-fill text-success"></i>
-                                    {% else %}
-                                    <i class="bi bi-x-circle text-muted"></i>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if tip.aktif %}
-                                    <span class="badge bg-success">Aktif</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">Pasif</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="7" class="text-center text-muted py-4">
-                                    Eğitim tipi bulunmuyor
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-[#111418]">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Kod</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Ad</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Kategori</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden md:table-cell">Süre</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden lg:table-cell">Geçerlilik</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden sm:table-cell">Sertifika</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for tip in egitim_tipleri %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                            <td class="px-4 py-3">
+                                <code class="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-xs rounded">{{ tip.kod or '-' }}</code>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="font-medium text-[#111418] dark:text-white">{{ tip.ad }}</div>
+                                {% if tip.aciklama %}
+                                <p class="text-xs text-text-muted dark:text-text-muted-dark">{{ tip.aciklama|truncate(50) }}</p>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                {% set kategori_renkler = {
+                                    'zorunlu': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+                                    'teknik': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                                    'soft_skill': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
+                                    'urun': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                                } %}
+                                <span class="px-2 py-1 text-xs font-bold rounded-full {{ kategori_renkler.get(tip.kategori, 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300') }}">
+                                    {{ tip.kategori or 'Genel' }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 hidden md:table-cell text-sm">{{ tip.sure_saat }} saat</td>
+                            <td class="px-4 py-3 hidden lg:table-cell text-sm">
+                                {% if tip.gecerlilik_gun %}{{ tip.gecerlilik_gun }} gün{% else %}<span class="text-text-muted dark:text-text-muted-dark">Süresiz</span>{% endif %}
+                            </td>
+                            <td class="px-4 py-3 hidden sm:table-cell">
+                                {% if tip.sertifika_gerekli %}
+                                <span class="material-symbols-outlined text-emerald-500">check_circle</span>
+                                {% else %}
+                                <span class="material-symbols-outlined text-gray-400">cancel</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if tip.aktif %}
+                                <span class="px-2 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
+                                {% else %}
+                                <span class="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Pasif</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="px-4 py-12 text-center">
+                                <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-2">label</span>
+                                <p class="text-text-muted dark:text-text-muted-dark">Eğitim tipi bulunmuyor</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
-            </div>
-            <div class="card-body">
-                <h6>Kategoriler:</h6>
-                <ul class="small mb-3">
-                    <li><span class="badge bg-danger">Zorunlu</span> - İSG, KVKK gibi yasal zorunlu eğitimler</li>
-                    <li><span class="badge bg-primary">Teknik</span> - Yazılım, araç kullanımı vb.</li>
-                    <li><span class="badge bg-info">Soft Skill</span> - İletişim, liderlik vb.</li>
-                    <li><span class="badge bg-warning">Ürün</span> - Müşteri/proje bazlı ürün eğitimleri</li>
-                </ul>
-                
-                <h6>Geçerlilik Süresi:</h6>
-                <p class="small text-muted mb-0">
-                    Sertifika geçerlilik süresi belirlenen eğitimlerde, süre dolmadan önce yenileme hatırlatması yapılır.
-                </p>
-            </div>
+    <div>
+        <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-5">
+            <h6 class="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-2 mb-4">
+                <span class="material-symbols-outlined">info</span>
+                Bilgi
+            </h6>
+            <h6 class="font-medium text-blue-900 dark:text-blue-200 mb-2">Kategoriler:</h6>
+            <ul class="text-sm text-blue-800 dark:text-blue-300/80 space-y-2 mb-4">
+                <li><span class="px-2 py-0.5 bg-rose-100 text-rose-700 text-xs rounded-full">Zorunlu</span> - İSG, KVKK gibi yasal zorunlu eğitimler</li>
+                <li><span class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">Teknik</span> - Yazılım, araç kullanımı vb.</li>
+                <li><span class="px-2 py-0.5 bg-cyan-100 text-cyan-700 text-xs rounded-full">Soft Skill</span> - İletişim, liderlik vb.</li>
+                <li><span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs rounded-full">Ürün</span> - Müşteri/proje bazlı ürün eğitimleri</li>
+            </ul>
+            <h6 class="font-medium text-blue-900 dark:text-blue-200 mb-2">Geçerlilik Süresi:</h6>
+            <p class="text-sm text-blue-800 dark:text-blue-300/80">
+                Sertifika geçerlilik süresi belirlenen eğitimlerde, süre dolmadan önce yenileme hatırlatması yapılır.
+            </p>
         </div>
     </div>
 </div>
 
 <!-- Tip Ekle Modal -->
-<div class="modal fade" id="tipEkleModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('egitim.tip_ekle') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                    <h5 class="modal-title">Yeni Eğitim Tipi</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-8">
-                            <label class="form-label">Ad *</label>
-                            <input type="text" name="ad" class="form-control" required placeholder="Örn: İş Güvenliği Eğitimi">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Kod</label>
-                            <input type="text" name="kod" class="form-control" placeholder="ISG" maxlength="20">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Kategori</label>
-                            <select name="kategori" class="form-select">
-                                <option value="">Genel</option>
-                                <option value="zorunlu">Zorunlu</option>
-                                <option value="teknik">Teknik</option>
-                                <option value="soft_skill">Soft Skill</option>
-                                <option value="urun">Ürün</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Standart Süre (Saat)</label>
-                            <input type="number" name="sure_saat" class="form-control" step="0.5" min="0.5">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Geçerlilik (Gün)</label>
-                            <input type="number" name="gecerlilik_gun" class="form-control" min="1" placeholder="Boş = Süresiz">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Tekrar Periyodu (Gün)</label>
-                            <input type="number" name="tekrar_periyot_gun" class="form-control" min="1">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Açıklama</label>
-                            <textarea name="aciklama" class="form-control" rows="2"></textarea>
-                        </div>
-                        <div class="col-12">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="sertifika_gerekli" id="sertifikaGerekli">
-                                <label class="form-check-label" for="sertifikaGerekli">
-                                    Sertifika gerekli
-                                </label>
-                            </div>
-                        </div>
+<div id="tipEkleModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl w-full max-w-lg">
+        <form method="POST" action="{{ url_for('egitim.tip_ekle') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h5 class="font-bold text-lg text-[#111418] dark:text-white">Yeni Eğitim Tipi</h5>
+                <button type="button" onclick="this.closest('.fixed').classList.add('hidden')" class="p-1 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="col-span-2">
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Ad *</label>
+                        <input type="text" name="ad" required placeholder="Örn: İş Güvenliği Eğitimi" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Kod</label>
+                        <input type="text" name="kod" placeholder="ISG" maxlength="20" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Kategori</label>
+                        <select name="kategori" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                            <option value="">Genel</option>
+                            <option value="zorunlu">Zorunlu</option>
+                            <option value="teknik">Teknik</option>
+                            <option value="soft_skill">Soft Skill</option>
+                            <option value="urun">Ürün</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Standart Süre (Saat)</label>
+                        <input type="number" name="sure_saat" step="0.5" min="0.5" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    </div>
                 </div>
-            </form>
-        </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Geçerlilik (Gün)</label>
+                        <input type="number" name="gecerlilik_gun" min="1" placeholder="Boş = Süresiz" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Tekrar Periyodu (Gün)</label>
+                        <input type="number" name="tekrar_periyot_gun" min="1" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    </div>
+                </div>
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Açıklama</label>
+                    <textarea name="aciklama" rows="2" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm"></textarea>
+                </div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="sertifika_gerekli" class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                    <span class="text-sm text-[#111418] dark:text-white">Sertifika gerekli</span>
+                </label>
+            </div>
+            <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3">
+                <button type="button" onclick="this.closest('.fixed').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors">İptal</button>
+                <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors">Kaydet</button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

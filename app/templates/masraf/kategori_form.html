@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Kategori Düzenle' if kategori else 'Yeni Kategori' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'Kategori Düzenle' if kategori else 'Yeni Kategori' }}{% endblock %}
+
+{% block content %}
+<form method="POST">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sol: Ana Bilgiler -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                    <h3 class="font-semibold text-[#111418] dark:text-white">Kategori Bilgileri</h3>
+                </div>
+                <div class="p-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Kategori Adı *</label>
+                            <input type="text" name="ad" required
+                                   value="{{ kategori.ad if kategori else '' }}"
+                                   placeholder="Örn: Yol Masrafı"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Kod</label>
+                            <input type="text" name="kod"
+                                   value="{{ kategori.kod if kategori else '' }}"
+                                   placeholder="Örn: YOL"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">İkon</label>
+                            <input type="text" name="ikon"
+                                   value="{{ kategori.ikon if kategori else '' }}"
+                                   placeholder="Örn: bi bi-car-front"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Renk</label>
+                            <select name="renk" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="blue" {{ 'selected' if kategori and kategori.renk == 'blue' }}>Mavi</option>
+                                <option value="green" {{ 'selected' if kategori and kategori.renk == 'green' }}>Yeşil</option>
+                                <option value="red" {{ 'selected' if kategori and kategori.renk == 'red' }}>Kırmızı</option>
+                                <option value="yellow" {{ 'selected' if kategori and kategori.renk == 'yellow' }}>Sarı</option>
+                                <option value="purple" {{ 'selected' if kategori and kategori.renk == 'purple' }}>Mor</option>
+                                <option value="orange" {{ 'selected' if kategori and kategori.renk == 'orange' }}>Turuncu</option>
+                                <option value="gray" {{ 'selected' if kategori and kategori.renk == 'gray' }}>Gri</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Limitler -->
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                    <h3 class="font-semibold text-[#111418] dark:text-white">Harcama Limitleri</h3>
+                </div>
+                <div class="p-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Günlük Limit (₺)</label>
+                            <input type="number" name="gunluk_limit" step="0.01" min="0"
+                                   value="{{ kategori.gunluk_limit if kategori and kategori.gunluk_limit else '' }}"
+                                   placeholder="Boş bırakılırsa limitsiz"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Aylık Limit (₺)</label>
+                            <input type="number" name="aylik_limit" step="0.01" min="0"
+                                   value="{{ kategori.aylik_limit if kategori and kategori.aylik_limit else '' }}"
+                                   placeholder="Boş bırakılırsa limitsiz"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sağ: Ayarlar -->
+        <div class="space-y-6">
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                    <h3 class="font-semibold text-[#111418] dark:text-white">Ayarlar</h3>
+                </div>
+                <div class="p-5 space-y-4">
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" name="fatura_zorunlu" value="1"
+                               {{ 'checked' if kategori and kategori.fatura_zorunlu }}
+                               class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500">
+                        <div>
+                            <span class="text-sm font-medium text-[#111418] dark:text-white">Fatura Zorunlu</span>
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark">Bu kategoride fatura/fiş yüklenmesi zorunlu olsun</p>
+                        </div>
+                    </label>
+                    
+                    <label class="flex items-center gap-3 cursor-pointer">
+                        <input type="checkbox" name="aktif" value="1"
+                               {{ 'checked' if not kategori or kategori.aktif }}
+                               class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500">
+                        <div>
+                            <span class="text-sm font-medium text-[#111418] dark:text-white">Aktif</span>
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark">Pasif kategoriler masraf eklerken görünmez</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Kaydet/İptal -->
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+                <div class="p-5 space-y-3">
+                    <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-symbols-outlined text-lg">check</span>
+                        {{ 'Güncelle' if kategori else 'Kaydet' }}
+                    </button>
+                    <a href="{{ url_for('masraf.kategori_liste') }}" class="w-full flex items-center justify-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                        <span class="material-symbols-outlined text-lg">close</span>
+                        İptal
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}

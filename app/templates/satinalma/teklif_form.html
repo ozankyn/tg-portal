@@ -4,88 +4,86 @@
 {% block page_title %}Teklif Ekle{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="alert alert-info">
-            <strong>Talep:</strong> {{ talep.talep_no }} - {{ talep.baslik }}
-        </div>
-        
-        <div class="card">
-            <div class="card-body">
-                <form method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+<div class="max-w-3xl mx-auto">
+    <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-lg p-4 mb-4">
+        <strong class="text-[#111418] dark:text-white">Talep:</strong> {{ talep.talep_no }} - {{ talep.baslik }}
+    </div>
+    
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+        <div class="p-6">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Tedarikçi *</label>
+                        <select name="tedarikci_id" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="">Seçin...</option>
+                            {% for t in tedarikciler %}
+                            <option value="{{ t.id }}">{{ t.unvan }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Tedarikçi *</label>
-                            <select name="tedarikci_id" class="form-select" required>
-                                <option value="">Seçin...</option>
-                                {% for t in tedarikciler %}
-                                <option value="{{ t.id }}">{{ t.unvan }}</option>
-                                {% endfor %}
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Teklif No</label>
+                        <input type="text" name="teklif_no" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Tedarikçi teklif numarası">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Teklif Tarihi</label>
+                        <input type="date" name="teklif_tarihi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ today }}">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Geçerlilik Tarihi</label>
+                        <input type="date" name="gecerlilik_tarihi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Teslimat Süresi</label>
+                        <input type="text" name="teslimat_suresi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Örn: 3-5 iş günü">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Ödeme Koşulu</label>
+                        <input type="text" name="odeme_kosulu" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Örn: 30 gün vadeli">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Toplam Tutar *</label>
+                        <div class="flex gap-2">
+                            <input type="text" name="toplam_tutar" class="flex-1 px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required placeholder="0.00">
+                            <select name="para_birimi" class="w-20 px-2 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="TRY">₺</option>
+                                <option value="USD">$</option>
+                                <option value="EUR">€</option>
                             </select>
                         </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label">Teklif No</label>
-                            <input type="text" name="teklif_no" class="form-control" placeholder="Tedarikçi teklif numarası">
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <label class="form-label">Teklif Tarihi</label>
-                            <input type="date" name="teklif_tarihi" class="form-control" value="{{ today }}">
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <label class="form-label">Geçerlilik Tarihi</label>
-                            <input type="date" name="gecerlilik_tarihi" class="form-control">
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <label class="form-label">Teslimat Süresi</label>
-                            <input type="text" name="teslimat_suresi" class="form-control" placeholder="Örn: 3-5 iş günü">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label">Toplam Tutar *</label>
-                            <div class="input-group">
-                                <input type="text" name="toplam_tutar" class="form-control" required placeholder="0.00">
-                                <select name="para_birimi" class="form-select" style="max-width: 80px;">
-                                    <option value="TRY">₺</option>
-                                    <option value="USD">$</option>
-                                    <option value="EUR">€</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label">Ödeme Koşulu</label>
-                            <input type="text" name="odeme_kosulu" class="form-control" placeholder="Örn: 30 gün vadeli">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <div class="form-check mt-4">
-                                <input type="checkbox" name="kdv_dahil" class="form-check-input" id="kdvDahil" checked>
-                                <label class="form-check-label" for="kdvDahil">KDV Dahil</label>
-                            </div>
-                        </div>
-                        
-                        <div class="col-12">
-                            <label class="form-label">Notlar</label>
-                            <textarea name="notlar" class="form-control" rows="2"></textarea>
+                    </div>
+                    
+                    <div class="flex items-end">
+                        <div class="flex items-center">
+                            <input type="checkbox" name="kdv_dahil" class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500" id="kdvDahil" checked>
+                            <label class="ml-2 text-sm text-text-muted dark:text-text-muted-dark" for="kdvDahil">KDV Dahil</label>
                         </div>
                     </div>
                     
-                    <hr>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-2"></i>Kaydet
-                        </button>
-                        <a href="{{ url_for('satinalma.talep_detay', id=talep.id) }}" class="btn btn-outline-secondary">İptal</a>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Notlar</label>
+                        <textarea name="notlar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="2"></textarea>
                     </div>
-                </form>
-            </div>
+                </div>
+                
+                <hr class="my-6">
+                
+                <div class="flex items-center gap-3">
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-symbols-outlined">check</span>Kaydet
+                    </button>
+                    <a href="{{ url_for('satinalma.talep_detay', id=talep.id) }}" class="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>

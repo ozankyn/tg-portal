@@ -3,81 +3,97 @@
 {% block title %}Başvuru Formu{% endblock %}
 
 {% block progress %}
-<div class="progress-steps">
-    <div class="step completed">
-        <span class="step-number"><i class="bi bi-check"></i></span>
-        <span>KVKK Onay</span>
+<div class="flex items-center justify-center gap-4 mb-8">
+    <div class="flex items-center gap-2 text-white">
+        <span class="w-8 h-8 rounded-full bg-white text-primary flex items-center justify-center">
+            <span class="material-symbols-outlined text-lg">check</span>
+        </span>
+        <span class="font-medium hidden sm:inline">KVKK Onay</span>
     </div>
-    <div class="step-line completed"></div>
-    <div class="step active">
-        <span class="step-number">2</span>
-        <span>Başvuru Formu</span>
+    <div class="w-12 h-0.5 bg-white"></div>
+    <div class="flex items-center gap-2 text-white">
+        <span class="w-8 h-8 rounded-full bg-white text-primary flex items-center justify-center text-sm font-bold">2</span>
+        <span class="font-medium hidden sm:inline">Başvuru Formu</span>
     </div>
-    <div class="step-line"></div>
-    <div class="step">
-        <span class="step-number">3</span>
-        <span>Tamamlandı</span>
+    <div class="w-12 h-0.5 bg-white/30"></div>
+    <div class="flex items-center gap-2 text-white/50">
+        <span class="w-8 h-8 rounded-full bg-white/30 flex items-center justify-center text-sm font-bold">3</span>
+        <span class="font-medium hidden sm:inline">Tamamlandı</span>
     </div>
 </div>
 {% endblock %}
 
+{% block extra_css %}
+<style>
+.section-title {
+    color: #00a651;
+    border-bottom: 2px solid #00a651;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-10">
-        <div class="card">
-            <div class="card-header text-center">
-                <h4 class="mb-0">
-                    <i class="bi bi-person-vcard me-2"></i>
-                    İş Başvuru Formu
-                </h4>
-                {% if kadro %}
-                <small class="text-white-50">{{ kadro.proje.musteri.display_name }} - {{ kadro.pozisyon_adi }}</small>
-                {% endif %}
-            </div>
-            <div class="card-body p-4">
-                <form method="POST" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
-                    <!-- 1. Kişisel Bilgiler -->
-                    <h5 class="section-title"><i class="bi bi-person me-2"></i>Kişisel Bilgiler</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label required">Ad</label>
-                            <input type="text" name="ad" class="form-control" required
-                                   value="{{ aday.ad or '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label required">Soyad</label>
-                            <input type="text" name="soyad" class="form-control" required
-                                   value="{{ aday.soyad or '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label required">T.C. Kimlik No</label>
-                            <input type="text" name="tc_kimlik" class="form-control" required
-                                   maxlength="11" pattern="[0-9]{11}"
-                                   value="{{ aday.tc_kimlik or '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label required">Doğum Tarihi</label>
-                            <input type="date" name="dogum_tarihi" class="form-control" required
-                                   value="{{ aday.dogum_tarihi.strftime('%Y-%m-%d') if aday.dogum_tarihi else '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Doğum Yeri</label>
-                            <input type="text" name="dogum_yeri" class="form-control"
-                                   value="{{ aday.dogum_yeri or '' }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label required">Cinsiyet</label>
-                            <select name="cinsiyet" class="form-select" required>
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div class="bg-primary p-6 text-center">
+            <h4 class="text-white text-xl font-bold flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">badge</span>
+                İş Başvuru Formu
+            </h4>
+            {% if kadro %}
+            <p class="text-white/70 text-sm mt-1">{{ kadro.proje.musteri.display_name }} - {{ kadro.pozisyon_adi }}</p>
+            {% endif %}
+        </div>
+        
+        <div class="p-6 md:p-8">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <!-- 1. Kişisel Bilgiler -->
+                <h5 class="section-title flex items-center gap-2 text-lg font-bold">
+                    <span class="material-symbols-outlined">person</span>
+                    Kişisel Bilgiler
+                </h5>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Ad <span class="text-red-500">*</span></label>
+                        <input type="text" name="ad" required value="{{ aday.ad or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Soyad <span class="text-red-500">*</span></label>
+                        <input type="text" name="soyad" required value="{{ aday.soyad or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">T.C. Kimlik No <span class="text-red-500">*</span></label>
+                        <input type="text" name="tc_kimlik" required maxlength="11" pattern="[0-9]{11}" value="{{ aday.tc_kimlik or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Doğum Tarihi <span class="text-red-500">*</span></label>
+                        <input type="date" name="dogum_tarihi" required value="{{ aday.dogum_tarihi.strftime('%Y-%m-%d') if aday.dogum_tarihi else '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Doğum Yeri</label>
+                        <input type="text" name="dogum_yeri" value="{{ aday.dogum_yeri or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block mb-1 text-sm font-medium text-gray-700">Cinsiyet <span class="text-red-500">*</span></label>
+                            <select name="cinsiyet" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
                                 <option value="">Seçiniz</option>
                                 <option value="erkek" {{ 'selected' if aday.cinsiyet == 'erkek' else '' }}>Erkek</option>
                                 <option value="kadin" {{ 'selected' if aday.cinsiyet == 'kadin' else '' }}>Kadın</option>
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Medeni Durum</label>
-                            <select name="medeni_durum" class="form-select">
+                        <div>
+                            <label class="block mb-1 text-sm font-medium text-gray-700">Medeni Durum</label>
+                            <select name="medeni_durum" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
                                 <option value="">Seçiniz</option>
                                 <option value="bekar" {{ 'selected' if aday.medeni_durum == 'bekar' else '' }}>Bekâr</option>
                                 <option value="evli" {{ 'selected' if aday.medeni_durum == 'evli' else '' }}>Evli</option>
@@ -85,305 +101,327 @@
                             </select>
                         </div>
                     </div>
-                    
-                    <!-- 2. İletişim Bilgileri -->
-                    <h5 class="section-title"><i class="bi bi-telephone me-2"></i>İletişim Bilgileri</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label required">Cep Telefonu</label>
-                            <input type="tel" name="telefon" class="form-control" required
-                                   value="{{ aday.telefon or '' }}" placeholder="05XX XXX XX XX">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label required">E-posta</label>
-                            <input type="email" name="email" class="form-control" required
-                                   value="{{ aday.email or '' }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label required">İl</label>
-                            <input type="text" name="il" class="form-control" required
-                                   value="{{ aday.il or '' }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">İlçe</label>
-                            <input type="text" name="ilce" class="form-control"
-                                   value="{{ aday.ilce or '' }}">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Adres</label>
-                            <textarea name="adres" class="form-control" rows="2">{{ aday.adres or '' }}</textarea>
-                        </div>
+                </div>
+                
+                <!-- 2. İletişim Bilgileri -->
+                <h5 class="section-title flex items-center gap-2 text-lg font-bold">
+                    <span class="material-symbols-outlined">call</span>
+                    İletişim Bilgileri
+                </h5>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Cep Telefonu <span class="text-red-500">*</span></label>
+                        <input type="tel" name="telefon" required value="{{ aday.telefon or '' }}" placeholder="05XX XXX XX XX"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
                     </div>
-                    
-                    <!-- 3. Eğitim Bilgileri -->
-                    <h5 class="section-title"><i class="bi bi-mortarboard me-2"></i>Eğitim Bilgileri</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-3">
-                            <label class="form-label required">Eğitim Durumu</label>
-                            <select name="egitim_durumu" class="form-select" required>
-                                <option value="">Seçiniz</option>
-                                <option value="ilkokul">İlkokul</option>
-                                <option value="ortaokul">Ortaokul</option>
-                                <option value="lise">Lise</option>
-                                <option value="onlisans">Ön Lisans</option>
-                                <option value="lisans">Lisans</option>
-                                <option value="yukseklisans">Yüksek Lisans</option>
-                                <option value="doktora">Doktora</option>
-                            </select>
-                        </div>
-                        <div class="col-md-5">
-                            <label class="form-label">Okul Adı</label>
-                            <input type="text" name="okul_adi" class="form-control"
-                                   value="{{ aday.okul_adi or '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Bölüm</label>
-                            <input type="text" name="bolum" class="form-control"
-                                   value="{{ aday.bolum or '' }}">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Mezuniyet Yılı</label>
-                            <input type="number" name="mezuniyet_yili" class="form-control"
-                                   min="1970" max="2030"
-                                   value="{{ aday.mezuniyet_yili or '' }}">
-                        </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">E-posta <span class="text-red-500">*</span></label>
+                        <input type="email" name="email" required value="{{ aday.email or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
                     </div>
-                    
-                    <!-- 4. Ehliyet Bilgileri -->
-                    <h5 class="section-title"><i class="bi bi-car-front me-2"></i>Ehliyet Bilgileri</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-2">
-                            <div class="form-check mt-4">
-                                <input class="form-check-input" type="checkbox" name="ehliyet_var" id="ehliyet_var"
-                                       {{ 'checked' if aday.ehliyet_var else '' }}>
-                                <label class="form-check-label" for="ehliyet_var">Ehliyetim Var</label>
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Ehliyet Sınıfı</label>
-                            <select name="ehliyet_sinifi" class="form-select">
-                                <option value="">Seçiniz</option>
-                                <option value="A1">A1</option>
-                                <option value="A2">A2</option>
-                                <option value="A">A</option>
-                                <option value="B">B</option>
-                                <option value="C">C</option>
-                                <option value="D">D</option>
-                                <option value="E">E</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Ehliyet Tarihi</label>
-                            <input type="date" name="ehliyet_tarihi" class="form-control"
-                                   value="{{ aday.ehliyet_tarihi.strftime('%Y-%m-%d') if aday.ehliyet_tarihi else '' }}">
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-check mt-4">
-                                <input class="form-check-input" type="checkbox" name="src_belgesi" id="src_belgesi"
-                                       {{ 'checked' if aday.src_belgesi else '' }}>
-                                <label class="form-check-label" for="src_belgesi">SRC Belgem Var</label>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-check mt-4">
-                                <input class="form-check-input" type="checkbox" name="psikoteknik" id="psikoteknik"
-                                       {{ 'checked' if aday.psikoteknik else '' }}>
-                                <label class="form-check-label" for="psikoteknik">Psikoteknik Belgem Var</label>
-                            </div>
-                        </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">İl <span class="text-red-500">*</span></label>
+                        <input type="text" name="il" required value="{{ aday.il or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
                     </div>
-                    
-                    <!-- 5. İş Deneyimi -->
-                    <h5 class="section-title"><i class="bi bi-briefcase me-2"></i>İş Deneyimi</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-3">
-                            <label class="form-label">Toplam Tecrübe (Yıl)</label>
-                            <input type="number" name="toplam_tecrube_yil" class="form-control"
-                                   min="0" max="50"
-                                   value="{{ aday.toplam_tecrube_yil or 0 }}">
-                        </div>
-                        <div class="col-md-5">
-                            <label class="form-label">Son İş Yeri</label>
-                            <input type="text" name="son_is_yeri" class="form-control"
-                                   value="{{ aday.son_is_yeri or '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Son Pozisyon</label>
-                            <input type="text" name="son_pozisyon" class="form-control"
-                                   value="{{ aday.son_pozisyon or '' }}">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">İşe Başlangıç</label>
-                            <input type="date" name="son_is_baslangic" class="form-control"
-                                   value="{{ aday.son_is_baslangic.strftime('%Y-%m-%d') if aday.son_is_baslangic else '' }}">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">İşten Ayrılış</label>
-                            <input type="date" name="son_is_bitis" class="form-control"
-                                   value="{{ aday.son_is_bitis.strftime('%Y-%m-%d') if aday.son_is_bitis else '' }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Ayrılma Nedeni</label>
-                            <input type="text" name="son_is_ayrilma_nedeni" class="form-control"
-                                   value="{{ aday.son_is_ayrilma_nedeni or '' }}">
-                        </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">İlçe</label>
+                        <input type="text" name="ilce" value="{{ aday.ilce or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
                     </div>
-                    
-                    <!-- 6. Referans -->
-                    <h5 class="section-title"><i class="bi bi-person-check me-2"></i>Referans Bilgileri</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label">Referans Ad Soyad</label>
-                            <input type="text" name="referans_ad" class="form-control"
-                                   value="{{ aday.referans_ad or '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Referans Telefon</label>
-                            <input type="tel" name="referans_telefon" class="form-control"
-                                   value="{{ aday.referans_telefon or '' }}">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Yakınlık</label>
-                            <select name="referans_iliski" class="form-select">
-                                <option value="">Seçiniz</option>
-                                <option value="eski_yonetici">Eski Yönetici</option>
-                                <option value="is_arkadasi">İş Arkadaşı</option>
-                                <option value="aile">Aile</option>
-                                <option value="diger">Diğer</option>
-                            </select>
-                        </div>
+                    <div class="md:col-span-2">
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Adres</label>
+                        <textarea name="adres" rows="2" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">{{ aday.adres or '' }}</textarea>
                     </div>
-                    
-                    <!-- 7. Ek Bilgiler -->
-                    <h5 class="section-title"><i class="bi bi-info-circle me-2"></i>Ek Bilgiler</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-3">
-                            <label class="form-label">Askerlik Durumu</label>
-                            <select name="askerlik_durumu" class="form-select">
-                                <option value="">Seçiniz</option>
-                                <option value="yapti">Yaptı</option>
-                                <option value="muaf">Muaf</option>
-                                <option value="tecilli">Tecilli</option>
-                                <option value="yapmiyor">Yapmıyor (Kadın)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Tecil Bitiş Tarihi</label>
-                            <input type="date" name="askerlik_tecil_tarihi" class="form-control">
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-check mt-4">
-                                <input class="form-check-input" type="checkbox" name="saglik_sorunu" id="saglik_sorunu">
-                                <label class="form-check-label" for="saglik_sorunu">Sağlık Sorunum Var</label>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="form-check mt-4">
-                                <input class="form-check-input" type="checkbox" name="sabika_kaydi" id="sabika_kaydi">
-                                <label class="form-check-label" for="sabika_kaydi">Sabıka Kaydım Var</label>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Sağlık Sorunu Açıklaması</label>
-                            <textarea name="saglik_sorunu_aciklama" class="form-control" rows="2"></textarea>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Sabıka Açıklaması</label>
-                            <textarea name="sabika_aciklama" class="form-control" rows="2"></textarea>
-                        </div>
+                </div>
+                
+                <!-- 3. Eğitim Bilgileri -->
+                <h5 class="section-title flex items-center gap-2 text-lg font-bold">
+                    <span class="material-symbols-outlined">school</span>
+                    Eğitim Bilgileri
+                </h5>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Eğitim Durumu <span class="text-red-500">*</span></label>
+                        <select name="egitim_durumu" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">Seçiniz</option>
+                            <option value="ilkokul">İlkokul</option>
+                            <option value="ortaokul">Ortaokul</option>
+                            <option value="lise">Lise</option>
+                            <option value="onlisans">Ön Lisans</option>
+                            <option value="lisans">Lisans</option>
+                            <option value="yukseklisans">Yüksek Lisans</option>
+                            <option value="doktora">Doktora</option>
+                        </select>
                     </div>
-                    
-                    <!-- 8. Tercihler -->
-                    <h5 class="section-title"><i class="bi bi-sliders me-2"></i>Tercihler</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label">Çalışabileceğiniz İller</label>
-                            <input type="text" name="calisabilecegi_iller" class="form-control"
-                                   placeholder="İstanbul, Ankara, İzmir"
-                                   value="{{ aday.calisabilecegi_iller or '' }}">
-                            <small class="text-muted">Virgülle ayırarak yazın</small>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Beklenen Maaş (₺)</label>
-                            <input type="number" name="beklenen_maas" class="form-control"
-                                   min="0" step="1000"
-                                   value="{{ aday.beklenen_maas or '' }}">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Ne Zaman Başlayabilirsiniz?</label>
-                            <select name="ne_zaman_baslayabilir" class="form-select">
-                                <option value="">Seçiniz</option>
-                                <option value="hemen">Hemen</option>
-                                <option value="1_hafta">1 Hafta İçinde</option>
-                                <option value="2_hafta">2 Hafta İçinde</option>
-                                <option value="1_ay">1 Ay İçinde</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <div class="form-check mt-4">
-                                <input class="form-check-input" type="checkbox" name="vardiyali_calisabilir" id="vardiyali" checked>
-                                <label class="form-check-label" for="vardiyali">Vardiyalı Çalışabilirim</label>
-                            </div>
-                        </div>
+                    <div class="md:col-span-2">
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Okul Adı</label>
+                        <input type="text" name="okul_adi" value="{{ aday.okul_adi or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
                     </div>
-                    
-                    <!-- 9. Belgeler -->
-                    <h5 class="section-title"><i class="bi bi-file-earmark-arrow-up me-2"></i>Belgeler</h5>
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Mezuniyet Yılı</label>
+                        <input type="number" name="mezuniyet_yili" min="1970" max="2030" value="{{ aday.mezuniyet_yili or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div class="md:col-span-4">
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Bölüm</label>
+                        <input type="text" name="bolum" value="{{ aday.bolum or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                </div>
+                
+                <!-- 4. Ehliyet Bilgileri -->
+                <h5 class="section-title flex items-center gap-2 text-lg font-bold">
+                    <span class="material-symbols-outlined">directions_car</span>
+                    Ehliyet Bilgileri
+                </h5>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="ehliyet_var" id="ehliyet_var" {{ 'checked' if aday.ehliyet_var else '' }}
+                               class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Ehliyetim Var</span>
+                    </label>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Ehliyet Sınıfı</label>
+                        <select name="ehliyet_sinifi" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">Seçiniz</option>
+                            <option value="A1">A1</option>
+                            <option value="A2">A2</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                            <option value="E">E</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Ehliyet Tarihi</label>
+                        <input type="date" name="ehliyet_tarihi" value="{{ aday.ehliyet_tarihi.strftime('%Y-%m-%d') if aday.ehliyet_tarihi else '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="src_belgesi" id="src_belgesi" {{ 'checked' if aday.src_belgesi else '' }}
+                               class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">SRC Belgem Var</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="psikoteknik" id="psikoteknik" {{ 'checked' if aday.psikoteknik else '' }}
+                               class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Psikoteknik Belgem Var</span>
+                    </label>
+                </div>
+                
+                <!-- 5. İş Deneyimi -->
+                <h5 class="section-title flex items-center gap-2 text-lg font-bold">
+                    <span class="material-symbols-outlined">work</span>
+                    İş Deneyimi
+                </h5>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Toplam Tecrübe (Yıl)</label>
+                        <input type="number" name="toplam_tecrube_yil" min="0" max="50" value="{{ aday.toplam_tecrube_yil or 0 }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Son İş Yeri</label>
+                        <input type="text" name="son_is_yeri" value="{{ aday.son_is_yeri or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Son Pozisyon</label>
+                        <input type="text" name="son_pozisyon" value="{{ aday.son_pozisyon or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">İşe Başlangıç</label>
+                        <input type="date" name="son_is_baslangic" value="{{ aday.son_is_baslangic.strftime('%Y-%m-%d') if aday.son_is_baslangic else '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">İşten Ayrılış</label>
+                        <input type="date" name="son_is_bitis" value="{{ aday.son_is_bitis.strftime('%Y-%m-%d') if aday.son_is_bitis else '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Ayrılma Nedeni</label>
+                        <input type="text" name="son_is_ayrilma_nedeni" value="{{ aday.son_is_ayrilma_nedeni or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                </div>
+                
+                <!-- 6. Referans -->
+                <h5 class="section-title flex items-center gap-2 text-lg font-bold">
+                    <span class="material-symbols-outlined">person_check</span>
+                    Referans Bilgileri
+                </h5>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Referans Ad Soyad</label>
+                        <input type="text" name="referans_ad" value="{{ aday.referans_ad or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Referans Telefon</label>
+                        <input type="tel" name="referans_telefon" value="{{ aday.referans_telefon or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Yakınlık</label>
+                        <select name="referans_iliski" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">Seçiniz</option>
+                            <option value="eski_yonetici">Eski Yönetici</option>
+                            <option value="is_arkadasi">İş Arkadaşı</option>
+                            <option value="aile">Aile</option>
+                            <option value="diger">Diğer</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- 7. Ek Bilgiler -->
+                <h5 class="section-title flex items-center gap-2 text-lg font-bold">
+                    <span class="material-symbols-outlined">info</span>
+                    Ek Bilgiler
+                </h5>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Askerlik Durumu</label>
+                        <select name="askerlik_durumu" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">Seçiniz</option>
+                            <option value="yapti">Yaptı</option>
+                            <option value="muaf">Muaf</option>
+                            <option value="tecilli">Tecilli</option>
+                            <option value="yapmiyor">Yapmıyor (Kadın)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Tecil Bitiş Tarihi</label>
+                        <input type="date" name="askerlik_tecil_tarihi"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <label class="flex items-center gap-2 cursor-pointer pt-6">
+                        <input type="checkbox" name="saglik_sorunu" id="saglik_sorunu"
+                               class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Sağlık Sorunum Var</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer pt-6">
+                        <input type="checkbox" name="sabika_kaydi" id="sabika_kaydi"
+                               class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Sabıka Kaydım Var</span>
+                    </label>
+                    <div class="md:col-span-2">
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Sağlık Sorunu Açıklaması</label>
+                        <textarea name="saglik_sorunu_aciklama" rows="2" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Sabıka Açıklaması</label>
+                        <textarea name="sabika_aciklama" rows="2" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"></textarea>
+                    </div>
+                </div>
+                
+                <!-- 8. Tercihler -->
+                <h5 class="section-title flex items-center gap-2 text-lg font-bold">
+                    <span class="material-symbols-outlined">tune</span>
+                    Tercihler
+                </h5>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Çalışabileceğiniz İller</label>
+                        <input type="text" name="calisabilecegi_iller" placeholder="İstanbul, Ankara, İzmir" value="{{ aday.calisabilecegi_iller or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                        <p class="text-xs text-gray-500 mt-1">Virgülle ayırarak yazın</p>
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Beklenen Maaş (₺)</label>
+                        <input type="number" name="beklenen_maas" min="0" step="1000" value="{{ aday.beklenen_maas or '' }}"
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Ne Zaman Başlayabilirsiniz?</label>
+                        <select name="ne_zaman_baslayabilir" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                            <option value="">Seçiniz</option>
+                            <option value="hemen">Hemen</option>
+                            <option value="1_hafta">1 Hafta İçinde</option>
+                            <option value="2_hafta">2 Hafta İçinde</option>
+                            <option value="1_ay">1 Ay İçinde</option>
+                        </select>
+                    </div>
+                    <label class="flex items-center gap-2 cursor-pointer pt-6">
+                        <input type="checkbox" name="vardiyali_calisabilir" id="vardiyali" checked
+                               class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                        <span class="text-sm text-gray-700">Vardiyalı Çalışabilirim</span>
+                    </label>
+                </div>
+                
+                <!-- 9. Belgeler -->
+                <h5 class="section-title flex items-center gap-2 text-lg font-bold">
+                    <span class="material-symbols-outlined">upload_file</span>
+                    Belgeler
+                </h5>
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4">
+                    <div class="flex items-center gap-2 text-sm text-blue-800">
+                        <span class="material-symbols-outlined">info</span>
                         Lütfen belgelerin net ve okunabilir olduğundan emin olun. Maksimum dosya boyutu: 5MB
                     </div>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label">Vesikalık Fotoğraf</label>
-                            <input type="file" name="foto" class="form-control" accept="image/*">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">CV (Özgeçmiş)</label>
-                            <input type="file" name="cv_dosya" class="form-control" accept=".pdf,.doc,.docx">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Kimlik Ön Yüz</label>
-                            <input type="file" name="kimlik_on" class="form-control" accept="image/*">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Kimlik Arka Yüz</label>
-                            <input type="file" name="kimlik_arka" class="form-control" accept="image/*">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Ehliyet Fotoğrafı</label>
-                            <input type="file" name="ehliyet_foto" class="form-control" accept="image/*">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Diploma/Mezuniyet Belgesi</label>
-                            <input type="file" name="diploma_foto" class="form-control" accept="image/*,.pdf">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">SRC Belgesi</label>
-                            <input type="file" name="src_foto" class="form-control" accept="image/*,.pdf">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">İkametgah Belgesi</label>
-                            <input type="file" name="ikametgah" class="form-control" accept="image/*,.pdf">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Adli Sicil Belgesi</label>
-                            <input type="file" name="adli_sicil" class="form-control" accept="image/*,.pdf">
-                        </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Vesikalık Fotoğraf</label>
+                        <input type="file" name="foto" accept="image/*"
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
                     </div>
-                    
-                    <!-- Gönder -->
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="bi bi-send me-2"></i>Başvuruyu Gönder
-                        </button>
-                        <small class="text-muted text-center">
-                            <i class="bi bi-shield-check me-1"></i>
-                            Bilgileriniz KVKK kapsamında güvenle saklanmaktadır.
-                        </small>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">CV (Özgeçmiş)</label>
+                        <input type="file" name="cv_dosya" accept=".pdf,.doc,.docx"
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
                     </div>
-                </form>
-            </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Kimlik Ön Yüz</label>
+                        <input type="file" name="kimlik_on" accept="image/*"
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Kimlik Arka Yüz</label>
+                        <input type="file" name="kimlik_arka" accept="image/*"
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Ehliyet Fotoğrafı</label>
+                        <input type="file" name="ehliyet_foto" accept="image/*"
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Diploma/Mezuniyet Belgesi</label>
+                        <input type="file" name="diploma_foto" accept="image/*,.pdf"
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">SRC Belgesi</label>
+                        <input type="file" name="src_foto" accept="image/*,.pdf"
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">İkametgah Belgesi</label>
+                        <input type="file" name="ikametgah" accept="image/*,.pdf"
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                    </div>
+                    <div>
+                        <label class="block mb-1 text-sm font-medium text-gray-700">Adli Sicil Belgesi</label>
+                        <input type="file" name="adli_sicil" accept="image/*,.pdf"
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                    </div>
+                </div>
+                
+                <!-- Gönder -->
+                <button type="submit" class="w-full py-4 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 text-lg">
+                    <span class="material-symbols-outlined">send</span>
+                    Başvuruyu Gönder
+                </button>
+                <p class="text-center text-gray-500 text-sm mt-3 flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined text-base">verified_user</span>
+                    Bilgileriniz KVKK kapsamında güvenle saklanmaktadır.
+                </p>
+            </form>
         </div>
     </div>
 </div>

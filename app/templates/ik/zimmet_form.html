@@ -4,18 +4,18 @@
 {% block page_title %}{% if zimmet %}Zimmet Düzenle{% else %}Yeni Zimmet Ekle{% endif %}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-body">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="p-6">
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
-                    <div class="row g-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <!-- Çalışan Seçimi -->
-                        <div class="col-md-6">
-                            <label class="form-label">Çalışan *</label>
-                            <select name="calisan_id" class="form-select select2" required>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Çalışan *</label>
+                            <select name="calisan_id" id="calisan_select" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçiniz</option>
                                 {% for calisan in calisanlar %}
                                 <option value="{{ calisan.id }}" {{ 'selected' if secili_calisan_id == calisan.id or (zimmet and zimmet.calisan_id == calisan.id) }}>
@@ -26,98 +26,152 @@
                         </div>
                         
                         <!-- Zimmet Tipi -->
-                        <div class="col-md-6">
-                            <label class="form-label">Zimmet Tipi *</label>
-                            <select name="zimmet_tipi_id" class="form-select" required>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Zimmet Tipi *</label>
+                            <select name="zimmet_tipi_id" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçiniz</option>
                                 {% for tip in zimmet_tipleri %}
-                                <option value="{{ tip.id }}" {{ 'selected' if zimmet and zimmet.zimmet_tipi_id == tip.id }}>
-                                    {{ tip.ad }}
-                                </option>
+                                <option value="{{ tip.id }}" {{ 'selected' if zimmet and zimmet.zimmet_tipi_id == tip.id }}>{{ tip.ad }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         
                         <!-- Tanım -->
-                        <div class="col-12">
-                            <label class="form-label">Tanım *</label>
-                            <input type="text" name="tanim" class="form-control" required
-                                   placeholder="Örn: MacBook Pro 14 M3, iPhone 15 Pro Max"
-                                   value="{{ zimmet.tanim if zimmet else '' }}">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Tanım *</label>
+                            <input type="text" name="tanim" required placeholder="Örn: MacBook Pro 14 M3, iPhone 15 Pro Max"
+                                   value="{{ zimmet.tanim if zimmet else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         
                         <!-- Marka / Model -->
-                        <div class="col-md-6">
-                            <label class="form-label">Marka</label>
-                            <input type="text" name="marka" class="form-control" placeholder="Apple, Samsung, HP..."
-                                   value="{{ zimmet.marka if zimmet else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Marka</label>
+                            <input type="text" name="marka" placeholder="Apple, Samsung, HP..."
+                                   value="{{ zimmet.marka if zimmet else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Model</label>
-                            <input type="text" name="model" class="form-control" placeholder="Model numarası"
-                                   value="{{ zimmet.model if zimmet else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Model</label>
+                            <input type="text" name="model" placeholder="Model numarası"
+                                   value="{{ zimmet.model if zimmet else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         
                         <!-- Seri No / Demirbaş No -->
-                        <div class="col-md-6">
-                            <label class="form-label">Seri Numarası</label>
-                            <input type="text" name="seri_no" class="form-control" placeholder="Üretici seri numarası"
-                                   value="{{ zimmet.seri_no if zimmet else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Seri Numarası</label>
+                            <input type="text" name="seri_no" placeholder="Üretici seri numarası"
+                                   value="{{ zimmet.seri_no if zimmet else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Demirbaş No</label>
-                            <input type="text" name="demirbas_no" class="form-control" placeholder="Şirket demirbaş numarası"
-                                   value="{{ zimmet.demirbas_no if zimmet else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Demirbaş No</label>
+                            <input type="text" name="demirbas_no" placeholder="Şirket demirbaş numarası"
+                                   value="{{ zimmet.demirbas_no if zimmet else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         
                         <!-- Teslim Tarihi / Değer -->
-                        <div class="col-md-6">
-                            <label class="form-label">Teslim Tarihi *</label>
-                            <input type="date" name="teslim_tarihi" class="form-control" required
-                                   value="{{ zimmet.teslim_tarihi.strftime('%Y-%m-%d') if zimmet else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Teslim Tarihi *</label>
+                            <input type="date" name="teslim_tarihi" required
+                                   value="{{ zimmet.teslim_tarihi.strftime('%Y-%m-%d') if zimmet else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Değer (₺)</label>
-                            <input type="number" name="deger" class="form-control" step="0.01" placeholder="0.00"
-                                   value="{{ zimmet.deger if zimmet else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Değer (₺)</label>
+                            <input type="number" name="deger" step="0.01" placeholder="0.00"
+                                   value="{{ zimmet.deger if zimmet else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         
                         <!-- Not -->
-                        <div class="col-12">
-                            <label class="form-label">Teslim Notu</label>
-                            <textarea name="teslim_notu" class="form-control" rows="2" 
-                                      placeholder="Ek bilgiler...">{{ zimmet.teslim_notu if zimmet else '' }}</textarea>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Teslim Notu</label>
+                            <textarea name="teslim_notu" rows="2" placeholder="Ek bilgiler..."
+                                      class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ zimmet.teslim_notu if zimmet else '' }}</textarea>
                         </div>
                     </div>
                     
-                    <div class="mt-4">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-1"></i> {{ 'Güncelle' if zimmet else 'Kaydet' }}
+                    <div class="flex items-center gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <span class="material-symbols-outlined text-sm">check</span>
+                            {{ 'Güncelle' if zimmet else 'Kaydet' }}
                         </button>
-                        <a href="{{ url_for('ik.zimmet_liste') }}" class="btn btn-secondary">İptal</a>
+                        <a href="{{ url_for('ik.zimmet_liste') }}" class="px-4 py-2 border border-border-light dark:border-border-dark text-text-primary dark:text-text-primary-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</a>
                     </div>
                 </form>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
+    <div>
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">info</span>
+                    Bilgi
+                </h3>
             </div>
-            <div class="card-body">
-                <p class="small text-muted mb-3">
+            <div class="p-5">
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">
                     Zimmet, şirket tarafından çalışana teslim edilen malzemedir. 
                     Bilgisayar, telefon, araç anahtarı, giriş kartı gibi malzemeler zimmet olarak takip edilir.
                 </p>
-                <ul class="small text-muted mb-0">
-                    <li>Seri numarası elektronik cihazlar için önemlidir</li>
-                    <li>Demirbaş numarası şirket içi takip için kullanılır</li>
-                    <li>Değer bilgisi sigorta ve envanter için gereklidir</li>
+                <ul class="text-sm text-text-muted dark:text-text-muted-dark space-y-1">
+                    <li class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">check</span> Seri numarası elektronik cihazlar için önemlidir</li>
+                    <li class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">check</span> Demirbaş numarası şirket içi takip için kullanılır</li>
+                    <li class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">check</span> Değer bilgisi sigorta ve envanter için gereklidir</li>
                 </ul>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+<style>
+    .ts-wrapper { width: 100%; }
+    .ts-control {
+        padding: 0.5rem 0.75rem !important;
+        border: 1px solid var(--border-light, #e5e7eb) !important;
+        border-radius: 0.5rem !important;
+        background: transparent !important;
+        min-height: 42px !important;
+    }
+    .dark .ts-control {
+        border-color: var(--border-dark, #374151) !important;
+        background: #111418 !important;
+        color: white !important;
+    }
+    .ts-dropdown {
+        border-radius: 0.5rem !important;
+        border: 1px solid var(--border-light, #e5e7eb) !important;
+    }
+    .dark .ts-dropdown {
+        background: #1a1f2e !important;
+        border-color: var(--border-dark, #374151) !important;
+    }
+    .dark .ts-dropdown .option {
+        color: white !important;
+    }
+    .dark .ts-dropdown .option.active {
+        background: #252b36 !important;
+    }
+    .ts-control input { color: inherit !important; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+<script>
+    new TomSelect('#calisan_select', {
+        sortField: { field: 'text', direction: 'asc' },
+        placeholder: 'Çalışan ara...',
+        allowEmptyOption: true,
+        create: false
+    });
+</script>
 {% endblock %}

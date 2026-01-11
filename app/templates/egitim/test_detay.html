@@ -4,207 +4,214 @@
 {% block page_title %}Test Detay{% endblock %}
 
 {% block content %}
-<div class="row g-4">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Sol: Test Bilgileri -->
-    <div class="col-lg-4">
-        <div class="card mb-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Test Bilgileri</h6>
-                <span class="badge bg-{{ test.durum_renk }}">{{ test.durum_text }}</span>
+    <div class="space-y-6">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-bold text-[#111418] dark:text-white">Test Bilgileri</h6>
+                {% if test.aktif %}
+                <span class="px-2 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
+                {% else %}
+                <span class="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Pasif</span>
+                {% endif %}
             </div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Soru Sayısı</span>
-                    <strong>{{ test.soru_sayisi }}</strong>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Toplam Puan</span>
-                    <strong>{{ test.toplam_puan }}</strong>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Süre</span>
-                    <strong>{{ test.sure_dakika }} dakika</strong>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Geçme Puanı</span>
-                    <strong>%{{ test.gecme_puani }}</strong>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Tekrar Hakkı</span>
-                    <strong>{{ test.tekrar_hak if test.tekrar_hak else 'Sınırsız' }}</strong>
-                </li>
-            </ul>
-            <div class="card-footer">
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('egitim.test_baslat', id=test.id) }}" class="btn btn-primary">
-                        <i class="bi bi-play me-1"></i> Testi Çöz
-                    </a>
+            <div class="divide-y divide-border-light dark:divide-border-dark">
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark text-sm">Soru Sayısı</span>
+                    <strong class="text-[#111418] dark:text-white">{{ test.soru_sayisi }}</strong>
                 </div>
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark text-sm">Toplam Puan</span>
+                    <strong class="text-[#111418] dark:text-white">{{ test.toplam_puan }}</strong>
+                </div>
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark text-sm">Süre</span>
+                    <strong class="text-[#111418] dark:text-white">{{ test.sure_dakika }} dakika</strong>
+                </div>
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark text-sm">Geçme Puanı</span>
+                    <strong class="text-[#111418] dark:text-white">%{{ test.gecme_puani }}</strong>
+                </div>
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark text-sm">Tekrar Hakkı</span>
+                    <strong class="text-[#111418] dark:text-white">{{ test.tekrar_hak if test.tekrar_hak else 'Sınırsız' }}</strong>
+                </div>
+            </div>
+            <div class="p-4 border-t border-border-light dark:border-border-dark">
+                <a href="{{ url_for('egitim.test_baslat', id=test.id) }}" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors">
+                    <span class="material-symbols-outlined">play_arrow</span>
+                    Testi Çöz
+                </a>
             </div>
         </div>
         
         <!-- Ayarlar -->
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">Ayarlar</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-bold text-[#111418] dark:text-white">Ayarlar</h6>
             </div>
-            <ul class="list-group list-group-flush small">
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Soruları Karıştır</span>
-                    <i class="bi bi-{{ 'check text-success' if test.soru_karistir else 'x text-danger' }}"></i>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Seçenekleri Karıştır</span>
-                    <i class="bi bi-{{ 'check text-success' if test.secenek_karistir else 'x text-danger' }}"></i>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Sonucu Göster</span>
-                    <i class="bi bi-{{ 'check text-success' if test.sonucu_goster else 'x text-danger' }}"></i>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span>Doğru Cevapları Göster</span>
-                    <i class="bi bi-{{ 'check text-success' if test.dogru_cevaplari_goster else 'x text-danger' }}"></i>
-                </li>
-            </ul>
+            <div class="divide-y divide-border-light dark:divide-border-dark text-sm">
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark">Soruları Karıştır</span>
+                    <span class="material-symbols-outlined text-lg {{ 'text-emerald-500' if test.soru_karistir else 'text-gray-400' }}">{{ 'check' if test.soru_karistir else 'close' }}</span>
+                </div>
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark">Seçenekleri Karıştır</span>
+                    <span class="material-symbols-outlined text-lg {{ 'text-emerald-500' if test.secenek_karistir else 'text-gray-400' }}">{{ 'check' if test.secenek_karistir else 'close' }}</span>
+                </div>
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark">Sonucu Göster</span>
+                    <span class="material-symbols-outlined text-lg {{ 'text-emerald-500' if test.sonucu_goster else 'text-gray-400' }}">{{ 'check' if test.sonucu_goster else 'close' }}</span>
+                </div>
+                <div class="px-5 py-3 flex justify-between items-center">
+                    <span class="text-text-muted dark:text-text-muted-dark">Doğru Cevapları Göster</span>
+                    <span class="material-symbols-outlined text-lg {{ 'text-emerald-500' if test.dogru_cevaplari_goster else 'text-gray-400' }}">{{ 'check' if test.dogru_cevaplari_goster else 'close' }}</span>
+                </div>
+            </div>
         </div>
     </div>
     
     <!-- Sağ: Sorular ve Sonuçlar -->
-    <div class="col-lg-8">
+    <div class="lg:col-span-2" x-data="{ tab: 'sorular' }">
         <!-- Tab Menu -->
-        <ul class="nav nav-tabs mb-4">
-            <li class="nav-item">
-                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#sorular">
-                    <i class="bi bi-list-ol me-1"></i> Sorular ({{ test_sorulari|length }})
+        <div class="mb-4 border-b border-border-light dark:border-border-dark">
+            <div class="flex gap-4">
+                <button @click="tab = 'sorular'" :class="tab === 'sorular' ? 'border-b-2 border-primary text-primary' : 'text-text-muted dark:text-text-muted-dark'" class="pb-3 px-1 font-medium text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">format_list_numbered</span>
+                    Sorular ({{ test_sorulari|length }})
                 </button>
-            </li>
-            <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sonuclar">
-                    <i class="bi bi-people me-1"></i> Sonuçlar
+                <button @click="tab = 'sonuclar'" :class="tab === 'sonuclar' ? 'border-b-2 border-primary text-primary' : 'text-text-muted dark:text-text-muted-dark'" class="pb-3 px-1 font-medium text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">groups</span>
+                    Sonuçlar
                 </button>
-            </li>
-        </ul>
+            </div>
+        </div>
         
-        <div class="tab-content">
-            <!-- Sorular Tab -->
-            <div class="tab-pane fade show active" id="sorular">
-                <!-- Soru Ekle -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h6 class="mb-0">Soru Ekle</h6>
-                    </div>
-                    <div class="card-body">
-                        <form method="POST" action="{{ url_for('egitim.test_soru_ekle', id=test.id) }}">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <div class="mb-3">
-                                <select name="soru_ids" class="form-select" multiple size="6">
-                                    {% for soru in eklenebilir_sorular %}
-                                    <option value="{{ soru.id }}">
-                                        [{{ soru.zorluk_text }}] {{ soru.soru_metni|truncate(60) }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                <small class="text-muted">Ctrl/Cmd ile birden fazla seçebilirsiniz</small>
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-sm">
-                                <i class="bi bi-plus me-1"></i> Seçili Soruları Ekle
-                            </button>
-                            <a href="{{ url_for('egitim.soru_ekle') }}" class="btn btn-outline-secondary btn-sm">
-                                <i class="bi bi-plus-circle me-1"></i> Yeni Soru Oluştur
-                            </a>
-                        </form>
-                    </div>
+        <!-- Sorular Tab -->
+        <div x-show="tab === 'sorular'" class="space-y-4">
+            <!-- Soru Ekle -->
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-bold text-[#111418] dark:text-white">Soru Ekle</h6>
                 </div>
-                
-                <!-- Mevcut Sorular -->
-                <div class="card">
-                    <div class="card-header">
-                        <h6 class="mb-0">Test Soruları</h6>
-                    </div>
-                    <div class="card-body p-0">
-                        {% if test_sorulari %}
-                        <div class="list-group list-group-flush" id="soruListesi">
-                            {% for ts in test_sorulari %}
-                            <div class="list-group-item d-flex justify-content-between align-items-center" data-id="{{ ts.id }}">
-                                <div class="d-flex align-items-center">
-                                    <span class="badge bg-secondary me-3">{{ loop.index }}</span>
-                                    <div>
-                                        <div>{{ ts.soru.soru_metni|truncate(70) }}</div>
-                                        <small class="text-muted">
-                                            <span class="badge bg-{{ ts.soru.zorluk_renk }}">{{ ts.soru.zorluk_text }}</span>
-                                            {{ ts.puan }} puan
-                                        </small>
-                                    </div>
-                                </div>
-                                <form method="POST" action="{{ url_for('egitim.test_soru_cikar', id=test.id, soru_id=ts.soru_id) }}" class="d-inline">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Soruyu testten çıkarmak istiyor musunuz?')">
-                                        <i class="bi bi-x"></i>
-                                    </button>
-                                </form>
-                            </div>
+                <div class="p-5">
+                    <form method="POST" action="{{ url_for('egitim.test_soru_ekle', id=test.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <select name="soru_ids" multiple size="6" class="w-full p-2 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm mb-3">
+                            {% for soru in eklenebilir_sorular %}
+                            <option value="{{ soru.id }}">[{{ soru.zorluk_text }}] {{ soru.soru_metni|truncate(60) }}</option>
                             {% endfor %}
+                        </select>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mb-4">Ctrl/Cmd ile birden fazla seçebilirsiniz</p>
+                        <div class="flex gap-2">
+                            <button type="submit" class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white font-medium text-sm rounded-lg transition-colors flex items-center gap-1">
+                                <span class="material-symbols-outlined text-lg">add</span>Seçili Soruları Ekle
+                            </button>
+                            <a href="{{ url_for('egitim.soru_ekle') }}" class="px-3 py-1.5 border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#252b36] font-medium text-sm rounded-lg transition-colors flex items-center gap-1">
+                                <span class="material-symbols-outlined text-lg">add_circle</span>Yeni Soru
+                            </a>
                         </div>
-                        {% else %}
-                        <div class="text-center text-muted py-5">
-                            <i class="bi bi-question-circle fs-1 d-block mb-2"></i>
-                            Henüz soru eklenmedi
-                        </div>
-                        {% endif %}
-                    </div>
+                    </form>
                 </div>
             </div>
             
-            <!-- Sonuçlar Tab -->
-            <div class="tab-pane fade" id="sonuclar">
-                <div class="card">
-                    <div class="card-header">
-                        <h6 class="mb-0">Son Sonuçlar</h6>
-                    </div>
-                    <div class="card-body p-0">
-                        {% if son_sonuclar %}
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Çalışan</th>
-                                        <th>Tarih</th>
-                                        <th>Puan</th>
-                                        <th>Süre</th>
-                                        <th>Durum</th>
-                                        <th></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for sonuc in son_sonuclar %}
-                                    <tr>
-                                        <td>{{ sonuc.calisan.full_name }}</td>
-                                        <td>{{ sonuc.bitis_zamani.strftime('%d.%m.%Y %H:%M') if sonuc.bitis_zamani else '-' }}</td>
-                                        <td>
-                                            <strong>%{{ sonuc.yuzde }}</strong>
-                                            <small class="text-muted">({{ sonuc.alinan_puan }}/{{ sonuc.toplam_puan }})</small>
-                                        </td>
-                                        <td>{{ sonuc.sure_text }}</td>
-                                        <td><span class="badge bg-{{ sonuc.durum_renk }}">{{ sonuc.durum_text }}</span></td>
-                                        <td>
-                                            <a href="{{ url_for('egitim.test_sonuc', sonuc_id=sonuc.id) }}" class="btn btn-sm btn-outline-secondary">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        {% else %}
-                        <div class="text-center text-muted py-5">
-                            Henüz sonuç yok
-                        </div>
-                        {% endif %}
-                    </div>
+            <!-- Mevcut Sorular -->
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-bold text-[#111418] dark:text-white">Test Soruları</h6>
                 </div>
+                {% if test_sorulari %}
+                <div class="divide-y divide-border-light dark:divide-border-dark">
+                    {% for ts in test_sorulari %}
+                    <div class="px-5 py-4 flex justify-between items-center hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                        <div class="flex items-center gap-4">
+                            <span class="w-8 h-8 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center text-sm font-bold text-text-muted dark:text-text-muted-dark">{{ loop.index }}</span>
+                            <div>
+                                <div class="text-sm text-[#111418] dark:text-white">{{ ts.soru.soru_metni|truncate(70) }}</div>
+                                <div class="flex items-center gap-2 mt-1">
+                                    {% set zorluk_renk = {'1': 'emerald', '2': 'amber', '3': 'rose'} %}
+                                    <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-{{ zorluk_renk.get(ts.soru.zorluk|string, 'gray') }}-100 text-{{ zorluk_renk.get(ts.soru.zorluk|string, 'gray') }}-700">{{ ts.soru.zorluk_text }}</span>
+                                    <span class="text-xs text-text-muted dark:text-text-muted-dark">{{ ts.puan }} puan</span>
+                                </div>
+                            </div>
+                        </div>
+                        <form method="POST" action="{{ url_for('egitim.test_soru_cikar', id=test.id, soru_id=ts.soru_id) }}">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" onclick="return confirm('Soruyu testten çıkarmak istiyor musunuz?')" class="p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-lg">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="py-12 text-center">
+                    <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-2">help</span>
+                    <p class="text-text-muted dark:text-text-muted-dark">Henüz soru eklenmedi</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Sonuçlar Tab -->
+        <div x-show="tab === 'sonuclar'">
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-bold text-[#111418] dark:text-white">Son Sonuçlar</h6>
+                </div>
+                {% if son_sonuclar %}
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50 dark:bg-[#111418]">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Çalışan</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden sm:table-cell">Tarih</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Puan</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden md:table-cell">Süre</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Durum</th>
+                                <th class="px-4 py-3"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                            {% for sonuc in son_sonuclar %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                                <td class="px-4 py-3 text-sm text-[#111418] dark:text-white">{{ sonuc.calisan.full_name }}</td>
+                                <td class="px-4 py-3 text-sm text-text-muted dark:text-text-muted-dark hidden sm:table-cell">{{ sonuc.bitis_zamani.strftime('%d.%m.%Y %H:%M') if sonuc.bitis_zamani else '-' }}</td>
+                                <td class="px-4 py-3">
+                                    <strong class="text-[#111418] dark:text-white">%{{ sonuc.yuzde }}</strong>
+                                    <span class="text-xs text-text-muted dark:text-text-muted-dark">({{ sonuc.alinan_puan }}/{{ sonuc.toplam_puan }})</span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-text-muted dark:text-text-muted-dark hidden md:table-cell">{{ sonuc.sure_text }}</td>
+                                <td class="px-4 py-3">
+                                    {% if sonuc.basarili %}
+                                    <span class="px-2 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Başarılı</span>
+                                    {% else %}
+                                    <span class="px-2 py-1 text-xs font-bold rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Başarısız</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-right">
+                                    <a href="{{ url_for('egitim.test_sonuc', sonuc_id=sonuc.id) }}" class="p-1.5 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg inline-block">
+                                        <span class="material-symbols-outlined text-xl">visibility</span>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="py-12 text-center">
+                    <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-2">assessment</span>
+                    <p class="text-text-muted dark:text-text-muted-dark">Henüz sonuç yok</p>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 {% endblock %}

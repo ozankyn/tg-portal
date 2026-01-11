@@ -5,109 +5,101 @@
 
 {% block content %}
 {% if bekleyen_sayisi > 0 %}
-<div class="alert alert-warning">
-    <i class="bi bi-hourglass-split me-2"></i>
-    <strong>{{ bekleyen_sayisi }}</strong> kaza kaydı onay bekliyor.
+<div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-lg p-4 mb-4 flex items-center gap-2">
+    <span class="material-symbols-outlined text-amber-600">hourglass_empty</span>
+    <span><strong class="text-[#111418] dark:text-white">{{ bekleyen_sayisi }}</strong> kaza kaydı onay bekliyor.</span>
 </div>
 {% endif %}
 
-<div class="card">
-    <div class="card-header">
-        <form method="GET" class="row g-2">
-            <div class="col-auto">
-                <select name="arac_id" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">Tüm Araçlar</option>
-                    {% for arac in araclar %}
-                    <option value="{{ arac.id }}" {{ 'selected' if request.args.get('arac_id')|int == arac.id }}>
-                        {{ arac.plaka }}
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-auto">
-                <select name="onay_durumu" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">Tüm Onay Durumları</option>
-                    <option value="bekliyor" {{ 'selected' if request.args.get('onay_durumu') == 'bekliyor' }}>Bekliyor</option>
-                    <option value="onaylandi" {{ 'selected' if request.args.get('onay_durumu') == 'onaylandi' }}>Onaylandı</option>
-                    <option value="reddedildi" {{ 'selected' if request.args.get('onay_durumu') == 'reddedildi' }}>Reddedildi</option>
-                </select>
-            </div>
-            <div class="col-auto">
-                <select name="durum" class="form-select form-select-sm" onchange="this.form.submit()">
-                    <option value="">Tüm Durumlar</option>
-                    <option value="acik" {{ 'selected' if request.args.get('durum') == 'acik' }}>Açık</option>
-                    <option value="kapandi" {{ 'selected' if request.args.get('durum') == 'kapandi' }}>Kapandı</option>
-                    <option value="dava" {{ 'selected' if request.args.get('durum') == 'dava' }}>Dava</option>
-                </select>
-            </div>
+<div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+    <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+        <form method="GET" class="flex flex-wrap items-center gap-2">
+            <select name="arac_id" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                <option value="">Tüm Araçlar</option>
+                {% for arac in araclar %}
+                <option value="{{ arac.id }}" {{ 'selected' if request.args.get('arac_id')|int == arac.id }}>
+                    {{ arac.plaka }}
+                </option>
+                {% endfor %}
+            </select>
+            <select name="onay_durumu" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                <option value="">Tüm Onay Durumları</option>
+                <option value="bekliyor" {{ 'selected' if request.args.get('onay_durumu') == 'bekliyor' }}>Bekliyor</option>
+                <option value="onaylandi" {{ 'selected' if request.args.get('onay_durumu') == 'onaylandi' }}>Onaylandı</option>
+                <option value="reddedildi" {{ 'selected' if request.args.get('onay_durumu') == 'reddedildi' }}>Reddedildi</option>
+            </select>
+            <select name="durum" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
+                <option value="">Tüm Durumlar</option>
+                <option value="acik" {{ 'selected' if request.args.get('durum') == 'acik' }}>Açık</option>
+                <option value="kapandi" {{ 'selected' if request.args.get('durum') == 'kapandi' }}>Kapandı</option>
+                <option value="dava" {{ 'selected' if request.args.get('durum') == 'dava' }}>Dava</option>
+            </select>
         </form>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Tarih</th>
-                        <th>Araç</th>
-                        <th>Sürücü</th>
-                        <th>Konum</th>
-                        <th>Kusur</th>
-                        <th>Hasar</th>
-                        <th>Onay</th>
-                        <th>Durum</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for kaza in kazalar %}
-                    <tr>
-                        <td>{{ kaza.tarih.strftime('%d.%m.%Y') }}</td>
-                        <td>
-                            <a href="{{ url_for('filo.detay', id=kaza.arac_id) }}">
-                                {{ kaza.arac.plaka }}
-                            </a>
-                        </td>
-                        <td>{{ kaza.surucu.full_name if kaza.surucu else '-' }}</td>
-                        <td><small>{{ kaza.konum[:30] + '...' if kaza.konum and kaza.konum|length > 30 else kaza.konum or '-' }}</small></td>
-                        <td>%{{ kaza.kusur_orani or 0 }}</td>
-                        <td>{{ "%.0f"|format(kaza.hasar_tutari) if kaza.hasar_tutari else '-' }} ₺</td>
-                        <td>
-                            <span class="badge bg-{{ 'success' if kaza.onay_durumu == 'onaylandi' else ('danger' if kaza.onay_durumu == 'reddedildi' else 'warning') }}">
-                                {{ kaza.onay_durumu }}
-                            </span>
-                        </td>
-                        <td>
-                            <span class="badge bg-{{ 'success' if kaza.durum == 'kapandi' else ('warning' if kaza.durum == 'dava' else 'primary') }}">
-                                {{ kaza.durum }}
-                            </span>
-                            {% if kaza.yaralanma %}
-                            <span class="badge bg-danger">YARALANMA</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <a href="{{ url_for('filo.kaza_detay', id=kaza.id) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="9" class="text-center text-muted py-4">Kaza kaydı bulunamadı</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-[#111418]">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tarih</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Araç</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Sürücü</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Konum</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Kusur</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Hasar</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Onay</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for kaza in kazalar %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418]">
+                    <td class="px-4 py-3">{{ kaza.tarih.strftime('%d.%m.%Y') }}</td>
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('filo.detay', id=kaza.arac_id) }}" class="text-blue-600 hover:underline">
+                            {{ kaza.arac.plaka }}
+                        </a>
+                    </td>
+                    <td class="px-4 py-3">{{ kaza.surucu.full_name if kaza.surucu else '-' }}</td>
+                    <td class="px-4 py-3 text-xs">{{ kaza.konum[:30] + '...' if kaza.konum and kaza.konum|length > 30 else kaza.konum or '-' }}</td>
+                    <td class="px-4 py-3">%{{ kaza.kusur_orani or 0 }}</td>
+                    <td class="px-4 py-3">{{ "%.0f"|format(kaza.hasar_tutari) if kaza.hasar_tutari else '-' }} ₺</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full {% if kaza.onay_durumu == 'onaylandi' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% elif kaza.onay_durumu == 'reddedildi' %}bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400{% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% endif %}">
+                            {{ kaza.onay_durumu }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full {% if kaza.durum == 'kapandi' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% elif kaza.durum == 'dava' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% else %}bg-blue-100 text-blue-700 dark:text-blue-300/80 dark:bg-blue-900/30 dark:text-blue-400{% endif %}">
+                            {{ kaza.durum }}
+                        </span>
+                        {% if kaza.yaralanma %}
+                        <span class="ml-1 px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">YARALANMA</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('filo.kaza_detay', id=kaza.id) }}" class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                            <span class="material-symbols-outlined">visibility</span>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Kaza kaydı bulunamadı</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
 {% if pagination.pages > 1 %}
-<nav class="mt-3">
-    <ul class="pagination pagination-sm justify-content-center">
+<nav class="mt-4 flex justify-center">
+    <ul class="inline-flex items-center gap-1">
         {% for p in pagination.iter_pages() %}
         {% if p %}
-        <li class="page-item {{ 'active' if p == pagination.page }}">
-            <a class="page-link" href="{{ url_for('filo.kaza_liste', page=p, **request.args) }}">{{ p }}</a>
+        <li>
+            <a href="{{ url_for('filo.kaza_liste', page=p, **request.args) }}" class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
         </li>
         {% endif %}
         {% endfor %}

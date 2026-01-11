@@ -7,30 +7,33 @@
 <form method="POST" enctype="multipart/form-data">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     
-    <div class="row g-4">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Sol: Ana Bilgiler -->
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">Masraf Bilgileri</h6>
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                    <h3 class="font-semibold text-[#111418] dark:text-white">Masraf Bilgileri</h3>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-8">
-                            <label class="form-label">Açıklama *</label>
-                            <input type="text" name="baslik" class="form-control" required
+                <div class="p-5">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Açıklama *</label>
+                            <input type="text" name="baslik" required
                                    value="{{ masraf.baslik if masraf else '' }}"
-                                   placeholder="Örn: Müşteri ziyareti taksi ücreti">
+                                   placeholder="Örn: Müşteri ziyareti taksi ücreti"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Tarih *</label>
-                            <input type="date" name="masraf_tarihi" class="form-control" required
-                                   value="{{ masraf.masraf_tarihi.strftime('%Y-%m-%d') if masraf else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Tarih *</label>
+                            <input type="date" name="masraf_tarihi" required
+                                   value="{{ masraf.masraf_tarihi.strftime('%Y-%m-%d') if masraf else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         
-                        <div class="col-md-6">
-                            <label class="form-label">Kategori *</label>
-                            <select name="kategori_id" class="form-select" id="kategoriSelect" required>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Kategori *</label>
+                            <select name="kategori_id" id="kategoriSelect" required
+                                    class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçin...</option>
                                 {% for k in kategoriler %}
                                 <option value="{{ k.id }}" 
@@ -40,14 +43,15 @@
                                 </option>
                                 {% endfor %}
                             </select>
-                            <div id="faturaUyari" class="form-text text-warning" style="display:none;">
-                                <i class="bi bi-exclamation-triangle me-1"></i>Bu kategori için fatura/fiş zorunludur
-                            </div>
+                            <p id="faturaUyari" class="mt-1 text-sm text-yellow-600 hidden">
+                                <span class="material-symbols-outlined text-sm align-middle">warning</span>
+                                Bu kategori için fatura/fiş zorunludur
+                            </p>
                         </div>
                         
-                        <div class="col-md-6">
-                            <label class="form-label">Proje (Opsiyonel)</label>
-                            <select name="proje_id" class="form-select select2">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Proje (Opsiyonel)</label>
+                            <select name="proje_id" class="select2 w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Proje Yok</option>
                                 {% for p in projeler %}
                                 <option value="{{ p.id }}" {{ 'selected' if masraf and masraf.proje_id == p.id }}>
@@ -57,28 +61,31 @@
                             </select>
                         </div>
                         
-                        <div class="col-12">
-                            <label class="form-label">Detaylı Açıklama</label>
-                            <textarea name="aciklama" class="form-control" rows="2"
-                                      placeholder="İsteğe bağlı ek detaylar...">{{ masraf.aciklama if masraf else '' }}</textarea>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Detaylı Açıklama</label>
+                            <textarea name="aciklama" rows="2"
+                                      placeholder="İsteğe bağlı ek detaylar..."
+                                      class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ masraf.aciklama if masraf else '' }}</textarea>
                         </div>
                     </div>
                 </div>
             </div>
             
             <!-- Tutar Bilgileri -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h6 class="mb-0">Tutar Bilgileri</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                    <h3 class="font-semibold text-[#111418] dark:text-white">Tutar Bilgileri</h3>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Tutar (KDV Hariç) *</label>
-                            <div class="input-group">
-                                <input type="text" name="tutar" class="form-control" required id="tutarInput"
-                                       value="{{ masraf.tutar if masraf else '' }}" placeholder="0.00">
-                                <select name="para_birimi" class="form-select" style="max-width: 80px;" id="paraBirimiSelect">
+                <div class="p-5">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="col-span-2 md:col-span-1">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Tutar (KDV Hariç) *</label>
+                            <div class="flex">
+                                <input type="text" name="tutar" required id="tutarInput"
+                                       value="{{ masraf.tutar if masraf else '' }}" placeholder="0.00"
+                                       class="flex-1 px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-l-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <select name="para_birimi" id="paraBirimiSelect"
+                                        class="px-3 py-2 border border-l-0 border-border-light dark:border-border-dark dark:bg-[#111418] rounded-r-lg bg-gray-50 dark:bg-[#111418] focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                     <option value="TRY" {{ 'selected' if not masraf or masraf.para_birimi == 'TRY' }}>₺</option>
                                     <option value="USD" {{ 'selected' if masraf and masraf.para_birimi == 'USD' }}>$</option>
                                     <option value="EUR" {{ 'selected' if masraf and masraf.para_birimi == 'EUR' }}>€</option>
@@ -86,9 +93,10 @@
                             </div>
                         </div>
                         
-                        <div class="col-md-3">
-                            <label class="form-label">KDV Oranı</label>
-                            <select name="kdv_orani" class="form-select" id="kdvOraniSelect">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">KDV Oranı</label>
+                            <select name="kdv_orani" id="kdvOraniSelect"
+                                    class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="20" {{ 'selected' if not masraf or masraf.kdv_orani == 20 }}>%20</option>
                                 <option value="10" {{ 'selected' if masraf and masraf.kdv_orani == 10 }}>%10</option>
                                 <option value="1" {{ 'selected' if masraf and masraf.kdv_orani == 1 }}>%1</option>
@@ -96,15 +104,16 @@
                             </select>
                         </div>
                         
-                        <div class="col-md-2" id="kurDiv" style="display:none;">
-                            <label class="form-label">Kur</label>
-                            <input type="text" name="kur" class="form-control" id="kurInput"
-                                   value="{{ masraf.kur if masraf else '' }}" placeholder="1.0000">
+                        <div id="kurDiv" class="hidden">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Kur</label>
+                            <input type="text" name="kur" id="kurInput"
+                                   value="{{ masraf.kur if masraf else '' }}" placeholder="1.0000"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         
-                        <div class="col-md-3">
-                            <label class="form-label">Toplam</label>
-                            <div class="form-control bg-light" id="toplamGosterge">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Toplam</label>
+                            <div id="toplamGosterge" class="w-full px-3 py-2 bg-gray-100 dark:bg-gray-800 border border-border-light dark:border-border-dark rounded-lg text-[#111418] dark:text-white font-semibold">
                                 ₺0.00
                             </div>
                         </div>
@@ -113,23 +122,25 @@
             </div>
             
             <!-- Fatura/Fiş Bilgileri -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h6 class="mb-0">Fatura/Fiş Bilgileri</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                    <h3 class="font-semibold text-[#111418] dark:text-white">Fatura/Fiş Bilgileri</h3>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Firma Adı</label>
-                            <input type="text" name="firma_adi" class="form-control"
+                <div class="p-5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Firma Adı</label>
+                            <input type="text" name="firma_adi"
                                    value="{{ masraf.firma_adi if masraf else '' }}"
-                                   placeholder="Faturayı kesen firma">
+                                   placeholder="Faturayı kesen firma"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Fatura/Fiş No</label>
-                            <input type="text" name="fatura_no" class="form-control"
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Fatura/Fiş No</label>
+                            <input type="text" name="fatura_no"
                                    value="{{ masraf.fatura_no if masraf else '' }}"
-                                   placeholder="Fatura numarası">
+                                   placeholder="Fatura numarası"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
                 </div>
@@ -137,60 +148,49 @@
         </div>
         
         <!-- Sağ: Dosya Yükleme -->
-        <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header">
-                    <h6 class="mb-0">Fatura/Fiş Görseli</h6>
+        <div class="space-y-6">
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                    <h3 class="font-semibold text-[#111418] dark:text-white">Fatura/Fiş Görseli</h3>
                 </div>
-                <div class="card-body">
+                <div class="p-5">
                     {% if masraf and masraf.dosya_yolu %}
-                    <div class="mb-3 p-3 bg-light rounded text-center">
-                        <i class="bi bi-file-earmark-check fs-1 text-success"></i>
-                        <p class="mb-1 small">{{ masraf.dosya_adi }}</p>
-                        <a href="{{ url_for('masraf.dosya_indir', id=masraf.id) }}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-download me-1"></i>İndir
+                    <div class="mb-4 p-4 bg-gray-50 dark:bg-[#111418] rounded-lg text-center">
+                        <span class="material-symbols-outlined text-4xl text-green-500">task</span>
+                        <p class="text-sm text-text-muted dark:text-text-muted-dark mt-1">{{ masraf.dosya_adi }}</p>
+                        <a href="{{ url_for('masraf.dosya_indir', id=masraf.id) }}" class="inline-flex items-center gap-1 mt-2 text-sm text-blue-600 hover:text-blue-700">
+                            <span class="material-symbols-outlined text-sm">download</span>
+                            İndir
                         </a>
                     </div>
-                    <hr>
-                    <p class="small text-muted mb-2">Yeni dosya yüklerseniz mevcut dosya değiştirilecektir:</p>
+                    <hr class="mb-4">
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark mb-2">Yeni dosya yüklerseniz mevcut dosya değiştirilecektir:</p>
                     {% endif %}
                     
-                    <div class="mb-3">
-                        <input type="file" name="dosya" class="form-control" id="dosyaInput"
-                               accept=".pdf,.jpg,.jpeg,.png,.gif">
-                        <div class="form-text">
-                            PDF, JPG, PNG (Max 10MB)
-                        </div>
+                    <div class="mb-4">
+                        <input type="file" name="dosya" id="dosyaInput"
+                               accept=".pdf,.jpg,.jpeg,.png,.gif"
+                               class="w-full text-sm text-text-muted dark:text-text-muted-dark file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">PDF, JPG, PNG (Max 10MB)</p>
                     </div>
                     
                     <!-- Önizleme -->
-                    <div id="dosyaOnizleme" class="text-center" style="display:none;">
-                        <img id="onizlemeImg" src="" class="img-fluid rounded mb-2" style="max-height: 300px;">
-                        <p id="onizlemeDosyaAdi" class="small text-muted"></p>
-                    </div>
-                    
-                    <!-- Faz 2: OCR Butonu (şimdilik gizli) -->
-                    <div id="ocrButonDiv" style="display:none;" class="mt-3">
-                        <button type="button" class="btn btn-outline-info w-100" id="ocrButon" disabled>
-                            <i class="bi bi-eye me-2"></i>Fişi Oku (OCR)
-                        </button>
-                        <div class="form-text">Yapay zeka ile fişi otomatik okuyun</div>
+                    <div id="dosyaOnizleme" class="text-center hidden">
+                        <img id="onizlemeImg" src="" class="max-h-72 rounded-lg mb-2 mx-auto">
+                        <p id="onizlemeDosyaAdi" class="text-sm text-text-muted dark:text-text-muted-dark"></p>
                     </div>
                 </div>
             </div>
             
             <!-- Kaydet Butonları -->
-            <div class="card mt-4">
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-2"></i>{{ 'Güncelle' if masraf else 'Kaydet' }}
-                        </button>
-                        <a href="{{ url_for('masraf.dashboard') }}" class="btn btn-outline-secondary">
-                            İptal
-                        </a>
-                    </div>
-                </div>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-5 space-y-2">
+                <button type="submit" class="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <span class="material-symbols-outlined text-lg">check</span>
+                    {{ 'Güncelle' if masraf else 'Kaydet' }}
+                </button>
+                <a href="{{ url_for('masraf.dashboard') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-text-muted dark:text-text-muted-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    İptal
+                </a>
             </div>
         </div>
     </div>
@@ -204,13 +204,21 @@ $(document).ready(function() {
     $('#kategoriSelect').change(function() {
         var selected = $(this).find('option:selected');
         var faturaZorunlu = selected.data('fatura-zorunlu') === true;
-        $('#faturaUyari').toggle(faturaZorunlu);
+        if (faturaZorunlu) {
+            $('#faturaUyari').removeClass('hidden');
+        } else {
+            $('#faturaUyari').addClass('hidden');
+        }
     }).trigger('change');
     
     // Para birimi değişince kur alanını göster
     $('#paraBirimiSelect').change(function() {
         var isTRY = $(this).val() === 'TRY';
-        $('#kurDiv').toggle(!isTRY);
+        if (isTRY) {
+            $('#kurDiv').addClass('hidden');
+        } else {
+            $('#kurDiv').removeClass('hidden');
+        }
         hesaplaToplam();
     }).trigger('change');
     
@@ -249,18 +257,15 @@ $(document).ready(function() {
                 var reader = new FileReader();
                 reader.onload = function(e) {
                     $('#onizlemeImg').attr('src', e.target.result);
-                    $('#dosyaOnizleme').show();
-                    // Faz 2: OCR butonunu göster
-                    // $('#ocrButonDiv').show();
+                    $('#dosyaOnizleme').removeClass('hidden');
                 };
                 reader.readAsDataURL(file);
             } else {
                 $('#onizlemeImg').attr('src', '');
-                $('#dosyaOnizleme').show();
+                $('#dosyaOnizleme').removeClass('hidden');
             }
         } else {
-            $('#dosyaOnizleme').hide();
-            // $('#ocrButonDiv').hide();
+            $('#dosyaOnizleme').addClass('hidden');
         }
     });
 });

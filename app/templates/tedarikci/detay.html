@@ -4,36 +4,38 @@
 {% block page_title %}{{ tedarikci.display_name }}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-4">
         <!-- Temel Bilgiler -->
-        <div class="card mb-4">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-building me-2"></i>Temel Bilgiler</h6>
-                <span class="badge {% if tedarikci.aktif %}bg-success{% else %}bg-secondary{% endif %}">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">business</span>Temel Bilgiler
+                </h6>
+                <span class="px-2 py-0.5 text-xs font-medium rounded-full {% if tedarikci.aktif %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% else %}bg-gray-100 dark:bg-gray-800 text-text-muted dark:text-text-muted-dark{% endif %}">
                     {% if tedarikci.aktif %}Aktif{% else %}Pasif{% endif %}
                 </span>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Şirket Unvanı</label>
-                        <div class="fw-bold">{{ tedarikci.unvan }}</div>
+            <div class="p-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Şirket Unvanı</label>
+                        <div class="font-semibold text-[#111418] dark:text-white">{{ tedarikci.unvan }}</div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="text-muted small">Kısa Ad</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Kısa Ad</label>
                         <div>{{ tedarikci.kisa_ad or '-' }}</div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="text-muted small">Tip</label>
-                        <div><span class="badge bg-secondary">{{ tedarikci.tip_display }}</span></div>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Tip</label>
+                        <div><span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-text-muted dark:text-text-muted-dark">{{ tedarikci.tip_display }}</span></div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Vergi No</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Vergi No</label>
                         <div>{{ tedarikci.vergi_no or '-' }}</div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Vergi Dairesi</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Vergi Dairesi</label>
                         <div>{{ tedarikci.vergi_dairesi or '-' }}</div>
                     </div>
                 </div>
@@ -41,45 +43,47 @@
         </div>
         
         <!-- İletişim -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-telephone me-2"></i>İletişim</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">call</span>İletişim
+                </h6>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Adres</label>
+            <div class="p-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Adres</label>
                         <div>{{ tedarikci.adres or '-' }}</div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="text-muted small">İl</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">İl</label>
                         <div>{{ tedarikci.il or '-' }}</div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="text-muted small">İlçe</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">İlçe</label>
                         <div>{{ tedarikci.ilce or '-' }}</div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Telefon</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Telefon</label>
                         <div>
                             {% if tedarikci.telefon %}
-                            <a href="tel:{{ tedarikci.telefon }}">{{ tedarikci.telefon }}</a>
+                            <a href="tel:{{ tedarikci.telefon }}" class="text-blue-600 hover:underline">{{ tedarikci.telefon }}</a>
                             {% else %}-{% endif %}
                         </div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Email</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Email</label>
                         <div>
                             {% if tedarikci.email %}
-                            <a href="mailto:{{ tedarikci.email }}">{{ tedarikci.email }}</a>
+                            <a href="mailto:{{ tedarikci.email }}" class="text-blue-600 hover:underline">{{ tedarikci.email }}</a>
                             {% else %}-{% endif %}
                         </div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Web</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Web</label>
                         <div>
                             {% if tedarikci.web %}
-                            <a href="{{ tedarikci.web }}" target="_blank">{{ tedarikci.web }}</a>
+                            <a href="{{ tedarikci.web }}" target="_blank" class="text-blue-600 hover:underline">{{ tedarikci.web }}</a>
                             {% else %}-{% endif %}
                         </div>
                     </div>
@@ -89,128 +93,139 @@
         
         <!-- Son İşlemler -->
         {% if son_islemler %}
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Son Filo İşlemleri</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">history</span>Son Filo İşlemleri
+                </h6>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Tarih</th>
-                                <th>Araç</th>
-                                <th>İşlem</th>
-                                <th class="text-end">Tutar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for islem in son_islemler %}
-                            <tr>
-                                <td>{{ islem.tarih.strftime('%d.%m.%Y') }}</td>
-                                <td>{{ islem.arac.plaka }}</td>
-                                <td>{{ islem.islem_tipi.value.title() }}</td>
-                                <td class="text-end">
-                                    {% if islem.tutar %}₺{{ '{:,.2f}'.format(islem.tutar) }}{% else %}-{% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-[#111418]">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tarih</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Araç</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">İşlem</th>
+                            <th class="px-4 py-3 text-right font-medium text-text-muted dark:text-text-muted-dark">Tutar</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for islem in son_islemler %}
+                        <tr>
+                            <td class="px-4 py-3">{{ islem.tarih.strftime('%d.%m.%Y') }}</td>
+                            <td class="px-4 py-3">{{ islem.arac.plaka }}</td>
+                            <td class="px-4 py-3">{{ islem.islem_tipi.value.title() }}</td>
+                            <td class="px-4 py-3 text-right">
+                                {% if islem.tutar %}₺{{ '{:,.2f}'.format(islem.tutar) }}{% else %}-{% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
         {% endif %}
     </div>
     
-    <div class="col-lg-4">
+    <div class="space-y-4">
         <!-- Aksiyonlar -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Aksiyonlar</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">bolt</span>Aksiyonlar
+                </h6>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    {% if has_permission('tedarikci.edit') %}
-                    <a href="{{ url_for('tedarikci.duzenle', id=tedarikci.id) }}" class="btn btn-primary">
-                        <i class="bi bi-pencil me-1"></i>Düzenle
-                    </a>
-                    {% endif %}
-                    <a href="{{ url_for('tedarikci.liste') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Listeye Dön
-                    </a>
-                    {% if has_permission('tedarikci.delete') %}
-                    <hr>
-                    <form method="POST" action="{{ url_for('tedarikci.sil', id=tedarikci.id) }}"
-                          onsubmit="return confirm('Bu tedarikçiyi silmek istediğinize emin misiniz?')">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-outline-danger w-100">
-                            <i class="bi bi-trash me-1"></i>Sil
-                        </button>
-                    </form>
-                    {% endif %}
-                </div>
+            <div class="p-4 space-y-2">
+                {% if has_permission('tedarikci.edit') %}
+                <a href="{{ url_for('tedarikci.duzenle', id=tedarikci.id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                    <span class="material-symbols-outlined text-lg">edit</span>Düzenle
+                </a>
+                {% endif %}
+                <a href="{{ url_for('tedarikci.liste') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-gray-300 dark:border-gray-600 text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <span class="material-symbols-outlined text-lg">arrow_back</span>Listeye Dön
+                </a>
+                {% if has_permission('tedarikci.delete') %}
+                <hr class="my-3">
+                <form method="POST" action="{{ url_for('tedarikci.sil', id=tedarikci.id) }}" onsubmit="return confirm('Bu tedarikçiyi silmek istediğinize emin misiniz?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-red-300 text-red-600 font-medium rounded-lg hover:bg-red-50 transition-colors">
+                        <span class="material-symbols-outlined text-lg">delete</span>Sil
+                    </button>
+                </form>
+                {% endif %}
             </div>
         </div>
         
         <!-- Yetkili Kişi -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-person me-2"></i>Yetkili Kişi</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">person</span>Yetkili Kişi
+                </h6>
             </div>
-            <div class="card-body">
+            <div class="p-4">
                 {% if tedarikci.yetkili_adi %}
                 <div class="mb-2">
-                    <strong>{{ tedarikci.yetkili_adi }}</strong>
+                    <strong class="text-[#111418] dark:text-white">{{ tedarikci.yetkili_adi }}</strong>
                     {% if tedarikci.yetkili_unvan %}
-                    <br><small class="text-muted">{{ tedarikci.yetkili_unvan }}</small>
+                    <br><span class="text-sm text-text-muted dark:text-text-muted-dark">{{ tedarikci.yetkili_unvan }}</span>
                     {% endif %}
                 </div>
                 {% if tedarikci.yetkili_telefon %}
-                <div><i class="bi bi-telephone me-2"></i><a href="tel:{{ tedarikci.yetkili_telefon }}">{{ tedarikci.yetkili_telefon }}</a></div>
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="material-symbols-outlined text-sm text-gray-400 dark:text-gray-500">call</span>
+                    <a href="tel:{{ tedarikci.yetkili_telefon }}" class="text-blue-600 hover:underline">{{ tedarikci.yetkili_telefon }}</a>
+                </div>
                 {% endif %}
                 {% if tedarikci.yetkili_email %}
-                <div><i class="bi bi-envelope me-2"></i><a href="mailto:{{ tedarikci.yetkili_email }}">{{ tedarikci.yetkili_email }}</a></div>
+                <div class="flex items-center gap-2 text-sm">
+                    <span class="material-symbols-outlined text-sm text-gray-400 dark:text-gray-500">mail</span>
+                    <a href="mailto:{{ tedarikci.yetkili_email }}" class="text-blue-600 hover:underline">{{ tedarikci.yetkili_email }}</a>
+                </div>
                 {% endif %}
                 {% else %}
-                <span class="text-muted">Belirtilmemiş</span>
+                <span class="text-text-muted dark:text-text-muted-dark">Belirtilmemiş</span>
                 {% endif %}
             </div>
         </div>
         
         <!-- Banka Bilgileri -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-bank me-2"></i>Banka Bilgileri</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">account_balance</span>Banka Bilgileri
+                </h6>
             </div>
-            <div class="card-body">
+            <div class="p-4">
                 {% if tedarikci.banka_adi or tedarikci.iban %}
                 <div class="mb-2">
-                    <label class="text-muted small">Banka</label>
+                    <label class="text-xs text-text-muted dark:text-text-muted-dark">Banka</label>
                     <div>{{ tedarikci.banka_adi or '-' }}</div>
                 </div>
                 <div class="mb-2">
-                    <label class="text-muted small">IBAN</label>
-                    <div><code>{{ tedarikci.iban or '-' }}</code></div>
+                    <label class="text-xs text-text-muted dark:text-text-muted-dark">IBAN</label>
+                    <div><code class="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{{ tedarikci.iban or '-' }}</code></div>
                 </div>
                 <div>
-                    <label class="text-muted small">Ödeme Vadesi</label>
+                    <label class="text-xs text-text-muted dark:text-text-muted-dark">Ödeme Vadesi</label>
                     <div>{{ tedarikci.odeme_vade }} gün</div>
                 </div>
                 {% else %}
-                <span class="text-muted">Belirtilmemiş</span>
+                <span class="text-text-muted dark:text-text-muted-dark">Belirtilmemiş</span>
                 {% endif %}
             </div>
         </div>
         
         <!-- Notlar -->
         {% if tedarikci.notlar %}
-        <div class="card">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-sticky me-2"></i>Notlar</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">sticky_note_2</span>Notlar
+                </h6>
             </div>
-            <div class="card-body">
-                <p class="mb-0">{{ tedarikci.notlar }}</p>
+            <div class="p-4">
+                <p>{{ tedarikci.notlar }}</p>
             </div>
         </div>
         {% endif %}

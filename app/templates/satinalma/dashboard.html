@@ -5,159 +5,143 @@
 
 {% block content %}
 <!-- İstatistikler -->
-<div class="row g-3 mb-4">
-    <div class="col-md-3">
-        <div class="card stat-card warning">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="text-muted mb-1">Onay Bekleyen</h6>
-                        <h3 class="mb-0">{{ stats.bekleyen_talepler }}</h3>
-                    </div>
-                    <div class="fs-1 text-warning opacity-25">
-                        <i class="bi bi-hourglass-split"></i>
-                    </div>
-                </div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-card-dark rounded-xl shadow-sm border-l-4 border-yellow-500 p-4">
+        <div class="flex justify-between items-start">
+            <div>
+                <h6 class="text-sm text-text-muted dark:text-text-muted-dark mb-1">Onay Bekleyen</h6>
+                <h3 class="text-2xl font-bold">{{ stats.bekleyen_talepler }}</h3>
+            </div>
+            <div class="text-4xl text-yellow-500 opacity-25">
+                <span class="material-symbols-outlined">hourglass_empty</span>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card info">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="text-muted mb-1">Açık Talepler</h6>
-                        <h3 class="mb-0">{{ stats.acik_talepler }}</h3>
-                    </div>
-                    <div class="fs-1 text-info opacity-25">
-                        <i class="bi bi-folder-open"></i>
-                    </div>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-xl shadow-sm border-l-4 border-cyan-500 p-4">
+        <div class="flex justify-between items-start">
+            <div>
+                <h6 class="text-sm text-text-muted dark:text-text-muted-dark mb-1">Açık Talepler</h6>
+                <h3 class="text-2xl font-bold">{{ stats.acik_talepler }}</h3>
+            </div>
+            <div class="text-4xl text-cyan-500 opacity-25">
+                <span class="material-symbols-outlined">folder_open</span>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card primary">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="text-muted mb-1">Bekleyen Siparişler</h6>
-                        <h3 class="mb-0">{{ stats.bekleyen_siparisler }}</h3>
-                    </div>
-                    <div class="fs-1 text-primary opacity-25">
-                        <i class="bi bi-truck"></i>
-                    </div>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-xl shadow-sm border-l-4 border-blue-500 p-4">
+        <div class="flex justify-between items-start">
+            <div>
+                <h6 class="text-sm text-text-muted dark:text-text-muted-dark mb-1">Bekleyen Siparişler</h6>
+                <h3 class="text-2xl font-bold">{{ stats.bekleyen_siparisler }}</h3>
+            </div>
+            <div class="text-4xl text-blue-500 opacity-25">
+                <span class="material-symbols-outlined">local_shipping</span>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card success">
-            <div class="card-body">
-                <div class="d-flex justify-content-between">
-                    <div>
-                        <h6 class="text-muted mb-1">Bu Ay Harcama</h6>
-                        <h3 class="mb-0">₺{{ "%.0f"|format(stats.bu_ay_toplam) }}</h3>
-                    </div>
-                    <div class="fs-1 text-success opacity-25">
-                        <i class="bi bi-cash-stack"></i>
-                    </div>
-                </div>
+    <div class="bg-white dark:bg-card-dark rounded-xl shadow-sm border-l-4 border-green-500 p-4">
+        <div class="flex justify-between items-start">
+            <div>
+                <h6 class="text-sm text-text-muted dark:text-text-muted-dark mb-1">Bu Ay Harcama</h6>
+                <h3 class="text-2xl font-bold">₺{{ "%.0f"|format(stats.bu_ay_toplam) }}</h3>
+            </div>
+            <div class="text-4xl text-green-500 opacity-25">
+                <span class="material-symbols-outlined">payments</span>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-4">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Sol: Hızlı İşlemler + Bekleyen Siparişler -->
-    <div class="col-lg-4">
+    <div class="space-y-4">
         <!-- Hızlı İşlemler -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Hızlı İşlemler</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">bolt</span>Hızlı İşlemler
+                </h6>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('satinalma.talep_ekle') }}" class="btn btn-primary">
-                        <i class="bi bi-plus-lg me-2"></i>Yeni Talep
-                    </a>
-                    <a href="{{ url_for('satinalma.talep_liste') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-list-ul me-2"></i>Tüm Talepler
-                    </a>
-                    <a href="{{ url_for('satinalma.siparis_liste') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-box-seam me-2"></i>Siparişler
-                    </a>
-                    {% if current_user.has_permission('satinalma.admin') %}
-                    <a href="{{ url_for('satinalma.kategori_liste') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-tags me-2"></i>Kategoriler
-                    </a>
-                    {% endif %}
-                </div>
+            <div class="p-4 space-y-2">
+                <a href="{{ url_for('satinalma.talep_ekle') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                    <span class="material-symbols-outlined">add</span>Yeni Talep
+                </a>
+                <a href="{{ url_for('satinalma.talep_liste') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <span class="material-symbols-outlined">list</span>Tüm Talepler
+                </a>
+                <a href="{{ url_for('satinalma.siparis_liste') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <span class="material-symbols-outlined">inventory_2</span>Siparişler
+                </a>
+                {% if current_user.has_permission('satinalma.admin') %}
+                <a href="{{ url_for('satinalma.kategori_liste') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <span class="material-symbols-outlined">sell</span>Kategoriler
+                </a>
+                {% endif %}
             </div>
         </div>
         
         <!-- Bekleyen Siparişler -->
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-truck me-2"></i>Teslimat Bekleyen</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">local_shipping</span>Teslimat Bekleyen
+                </h6>
             </div>
-            <div class="card-body p-0">
-                {% if bekleyen_siparisler %}
-                <div class="list-group list-group-flush">
-                    {% for siparis in bekleyen_siparisler %}
-                    <a href="{{ url_for('satinalma.siparis_detay', id=siparis.id) }}" class="list-group-item list-group-item-action">
-                        <div class="d-flex justify-content-between">
-                            <strong>{{ siparis.siparis_no }}</strong>
-                            <small class="text-muted">₺{{ "%.2f"|format(siparis.toplam_tutar) }}</small>
-                        </div>
-                        <small class="text-muted">{{ siparis.tedarikci.unvan|truncate(25) }}</small>
-                    </a>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <p class="text-muted text-center py-3 mb-0">Bekleyen sipariş yok</p>
-                {% endif %}
+            {% if bekleyen_siparisler %}
+            <div class="divide-y divide-border-light dark:divide-border-dark">
+                {% for siparis in bekleyen_siparisler %}
+                <a href="{{ url_for('satinalma.siparis_detay', id=siparis.id) }}" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <div class="flex justify-between items-center">
+                        <strong class="text-[#111418] dark:text-white">{{ siparis.siparis_no }}</strong>
+                        <span class="text-sm text-text-muted dark:text-text-muted-dark">₺{{ "%.2f"|format(siparis.toplam_tutar) }}</span>
+                    </div>
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">{{ siparis.tedarikci.unvan|truncate(25) }}</span>
+                </a>
+                {% endfor %}
             </div>
+            {% else %}
+            <p class="text-text-muted dark:text-text-muted-dark text-center py-6">Bekleyen sipariş yok</p>
+            {% endif %}
         </div>
     </div>
     
     <!-- Sağ: Son Talepler -->
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Son Talepler</h6>
-                <a href="{{ url_for('satinalma.talep_liste') }}" class="btn btn-sm btn-outline-primary">Tümü</a>
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">history</span>Son Talepler
+                </h6>
+                <a href="{{ url_for('satinalma.talep_liste') }}" class="text-sm text-blue-600 hover:underline">Tümü</a>
             </div>
-            <div class="card-body p-0">
-                {% if son_talepler %}
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Talep No</th>
-                                <th>Başlık</th>
-                                <th>Talep Eden</th>
-                                <th>Öncelik</th>
-                                <th>Durum</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for talep in son_talepler %}
-                            <tr onclick="window.location='{{ url_for('satinalma.talep_detay', id=talep.id) }}'" style="cursor:pointer">
-                                <td><code>{{ talep.talep_no }}</code></td>
-                                <td>{{ talep.baslik|truncate(30) }}</td>
-                                <td>{{ talep.talep_eden.full_name }}</td>
-                                <td><span class="badge bg-{{ talep.oncelik_renk }}">{{ talep.oncelik_text }}</span></td>
-                                <td><span class="badge bg-{{ talep.durum_renk }}">{{ talep.durum_text }}</span></td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                {% else %}
-                <p class="text-muted text-center py-4 mb-0">Henüz talep yok</p>
-                {% endif %}
+            {% if son_talepler %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-[#111418]">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Talep No</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Başlık</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Talep Eden</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Öncelik</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for talep in son_talepler %}
+                        <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location='{{ url_for('satinalma.talep_detay', id=talep.id) }}'">
+                            <td class="px-4 py-3"><code class="text-xs bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded">{{ talep.talep_no }}</code></td>
+                            <td class="px-4 py-3">{{ talep.baslik|truncate(30) }}</td>
+                            <td class="px-4 py-3">{{ talep.talep_eden.full_name }}</td>
+                            <td class="px-4 py-3"><span class="px-2 py-0.5 text-xs font-medium rounded-full bg-{{ talep.oncelik_renk }}-100 text-{{ talep.oncelik_renk }}-800">{{ talep.oncelik_text }}</span></td>
+                            <td class="px-4 py-3"><span class="px-2 py-0.5 text-xs font-medium rounded-full bg-{{ talep.durum_renk }}-100 text-{{ talep.durum_renk }}-800">{{ talep.durum_text }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            {% else %}
+            <p class="text-text-muted dark:text-text-muted-dark text-center py-8">Henüz talep yok</p>
+            {% endif %}
         </div>
     </div>
 </div>

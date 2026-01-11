@@ -4,126 +4,104 @@
 {% block page_title %}İkame Araç Ekle{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h6 class="mb-0">
-                    <i class="bi bi-arrow-repeat me-2"></i>
-                    {{ arac.plaka }} için İkame Araç
-                </h6>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
-                    <h6 class="text-muted mb-3">İkame Araç Bilgileri</h6>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label">Plaka *</label>
-                                <input type="text" name="plaka" class="form-control" required
-                                       placeholder="34 ABC 123">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label">Marka</label>
-                                <input type="text" name="marka" class="form-control">
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label class="form-label">Model</label>
-                                <input type="text" name="model" class="form-control">
-                            </div>
-                        </div>
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+        <div class="bg-cyan-500 text-white px-4 py-3 rounded-t-xl">
+            <h6 class="font-medium flex items-center gap-2">
+                <span class="material-symbols-outlined">sync</span>
+                {{ arac.plaka }} için İkame Araç
+            </h6>
+        </div>
+        <div class="p-6">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <h6 class="text-sm font-medium text-text-muted dark:text-text-muted-dark mb-3">İkame Araç Bilgileri</h6>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Plaka *</label>
+                        <input type="text" name="plaka" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required placeholder="34 ABC 123">
                     </div>
-                    
-                    <hr>
-                    <h6 class="text-muted mb-3">Süre ve Maliyet</h6>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Başlangıç Tarihi *</label>
-                                <input type="date" name="baslangic_tarihi" class="form-control" required
-                                       value="{{ today().strftime('%Y-%m-%d') if today else '' }}">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Başlangıç KM</label>
-                                <input type="number" name="baslangic_km" class="form-control">
-                            </div>
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Marka</label>
+                        <input type="text" name="marka" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Tedarikçi/Kiralama Firması</label>
-                                <select name="tedarikci_id" class="form-select">
-                                    <option value="">Seçin...</option>
-                                    {% for tedarikci in tedarikciler %}
-                                    <option value="{{ tedarikci.id }}">{{ tedarikci.ad }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Günlük Ücret (₺)</label>
-                                <input type="number" name="gunluk_ucret" class="form-control" step="0.01">
-                            </div>
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Model</label>
+                        <input type="text" name="model" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
-                    
-                    <hr>
-                    <h6 class="text-muted mb-3">Neden</h6>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">İkame Nedeni *</label>
-                                <select name="neden" class="form-select" required>
-                                    <option value="">Seçin...</option>
-                                    <option value="kaza">Kaza</option>
-                                    <option value="bakim">Bakım/Onarım</option>
-                                    <option value="ariza">Arıza</option>
-                                    <option value="diger">Diğer</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">İlgili Kaza</label>
-                                <select name="ilgili_kaza_id" class="form-select">
-                                    <option value="">Kaza seçin...</option>
-                                    {% for kaza in kazalar %}
-                                    <option value="{{ kaza.id }}" {{ 'selected' if request.args.get('kaza_id')|int == kaza.id }}>
-                                        {{ kaza.tarih.strftime('%d.%m.%Y') }} - {{ kaza.konum or 'Konum belirtilmedi' }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
+                </div>
+                
+                <hr class="my-6 border-border-light dark:border-border-dark">
+                <h6 class="text-sm font-medium text-text-muted dark:text-text-muted-dark mb-3">Süre ve Maliyet</h6>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Başlangıç Tarihi *</label>
+                        <input type="date" name="baslangic_tarihi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="{{ today().strftime('%Y-%m-%d') if today else '' }}">
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Notlar</label>
-                        <textarea name="notlar" class="form-control" rows="2"></textarea>
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Başlangıç KM</label>
+                        <input type="number" name="baslangic_km" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-info">
-                            <i class="bi bi-plus-lg me-1"></i>İkame Araç Ekle
-                        </button>
-                        <a href="{{ url_for('filo.detay', id=arac.id) }}" class="btn btn-outline-secondary">İptal</a>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Tedarikçi/Kiralama Firması</label>
+                        <select name="tedarikci_id" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Seçin...</option>
+                            {% for tedarikci in tedarikciler %}
+                            <option value="{{ tedarikci.id }}">{{ tedarikci.ad }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
-                </form>
-            </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Günlük Ücret (₺)</label>
+                        <input type="number" name="gunluk_ucret" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01">
+                    </div>
+                </div>
+                
+                <hr class="my-6 border-border-light dark:border-border-dark">
+                <h6 class="text-sm font-medium text-text-muted dark:text-text-muted-dark mb-3">Neden</h6>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">İkame Nedeni *</label>
+                        <select name="neden" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                            <option value="">Seçin...</option>
+                            <option value="kaza">Kaza</option>
+                            <option value="bakim">Bakım/Onarım</option>
+                            <option value="ariza">Arıza</option>
+                            <option value="diger">Diğer</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">İlgili Kaza</label>
+                        <select name="ilgili_kaza_id" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Kaza seçin...</option>
+                            {% for kaza in kazalar %}
+                            <option value="{{ kaza.id }}" {{ 'selected' if request.args.get('kaza_id')|int == kaza.id }}>
+                                {{ kaza.tarih.strftime('%d.%m.%Y') }} - {{ kaza.konum or 'Konum belirtilmedi' }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Notlar</label>
+                    <textarea name="notlar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="2"></textarea>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500 text-white font-medium rounded-lg hover:bg-cyan-600 transition-colors">
+                        <span class="material-symbols-outlined">add</span>İkame Araç Ekle
+                    </button>
+                    <a href="{{ url_for('filo.detay', id=arac.id) }}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-[#111418] dark:text-white font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>

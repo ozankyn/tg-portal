@@ -5,247 +5,255 @@
 
 {% block content %}
 <!-- İşlem Butonları -->
-<div class="btn-group mb-3">
-    <a href="{{ url_for('filo.arac_teslim', id=arac.id) }}" class="btn btn-success">
-        <i class="bi bi-box-arrow-right me-1"></i>Teslim Et
+<div class="flex flex-wrap gap-2 mb-4">
+    <a href="{{ url_for('filo.arac_teslim', id=arac.id) }}" class="inline-flex items-center gap-1 px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+        <span class="material-symbols-outlined">logout</span>Teslim Et
     </a>
-    <a href="{{ url_for('filo.arac_iade', id=arac.id) }}" class="btn btn-warning">
-        <i class="bi bi-box-arrow-in-left me-1"></i>İade Al
+    <a href="{{ url_for('filo.arac_iade', id=arac.id) }}" class="inline-flex items-center gap-1 px-3 py-2 bg-yellow-500 text-white text-sm font-medium rounded-lg hover:bg-yellow-600 transition-colors">
+        <span class="material-symbols-outlined">login</span>İade Al
     </a>
-    <a href="{{ url_for('filo.kaza_ekle', id=arac.id) }}" class="btn btn-danger">
-        <i class="bi bi-exclamation-triangle me-1"></i>Kaza Bildir
+    <a href="{{ url_for('filo.kaza_ekle', id=arac.id) }}" class="inline-flex items-center gap-1 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors">
+        <span class="material-symbols-outlined">warning</span>Kaza Bildir
     </a>
-    <a href="{{ url_for('filo.ceza_ekle', id=arac.id) }}" class="btn btn-dark">
-        <i class="bi bi-exclamation-octagon me-1"></i>Ceza Ekle
+    <a href="{{ url_for('filo.ceza_ekle', id=arac.id) }}" class="inline-flex items-center gap-1 px-3 py-2 bg-gray-800 text-white text-sm font-medium rounded-lg hover:bg-gray-900 transition-colors">
+        <span class="material-symbols-outlined">error</span>Ceza Ekle
     </a>
-    <a href="{{ url_for('filo.ikame_ekle', id=arac.id) }}" class="btn btn-info">
-        <i class="bi bi-arrow-repeat me-1"></i>İkame Araç
+    <a href="{{ url_for('filo.ikame_ekle', id=arac.id) }}" class="inline-flex items-center gap-1 px-3 py-2 bg-cyan-500 text-white text-sm font-medium rounded-lg hover:bg-cyan-600 transition-colors">
+        <span class="material-symbols-outlined">sync</span>İkame Araç
     </a>
-    <a href="{{ url_for('filo.yakit_ekle', id=arac.id) }}" class="btn btn-secondary">
-        <i class="bi bi-fuel-pump me-1"></i>Yakıt Ekle
+    <a href="{{ url_for('filo.yakit_ekle', id=arac.id) }}" class="inline-flex items-center gap-1 px-3 py-2 bg-gray-600 text-white text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors">
+        <span class="material-symbols-outlined">local_gas_station</span>Yakıt Ekle
     </a>
 </div>
 
-<div class="row">
-    <div class="col-lg-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-6">
         <!-- Araç Bilgileri -->
-        <div class="card mb-4">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-truck me-2"></i>Araç Bilgileri</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">local_shipping</span>Araç Bilgileri
+                </h6>
                 {% if arac.durum.value == 'aktif' %}
-                <span class="badge bg-success">Aktif</span>
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
                 {% elif arac.durum.value == 'bakim' %}
-                <span class="badge bg-warning">Bakım</span>
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Bakım</span>
                 {% elif arac.durum.value == 'arizali' %}
-                <span class="badge bg-danger">Arızalı</span>
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Arızalı</span>
                 {% else %}
-                <span class="badge bg-secondary">{{ arac.durum.value.title() }}</span>
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-[#111418] dark:text-white">{{ arac.durum.value.title() }}</span>
                 {% endif %}
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Plaka</label>
-                        <div class="fw-bold fs-5">{{ arac.plaka }}</div>
+            <div class="p-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Plaka</label>
+                        <div class="font-bold text-lg">{{ arac.plaka }}</div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Marka / Model</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Marka / Model</label>
                         <div>{{ arac.marka }} {{ arac.model or '' }}</div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Model Yılı</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Model Yılı</label>
                         <div>{{ arac.model_yili or '-' }}</div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Kilometre</label>
-                        <div class="fw-bold">{{ '{:,}'.format(arac.km) if arac.km else '-' }} km</div>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Kilometre</label>
+                        <div class="font-bold">{{ '{:,}'.format(arac.km) if arac.km else '-' }} km</div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Yakıt Tipi</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Yakıt Tipi</label>
                         <div>{{ arac.yakit_tipi.value.title() if arac.yakit_tipi else '-' }}</div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Vites</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Vites</label>
                         <div>{{ arac.vites_tipi.title() if arac.vites_tipi else '-' }}</div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Şasi No</label>
-                        <div><code>{{ arac.sasi_no or '-' }}</code></div>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Şasi No</label>
+                        <div><code class="text-sm bg-gray-100 px-1 rounded">{{ arac.sasi_no or '-' }}</code></div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Motor No</label>
-                        <div><code>{{ arac.motor_no or '-' }}</code></div>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Motor No</label>
+                        <div><code class="text-sm bg-gray-100 px-1 rounded">{{ arac.motor_no or '-' }}</code></div>
                     </div>
                 </div>
             </div>
         </div>
         
         <!-- Son İşlemler -->
-        <div class="card mb-4">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Son İşlemler</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">history</span>Son İşlemler
+                </h6>
                 {% if has_permission('filo.bakim') %}
-                <a href="{{ url_for('filo.islem_ekle', id=arac.id) }}" class="btn btn-success btn-sm">
-                    <i class="bi bi-plus-lg me-1"></i>İşlem Ekle
+                <a href="{{ url_for('filo.islem_ekle', id=arac.id) }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                    <span class="material-symbols-outlined">add</span>İşlem Ekle
                 </a>
                 {% endif %}
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Tarih</th>
-                                <th>Tip</th>
-                                <th>Açıklama</th>
-                                <th>KM</th>
-                                <th class="text-end">Tutar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for islem in son_islemler %}
-                            <tr>
-                                <td>{{ islem.tarih.strftime('%d.%m.%Y') }}</td>
-                                <td><span class="badge bg-secondary">{{ islem.islem_tipi.value.title() }}</span></td>
-                                <td>{{ islem.aciklama[:50] if islem.aciklama else '-' }}{% if islem.aciklama and islem.aciklama|length > 50 %}...{% endif %}</td>
-                                <td>{{ '{:,}'.format(islem.km) if islem.km else '-' }}</td>
-                                <td class="text-end">{% if islem.tutar %}₺{{ '{:,.2f}'.format(islem.tutar) }}{% else %}-{% endif %}</td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-3">Henüz işlem kaydı yok</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-[#111418]">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tarih</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tip</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Açıklama</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">KM</th>
+                            <th class="px-4 py-3 text-right font-medium text-text-muted dark:text-text-muted-dark">Tutar</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for islem in son_islemler %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418]">
+                            <td class="px-4 py-3">{{ islem.tarih.strftime('%d.%m.%Y') }}</td>
+                            <td class="px-4 py-3"><span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">{{ islem.islem_tipi.value.title() }}</span></td>
+                            <td class="px-4 py-3">{{ islem.aciklama[:50] if islem.aciklama else '-' }}{% if islem.aciklama and islem.aciklama|length > 50 %}...{% endif %}</td>
+                            <td class="px-4 py-3">{{ '{:,}'.format(islem.km) if islem.km else '-' }}</td>
+                            <td class="px-4 py-3 text-right">{% if islem.tutar %}₺{{ '{:,.2f}'.format(islem.tutar) }}{% else %}-{% endif %}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz işlem kaydı yok</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
         
         <!-- Yakıt Kayıtları -->
-        <div class="card mb-4">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-fuel-pump me-2"></i>Son Yakıt Kayıtları</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">local_gas_station</span>Son Yakıt Kayıtları
+                </h6>
                 {% if has_permission('filo.yakit') %}
-                <a href="{{ url_for('filo.yakit_ekle', id=arac.id) }}" class="btn btn-warning btn-sm">
-                    <i class="bi bi-plus-lg me-1"></i>Yakıt Ekle
+                <a href="{{ url_for('filo.yakit_ekle', id=arac.id) }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-yellow-500 text-white text-sm font-medium rounded-lg hover:bg-yellow-600 transition-colors">
+                    <span class="material-symbols-outlined">add</span>Yakıt Ekle
                 </a>
                 {% endif %}
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-sm mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Tarih</th>
-                                <th>KM</th>
-                                <th>Litre</th>
-                                <th>Tüketim</th>
-                                <th class="text-end">Tutar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for y in son_yakit %}
-                            <tr>
-                                <td>{{ y.tarih.strftime('%d.%m.%Y %H:%M') }}</td>
-                                <td>{{ '{:,}'.format(y.km) }}</td>
-                                <td>{{ y.litre }} L</td>
-                                <td>{% if y.tuketim %}{{ y.tuketim }} L/100km{% else %}-{% endif %}</td>
-                                <td class="text-end">{% if y.tutar %}₺{{ '{:,.2f}'.format(y.tutar) }}{% else %}-{% endif %}</td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="5" class="text-center text-muted py-3">Henüz yakıt kaydı yok</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-[#111418]">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tarih</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">KM</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Litre</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tüketim</th>
+                            <th class="px-4 py-3 text-right font-medium text-text-muted dark:text-text-muted-dark">Tutar</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for y in son_yakit %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418]">
+                            <td class="px-4 py-3">{{ y.tarih.strftime('%d.%m.%Y %H:%M') }}</td>
+                            <td class="px-4 py-3">{{ '{:,}'.format(y.km) }}</td>
+                            <td class="px-4 py-3">{{ y.litre }} L</td>
+                            <td class="px-4 py-3">{% if y.tuketim %}{{ y.tuketim }} L/100km{% else %}-{% endif %}</td>
+                            <td class="px-4 py-3 text-right">{% if y.tutar %}₺{{ '{:,.2f}'.format(y.tutar) }}{% else %}-{% endif %}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz yakıt kaydı yok</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-4">
+    <div class="space-y-4">
         <!-- Aksiyonlar -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Aksiyonlar</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">bolt</span>Aksiyonlar
+                </h6>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    {% if has_permission('filo.edit') %}
-                    <a href="{{ url_for('filo.duzenle', id=arac.id) }}" class="btn btn-primary">
-                        <i class="bi bi-pencil me-1"></i>Düzenle
-                    </a>
-                    {% endif %}
-                    {% if has_permission('filo.bakim') %}
-                    <a href="{{ url_for('filo.islem_ekle', id=arac.id) }}" class="btn btn-success">
-                        <i class="bi bi-wrench me-1"></i>Bakım/İşlem Ekle
-                    </a>
-                    {% endif %}
-                    {% if has_permission('filo.yakit') %}
-                    <a href="{{ url_for('filo.yakit_ekle', id=arac.id) }}" class="btn btn-warning">
-                        <i class="bi bi-fuel-pump me-1"></i>Yakıt Kaydı
-                    </a>
-                    {% endif %}
-                    <a href="{{ url_for('filo.liste') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Listeye Dön
-                    </a>
-                </div>
+            <div class="p-4 space-y-2">
+                {% if has_permission('filo.edit') %}
+                <a href="{{ url_for('filo.duzenle', id=arac.id) }}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                    <span class="material-symbols-outlined">edit</span>Düzenle
+                </a>
+                {% endif %}
+                {% if has_permission('filo.bakim') %}
+                <a href="{{ url_for('filo.islem_ekle', id=arac.id) }}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                    <span class="material-symbols-outlined">build</span>Bakım/İşlem Ekle
+                </a>
+                {% endif %}
+                {% if has_permission('filo.yakit') %}
+                <a href="{{ url_for('filo.yakit_ekle', id=arac.id) }}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-yellow-500 text-white font-medium rounded-lg hover:bg-yellow-600 transition-colors">
+                    <span class="material-symbols-outlined">local_gas_station</span>Yakıt Kaydı
+                </a>
+                {% endif %}
+                <a href="{{ url_for('filo.liste') }}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-[#111418] dark:text-white font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <span class="material-symbols-outlined">arrow_back</span>Listeye Dön
+                </a>
             </div>
         </div>
         
         <!-- Atanan Çalışan -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-person me-2"></i>Atanan Çalışan</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">person</span>Atanan Çalışan
+                </h6>
             </div>
-            <div class="card-body">
+            <div class="p-4">
                 {% if arac.atanan_calisan %}
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-person-circle fs-1 me-3 text-muted"></i>
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-4xl text-gray-400 dark:text-gray-500">account_circle</span>
                     <div>
-                        <strong>{{ arac.atanan_calisan.full_name }}</strong>
+                        <div class="font-semibold">{{ arac.atanan_calisan.full_name }}</div>
                         {% if arac.atama_tarihi %}
-                        <br><small class="text-muted">{{ arac.atama_tarihi.strftime('%d.%m.%Y') }}'den beri</small>
+                        <div class="text-sm text-text-muted dark:text-text-muted-dark">{{ arac.atama_tarihi.strftime('%d.%m.%Y') }}'den beri</div>
                         {% endif %}
                     </div>
                 </div>
                 {% else %}
-                <span class="text-muted">Atanmamış</span>
+                <span class="text-text-muted dark:text-text-muted-dark">Atanmamış</span>
                 {% endif %}
             </div>
         </div>
         
         <!-- Sigorta Durumu -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-shield-check me-2"></i>Sigorta</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">verified_user</span>Sigorta
+                </h6>
             </div>
-            <div class="card-body">
+            <div class="p-4">
                 {% if arac.aktif_sigorta %}
-                <span class="badge bg-success mb-2">Geçerli</span>
-                <div class="small">
-                    <strong>{{ arac.aktif_sigorta.sigorta_tipi }}</strong><br>
-                    {{ arac.aktif_sigorta.sirket }}<br>
-                    Bitiş: {{ arac.aktif_sigorta.bitis.strftime('%d.%m.%Y') }}
+                <span class="inline-block px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 mb-2">Geçerli</span>
+                <div class="text-sm">
+                    <div class="font-semibold">{{ arac.aktif_sigorta.sigorta_tipi }}</div>
+                    <div class="text-text-muted dark:text-text-muted-dark">{{ arac.aktif_sigorta.sirket }}</div>
+                    <div class="text-text-muted dark:text-text-muted-dark">Bitiş: {{ arac.aktif_sigorta.bitis.strftime('%d.%m.%Y') }}</div>
                 </div>
                 {% else %}
-                <span class="badge bg-danger">Sigorta Yok</span>
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Sigorta Yok</span>
                 {% endif %}
             </div>
         </div>
         
         <!-- Muayene Durumu -->
-        <div class="card">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Muayene</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">assignment_turned_in</span>Muayene
+                </h6>
             </div>
-            <div class="card-body">
+            <div class="p-4">
                 {% if arac.muayene_gecerli %}
-                <span class="badge bg-success">Geçerli</span>
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Geçerli</span>
                 {% else %}
-                <span class="badge bg-warning">Kontrol Gerekli</span>
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Kontrol Gerekli</span>
                 {% endif %}
             </div>
         </div>

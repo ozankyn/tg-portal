@@ -7,7 +7,7 @@
 <style>
     .viewer-container {
         background: #1a1a2e;
-        border-radius: 8px;
+        border-radius: 0.75rem;
         overflow: hidden;
         min-height: 70vh;
     }
@@ -18,7 +18,7 @@
     }
     .video-container {
         position: relative;
-        padding-bottom: 56.25%; /* 16:9 */
+        padding-bottom: 56.25%;
         height: 0;
         overflow: hidden;
     }
@@ -30,112 +30,85 @@
         width: 100%;
         height: 100%;
     }
-    .image-viewer {
-        text-align: center;
-        padding: 2rem;
-        background: #f8f9fa;
-    }
-    .image-viewer img {
-        max-width: 100%;
-        max-height: 70vh;
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
-    .unsupported-notice {
-        padding: 4rem 2rem;
-        text-align: center;
-        background: #f8f9fa;
-        border-radius: 8px;
-    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row mb-3">
-    <div class="col">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ url_for('egitim.liste') }}">Eğitimler</a></li>
-                <li class="breadcrumb-item"><a href="{{ url_for('egitim.detay', id=materyal.egitim_id) }}">{{ materyal.egitim.baslik }}</a></li>
-                <li class="breadcrumb-item active">{{ materyal.ad }}</li>
-            </ol>
-        </nav>
-    </div>
-</div>
+<!-- Breadcrumb -->
+<nav class="mb-4">
+    <ol class="flex items-center gap-2 text-sm">
+        <li><a href="{{ url_for('egitim.liste') }}" class="text-text-muted dark:text-text-muted-dark hover:text-primary">Eğitimler</a></li>
+        <li class="text-text-muted dark:text-text-muted-dark">/</li>
+        <li><a href="{{ url_for('egitim.detay', id=materyal.egitim_id) }}" class="text-text-muted dark:text-text-muted-dark hover:text-primary">{{ materyal.egitim.baslik }}</a></li>
+        <li class="text-text-muted dark:text-text-muted-dark">/</li>
+        <li class="text-[#111418] dark:text-white font-medium">{{ materyal.ad }}</li>
+    </ol>
+</nav>
 
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <div>
+<div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div class="flex items-center gap-2">
             {% if materyal.materyal_tipi == 'video' %}
-            <i class="bi bi-play-circle text-danger me-2"></i>
+            <span class="material-symbols-outlined text-rose-500">play_circle</span>
             {% elif materyal.materyal_tipi == 'sunum' %}
-            <i class="bi bi-file-earmark-slides text-warning me-2"></i>
+            <span class="material-symbols-outlined text-amber-500">slideshow</span>
             {% elif materyal.materyal_tipi == 'gorsel' %}
-            <i class="bi bi-image text-info me-2"></i>
+            <span class="material-symbols-outlined text-cyan-500">image</span>
             {% elif materyal.materyal_tipi == 'link' %}
-            <i class="bi bi-link-45deg text-primary me-2"></i>
+            <span class="material-symbols-outlined text-blue-500">link</span>
             {% else %}
-            <i class="bi bi-file-earmark-text text-secondary me-2"></i>
+            <span class="material-symbols-outlined text-gray-500">description</span>
             {% endif %}
-            <strong>{{ materyal.ad }}</strong>
-            {% if materyal.aciklama %}
-            <small class="text-muted ms-2">- {{ materyal.aciklama }}</small>
-            {% endif %}
+            <div>
+                <strong class="text-[#111418] dark:text-white">{{ materyal.ad }}</strong>
+                {% if materyal.aciklama %}
+                <span class="text-text-muted dark:text-text-muted-dark text-sm ml-2">- {{ materyal.aciklama }}</span>
+                {% endif %}
+            </div>
         </div>
-        <div class="btn-group btn-group-sm">
+        <div class="flex gap-2">
             {% if materyal.dosya_yolu %}
-            <a href="{{ url_for('egitim.materyal_indir', id=materyal.id) }}" class="btn btn-outline-primary">
-                <i class="bi bi-download me-1"></i> İndir
+            <a href="{{ url_for('egitim.materyal_indir', id=materyal.id) }}" class="px-3 py-1.5 border border-primary text-primary hover:bg-primary/10 font-medium text-sm rounded-lg transition-colors flex items-center gap-1">
+                <span class="material-symbols-outlined text-lg">download</span>İndir
             </a>
             {% endif %}
             {% if materyal.harici_link %}
-            <a href="{{ materyal.harici_link }}" target="_blank" class="btn btn-outline-primary">
-                <i class="bi bi-box-arrow-up-right me-1"></i> Yeni Sekmede Aç
+            <a href="{{ materyal.harici_link }}" target="_blank" class="px-3 py-1.5 border border-primary text-primary hover:bg-primary/10 font-medium text-sm rounded-lg transition-colors flex items-center gap-1">
+                <span class="material-symbols-outlined text-lg">open_in_new</span>Yeni Sekme
             </a>
             {% endif %}
-            <a href="{{ url_for('egitim.detay', id=materyal.egitim_id) }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Eğitime Dön
+            <a href="{{ url_for('egitim.detay', id=materyal.egitim_id) }}" class="px-3 py-1.5 border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#252b36] font-medium text-sm rounded-lg transition-colors flex items-center gap-1">
+                <span class="material-symbols-outlined text-lg">arrow_back</span>Geri
             </a>
         </div>
     </div>
     
-    <div class="card-body p-0">
+    <div>
         {% set ext = materyal.dosya_adi.rsplit('.', 1)[1].lower() if materyal.dosya_adi and '.' in materyal.dosya_adi else '' %}
         
-        {# ===== PDF Görüntüleme ===== #}
+        {# PDF #}
         {% if ext == 'pdf' %}
         <div class="viewer-container">
-            <iframe 
-                src="{{ url_for('egitim.materyal_embed', id=materyal.id) }}" 
-                class="viewer-frame"
-                title="{{ materyal.ad }}">
-            </iframe>
+            <iframe src="{{ url_for('egitim.materyal_embed', id=materyal.id) }}" class="viewer-frame" title="{{ materyal.ad }}"></iframe>
         </div>
         
-        {# ===== PowerPoint / Word / Excel - Google Docs Viewer ===== #}
+        {# Office #}
         {% elif ext in ['ppt', 'pptx', 'doc', 'docx', 'xls', 'xlsx'] %}
-        <div class="viewer-container">
-            {# Office Online Viewer veya Google Docs Viewer kullanılabilir #}
-            {# Dosya public erişilebilir olmalı - şimdilik indirme önerisi #}
-            <div class="unsupported-notice">
-                <i class="bi bi-file-earmark-slides fs-1 text-warning d-block mb-3"></i>
-                <h5>{{ materyal.dosya_adi }}</h5>
-                <p class="text-muted mb-4">
-                    Office dosyaları şu an doğrudan görüntülenemiyor.<br>
-                    Lütfen indirip bilgisayarınızda açın.
-                </p>
-                <a href="{{ url_for('egitim.materyal_indir', id=materyal.id) }}" class="btn btn-primary btn-lg">
-                    <i class="bi bi-download me-2"></i> Dosyayı İndir
-                </a>
-                <p class="text-muted small mt-3">
-                    <strong>Boyut:</strong> {{ (materyal.dosya_boyut / 1024 / 1024)|round(2) }} MB
-                </p>
-            </div>
+        <div class="py-16 text-center bg-gray-50 dark:bg-[#111418]">
+            <span class="material-symbols-outlined text-6xl text-amber-500 mb-4">slideshow</span>
+            <h5 class="text-lg font-bold text-[#111418] dark:text-white mb-2">{{ materyal.dosya_adi }}</h5>
+            <p class="text-text-muted dark:text-text-muted-dark mb-6">Office dosyaları şu an doğrudan görüntülenemiyor.<br>Lütfen indirip bilgisayarınızda açın.</p>
+            <a href="{{ url_for('egitim.materyal_indir', id=materyal.id) }}" class="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors">
+                <span class="material-symbols-outlined">download</span>Dosyayı İndir
+            </a>
+            <p class="text-text-muted dark:text-text-muted-dark text-sm mt-4">
+                <strong>Boyut:</strong> {{ (materyal.dosya_boyut / 1024 / 1024)|round(2) }} MB
+            </p>
         </div>
         
-        {# ===== Video (MP4, WebM) ===== #}
+        {# Video #}
         {% elif ext in ['mp4', 'webm'] %}
-        <div class="viewer-container p-3">
+        <div class="viewer-container p-4">
             <div class="video-container">
                 <video controls autoplay>
                     <source src="{{ url_for('egitim.materyal_embed', id=materyal.id) }}" type="{{ materyal.mime_type }}">
@@ -144,95 +117,72 @@
             </div>
         </div>
         
-        {# ===== Görsel (JPG, PNG, GIF) ===== #}
+        {# Görsel #}
         {% elif ext in ['jpg', 'jpeg', 'png', 'gif'] %}
-        <div class="image-viewer">
-            <img src="{{ url_for('egitim.materyal_embed', id=materyal.id) }}" alt="{{ materyal.ad }}">
+        <div class="p-8 text-center bg-gray-50 dark:bg-[#111418]">
+            <img src="{{ url_for('egitim.materyal_embed', id=materyal.id) }}" alt="{{ materyal.ad }}" class="max-w-full max-h-[70vh] mx-auto rounded-lg shadow-lg">
         </div>
         
-        {# ===== Harici Link - Embed ===== #}
+        {# Harici Link #}
         {% elif materyal.harici_link %}
             {% set link = materyal.harici_link %}
             
             {# YouTube #}
             {% if 'youtube.com' in link or 'youtu.be' in link %}
                 {% set video_id = link.split('v=')[1].split('&')[0] if 'v=' in link else link.split('/')[-1].split('?')[0] %}
-                <div class="viewer-container p-3">
+                <div class="viewer-container p-4">
                     <div class="video-container">
-                        <iframe 
-                            src="https://www.youtube.com/embed/{{ video_id }}" 
-                            allowfullscreen
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
-                        </iframe>
+                        <iframe src="https://www.youtube.com/embed/{{ video_id }}" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
                     </div>
                 </div>
             
             {# Vimeo #}
             {% elif 'vimeo.com' in link %}
                 {% set video_id = link.split('/')[-1] %}
-                <div class="viewer-container p-3">
+                <div class="viewer-container p-4">
                     <div class="video-container">
-                        <iframe 
-                            src="https://player.vimeo.com/video/{{ video_id }}" 
-                            allowfullscreen>
-                        </iframe>
+                        <iframe src="https://player.vimeo.com/video/{{ video_id }}" allowfullscreen></iframe>
                     </div>
                 </div>
             
             {# Canva #}
             {% elif 'canva.com' in link %}
                 <div class="viewer-container">
-                    <iframe 
-                        src="{{ link.replace('/design/', '/design/embed/') if '/embed/' not in link else link }}"
-                        class="viewer-frame"
-                        allowfullscreen>
-                    </iframe>
+                    <iframe src="{{ link.replace('/design/', '/design/embed/') if '/embed/' not in link else link }}" class="viewer-frame" allowfullscreen></iframe>
                 </div>
             
-            {# Google Slides/Docs #}
+            {# Google Docs #}
             {% elif 'docs.google.com' in link %}
                 {% set embed_link = link.replace('/edit', '/embed').replace('/view', '/embed') if '/embed' not in link else link %}
                 <div class="viewer-container">
-                    <iframe 
-                        src="{{ embed_link }}"
-                        class="viewer-frame"
-                        allowfullscreen>
-                    </iframe>
+                    <iframe src="{{ embed_link }}" class="viewer-frame" allowfullscreen></iframe>
                 </div>
             
             {# Loom #}
             {% elif 'loom.com' in link %}
                 {% set video_id = link.split('/')[-1].split('?')[0] %}
-                <div class="viewer-container p-3">
+                <div class="viewer-container p-4">
                     <div class="video-container">
-                        <iframe 
-                            src="https://www.loom.com/embed/{{ video_id }}"
-                            allowfullscreen>
-                        </iframe>
+                        <iframe src="https://www.loom.com/embed/{{ video_id }}" allowfullscreen></iframe>
                     </div>
                 </div>
             
-            {# Genel iframe #}
+            {# Genel #}
             {% else %}
                 <div class="viewer-container">
-                    <iframe 
-                        src="{{ link }}" 
-                        class="viewer-frame"
-                        sandbox="allow-scripts allow-same-origin allow-popups"
-                        allowfullscreen>
-                    </iframe>
+                    <iframe src="{{ link }}" class="viewer-frame" sandbox="allow-scripts allow-same-origin allow-popups" allowfullscreen></iframe>
                 </div>
             {% endif %}
         
-        {# ===== Desteklenmeyen Format ===== #}
+        {# Desteklenmeyen #}
         {% else %}
-        <div class="unsupported-notice">
-            <i class="bi bi-file-earmark-x fs-1 text-muted d-block mb-3"></i>
-            <h5>Görüntülenemiyor</h5>
-            <p class="text-muted">Bu dosya formatı doğrudan görüntülenemiyor.</p>
+        <div class="py-16 text-center bg-gray-50 dark:bg-[#111418]">
+            <span class="material-symbols-outlined text-6xl text-gray-400 mb-4">file_present</span>
+            <h5 class="text-lg font-bold text-[#111418] dark:text-white mb-2">Görüntülenemiyor</h5>
+            <p class="text-text-muted dark:text-text-muted-dark mb-6">Bu dosya formatı doğrudan görüntülenemiyor.</p>
             {% if materyal.dosya_yolu %}
-            <a href="{{ url_for('egitim.materyal_indir', id=materyal.id) }}" class="btn btn-primary">
-                <i class="bi bi-download me-2"></i> Dosyayı İndir
+            <a href="{{ url_for('egitim.materyal_indir', id=materyal.id) }}" class="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors">
+                <span class="material-symbols-outlined">download</span>Dosyayı İndir
             </a>
             {% endif %}
         </div>
@@ -240,71 +190,56 @@
     </div>
 </div>
 
-{# Materyal Bilgileri #}
-<div class="card mt-4">
-    <div class="card-header">
-        <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Materyal Bilgileri</h6>
+<!-- Materyal Bilgileri -->
+<div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mt-6">
+    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+        <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">info</span>
+            Materyal Bilgileri
+        </h6>
     </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <table class="table table-sm table-borderless">
-                    <tr>
-                        <td class="text-muted" width="40%">Tip:</td>
-                        <td>
-                            {% set tip_badges = {
-                                'dokuman': ('secondary', 'file-earmark-text'),
-                                'sunum': ('warning', 'file-earmark-slides'),
-                                'video': ('danger', 'play-circle'),
-                                'gorsel': ('info', 'image'),
-                                'link': ('primary', 'link-45deg')
-                            } %}
-                            {% set badge_color, badge_icon = tip_badges.get(materyal.materyal_tipi, ('secondary', 'file')) %}
-                            <span class="badge bg-{{ badge_color }}">
-                                <i class="bi bi-{{ badge_icon }} me-1"></i>
-                                {{ materyal.materyal_tipi|title }}
-                            </span>
-                        </td>
-                    </tr>
-                    {% if materyal.dosya_adi %}
-                    <tr>
-                        <td class="text-muted">Dosya:</td>
-                        <td>{{ materyal.dosya_adi }}</td>
-                    </tr>
-                    {% endif %}
-                    {% if materyal.dosya_boyut %}
-                    <tr>
-                        <td class="text-muted">Boyut:</td>
-                        <td>
-                            {% if materyal.dosya_boyut > 1048576 %}
-                            {{ (materyal.dosya_boyut / 1048576)|round(2) }} MB
-                            {% else %}
-                            {{ (materyal.dosya_boyut / 1024)|round(1) }} KB
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endif %}
-                </table>
+    <div class="p-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-text-muted dark:text-text-muted-dark">Tip:</span>
+                    {% set tip_colors = {
+                        'dokuman': 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+                        'sunum': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                        'video': 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400',
+                        'gorsel': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
+                        'link': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    } %}
+                    <span class="px-2 py-0.5 text-xs font-bold rounded-full {{ tip_colors.get(materyal.materyal_tipi, 'bg-gray-100 text-gray-700') }}">{{ materyal.materyal_tipi|title }}</span>
+                </div>
+                {% if materyal.dosya_adi %}
+                <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-text-muted dark:text-text-muted-dark">Dosya:</span>
+                    <span class="text-[#111418] dark:text-white">{{ materyal.dosya_adi }}</span>
+                </div>
+                {% endif %}
+                {% if materyal.dosya_boyut %}
+                <div class="flex justify-between py-2">
+                    <span class="text-text-muted dark:text-text-muted-dark">Boyut:</span>
+                    <span class="text-[#111418] dark:text-white">
+                        {% if materyal.dosya_boyut > 1048576 %}{{ (materyal.dosya_boyut / 1048576)|round(2) }} MB{% else %}{{ (materyal.dosya_boyut / 1024)|round(1) }} KB{% endif %}
+                    </span>
+                </div>
+                {% endif %}
             </div>
-            <div class="col-md-6">
-                <table class="table table-sm table-borderless">
-                    <tr>
-                        <td class="text-muted" width="40%">Eğitim:</td>
-                        <td>
-                            <a href="{{ url_for('egitim.detay', id=materyal.egitim_id) }}">
-                                {{ materyal.egitim.baslik }}
-                            </a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Yükleyen:</td>
-                        <td>{{ materyal.yukleyen.username if materyal.yukleyen else '-' }}</td>
-                    </tr>
-                    <tr>
-                        <td class="text-muted">Tarih:</td>
-                        <td>{{ materyal.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
-                    </tr>
-                </table>
+            <div class="space-y-2 text-sm">
+                <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-text-muted dark:text-text-muted-dark">Eğitim:</span>
+                    <a href="{{ url_for('egitim.detay', id=materyal.egitim_id) }}" class="text-primary hover:underline">{{ materyal.egitim.baslik }}</a>
+                </div>
+                <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-text-muted dark:text-text-muted-dark">Yükleyen:</span>
+                    <span class="text-[#111418] dark:text-white">{{ materyal.yukleyen.username if materyal.yukleyen else '-' }}</span>
+                </div>
+                <div class="flex justify-between py-2">
+                    <span class="text-text-muted dark:text-text-muted-dark">Tarih:</span>
+                    <span class="text-[#111418] dark:text-white">{{ materyal.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                </div>
             </div>
         </div>
     </div>

@@ -4,73 +4,82 @@
 {% block page_title %}Zimmet İade{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-box-arrow-in-left me-2"></i>Zimmet İade Formu</h6>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
-                    <div class="alert alert-info mb-4">
-                        <strong>{{ zimmet.tanim }}</strong> zimmetini 
-                        <strong>{{ zimmet.calisan.full_name }}</strong> çalışanından iade alıyorsunuz.
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+        <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">keyboard_return</span>
+                Zimmet İade Formu
+            </h3>
+        </div>
+        <div class="p-6">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                    <strong>{{ zimmet.tanim }}</strong> zimmetini 
+                    <strong>{{ zimmet.calisan.full_name }}</strong> çalışanından iade alıyorsunuz.
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">İade Tarihi *</label>
+                        <input type="date" name="iade_tarihi" required
+                               class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">İade Tarihi *</label>
-                        <input type="date" name="iade_tarihi" class="form-control" required>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">Zimmet Durumu *</label>
-                        <select name="iade_durumu" class="form-select" required>
+                    <div>
+                        <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Zimmet Durumu *</label>
+                        <select name="iade_durumu" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="saglam">Sağlam / Çalışır Durumda</option>
                             <option value="hasarli">Hasarlı</option>
                             <option value="arizali">Arızalı</option>
                         </select>
                     </div>
                     
-                    <div class="mb-3">
-                        <label class="form-label">Not</label>
-                        <textarea name="iade_notu" class="form-control" rows="3" placeholder="İade ile ilgili notlar..."></textarea>
+                    <div>
+                        <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Not</label>
+                        <textarea name="iade_notu" rows="3" placeholder="İade ile ilgili notlar..."
+                                  class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
                     </div>
-                    
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-check-lg me-1"></i> İade Al
+                </div>
+                
+                <div class="flex items-center gap-3 mt-6">
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <span class="material-symbols-outlined text-sm">check</span>
+                        İade Al
                     </button>
-                    <a href="{{ url_for('ik.zimmet_detay', id=zimmet.id) }}" class="btn btn-secondary">İptal</a>
-                </form>
-            </div>
+                    <a href="{{ url_for('ik.zimmet_detay', id=zimmet.id) }}" class="px-4 py-2 border border-border-light dark:border-border-dark text-text-primary dark:text-text-primary-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</a>
+                </div>
+            </form>
         </div>
     </div>
     
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Zimmet Bilgileri</h6>
-            </div>
-            <ul class="list-group list-group-flush">
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Tip</span>
-                    <span>{{ zimmet.zimmet_tipi.ad }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Marka/Model</span>
-                    <span>{{ zimmet.marka or '' }} {{ zimmet.model or '' }}</span>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Seri No</span>
-                    <code>{{ zimmet.seri_no or '-' }}</code>
-                </li>
-                <li class="list-group-item d-flex justify-content-between">
-                    <span class="text-muted">Teslim Tarihi</span>
-                    <span>{{ zimmet.teslim_tarihi.strftime('%d.%m.%Y') }}</span>
-                </li>
-            </ul>
+    <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+        <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">info</span>
+                Zimmet Bilgileri
+            </h3>
         </div>
+        <ul class="divide-y divide-border-light dark:divide-border-dark">
+            <li class="px-5 py-3 flex justify-between text-sm">
+                <span class="text-text-muted dark:text-text-muted-dark">Tip</span>
+                <span class="text-text-primary dark:text-text-primary-dark">{{ zimmet.zimmet_tipi.ad }}</span>
+            </li>
+            <li class="px-5 py-3 flex justify-between text-sm">
+                <span class="text-text-muted dark:text-text-muted-dark">Marka/Model</span>
+                <span class="text-text-primary dark:text-text-primary-dark">{{ zimmet.marka or '' }} {{ zimmet.model or '' }}</span>
+            </li>
+            <li class="px-5 py-3 flex justify-between text-sm">
+                <span class="text-text-muted dark:text-text-muted-dark">Seri No</span>
+                <code class="text-text-muted dark:text-text-muted-dark">{{ zimmet.seri_no or '-' }}</code>
+            </li>
+            <li class="px-5 py-3 flex justify-between text-sm">
+                <span class="text-text-muted dark:text-text-muted-dark">Teslim Tarihi</span>
+                <span class="text-text-primary dark:text-text-primary-dark">{{ zimmet.teslim_tarihi.strftime('%d.%m.%Y') }}</span>
+            </li>
+        </ul>
     </div>
 </div>
 {% endblock %}

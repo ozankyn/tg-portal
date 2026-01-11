@@ -4,139 +4,136 @@
 {% block page_title %}{% if test %}Test Düzenle{% else %}Yeni Test Oluştur{% endif %}{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-body">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="p-6">
                 <form method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label">Test Başlığı *</label>
-                            <input type="text" name="baslik" class="form-control" required
-                                   value="{{ test.baslik if test else '' }}"
-                                   placeholder="Örn: ISG Temel Eğitimi Sınavı">
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Test Başlığı *</label>
+                            <input type="text" name="baslik" required value="{{ test.baslik if test else '' }}" placeholder="Örn: ISG Temel Eğitimi Sınavı"
+                                   class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
                         </div>
                         
-                        <div class="col-12">
-                            <label class="form-label">Açıklama</label>
-                            <textarea name="aciklama" class="form-control" rows="2">{{ test.aciklama if test else '' }}</textarea>
+                        <div>
+                            <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Açıklama</label>
+                            <textarea name="aciklama" rows="2" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">{{ test.aciklama if test else '' }}</textarea>
                         </div>
                         
-                        <div class="col-md-6">
-                            <label class="form-label">Eğitime Bağla</label>
-                            <select name="egitim_id" class="form-select">
-                                <option value="">Bağımsız Test</option>
-                                {% for egitim in egitimler %}
-                                <option value="{{ egitim.id }}" {{ 'selected' if test and test.egitim_id == egitim.id }}>
-                                    {{ egitim.baslik }} ({{ egitim.baslangic_tarihi.strftime('%d.%m.%Y') }})
-                                </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label">Eğitim Tipi</label>
-                            <select name="egitim_tipi_id" class="form-select">
-                                <option value="">Genel</option>
-                                {% for tip in egitim_tipleri %}
-                                <option value="{{ tip.id }}" {{ 'selected' if test and test.egitim_tipi_id == tip.id }}>{{ tip.ad }}</option>
-                                {% endfor %}
-                            </select>
-                            <small class="text-muted">Bu tipe ait sorular filtrelenir</small>
-                        </div>
-                        
-                        <hr class="my-4">
-                        <h6 class="text-muted text-uppercase small">Sınav Ayarları</h6>
-                        
-                        <div class="col-md-4">
-                            <label class="form-label">Süre (dakika)</label>
-                            <input type="number" name="sure_dakika" class="form-control" min="1"
-                                   value="{{ test.sure_dakika if test else '' }}"
-                                   placeholder="Boş = Süresiz">
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <label class="form-label">Geçme Puanı (%)</label>
-                            <input type="number" name="gecme_puani" class="form-control" min="0" max="100"
-                                   value="{{ test.gecme_puani if test else 70 }}">
-                        </div>
-                        
-                        <div class="col-md-4">
-                            <label class="form-label">Tekrar Hakkı</label>
-                            <input type="number" name="tekrar_hak" class="form-control" min="1"
-                                   value="{{ test.tekrar_hak if test else 3 }}"
-                                   placeholder="Boş = Sınırsız">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label">Başlangıç Tarihi</label>
-                            <input type="datetime-local" name="baslangic_tarihi" class="form-control"
-                                   value="{{ test.baslangic_tarihi.strftime('%Y-%m-%dT%H:%M') if test and test.baslangic_tarihi else '' }}">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label">Bitiş Tarihi</label>
-                            <input type="datetime-local" name="bitis_tarihi" class="form-control"
-                                   value="{{ test.bitis_tarihi.strftime('%Y-%m-%dT%H:%M') if test and test.bitis_tarihi else '' }}">
-                        </div>
-                        
-                        <hr class="my-4">
-                        <h6 class="text-muted text-uppercase small">Görüntüleme Ayarları</h6>
-                        
-                        <div class="col-md-6">
-                            <div class="form-check mb-2">
-                                <input type="checkbox" name="soru_karistir" class="form-check-input" id="soruKaristir"
-                                       {{ 'checked' if not test or test.soru_karistir }}>
-                                <label class="form-check-label" for="soruKaristir">Soruları karıştır</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Eğitime Bağla</label>
+                                <select name="egitim_id" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                    <option value="">Bağımsız Test</option>
+                                    {% for egitim in egitimler %}
+                                    <option value="{{ egitim.id }}" {{ 'selected' if test and test.egitim_id == egitim.id }}>{{ egitim.baslik }} ({{ egitim.baslangic_tarihi.strftime('%d.%m.%Y') }})</option>
+                                    {% endfor %}
+                                </select>
                             </div>
-                            <div class="form-check mb-2">
-                                <input type="checkbox" name="secenek_karistir" class="form-check-input" id="secenekKaristir"
-                                       {{ 'checked' if not test or test.secenek_karistir }}>
-                                <label class="form-check-label" for="secenekKaristir">Seçenekleri karıştır</label>
+                            <div>
+                                <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Eğitim Tipi</label>
+                                <select name="egitim_tipi_id" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                    <option value="">Genel</option>
+                                    {% for tip in egitim_tipleri %}
+                                    <option value="{{ tip.id }}" {{ 'selected' if test and test.egitim_tipi_id == tip.id }}>{{ tip.ad }}</option>
+                                    {% endfor %}
+                                </select>
+                                <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Bu tipe ait sorular filtrelenir</p>
                             </div>
                         </div>
                         
-                        <div class="col-md-6">
-                            <div class="form-check mb-2">
-                                <input type="checkbox" name="sonucu_goster" class="form-check-input" id="sonucuGoster"
-                                       {{ 'checked' if not test or test.sonucu_goster }}>
-                                <label class="form-check-label" for="sonucuGoster">Sonucu göster</label>
+                        <!-- Sınav Ayarları -->
+                        <div class="pt-6 border-t border-border-light dark:border-border-dark">
+                            <h6 class="text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark tracking-wider mb-4">Sınav Ayarları</h6>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Süre (dakika)</label>
+                                    <input type="number" name="sure_dakika" min="1" value="{{ test.sure_dakika if test else '' }}" placeholder="Boş = Süresiz"
+                                           class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                </div>
+                                <div>
+                                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Geçme Puanı (%)</label>
+                                    <input type="number" name="gecme_puani" min="0" max="100" value="{{ test.gecme_puani if test else 70 }}"
+                                           class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                </div>
+                                <div>
+                                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Tekrar Hakkı</label>
+                                    <input type="number" name="tekrar_hak" min="1" value="{{ test.tekrar_hak if test else 3 }}" placeholder="Boş = Sınırsız"
+                                           class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                </div>
                             </div>
-                            <div class="form-check mb-2">
-                                <input type="checkbox" name="dogru_cevaplari_goster" class="form-check-input" id="dogruCevap"
-                                       {{ 'checked' if test and test.dogru_cevaplari_goster }}>
-                                <label class="form-check-label" for="dogruCevap">Doğru cevapları göster</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                                <div>
+                                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Başlangıç Tarihi</label>
+                                    <input type="datetime-local" name="baslangic_tarihi" value="{{ test.baslangic_tarihi.strftime('%Y-%m-%dT%H:%M') if test and test.baslangic_tarihi else '' }}"
+                                           class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                </div>
+                                <div>
+                                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Bitiş Tarihi</label>
+                                    <input type="datetime-local" name="bitis_tarihi" value="{{ test.bitis_tarihi.strftime('%Y-%m-%dT%H:%M') if test and test.bitis_tarihi else '' }}"
+                                           class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                                </div>
                             </div>
                         </div>
                         
-                        <div class="col-12">
-                            <div class="form-check">
-                                <input type="checkbox" name="aktif" class="form-check-input" id="aktif"
-                                       {{ 'checked' if not test or test.aktif }}>
-                                <label class="form-check-label" for="aktif">Test aktif (çözülebilir)</label>
+                        <!-- Görüntüleme Ayarları -->
+                        <div class="pt-6 border-t border-border-light dark:border-border-dark">
+                            <h6 class="text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark tracking-wider mb-4">Görüntüleme Ayarları</h6>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="space-y-3">
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" name="soru_karistir" {{ 'checked' if not test or test.soru_karistir }} class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                                        <span class="text-sm text-[#111418] dark:text-white">Soruları karıştır</span>
+                                    </label>
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" name="secenek_karistir" {{ 'checked' if not test or test.secenek_karistir }} class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                                        <span class="text-sm text-[#111418] dark:text-white">Seçenekleri karıştır</span>
+                                    </label>
+                                </div>
+                                <div class="space-y-3">
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" name="sonucu_goster" {{ 'checked' if not test or test.sonucu_goster }} class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                                        <span class="text-sm text-[#111418] dark:text-white">Sonucu göster</span>
+                                    </label>
+                                    <label class="flex items-center gap-3 cursor-pointer">
+                                        <input type="checkbox" name="dogru_cevaplari_goster" {{ 'checked' if test and test.dogru_cevaplari_goster }} class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                                        <span class="text-sm text-[#111418] dark:text-white">Doğru cevapları göster</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <label class="flex items-center gap-3 cursor-pointer">
+                                    <input type="checkbox" name="aktif" {{ 'checked' if not test or test.aktif }} class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                                    <span class="text-sm font-medium text-[#111418] dark:text-white">Test aktif (çözülebilir)</span>
+                                </label>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="mt-4">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-1"></i> {{ 'Güncelle' if test else 'Oluştur' }}
+                    <div class="flex gap-3 pt-6 mt-6 border-t border-border-light dark:border-border-dark">
+                        <button type="submit" class="px-6 py-2.5 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors flex items-center gap-2">
+                            <span class="material-symbols-outlined">check</span>
+                            {{ 'Güncelle' if test else 'Oluştur' }}
                         </button>
-                        <a href="{{ url_for('egitim.test_liste') }}" class="btn btn-secondary">İptal</a>
+                        <a href="{{ url_for('egitim.test_liste') }}" class="px-6 py-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-[#111418] dark:text-white font-medium rounded-lg transition-colors">
+                            İptal
+                        </a>
                     </div>
                 </form>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
-            </div>
-            <div class="card-body small text-muted">
+    <div>
+        <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-5">
+            <h6 class="font-bold text-blue-900 dark:text-blue-200 flex items-center gap-2 mb-4">
+                <span class="material-symbols-outlined">info</span>
+                Bilgi
+            </h6>
+            <div class="text-sm text-blue-800 dark:text-blue-300/80 space-y-3">
                 <p>Test oluşturduktan sonra soru bankasından soru ekleyebilirsiniz.</p>
                 <p><strong>Eğitime Bağlama:</strong> Belirli bir eğitime bağlı testler, o eğitimin katılımcıları tarafından çözülebilir.</p>
                 <p><strong>Tekrar Hakkı:</strong> Başarısız olunduğunda kaç kez tekrar denenebileceğini belirler.</p>

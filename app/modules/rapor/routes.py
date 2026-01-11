@@ -10,7 +10,7 @@ import io
 
 from flask import Blueprint, render_template, request, jsonify, Response
 from flask_login import login_required, current_user
-from sqlalchemy import func, extract
+from sqlalchemy import func, extract, case
 
 from app import db
 from app.utils import permission_required
@@ -280,14 +280,44 @@ def talep_rapor():
         Talep.is_deleted == False,
         extract('year', Talep.created_at) == yil
     ).group_by('ay').order_by('ay').all()
+
+        # Öncelik dict (template bunu bekliyor)
+    oncelik = {"dusuk": 0, "normal": 0, "yuksek": 0, "kritik": 0}
+    for onc, adet in oncelik_dagilim:
+        if not onc:
+            continue
+        if onc in oncelik:
+            oncelik[onc] = int(adet or 0)
+
+    # SLA aşımı (modelde sla_asim bool varsayımı)
+    stats["sla_asim"] = query.filter(Talep.sla_asim == True).count()
+
+    # Template uyumluluğu: "cozen"
+    # (istersen sadece cozuldu da yapabiliriz)
+    stats["cozen"] = int(stats.get("cozuldu", 0) + stats.get("kapatildi", 0))
+
+    # Kategori detay (kategori adı, talep adedi, SLA aşımı)
+    kategori_detay = db.session.query(
+        TalepKategorisi.ad,
+        func.count(Talep.id).label('adet'),
+        func.sum(case((Talep.sla_asim == True, 1), else_=0)).label('sla_asim')
+    ).join(Talep, Talep.kategori_id == TalepKategorisi.id).filter(
+        Talep.is_deleted == False,
+        extract('year', Talep.created_at) == yil
+    ).group_by(TalepKategorisi.ad).order_by(func.count(Talep.id).desc()).all()
+
+    # Aylık trend'i dict'e çevir (tojson rahat serialize etsin)
+    aylik_trend_dict = {int(ay): int(toplam) for ay, toplam in aylik_trend}
     
     return render_template('rapor/talep_rapor.html',
                           stats=stats,
                           kategori_dagilim=kategori_dagilim,
-                          oncelik_dagilim=oncelik_dagilim,
-                          aylik_trend=aylik_trend,
+                          kategori_detay=kategori_detay,
+                          oncelik=oncelik,
+                          aylik_trend=aylik_trend_dict,
                           yil=yil,
                           ay=ay)
+
 
 
 # ============================================================

@@ -4,73 +4,95 @@
 {% block page_title %}Kaza Detayı{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-4">
         <!-- Onay Durumu Banner -->
         {% if kaza.onay_durumu == 'bekliyor' %}
-        <div class="alert alert-warning">
-            <i class="bi bi-hourglass-split me-2"></i>
-            <strong>Onay Bekliyor</strong> - Bu kaza kaydı filo yöneticisi onayını bekliyor.
+        <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-lg p-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-amber-600">hourglass_empty</span>
+            <span><strong class="text-[#111418] dark:text-white">Onay Bekliyor</strong> - Bu kaza kaydı filo yöneticisi onayını bekliyor.</span>
         </div>
         {% elif kaza.onay_durumu == 'reddedildi' %}
-        <div class="alert alert-danger">
-            <i class="bi bi-x-circle me-2"></i>
-            <strong>Reddedildi</strong> - {{ kaza.red_nedeni or 'Sebep belirtilmedi' }}
+        <div class="bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-900/30 rounded-lg p-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-rose-600">cancel</span>
+            <span><strong class="text-[#111418] dark:text-white">Reddedildi</strong> - {{ kaza.red_nedeni or 'Sebep belirtilmedi' }}</span>
         </div>
         {% endif %}
         
-        <div class="card mb-4">
-            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">
-                    <i class="bi bi-car-front me-2"></i>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="bg-red-600 text-white px-4 py-3 rounded-t-xl flex justify-between items-center">
+                <h6 class="font-medium flex items-center gap-2">
+                    <span class="material-symbols-outlined">directions_car</span>
                     {{ kaza.arac.plaka }} - {{ kaza.arac.marka }} {{ kaza.arac.model }}
                 </h6>
-                <span class="badge bg-{{ 'success' if kaza.onay_durumu == 'onaylandi' else ('danger' if kaza.onay_durumu == 'reddedildi' else 'warning') }}">
+                <span class="px-2 py-1 text-xs font-medium rounded-full {% if kaza.onay_durumu == 'onaylandi' %}bg-green-500{% elif kaza.onay_durumu == 'reddedildi' %}bg-red-500{% else %}bg-yellow-500{% endif %}">
                     {{ kaza.onay_durumu|upper }}
                 </span>
             </div>
-            <div class="card-body">
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <table class="table table-sm table-borderless">
-                            <tr><td class="text-muted">Tarih</td><td><strong>{{ kaza.tarih.strftime('%d.%m.%Y %H:%M') }}</strong></td></tr>
-                            <tr><td class="text-muted">Konum</td><td>{{ kaza.konum or '-' }}</td></tr>
-                            <tr><td class="text-muted">Sürücü</td><td>{{ kaza.surucu.full_name if kaza.surucu else '-' }}</td></tr>
-                            <tr><td class="text-muted">Tutanak No</td><td>{{ kaza.tutanak_no or '-' }}</td></tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <table class="table table-sm table-borderless">
-                            <tr><td class="text-muted">Kusur Oranı</td><td>{{ kaza.kusur_orani or '0' }}%</td></tr>
-                            <tr><td class="text-muted">Hasar Tutarı</td><td>{{ "%.2f"|format(kaza.hasar_tutari) if kaza.hasar_tutari else '-' }} ₺</td></tr>
-                            <tr><td class="text-muted">Sigorta Karşıladı</td><td>{{ "%.2f"|format(kaza.sigorta_karsiladi) if kaza.sigorta_karsiladi else '-' }} ₺</td></tr>
-                            <tr><td class="text-muted">Yaralanma</td><td>
+            <div class="p-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <table class="w-full text-sm">
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1 w-28">Tarih</td>
+                            <td class="py-1 font-semibold">{{ kaza.tarih.strftime('%d.%m.%Y %H:%M') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">Konum</td>
+                            <td class="py-1">{{ kaza.konum or '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">Sürücü</td>
+                            <td class="py-1">{{ kaza.surucu.full_name if kaza.surucu else '-' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">Tutanak No</td>
+                            <td class="py-1">{{ kaza.tutanak_no or '-' }}</td>
+                        </tr>
+                    </table>
+                    <table class="w-full text-sm">
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1 w-32">Kusur Oranı</td>
+                            <td class="py-1">{{ kaza.kusur_orani or '0' }}%</td>
+                        </tr>
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">Hasar Tutarı</td>
+                            <td class="py-1">{{ "%.2f"|format(kaza.hasar_tutari) if kaza.hasar_tutari else '-' }} ₺</td>
+                        </tr>
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">Sigorta Karşıladı</td>
+                            <td class="py-1">{{ "%.2f"|format(kaza.sigorta_karsiladi) if kaza.sigorta_karsiladi else '-' }} ₺</td>
+                        </tr>
+                        <tr>
+                            <td class="text-text-muted dark:text-text-muted-dark py-1">Yaralanma</td>
+                            <td class="py-1">
                                 {% if kaza.yaralanma %}
-                                <span class="badge bg-danger">EVET</span>
+                                <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">EVET</span>
                                 {% else %}
-                                <span class="badge bg-success">Hayır</span>
+                                <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Hayır</span>
                                 {% endif %}
-                            </td></tr>
-                        </table>
-                    </div>
+                            </td>
+                        </tr>
+                    </table>
                 </div>
                 
-                <h6><i class="bi bi-file-text me-2"></i>Açıklama</h6>
-                <p>{{ kaza.aciklama or '-' }}</p>
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined">description</span>Açıklama
+                </h6>
+                <p class="text-[#111418] dark:text-white mb-4">{{ kaza.aciklama or '-' }}</p>
                 
-                <hr>
+                <hr class="my-4 border-border-light dark:border-border-dark">
                 
-                <div class="row">
-                    <div class="col-md-6">
-                        <small class="text-muted">Durum:</small>
-                        <span class="badge bg-{{ 'success' if kaza.durum == 'kapandi' else ('warning' if kaza.durum == 'dava' else 'primary') }}">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <span class="text-sm text-text-muted dark:text-text-muted-dark">Durum:</span>
+                        <span class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full {% if kaza.durum == 'kapandi' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% elif kaza.durum == 'dava' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400{% else %}bg-blue-100 text-blue-700 dark:text-blue-300/80 dark:bg-blue-900/30 dark:text-blue-400{% endif %}">
                             {{ kaza.durum|upper }}
                         </span>
                     </div>
                     {% if kaza.onaylayan %}
-                    <div class="col-md-6">
-                        <small class="text-muted">Onaylayan:</small>
-                        {{ kaza.onaylayan.full_name }} ({{ kaza.onay_tarihi.strftime('%d.%m.%Y') }})
+                    <div>
+                        <span class="text-sm text-text-muted dark:text-text-muted-dark">Onaylayan:</span>
+                        <span class="ml-2 text-sm">{{ kaza.onaylayan.full_name }} ({{ kaza.onay_tarihi.strftime('%d.%m.%Y') }})</span>
                     </div>
                     {% endif %}
                 </div>
@@ -79,22 +101,21 @@
         
         <!-- Fotoğraflar -->
         {% if kaza.fotograflar.count() > 0 %}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-camera me-2"></i>Fotoğraflar ({{ kaza.fotograflar.count() }})</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">photo_camera</span>Fotoğraflar ({{ kaza.fotograflar.count() }})
+                </h6>
             </div>
-            <div class="card-body">
-                <div class="row g-2">
+            <div class="p-4">
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {% for foto in kaza.fotograflar %}
-                    <div class="col-md-4">
-                        <a href="{{ url_for('core.uploaded_file', filename=foto.dosya_yolu) }}" target="_blank">
-                            <img src="{{ url_for('core.uploaded_file', filename=foto.dosya_yolu) }}" 
-                                 class="img-fluid rounded" alt="{{ foto.aciklama or 'Kaza fotoğrafı' }}">
-                        </a>
-                        {% if foto.aciklama %}
-                        <small class="text-muted d-block">{{ foto.aciklama }}</small>
-                        {% endif %}
-                    </div>
+                    <a href="{{ url_for('core.uploaded_file', filename=foto.dosya_yolu) }}" target="_blank">
+                        <img src="{{ url_for('core.uploaded_file', filename=foto.dosya_yolu) }}" class="w-full h-32 object-cover rounded-lg" alt="{{ foto.aciklama or 'Kaza fotoğrafı' }}">
+                    </a>
+                    {% if foto.aciklama %}
+                    <span class="text-xs text-text-muted dark:text-text-muted-dark block">{{ foto.aciklama }}</span>
+                    {% endif %}
                     {% endfor %}
                 </div>
             </div>
@@ -103,22 +124,29 @@
         
         <!-- İkame Araçlar -->
         {% if kaza.ikame_araclar %}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-arrow-repeat me-2"></i>İkame Araçlar</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">sync</span>İkame Araçlar
+                </h6>
             </div>
-            <div class="card-body p-0">
-                <table class="table table-sm mb-0">
-                    <thead class="table-light">
-                        <tr><th>Plaka</th><th>Araç</th><th>Süre</th><th>Durum</th></tr>
-                    </thead>
-                    <tbody>
-                        {% for ikame in kaza.ikame_araclar %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-[#111418]">
                         <tr>
-                            <td><a href="{{ url_for('filo.ikame_detay', id=ikame.id) }}">{{ ikame.plaka }}</a></td>
-                            <td>{{ ikame.marka }} {{ ikame.model }}</td>
-                            <td>{{ ikame.baslangic_tarihi.strftime('%d.%m.%Y') }} - {{ ikame.bitis_tarihi.strftime('%d.%m.%Y') if ikame.bitis_tarihi else 'Devam' }}</td>
-                            <td><span class="badge bg-{{ 'success' if ikame.durum == 'aktif' else 'secondary' }}">{{ ikame.durum }}</span></td>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Plaka</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Araç</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Süre</th>
+                            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for ikame in kaza.ikame_araclar %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418]">
+                            <td class="px-4 py-3"><a href="{{ url_for('filo.ikame_detay', id=ikame.id) }}" class="text-blue-600 hover:underline">{{ ikame.plaka }}</a></td>
+                            <td class="px-4 py-3">{{ ikame.marka }} {{ ikame.model }}</td>
+                            <td class="px-4 py-3">{{ ikame.baslangic_tarihi.strftime('%d.%m.%Y') }} - {{ ikame.bitis_tarihi.strftime('%d.%m.%Y') if ikame.bitis_tarihi else 'Devam' }}</td>
+                            <td class="px-4 py-3"><span class="px-2 py-0.5 text-xs font-medium rounded-full {% if ikame.durum == 'aktif' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% else %}bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400{% endif %}">{{ ikame.durum }}</span></td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -128,29 +156,30 @@
         {% endif %}
     </div>
     
-    <div class="col-lg-4">
+    <div class="space-y-4">
         <!-- Onay İşlemleri -->
         {% if current_user.has_permission('filo.admin') and kaza.onay_durumu == 'bekliyor' %}
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h6 class="mb-0"><i class="bi bi-check-circle me-2"></i>Onay İşlemleri</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="bg-blue-600 text-white px-4 py-3 rounded-t-xl">
+                <h6 class="font-medium flex items-center gap-2">
+                    <span class="material-symbols-outlined">check_circle</span>Onay İşlemleri
+                </h6>
             </div>
-            <div class="card-body">
+            <div class="p-4">
                 <form method="POST" action="{{ url_for('filo.kaza_onayla', id=kaza.id) }}" class="mb-2">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-success w-100">
-                        <i class="bi bi-check-lg me-1"></i>Onayla
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                        <span class="material-symbols-outlined">check</span>Onayla
                     </button>
                 </form>
                 
                 <form method="POST" action="{{ url_for('filo.kaza_reddet', id=kaza.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-2">
-                        <textarea name="red_nedeni" class="form-control form-control-sm" rows="2" 
-                                  placeholder="Red nedeni (opsiyonel)"></textarea>
+                        <textarea name="red_nedeni" class="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="2" placeholder="Red nedeni (opsiyonel)"></textarea>
                     </div>
-                    <button type="submit" class="btn btn-danger w-100">
-                        <i class="bi bi-x-lg me-1"></i>Reddet
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors">
+                        <span class="material-symbols-outlined">close</span>Reddet
                     </button>
                 </form>
             </div>
@@ -158,25 +187,27 @@
         {% endif %}
         
         <!-- İkame Araç Ekle -->
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-plus-circle me-2"></i>İşlemler</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">add_circle</span>İşlemler
+                </h6>
             </div>
-            <div class="card-body">
-                <a href="{{ url_for('filo.ikame_ekle', id=kaza.arac_id) }}?kaza_id={{ kaza.id }}" class="btn btn-outline-primary w-100 mb-2">
-                    <i class="bi bi-arrow-repeat me-1"></i>İkame Araç Ekle
+            <div class="p-4 space-y-2">
+                <a href="{{ url_for('filo.ikame_ekle', id=kaza.arac_id) }}?kaza_id={{ kaza.id }}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 border border-blue-600 text-blue-600 font-medium rounded-lg hover:bg-blue-50 transition-colors">
+                    <span class="material-symbols-outlined">sync</span>İkame Araç Ekle
                 </a>
-                <a href="{{ url_for('filo.detay', id=kaza.arac_id) }}" class="btn btn-outline-secondary w-100">
-                    <i class="bi bi-car-front me-1"></i>Araç Detayı
+                <a href="{{ url_for('filo.detay', id=kaza.arac_id) }}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-[#111418] dark:text-white font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <span class="material-symbols-outlined">directions_car</span>Araç Detayı
                 </a>
             </div>
         </div>
     </div>
 </div>
 
-<div class="mt-3">
-    <a href="{{ url_for('filo.kaza_liste') }}" class="btn btn-outline-secondary">
-        <i class="bi bi-arrow-left me-1"></i>Listeye Dön
+<div class="mt-4">
+    <a href="{{ url_for('filo.kaza_liste') }}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-[#111418] dark:text-white font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+        <span class="material-symbols-outlined">arrow_back</span>Listeye Dön
     </a>
 </div>
 {% endblock %}

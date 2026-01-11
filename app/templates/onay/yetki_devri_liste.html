@@ -4,115 +4,140 @@
 {% block page_title %}Yetki Devri{% endblock %}
 
 {% block content %}
-<div class="row g-4">
-    <!-- Verdiğim Yetkiler -->
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-box-arrow-right me-2"></i>Verdiğim Yetkiler</h6>
-                <a href="{{ url_for('onay.yetki_devri_ekle') }}" class="btn btn-sm btn-primary">
-                    <i class="bi bi-plus-lg"></i> Yeni
-                </a>
-            </div>
-            
-            {% if verdiklerim %}
-            <div class="list-group list-group-flush">
-                {% for devir in verdiklerim %}
-                <div class="list-group-item">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <strong>{{ devir.devralan.username }}</strong>
-                            {% if devir.gecerli_mi %}
-                            <span class="badge bg-success ms-1">Aktif</span>
-                            {% elif not devir.aktif %}
-                            <span class="badge bg-secondary ms-1">İptal</span>
-                            {% else %}
-                            <span class="badge bg-warning ms-1">Planlandı</span>
-                            {% endif %}
-                            
-                            <div class="small text-muted mt-1">
-                                {{ devir.baslangic_tarihi.strftime('%d.%m.%Y') }} - {{ devir.bitis_tarihi.strftime('%d.%m.%Y') }}
-                            </div>
-                            {% if devir.neden %}
-                            <div class="small text-muted">
-                                <i class="bi bi-info-circle me-1"></i>{{ devir.neden }}
-                            </div>
-                            {% endif %}
-                        </div>
-                        
-                        {% if devir.aktif %}
-                        <form method="POST" action="{{ url_for('onay.yetki_devri_iptal', id=devir.id) }}"
-                              onsubmit="return confirm('Yetki devrini iptal etmek istediğinize emin misiniz?')">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                <i class="bi bi-x"></i>
-                            </button>
-                        </form>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="card-body text-center text-muted py-4">
-                Yetki devri yok
-            </div>
-            {% endif %}
+{% set badge_map = {
+  'success': 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+  'warning': 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  'secondary':'bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-200'
+} %}
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+  <!-- Verdiğim Yetkiler -->
+  <div class="lg:col-span-6">
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-[20px] text-primary">logout</span>
+          <h3 class="font-bold text-[#111418] dark:text-white">Verdiğim Yetkiler</h3>
         </div>
-    </div>
-    
-    <!-- Aldığım Yetkiler -->
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-box-arrow-in-left me-2"></i>Aldığım Yetkiler</h6>
+
+        <a href="{{ url_for('onay.yetki_devri_ekle') }}"
+           class="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-white hover:bg-primary-dark transition">
+          <span class="material-symbols-outlined text-[18px]">add</span>
+          Yeni
+        </a>
+      </div>
+
+      {% if verdiklerim %}
+      <div class="divide-y divide-border-light dark:divide-border-dark">
+        {% for devir in verdiklerim %}
+        <div class="px-5 py-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="font-bold text-[#111418] dark:text-white">{{ devir.devralan.username }}</span>
+
+                {% if devir.gecerli_mi %}
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['success'] }}">Aktif</span>
+                {% elif not devir.aktif %}
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['secondary'] }}">İptal</span>
+                {% else %}
+                  <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['warning'] }}">Planlandı</span>
+                {% endif %}
+              </div>
+
+              <div class="text-xs text-text-muted dark:text-text-muted-dark mt-2">
+                {{ devir.baslangic_tarihi.strftime('%d.%m.%Y') }} - {{ devir.bitis_tarihi.strftime('%d.%m.%Y') }}
+              </div>
+
+              {% if devir.neden %}
+              <div class="text-xs text-text-muted dark:text-text-muted-dark mt-1 flex items-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">info</span>
+                {{ devir.neden }}
+              </div>
+              {% endif %}
             </div>
-            
-            {% if aldiklarim %}
-            <div class="list-group list-group-flush">
-                {% for devir in aldiklarim %}
-                <div class="list-group-item">
-                    <div>
-                        <strong>{{ devir.devreden.username }}</strong> tarafından
-                        {% if devir.gecerli_mi %}
-                        <span class="badge bg-success ms-1">Aktif</span>
-                        {% elif not devir.aktif %}
-                        <span class="badge bg-secondary ms-1">İptal</span>
-                        {% else %}
-                        <span class="badge bg-warning ms-1">Planlandı</span>
-                        {% endif %}
-                        
-                        <div class="small text-muted mt-1">
-                            {{ devir.baslangic_tarihi.strftime('%d.%m.%Y') }} - {{ devir.bitis_tarihi.strftime('%d.%m.%Y') }}
-                        </div>
-                        {% if devir.neden %}
-                        <div class="small text-muted">
-                            <i class="bi bi-info-circle me-1"></i>{{ devir.neden }}
-                        </div>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="card-body text-center text-muted py-4">
-                Aldığınız yetki devri yok
-            </div>
+
+            {% if devir.aktif %}
+            <form method="POST" action="{{ url_for('onay.yetki_devri_iptal', id=devir.id) }}"
+                  onsubmit="return confirm('Yetki devrini iptal etmek istediğinize emin misiniz?')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit"
+                      class="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-red-300 dark:border-red-700
+                             text-red-600 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                      title="İptal">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </form>
             {% endif %}
+          </div>
         </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="p-8 text-center text-sm text-text-muted dark:text-text-muted-dark">Yetki devri yok</div>
+      {% endif %}
     </div>
+  </div>
+
+  <!-- Aldığım Yetkiler -->
+  <div class="lg:col-span-6">
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex items-center gap-2">
+        <span class="material-symbols-outlined text-[20px] text-primary">login</span>
+        <h3 class="font-bold text-[#111418] dark:text-white">Aldığım Yetkiler</h3>
+      </div>
+
+      {% if aldiklarim %}
+      <div class="divide-y divide-border-light dark:divide-border-dark">
+        {% for devir in aldiklarim %}
+        <div class="px-5 py-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="font-bold text-[#111418] dark:text-white">{{ devir.devreden.username }}</span>
+            <span class="text-sm text-text-muted dark:text-text-muted-dark">tarafından</span>
+
+            {% if devir.gecerli_mi %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['success'] }}">Aktif</span>
+            {% elif not devir.aktif %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['secondary'] }}">İptal</span>
+            {% else %}
+              <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold {{ badge_map['warning'] }}">Planlandı</span>
+            {% endif %}
+          </div>
+
+          <div class="text-xs text-text-muted dark:text-text-muted-dark mt-2">
+            {{ devir.baslangic_tarihi.strftime('%d.%m.%Y') }} - {{ devir.bitis_tarihi.strftime('%d.%m.%Y') }}
+          </div>
+
+          {% if devir.neden %}
+          <div class="text-xs text-text-muted dark:text-text-muted-dark mt-1 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[16px]">info</span>
+            {{ devir.neden }}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="p-8 text-center text-sm text-text-muted dark:text-text-muted-dark">Aldığınız yetki devri yok</div>
+      {% endif %}
+    </div>
+  </div>
+
 </div>
 
 <!-- Bilgi -->
-<div class="card mt-4">
-    <div class="card-body">
-        <h6><i class="bi bi-info-circle me-2"></i>Yetki Devri Hakkında</h6>
-        <ul class="small text-muted mb-0">
-            <li>Yetki devri, izin veya seyahat dönemlerinde onay yetkilerinizi başka birine devretmenizi sağlar.</li>
-            <li>Devir süresi boyunca size gelen onaylar, belirlediğiniz kişiye yönlendirilir.</li>
-            <li>Devir alan kişi "vekil" olarak onay verir ve kayıtlarda bu görünür.</li>
-            <li>İstediğiniz zaman yetki devrini iptal edebilirsiniz.</li>
-        </ul>
-    </div>
+<div class="mt-6 rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-5">
+  <div class="flex items-center gap-2">
+    <span class="material-symbols-outlined text-[20px] text-primary">info</span>
+    <h3 class="font-bold text-[#111418] dark:text-white">Yetki Devri Hakkında</h3>
+  </div>
+
+  <ul class="mt-3 space-y-2 text-sm text-text-muted dark:text-text-muted-dark list-disc pl-5">
+    <li>Yetki devri, izin veya seyahat dönemlerinde onay yetkilerinizi başka birine devretmenizi sağlar.</li>
+    <li>Devir süresi boyunca size gelen onaylar, belirlediğiniz kişiye yönlendirilir.</li>
+    <li>Devir alan kişi "vekil" olarak onay verir ve kayıtlarda bu görünür.</li>
+    <li>İstediğiniz zaman yetki devrini iptal edebilirsiniz.</li>
+  </ul>
 </div>
 {% endblock %}

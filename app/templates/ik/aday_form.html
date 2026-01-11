@@ -1,352 +1,211 @@
 {% extends "base.html" %}
 
-{% block title %}{% if aday %}Aday Düzenle{% else %}Yeni Aday Ekle{% endif %} - TG Portal{% endblock %}
+{% block title %}{% if aday %}Aday Düzenle{% else %}Yeni Aday{% endif %} - TG Portal{% endblock %}
 {% block page_title %}{% if aday %}Aday Düzenle{% else %}Yeni Aday Ekle{% endif %}{% endblock %}
 
-{% block extra_css %}
-<style>
-    input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="number"], select, textarea {
-        @apply bg-gray-50 dark:bg-[#111418] border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5 transition-all text-[#111418] dark:text-white;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<!-- Breadcrumbs -->
-<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-    <div class="flex items-center gap-2 text-sm text-text-muted dark:text-text-muted-dark">
-        <a class="hover:text-primary transition-colors" href="{{ url_for('core.dashboard') }}">Ana Sayfa</a>
-        <span class="material-symbols-outlined text-xs">chevron_right</span>
-        <a class="hover:text-primary transition-colors" href="{{ url_for('ik.aday_liste') }}">Adaylar</a>
-        <span class="material-symbols-outlined text-xs">chevron_right</span>
-        <span class="text-[#111418] dark:text-white font-medium">{% if aday %}Düzenle{% else %}Yeni Aday Ekle{% endif %}</span>
-    </div>
-    <div class="flex items-center gap-3">
-        <a href="{{ url_for('ik.aday_liste') }}" class="px-4 py-2 text-sm font-bold text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-all">İptal</a>
-        <button type="submit" form="adayForm" class="px-6 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">Kaydet</button>
-    </div>
-</div>
-
-<!-- Page Header -->
-<div class="flex items-center gap-4 mb-6">
-    <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
-        <span class="material-symbols-outlined text-3xl">person_add</span>
-    </div>
-    <div>
-        <h2 class="text-2xl font-bold text-[#111418] dark:text-white">{% if aday %}{{ aday.ad }} {{ aday.soyad }}{% else %}Yeni Aday Kaydı{% endif %}</h2>
-        <p class="text-sm text-text-muted dark:text-text-muted-dark">{% if aday %}Aday bilgilerini güncelleyin.{% else %}Sisteme yeni bir aday profili eklemek için aşağıdaki bilgileri doldurun.{% endif %}</p>
-    </div>
-</div>
-
-<form id="adayForm" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    
-    <div class="lg:col-span-8 space-y-6">
-        
-        <!-- Kişisel Bilgiler -->
-        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
-            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
-                <span class="material-symbols-outlined text-primary">account_circle</span>
-                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Kişisel Bilgiler</h3>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Ad <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="ad" value="{{ aday.ad if aday else '' }}" placeholder="Adı" required
-                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Soyad <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="soyad" value="{{ aday.soyad if aday else '' }}" placeholder="Soyadı" required
-                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        T.C. Kimlik No
-                    </label>
-                    <input type="text" name="tc_kimlik" value="{{ aday.tc_kimlik if aday else '' }}" placeholder="11 haneli kimlik numarası" maxlength="11"
-                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Doğum Tarihi
-                    </label>
-                    <input type="date" name="dogum_tarihi" value="{{ aday.dogum_tarihi.strftime('%Y-%m-%d') if aday and aday.dogum_tarihi else '' }}"
-                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Eğitim Durumu
-                    </label>
-                    <select name="egitim_durumu" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                        <option value="">Seçiniz</option>
-                        <option value="ilkokul" {% if aday and aday.egitim_durumu == 'ilkokul' %}selected{% endif %}>İlkokul</option>
-                        <option value="ortaokul" {% if aday and aday.egitim_durumu == 'ortaokul' %}selected{% endif %}>Ortaokul</option>
-                        <option value="lise" {% if aday and aday.egitim_durumu == 'lise' %}selected{% endif %}>Lise</option>
-                        <option value="on_lisans" {% if aday and aday.egitim_durumu == 'on_lisans' %}selected{% endif %}>Ön Lisans</option>
-                        <option value="lisans" {% if aday and aday.egitim_durumu == 'lisans' %}selected{% endif %}>Lisans</option>
-                        <option value="yuksek_lisans" {% if aday and aday.egitim_durumu == 'yuksek_lisans' %}selected{% endif %}>Yüksek Lisans</option>
-                        <option value="doktora" {% if aday and aday.egitim_durumu == 'doktora' %}selected{% endif %}>Doktora</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Üniversite / Bölüm
-                    </label>
-                    <input type="text" name="universite" value="{{ aday.universite if aday else '' }}" placeholder="Örn: İTÜ - Bilgisayar Mühendisliği"
-                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                </div>
-            </div>
-        </div>
-        
-        <!-- İletişim Bilgileri -->
-        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
-            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
-                <span class="material-symbols-outlined text-primary">contact_mail</span>
-                <h3 class="text-lg font-bold text-[#111418] dark:text-white">İletişim Bilgileri</h3>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        E-Posta Adresi
-                    </label>
-                    <input type="email" name="email" value="{{ aday.email if aday else '' }}" placeholder="ornek@email.com"
-                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Telefon Numarası <span class="text-red-500">*</span>
-                    </label>
-                    <input type="tel" name="telefon" value="{{ aday.telefon if aday else '' }}" placeholder="05XX XXX XX XX" required
-                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        İl
-                    </label>
-                    <select name="il" id="ilSelect" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                        <option value="">Seçiniz</option>
-                        {% for il in iller %}
-                        <option value="{{ il.ad }}" {% if aday and aday.il == il.ad %}selected{% endif %}>{{ il.ad }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        İlçe
-                    </label>
-                    <input type="text" name="ilce" value="{{ aday.ilce if aday else '' }}" placeholder="İlçe"
-                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Adres
-                    </label>
-                    <textarea name="adres" rows="2" placeholder="Açık adres"
-                              class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">{{ aday.adres if aday else '' }}</textarea>
-                </div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="p-6">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <!-- Kişisel Bilgiler -->
+                    <h6 class="flex items-center gap-2 text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase tracking-wide mb-4">
+                        <span class="material-symbols-outlined text-sm">person</span>
+                        Kişisel Bilgiler
+                    </h6>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Ad *</label>
+                            <input type="text" name="ad" required value="{{ aday.ad if aday else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Soyad *</label>
+                            <input type="text" name="soyad" required value="{{ aday.soyad if aday else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">TC Kimlik No</label>
+                            <input type="text" name="tc_kimlik" maxlength="11" pattern="[0-9]{11}" title="11 haneli TC Kimlik numarası"
+                                   value="{{ aday.tc_kimlik if aday else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Doğum Tarihi</label>
+                            <input type="date" name="dogum_tarihi" value="{{ aday.dogum_tarihi.strftime('%Y-%m-%d') if aday and aday.dogum_tarihi else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Cinsiyet</label>
+                            <select name="cinsiyet" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seçiniz</option>
+                                <option value="erkek" {{ 'selected' if aday and aday.cinsiyet == 'erkek' }}>Erkek</option>
+                                <option value="kadin" {{ 'selected' if aday and aday.cinsiyet == 'kadin' }}>Kadın</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- İletişim Bilgileri -->
+                    <h6 class="flex items-center gap-2 text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase tracking-wide mb-4">
+                        <span class="material-symbols-outlined text-sm">call</span>
+                        İletişim Bilgileri
+                    </h6>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Telefon *</label>
+                            <input type="tel" name="telefon" required placeholder="5XX XXX XX XX" value="{{ aday.telefon if aday else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">E-posta</label>
+                            <input type="email" name="email" value="{{ aday.email if aday else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Adres</label>
+                            <textarea name="adres" rows="2" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ aday.adres if aday else '' }}</textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">İl</label>
+                            <input type="text" name="il" value="{{ aday.il if aday else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">İlçe</label>
+                            <input type="text" name="ilce" value="{{ aday.ilce if aday else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                    
+                    <!-- Başvuru Bilgileri -->
+                    <h6 class="flex items-center gap-2 text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase tracking-wide mb-4">
+                        <span class="material-symbols-outlined text-sm">work</span>
+                        Başvuru Bilgileri
+                    </h6>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Pozisyon</label>
+                            <select name="pozisyon_id" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seçiniz</option>
+                                {% for pozisyon in pozisyonlar %}
+                                <option value="{{ pozisyon.id }}" {{ 'selected' if aday and aday.pozisyon_id == pozisyon.id }}>{{ pozisyon.ad }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Kaynak</label>
+                            <select name="kaynak" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="manuel" {{ 'selected' if not aday or aday.kaynak == 'manuel' }}>Manuel Giriş</option>
+                                <option value="referans" {{ 'selected' if aday and aday.kaynak == 'referans' }}>Referans</option>
+                                <option value="kariyer_sitesi" {{ 'selected' if aday and aday.kaynak == 'kariyer_sitesi' }}>Kariyer Sitesi</option>
+                                <option value="sosyal_medya" {{ 'selected' if aday and aday.kaynak == 'sosyal_medya' }}>Sosyal Medya</option>
+                                <option value="ilan" {{ 'selected' if aday and aday.kaynak == 'ilan' }}>İlan</option>
+                                <option value="sirket_web" {{ 'selected' if aday and aday.kaynak == 'sirket_web' }}>Şirket Web Sitesi</option>
+                                <option value="sms_davet" {{ 'selected' if aday and aday.kaynak == 'sms_davet' }}>SMS Davet</option>
+                                <option value="diger" {{ 'selected' if aday and aday.kaynak == 'diger' }}>Diğer</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Değerlendirme Notu</label>
+                            <textarea name="degerlendirme_notu" rows="3" placeholder="Aday hakkında notlar..."
+                                      class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ aday.degerlendirme_notu if aday else '' }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <span class="material-symbols-outlined text-sm">check</span>
+                            {{ 'Güncelle' if aday else 'Kaydet' }}
+                        </button>
+                        <a href="{{ url_for('ik.aday_liste') }}" class="px-4 py-2 border border-border-light dark:border-border-dark text-text-primary dark:text-text-primary-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</a>
+                        {% if aday %}
+                        <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="inline-flex items-center gap-1 px-4 py-2 border border-border-light dark:border-border-dark text-text-primary dark:text-text-primary-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                            <span class="material-symbols-outlined text-sm">visibility</span>
+                            Detaya Dön
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
             </div>
         </div>
-        
-        <!-- Başvuru Bilgileri -->
-        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
-            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
-                <span class="material-symbols-outlined text-primary">work</span>
-                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Başvuru Bilgileri</h3>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Başvurulan Pozisyon
-                    </label>
-                    <select name="pozisyon_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                        <option value="">Pozisyon Seçin</option>
-                        {% for pozisyon in pozisyonlar %}
-                        <option value="{{ pozisyon.id }}" {% if aday and aday.pozisyon_id == pozisyon.id %}selected{% endif %}>{{ pozisyon.ad }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Başvuru Kaynağı
-                    </label>
-                    <select name="kaynak" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                        <option value="">Kaynak Seçin</option>
-                        <option value="linkedin" {% if aday and aday.kaynak == 'linkedin' %}selected{% endif %}>LinkedIn</option>
-                        <option value="kariyer.net" {% if aday and aday.kaynak == 'kariyer.net' %}selected{% endif %}>Kariyer.net</option>
-                        <option value="referans" {% if aday and aday.kaynak == 'referans' %}selected{% endif %}>Referans</option>
-                        <option value="web_sitesi" {% if aday and aday.kaynak == 'web_sitesi' %}selected{% endif %}>Web Sitesi</option>
-                        <option value="diger" {% if aday and aday.kaynak == 'diger' %}selected{% endif %}>Diğer</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Maaş Beklentisi (₺)
-                    </label>
-                    <input type="number" name="maas_beklentisi" value="{{ aday.maas_beklentisi|int if aday and aday.maas_beklentisi else '' }}" placeholder="Örn: 50000"
-                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Ehliyet
-                    </label>
-                    <select name="ehliyet" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                        <option value="">Seçiniz</option>
-                        <option value="yok" {% if aday and aday.ehliyet == 'yok' %}selected{% endif %}>Yok</option>
-                        <option value="A" {% if aday and aday.ehliyet == 'A' %}selected{% endif %}>A Sınıfı</option>
-                        <option value="B" {% if aday and aday.ehliyet == 'B' %}selected{% endif %}>B Sınıfı</option>
-                        <option value="C" {% if aday and aday.ehliyet == 'C' %}selected{% endif %}>C Sınıfı</option>
-                        <option value="D" {% if aday and aday.ehliyet == 'D' %}selected{% endif %}>D Sınıfı</option>
-                        <option value="E" {% if aday and aday.ehliyet == 'E' %}selected{% endif %}>E Sınıfı</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Askerlik Durumu
-                    </label>
-                    <select name="askerlik_durumu" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                        <option value="">Seçiniz</option>
-                        <option value="yapildi" {% if aday and aday.askerlik_durumu == 'yapildi' %}selected{% endif %}>Yapıldı</option>
-                        <option value="tecilli" {% if aday and aday.askerlik_durumu == 'tecilli' %}selected{% endif %}>Tecilli</option>
-                        <option value="muaf" {% if aday and aday.askerlik_durumu == 'muaf' %}selected{% endif %}>Muaf</option>
-                        <option value="yapilmadi" {% if aday and aday.askerlik_durumu == 'yapilmadi' %}selected{% endif %}>Yapılmadı</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Durum
-                    </label>
-                    <select name="durum" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
-                        <option value="basvurdu" {% if aday and aday.durum == 'basvurdu' %}selected{% endif %}>Başvurdu</option>
-                        <option value="degerlendiriliyor" {% if aday and aday.durum == 'degerlendiriliyor' %}selected{% endif %}>Değerlendiriliyor</option>
-                        <option value="mulakat" {% if aday and aday.durum == 'mulakat' %}selected{% endif %}>Mülakat</option>
-                        <option value="teklif" {% if aday and aday.durum == 'teklif' %}selected{% endif %}>Teklif</option>
-                        <option value="ise_alindi" {% if aday and aday.durum == 'ise_alindi' %}selected{% endif %}>İşe Alındı</option>
-                        <option value="reddedildi" {% if aday and aday.durum == 'reddedildi' %}selected{% endif %}>Reddedildi</option>
-                    </select>
-                </div>
-                <div class="md:col-span-2">
-                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
-                        Ek Notlar
-                    </label>
-                    <textarea name="notlar" rows="4" placeholder="Aday hakkında kısa notlar veya mülakat öncesi bilgiler..."
-                              class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">{{ aday.notlar if aday else '' }}</textarea>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Submit Buttons (Mobile) -->
-        <div class="flex items-center justify-end gap-4 pt-4 lg:hidden">
-            <a href="{{ url_for('ik.aday_liste') }}" class="px-6 py-2.5 text-sm font-bold text-text-muted dark:text-text-muted-dark hover:text-[#111418] dark:hover:text-white transition-colors">İptal</a>
-            <button type="submit" class="px-8 py-2.5 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">
-                {% if aday %}Güncelle{% else %}Kaydet{% endif %}
-            </button>
-        </div>
-        
     </div>
     
-    <!-- Sidebar -->
-    <aside class="lg:col-span-4 space-y-6">
-        
-        <!-- Info Box -->
-        <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-6">
-            <div class="flex items-center gap-3 mb-4">
-                <span class="material-symbols-outlined text-blue-500">info</span>
-                <h4 class="font-bold text-blue-900 dark:text-blue-200">Bilgilendirme</h4>
+    <div class="space-y-4">
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">info</span>
+                    Bilgi
+                </h3>
             </div>
-            <ul class="space-y-3 text-sm text-blue-800 dark:text-blue-300/80">
-                <li class="flex gap-2">
-                    <span class="material-symbols-outlined text-xs mt-1">check_circle</span>
-                    <span>Yıldızlı (*) alanların doldurulması zorunludur.</span>
+            <div class="p-5">
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-3">
+                    {% if aday %}
+                    Aday bilgilerini güncelleyebilirsiniz. Evrak yükleme ve durum değişikliği için detay sayfasını kullanın.
+                    {% else %}
+                    Manuel aday kaydı oluşturuyorsunuz. Bu durumda KVKK onayı alınmış kabul edilir.
+                    {% endif %}
+                </p>
+                <ul class="text-sm text-text-muted dark:text-text-muted-dark space-y-1">
+                    <li class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">check</span> Telefon numarası benzersiz olmalıdır</li>
+                    <li class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">check</span> TC Kimlik 11 haneli olmalıdır</li>
+                    {% if not aday %}
+                    <li class="flex items-center gap-1"><span class="material-symbols-outlined text-xs">check</span> SMS ile davet için "Kadro" modülünü kullanın</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+        
+        {% if aday %}
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">history</span>
+                    Aday Bilgileri
+                </h3>
+            </div>
+            <ul class="divide-y divide-border-light dark:divide-border-dark">
+                <li class="px-5 py-3 flex justify-between text-sm">
+                    <span class="text-text-muted dark:text-text-muted-dark">Başvuru Tarihi</span>
+                    <span class="text-text-primary dark:text-text-primary-dark">{{ aday.basvuru_tarihi.strftime('%d.%m.%Y') if aday.basvuru_tarihi else '-' }}</span>
                 </li>
-                <li class="flex gap-2">
-                    <span class="material-symbols-outlined text-xs mt-1">check_circle</span>
-                    <span>CV ve diğer belgeleri aday kaydedildikten sonra "Evrak Takibi" alanından yükleyebilirsiniz.</span>
+                <li class="px-5 py-3 flex justify-between text-sm">
+                    <span class="text-text-muted dark:text-text-muted-dark">Durum</span>
+                    {% set durum_renkler = {
+                        'davet_gonderildi': 'gray',
+                        'kvkk_bekliyor': 'yellow',
+                        'basvurdu': 'blue',
+                        'degerlendiriliyor': 'cyan',
+                        'mulakat': 'indigo',
+                        'teklif': 'yellow',
+                        'ise_alindi': 'green',
+                        'red': 'red',
+                        'iptal': 'gray'
+                    } %}
+                    <span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-{{ durum_renkler.get(aday.durum, 'gray') }}-100 text-{{ durum_renkler.get(aday.durum, 'gray') }}-700 dark:bg-{{ durum_renkler.get(aday.durum, 'gray') }}-900/30 dark:text-{{ durum_renkler.get(aday.durum, 'gray') }}-400">
+                        {{ aday.durum|replace('_', ' ')|title }}
+                    </span>
                 </li>
-                <li class="flex gap-2">
-                    <span class="material-symbols-outlined text-xs mt-1">check_circle</span>
-                    <span>T.C. Kimlik numarası sistemde mükerrer kayıt kontrolü için kullanılır.</span>
+                <li class="px-5 py-3 flex justify-between text-sm">
+                    <span class="text-text-muted dark:text-text-muted-dark">KVKK Onayı</span>
+                    {% if aday.kvkk_onay %}
+                    <span class="text-green-600 flex items-center gap-1"><span class="material-symbols-outlined text-sm">check_circle</span> Onaylandı</span>
+                    {% else %}
+                    <span class="text-yellow-600 flex items-center gap-1"><span class="material-symbols-outlined text-sm">warning</span> Bekleniyor</span>
+                    {% endif %}
                 </li>
+                {% if aday.kadro %}
+                <li class="px-5 py-3 flex justify-between text-sm">
+                    <span class="text-text-muted dark:text-text-muted-dark">Kadro</span>
+                    <span class="text-text-primary dark:text-text-primary-dark">{{ aday.kadro.pozisyon_adi }}</span>
+                </li>
+                {% endif %}
             </ul>
         </div>
-        
-        <!-- Photo Upload -->
-        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
-            <h3 class="text-sm font-bold uppercase text-text-muted dark:text-text-muted-dark mb-4 tracking-widest">Fotoğraf</h3>
-            <div class="flex flex-col items-center">
-                <div class="w-32 h-32 rounded-full bg-gray-100 dark:bg-[#111418] border-2 border-dashed border-border-light dark:border-border-dark flex items-center justify-center mb-4 overflow-hidden">
-                    {% if aday and aday.fotograf %}
-                    <img src="{{ url_for('static', filename='uploads/' + aday.fotograf) }}" alt="Fotoğraf" class="w-full h-full object-cover" id="previewImg">
-                    {% else %}
-                    <span class="material-symbols-outlined text-4xl text-gray-400" id="previewIcon">person</span>
-                    <img src="#" alt="Fotoğraf" class="w-full h-full object-cover hidden" id="previewImg">
-                    {% endif %}
-                </div>
-                <label class="cursor-pointer">
-                    <span class="px-4 py-2 bg-gray-100 dark:bg-[#111418] hover:bg-gray-200 dark:hover:bg-[#252b36] rounded-lg text-sm font-medium transition-colors">
-                        Fotoğraf Seç
-                    </span>
-                    <input type="file" name="fotograf" accept="image/*" class="hidden" onchange="previewImage(this)">
-                </label>
-            </div>
-        </div>
-        
-        <!-- Record Summary -->
-        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
-            <h3 class="text-sm font-bold uppercase text-text-muted dark:text-text-muted-dark mb-6 tracking-widest">Kayıt Özeti</h3>
-            <div class="space-y-4">
-                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
-                    <span class="text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase">Kayıt Tarihi</span>
-                    <span class="text-sm font-medium text-[#111418] dark:text-white">
-                        {% if aday %}{{ aday.created_at.strftime('%d.%m.%Y') }}{% else %}Bugün{% endif %}
-                    </span>
-                </div>
-                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
-                    <span class="text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase">Kayıt Türü</span>
-                    <span class="text-sm font-medium text-[#111418] dark:text-white">{% if aday %}Düzenleme{% else %}Yeni Giriş{% endif %}</span>
-                </div>
-                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
-                    <span class="text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase">İşlemi Yapan</span>
-                    <div class="flex items-center gap-2">
-                        <div class="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">
-                            {{ current_user.ad[0] if current_user.ad else 'U' }}
-                        </div>
-                        <span class="text-sm font-medium text-[#111418] dark:text-white">{{ current_user.ad }}</span>
-                    </div>
-                </div>
-            </div>
-            {% if aday %}
-            <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="w-full mt-6 py-2.5 border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#111418] rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2">
-                <span class="material-symbols-outlined text-lg">arrow_back</span>
-                Detay Sayfasına Dön
-            </a>
-            {% endif %}
-        </div>
-        
-    </aside>
-</form>
-
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function previewImage(input) {
-    const preview = document.getElementById('previewImg');
-    const icon = document.getElementById('previewIcon');
-    
-    if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            preview.src = e.target.result;
-            preview.classList.remove('hidden');
-            if (icon) icon.classList.add('hidden');
-        }
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-</script>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

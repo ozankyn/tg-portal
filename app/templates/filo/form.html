@@ -7,48 +7,46 @@
 <form method="POST">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     
-    <div class="row">
-        <div class="col-lg-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-6">
             <!-- Temel Bilgiler -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-truck me-2"></i>Temel Bilgiler</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">local_shipping</span>Temel Bilgiler
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Plaka <span class="text-danger">*</span></label>
-                            <input type="text" name="plaka" class="form-control text-uppercase" required
-                                   value="{{ arac.plaka if arac else '' }}" placeholder="34 ABC 123">
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Plaka <span class="text-red-500">*</span></label>
+                            <input type="text" name="plaka" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 uppercase" required value="{{ arac.plaka if arac else '' }}" placeholder="34 ABC 123">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Marka <span class="text-danger">*</span></label>
-                            <input type="text" name="marka" class="form-control" required
-                                   value="{{ arac.marka if arac else '' }}" placeholder="Ford">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Marka <span class="text-red-500">*</span></label>
+                            <input type="text" name="marka" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="{{ arac.marka if arac else '' }}" placeholder="Ford">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Model</label>
-                            <input type="text" name="model" class="form-control"
-                                   value="{{ arac.model if arac else '' }}" placeholder="Transit">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Model</label>
+                            <input type="text" name="model" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ arac.model if arac else '' }}" placeholder="Transit">
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Model Yılı</label>
-                            <input type="number" name="model_yili" class="form-control"
-                                   value="{{ arac.model_yili if arac else '' }}" min="1990" max="2030">
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Model Yılı</label>
+                            <input type="number" name="model_yili" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ arac.model_yili if arac else '' }}" min="1990" max="2030">
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Renk</label>
-                            <input type="text" name="renk" class="form-control"
-                                   value="{{ arac.renk if arac else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Renk</label>
+                            <input type="text" name="renk" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ arac.renk if arac else '' }}">
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Kilometre</label>
-                            <input type="number" name="km" class="form-control"
-                                   value="{{ arac.km if arac else '0' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Kilometre</label>
+                            <input type="number" name="km" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ arac.km if arac else '0' }}">
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Durum</label>
-                            <select name="durum" class="form-select">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Durum</label>
+                            <select name="durum" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 {% for d in durumlar %}
                                 <option value="{{ d.value }}" {% if arac and arac.durum == d %}selected{% endif %}>
                                     {{ d.value|replace('_', ' ')|title }}
@@ -61,25 +59,27 @@
             </div>
             
             <!-- Teknik Bilgiler -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Teknik Bilgiler</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">settings</span>Teknik Bilgiler
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Şasi No</label>
-                            <input type="text" name="sasi_no" class="form-control"
-                                   value="{{ arac.sasi_no if arac else '' }}">
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Şasi No</label>
+                            <input type="text" name="sasi_no" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ arac.sasi_no if arac else '' }}">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Motor No</label>
-                            <input type="text" name="motor_no" class="form-control"
-                                   value="{{ arac.motor_no if arac else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Motor No</label>
+                            <input type="text" name="motor_no" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ arac.motor_no if arac else '' }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Yakıt Tipi</label>
-                            <select name="yakit_tipi" class="form-select">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Yakıt Tipi</label>
+                            <select name="yakit_tipi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçiniz</option>
                                 {% for y in yakit_tipleri %}
                                 <option value="{{ y.value }}" {% if arac and arac.yakit_tipi == y %}selected{% endif %}>
@@ -88,14 +88,13 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Motor Hacmi (cc)</label>
-                            <input type="number" name="motor_hacmi" class="form-control"
-                                   value="{{ arac.motor_hacmi if arac else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Motor Hacmi (cc)</label>
+                            <input type="number" name="motor_hacmi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ arac.motor_hacmi if arac else '' }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Vites Tipi</label>
-                            <select name="vites_tipi" class="form-select">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Vites Tipi</label>
+                            <select name="vites_tipi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçiniz</option>
                                 <option value="manuel" {% if arac and arac.vites_tipi == 'manuel' %}selected{% endif %}>Manuel</option>
                                 <option value="otomatik" {% if arac and arac.vites_tipi == 'otomatik' %}selected{% endif %}>Otomatik</option>
@@ -106,61 +105,64 @@
             </div>
             
             <!-- Sahiplik Bilgileri -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-file-earmark-text me-2"></i>Sahiplik Bilgileri</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">description</span>Sahiplik Bilgileri
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Sahiplik Tipi</label>
-                            <select name="sahiplik_tipi" class="form-select">
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Sahiplik Tipi</label>
+                            <select name="sahiplik_tipi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçiniz</option>
                                 <option value="sirket" {% if arac and arac.sahiplik_tipi == 'sirket' %}selected{% endif %}>Şirket</option>
                                 <option value="kiralama" {% if arac and arac.sahiplik_tipi == 'kiralama' %}selected{% endif %}>Kiralama</option>
                                 <option value="leasing" {% if arac and arac.sahiplik_tipi == 'leasing' %}selected{% endif %}>Leasing</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Kira Başlangıç</label>
-                            <input type="date" name="kira_baslangic" class="form-control"
-                                   value="{{ arac.kira_baslangic.strftime('%Y-%m-%d') if arac and arac.kira_baslangic else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Kira Başlangıç</label>
+                            <input type="date" name="kira_baslangic" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ arac.kira_baslangic.strftime('%Y-%m-%d') if arac and arac.kira_baslangic else '' }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Kira Bitiş</label>
-                            <input type="date" name="kira_bitis" class="form-control"
-                                   value="{{ arac.kira_bitis.strftime('%Y-%m-%d') if arac and arac.kira_bitis else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Kira Bitiş</label>
+                            <input type="date" name="kira_bitis" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ arac.kira_bitis.strftime('%Y-%m-%d') if arac and arac.kira_bitis else '' }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Aylık Kira (₺)</label>
-                            <input type="number" name="aylik_kira" class="form-control" step="0.01"
-                                   value="{{ arac.aylik_kira if arac else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Aylık Kira (₺)</label>
+                            <input type="number" name="aylik_kira" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01" value="{{ arac.aylik_kira if arac else '' }}">
                         </div>
                     </div>
                 </div>
             </div>
             
             <!-- Notlar -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-sticky me-2"></i>Notlar</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">sticky_note_2</span>Notlar
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <textarea name="notlar" class="form-control" rows="3">{{ arac.notlar if arac else '' }}</textarea>
+                <div class="p-4">
+                    <textarea name="notlar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3">{{ arac.notlar if arac else '' }}</textarea>
                 </div>
             </div>
         </div>
         
-        <div class="col-lg-4">
+        <div class="space-y-4">
             <!-- Atama -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-person-check me-2"></i>Atama</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">person_check</span>Atama
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Proje</label>
-                        <select name="proje_id" class="form-select select2">
+                <div class="p-4">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Proje</label>
+                        <select name="proje_id" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 select2">
                             <option value="">Proje Seçiniz</option>
                             {% for p in projeler %}
                             <option value="{{ p.id }}" {% if arac and arac.proje_id == p.id %}selected{% endif %}>
@@ -168,11 +170,11 @@
                             </option>
                             {% endfor %}
                         </select>
-                        <small class="text-muted">Araç hangi projeye tahsis edilecek?</small>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Araç hangi projeye tahsis edilecek?</p>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Şoför / Kullanıcı</label>
-                        <select name="atanan_calisan_id" class="form-select select2">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Şoför / Kullanıcı</label>
+                        <select name="atanan_calisan_id" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 select2">
                             <option value="">Şoför Seçiniz</option>
                             {% for c in calisanlar %}
                             <option value="{{ c.id }}" {% if arac and arac.atanan_calisan_id == c.id %}selected{% endif %}>
@@ -185,16 +187,14 @@
             </div>
             
             <!-- Aksiyonlar -->
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-1"></i>{{ 'Güncelle' if arac else 'Kaydet' }}
-                        </button>
-                        <a href="{{ url_for('filo.detay', id=arac.id) if arac else url_for('filo.liste') }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg me-1"></i>İptal
-                        </a>
-                    </div>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="p-4 space-y-2">
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-symbols-outlined">check</span>{{ 'Güncelle' if arac else 'Kaydet' }}
+                    </button>
+                    <a href="{{ url_for('filo.detay', id=arac.id) if arac else url_for('filo.liste') }}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 text-[#111418] dark:text-white font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                        <span class="material-symbols-outlined">close</span>İptal
+                    </a>
                 </div>
             </div>
         </div>

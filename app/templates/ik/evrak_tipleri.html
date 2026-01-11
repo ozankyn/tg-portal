@@ -4,98 +4,102 @@
 {% block page_title %}Evrak Tipleri{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Tanımlı Evrak Tipleri</h6>
-                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#evrakTipiModal">
-                    <i class="bi bi-plus-lg me-1"></i> Yeni Ekle
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h3 class="font-semibold text-text-primary dark:text-text-primary-dark">Tanımlı Evrak Tipleri</h3>
+                <button onclick="document.getElementById('evrakTipiModal').classList.remove('hidden')" class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                    <span class="material-symbols-outlined text-sm">add</span>
+                    Yeni Ekle
                 </button>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th width="50">Sıra</th>
-                                <th>Evrak Adı</th>
-                                <th>Kod</th>
-                                <th>Kategori</th>
-                                <th>Zorunlu</th>
-                                <th>Durum</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for evrak in evrak_tipleri %}
-                            <tr>
-                                <td>{{ evrak.sira }}</td>
-                                <td>
-                                    <strong>{{ evrak.ad }}</strong>
-                                    {% if evrak.aciklama %}
-                                    <div class="small text-muted">{{ evrak.aciklama }}</div>
-                                    {% endif %}
-                                </td>
-                                <td><code>{{ evrak.kod }}</code></td>
-                                <td>
-                                    {% set kategori_labels = {
-                                        'kimlik': 'Kimlik',
-                                        'egitim': 'Eğitim',
-                                        'saglik': 'Sağlık',
-                                        'sgk': 'SGK',
-                                        'sozlesme': 'Sözleşme',
-                                        'diger': 'Diğer'
-                                    } %}
-                                    <span class="badge bg-light text-dark">{{ kategori_labels.get(evrak.kategori, evrak.kategori) }}</span>
-                                </td>
-                                <td>
-                                    {% if evrak.zorunlu %}
-                                    <span class="badge bg-danger">Zorunlu</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">Opsiyonel</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if evrak.aktif %}
-                                    <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
-                                    {% else %}
-                                    <span class="text-muted"><i class="bi bi-x-circle"></i></span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
-                                    Henüz evrak tipi tanımlanmamış
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-[#252b36] text-xs text-text-muted dark:text-text-muted-dark uppercase">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium w-16">Sıra</th>
+                            <th class="px-4 py-3 text-left font-medium">Evrak Adı</th>
+                            <th class="px-4 py-3 text-left font-medium">Kod</th>
+                            <th class="px-4 py-3 text-left font-medium">Kategori</th>
+                            <th class="px-4 py-3 text-left font-medium">Zorunlu</th>
+                            <th class="px-4 py-3 text-left font-medium">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for evrak in evrak_tipleri %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                            <td class="px-4 py-3 text-sm text-text-muted dark:text-text-muted-dark">{{ evrak.sira }}</td>
+                            <td class="px-4 py-3">
+                                <p class="font-medium text-text-primary dark:text-text-primary-dark">{{ evrak.ad }}</p>
+                                {% if evrak.aciklama %}
+                                <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ evrak.aciklama }}</p>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                <code class="px-2 py-0.5 bg-gray-100 text-text-muted dark:text-text-muted-dark text-xs rounded">{{ evrak.kod }}</code>
+                            </td>
+                            <td class="px-4 py-3">
+                                {% set kategori_labels = {
+                                    'kimlik': 'Kimlik',
+                                    'egitim': 'Eğitim',
+                                    'saglik': 'Sağlık',
+                                    'sgk': 'SGK',
+                                    'sozlesme': 'Sözleşme',
+                                    'diger': 'Diğer'
+                                } %}
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">{{ kategori_labels.get(evrak.kategori, evrak.kategori) }}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if evrak.zorunlu %}
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Zorunlu</span>
+                                {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-text-muted dark:text-text-muted-dark">Opsiyonel</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if evrak.aktif %}
+                                <span class="material-symbols-outlined text-green-500">check_circle</span>
+                                {% else %}
+                                <span class="material-symbols-outlined text-gray-400 dark:text-gray-500">cancel</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">
+                                Henüz evrak tipi tanımlanmamış
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
+    <div>
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">info</span>
+                    Bilgi
+                </h3>
             </div>
-            <div class="card-body">
-                <p class="small text-muted mb-3">
+            <div class="p-5">
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">
                     Evrak tipleri, adaylardan toplanacak belgeleri tanımlar. 
                     <strong>Zorunlu</strong> olarak işaretlenen evraklar tamamlanmadan aday çalışana dönüştürülemez.
                 </p>
                 
-                <h6 class="small text-uppercase text-muted mb-2">Kategoriler</h6>
-                <ul class="list-unstyled small">
-                    <li><span class="badge bg-light text-dark me-2">Kimlik</span> Nüfus, ikametgah vb.</li>
-                    <li><span class="badge bg-light text-dark me-2">Eğitim</span> Diploma, transkript</li>
-                    <li><span class="badge bg-light text-dark me-2">Sağlık</span> Sağlık raporu</li>
-                    <li><span class="badge bg-light text-dark me-2">SGK</span> SGK belgeleri</li>
-                    <li><span class="badge bg-light text-dark me-2">Sözleşme</span> İş sözleşmesi, KVKK</li>
-                    <li><span class="badge bg-light text-dark me-2">Diğer</span> CV, referans vb.</li>
+                <h6 class="text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase tracking-wide mb-2">Kategoriler</h6>
+                <ul class="text-sm text-text-muted dark:text-text-muted-dark space-y-1">
+                    <li><span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 mr-2">Kimlik</span> Nüfus, ikametgah vb.</li>
+                    <li><span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 mr-2">Eğitim</span> Diploma, transkript</li>
+                    <li><span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 mr-2">Sağlık</span> Sağlık raporu</li>
+                    <li><span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 mr-2">SGK</span> SGK belgeleri</li>
+                    <li><span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 mr-2">Sözleşme</span> İş sözleşmesi, KVKK</li>
+                    <li><span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 mr-2">Diğer</span> CV, referans vb.</li>
                 </ul>
             </div>
         </div>
@@ -103,55 +107,57 @@
 </div>
 
 <!-- Yeni Evrak Tipi Modal -->
-<div class="modal fade" id="evrakTipiModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('ik.evrak_tipi_ekle') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                    <h5 class="modal-title">Yeni Evrak Tipi</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div id="evrakTipiModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-card-dark rounded-lg shadow-xl w-full max-w-md mx-4">
+        <form method="POST" action="{{ url_for('ik.evrak_tipi_ekle') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-text-primary dark:text-text-primary-dark">Yeni Evrak Tipi</h3>
+                <button type="button" onclick="document.getElementById('evrakTipiModal').classList.add('hidden')" class="text-gray-400 dark:text-gray-500 hover:text-text-muted dark:text-text-muted-dark">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Evrak Adı *</label>
+                    <input type="text" name="ad" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Evrak Adı *</label>
-                        <input type="text" name="ad" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Kod *</label>
-                        <input type="text" name="kod" class="form-control" required placeholder="NUFUS, DIPLOMA vb.">
-                        <div class="form-text">Benzersiz, büyük harf, Türkçe karakter içermemeli</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Kategori</label>
-                        <select name="kategori" class="form-select">
-                            <option value="kimlik">Kimlik</option>
-                            <option value="egitim">Eğitim</option>
-                            <option value="saglik">Sağlık</option>
-                            <option value="sgk">SGK</option>
-                            <option value="sozlesme">Sözleşme</option>
-                            <option value="diger">Diğer</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Sıra</label>
-                        <input type="number" name="sira" class="form-control" value="0">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Açıklama</label>
-                        <textarea name="aciklama" class="form-control" rows="2"></textarea>
-                    </div>
-                    <div class="form-check">
-                        <input type="checkbox" name="zorunlu" class="form-check-input" id="zorunluCheck">
-                        <label class="form-check-label" for="zorunluCheck">Zorunlu Evrak</label>
-                    </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Kod *</label>
+                    <input type="text" name="kod" required placeholder="NUFUS, DIPLOMA vb." class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Benzersiz, büyük harf, Türkçe karakter içermemeli</p>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                <div>
+                    <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Kategori</label>
+                    <select name="kategori" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="kimlik">Kimlik</option>
+                        <option value="egitim">Eğitim</option>
+                        <option value="saglik">Sağlık</option>
+                        <option value="sgk">SGK</option>
+                        <option value="sozlesme">Sözleşme</option>
+                        <option value="diger">Diğer</option>
+                    </select>
                 </div>
-            </form>
-        </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Sıra</label>
+                    <input type="number" name="sira" value="0" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Açıklama</label>
+                    <textarea name="aciklama" rows="2" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+                <div>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="zorunlu" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm text-text-primary dark:text-text-primary-dark">Zorunlu Evrak</span>
+                    </label>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('evrakTipiModal').classList.add('hidden')" class="px-4 py-2 border border-border-light dark:border-border-dark text-text-primary dark:text-text-primary-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Kaydet</button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

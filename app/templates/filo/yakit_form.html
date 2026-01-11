@@ -4,56 +4,56 @@
 {% block page_title %}Yakıt Kaydı Ekle{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-6">
-        <div class="card">
-            <div class="card-header bg-secondary text-white">
-                <h6 class="mb-0"><i class="bi bi-fuel-pump me-2"></i>{{ arac.plaka }} - Yakıt Kaydı</h6>
-            </div>
-            <div class="card-body">
-                <form method="POST">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Tarih *</label>
-                            <input type="datetime-local" name="tarih" class="form-control" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Kilometre *</label>
-                            <input type="number" name="km" class="form-control" required value="{{ arac.km or 0 }}">
-                        </div>
+<div class="max-w-lg mx-auto">
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+        <div class="bg-gray-600 text-white px-4 py-3 rounded-t-xl">
+            <h6 class="font-medium flex items-center gap-2">
+                <span class="material-symbols-outlined">local_gas_station</span>{{ arac.plaka }} - Yakıt Kaydı
+            </h6>
+        </div>
+        <div class="p-6">
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Tarih *</label>
+                        <input type="datetime-local" name="tarih" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Litre *</label>
-                            <input type="number" name="litre" class="form-control" step="0.01" required>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Tutar (₺) *</label>
-                            <input type="number" name="tutar" class="form-control" step="0.01" required>
-                        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Kilometre *</label>
+                        <input type="number" name="km" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="{{ arac.km or 0 }}">
                     </div>
-                    
-                    <div class="mb-3">
-                        <label class="form-label">İstasyon Adı</label>
-                        <input type="text" name="istasyon_adi" class="form-control">
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Litre *</label>
+                        <input type="number" name="litre" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01" required>
                     </div>
-                    
-                    <div class="form-check mb-3">
-                        <input type="checkbox" name="full_depo" class="form-check-input" id="fullDepo" checked>
-                        <label class="form-check-label" for="fullDepo">Full depo</label>
+                    <div>
+                        <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Tutar (₺) *</label>
+                        <input type="number" name="tutar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01" required>
                     </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-secondary">
-                            <i class="bi bi-plus-lg me-1"></i>Kaydet
-                        </button>
-                        <a href="{{ url_for('filo.detay', id=arac.id) }}" class="btn btn-outline-secondary">İptal</a>
-                    </div>
-                </form>
-            </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">İstasyon Adı</label>
+                    <input type="text" name="istasyon_adi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                
+                <div class="flex items-center mb-6">
+                    <input type="checkbox" name="full_depo" class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500" id="fullDepo" checked>
+                    <label class="ml-2 text-sm text-text-muted dark:text-text-muted-dark" for="fullDepo">Full depo</label>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700 transition-colors">
+                        <span class="material-symbols-outlined">add</span>Kaydet
+                    </button>
+                    <a href="{{ url_for('filo.detay', id=arac.id) }}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-[#111418] dark:text-white font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>

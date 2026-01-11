@@ -14,9 +14,9 @@ services:
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
       - DATABASE_URL=postgresql://tgportal:tgportal123@db:5432/tgportal
       - REDIS_URL=redis://redis:6379/0
-      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID:-}
-      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN:-}
-      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER:-}
+      - NETGSM_USERCODE=${NETGSM_USERCODE:-}
+      - NETGSM_PASSWORD=${NETGSM_PASSWORD:-}
+      - NETGSM_HEADER=${NETGSM_HEADER:-}
     depends_on:
       db:
         condition: service_healthy

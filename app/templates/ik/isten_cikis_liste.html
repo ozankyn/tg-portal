@@ -4,83 +4,79 @@
 {% block page_title %}İşten Çıkışlar{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="card-header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0">İşten Çıkış Kayıtları</h6>
-            <div class="btn-group btn-group-sm">
-                <a href="{{ url_for('ik.isten_cikis_liste') }}" class="btn btn-outline-secondary {{ 'active' if not request.args.get('durum') }}">Tümü</a>
-                <a href="{{ url_for('ik.isten_cikis_liste', durum='basladi') }}" class="btn btn-outline-secondary {{ 'active' if request.args.get('durum') == 'basladi' }}">Başladı</a>
-                <a href="{{ url_for('ik.isten_cikis_liste', durum='devam_ediyor') }}" class="btn btn-outline-secondary {{ 'active' if request.args.get('durum') == 'devam_ediyor' }}">Devam Ediyor</a>
-                <a href="{{ url_for('ik.isten_cikis_liste', durum='tamamlandi') }}" class="btn btn-outline-secondary {{ 'active' if request.args.get('durum') == 'tamamlandi' }}">Tamamlandı</a>
-            </div>
+<div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+        <h3 class="font-semibold text-text-primary dark:text-text-primary-dark">İşten Çıkış Kayıtları</h3>
+        <div class="flex items-center gap-1">
+            <a href="{{ url_for('ik.isten_cikis_liste') }}" class="px-3 py-1.5 text-sm rounded-lg {% if not request.args.get('durum') %}bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100{% endif %}">Tümü</a>
+            <a href="{{ url_for('ik.isten_cikis_liste', durum='basladi') }}" class="px-3 py-1.5 text-sm rounded-lg {% if request.args.get('durum') == 'basladi' %}bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100{% endif %}">Başladı</a>
+            <a href="{{ url_for('ik.isten_cikis_liste', durum='devam_ediyor') }}" class="px-3 py-1.5 text-sm rounded-lg {% if request.args.get('durum') == 'devam_ediyor' %}bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100{% endif %}">Devam Ediyor</a>
+            <a href="{{ url_for('ik.isten_cikis_liste', durum='tamamlandi') }}" class="px-3 py-1.5 text-sm rounded-lg {% if request.args.get('durum') == 'tamamlandi' %}bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100{% endif %}">Tamamlandı</a>
         </div>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Çalışan</th>
-                        <th>Çıkış Tipi</th>
-                        <th>Planlanan Tarih</th>
-                        <th>İlerleme</th>
-                        <th>Durum</th>
-                        <th class="text-end">İşlem</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for cikis in cikislar %}
-                    <tr>
-                        <td>
-                            <a href="{{ url_for('ik.detay', id=cikis.calisan_id) }}" class="text-decoration-none fw-semibold">
-                                {{ cikis.calisan.full_name }}
-                            </a>
-                            <div class="small text-muted">{{ cikis.calisan.pozisyon.ad if cikis.calisan.pozisyon else '-' }}</div>
-                        </td>
-                        <td>{{ cikis.cikis_tipi|title }}</td>
-                        <td>{{ cikis.planlanan_cikis_tarihi.strftime('%d.%m.%Y') }}</td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                <div class="progress progress-sm flex-grow-1 me-2" style="width: 60px; height: 6px;">
-                                    <div class="progress-bar bg-{{ 'success' if cikis.tamamlanma_yuzdesi == 100 else 'warning' }}" 
-                                         style="width: {{ cikis.tamamlanma_yuzdesi }}%"></div>
-                                </div>
-                                <small>%{{ cikis.tamamlanma_yuzdesi }}</small>
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-[#252b36] text-xs text-text-muted dark:text-text-muted-dark uppercase">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium">Çalışan</th>
+                    <th class="px-4 py-3 text-left font-medium">Çıkış Tipi</th>
+                    <th class="px-4 py-3 text-left font-medium">Planlanan Tarih</th>
+                    <th class="px-4 py-3 text-left font-medium">İlerleme</th>
+                    <th class="px-4 py-3 text-left font-medium">Durum</th>
+                    <th class="px-4 py-3 text-right font-medium">İşlem</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for cikis in cikislar %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('ik.detay', id=cikis.calisan_id) }}" class="font-semibold text-blue-600 hover:text-blue-700">
+                            {{ cikis.calisan.full_name }}
+                        </a>
+                        <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ cikis.calisan.pozisyon.ad if cikis.calisan.pozisyon else '-' }}</p>
+                    </td>
+                    <td class="px-4 py-3 text-sm">{{ cikis.cikis_tipi|title }}</td>
+                    <td class="px-4 py-3 text-sm">{{ cikis.planlanan_cikis_tarihi.strftime('%d.%m.%Y') }}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-2">
+                            <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-1.5 w-16">
+                                <div class="h-1.5 rounded-full {% if cikis.tamamlanma_yuzdesi == 100 %}bg-green-500{% else %}bg-yellow-500{% endif %}" style="width: {{ cikis.tamamlanma_yuzdesi }}%"></div>
                             </div>
-                        </td>
-                        <td>
-                            <span class="badge bg-{{ cikis.durum_renk }}">{{ cikis.durum|title }}</span>
-                        </td>
-                        <td class="text-end">
-                            <a href="{{ url_for('ik.isten_cikis_detay', id=cikis.id) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
-                            İşten çıkış kaydı bulunmuyor
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                            <span class="text-xs text-text-muted dark:text-text-muted-dark">%{{ cikis.tamamlanma_yuzdesi }}</span>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-{{ cikis.durum_renk }}-100 text-{{ cikis.durum_renk }}-700 dark:bg-{{ cikis.durum_renk }}-900/30 dark:text-{{ cikis.durum_renk }}-400">{{ cikis.durum|title }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <a href="{{ url_for('ik.isten_cikis_detay', id=cikis.id) }}" class="p-1.5 text-text-muted dark:text-text-muted-dark hover:text-blue-600 hover:bg-blue-50 rounded inline-flex">
+                            <span class="material-symbols-outlined text-lg">visibility</span>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="px-4 py-12 text-center text-text-muted dark:text-text-muted-dark">
+                        İşten çıkış kaydı bulunmuyor
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
 {% if pagination.pages > 1 %}
-<nav class="mt-4">
-    <ul class="pagination justify-content-center">
+<nav class="mt-6 flex justify-center">
+    <ul class="inline-flex items-center gap-1">
         {% for p in pagination.iter_pages() %}
         {% if p %}
-        <li class="page-item {{ 'active' if p == pagination.page }}">
-            <a class="page-link" href="{{ url_for('ik.isten_cikis_liste', page=p, durum=request.args.get('durum')) }}">{{ p }}</a>
+        <li>
+            <a href="{{ url_for('ik.isten_cikis_liste', page=p, durum=request.args.get('durum')) }}" 
+               class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
         </li>
         {% else %}
-        <li class="page-item disabled"><span class="page-link">...</span></li>
+        <li><span class="px-3 py-1.5 text-gray-400 dark:text-gray-500">...</span></li>
         {% endif %}
         {% endfor %}
     </ul>

@@ -4,88 +4,94 @@
 {% block page_title %}Zimmet Tipleri{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Tanımlı Zimmet Tipleri</h6>
-                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#tipModal">
-                    <i class="bi bi-plus-lg me-1"></i> Yeni Ekle
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h3 class="font-semibold text-text-primary dark:text-text-primary-dark">Tanımlı Zimmet Tipleri</h3>
+                <button onclick="document.getElementById('tipModal').classList.remove('hidden')" class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                    <span class="material-symbols-outlined text-sm">add</span>
+                    Yeni Ekle
                 </button>
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Tip Adı</th>
-                                <th>Kod</th>
-                                <th>Kategori</th>
-                                <th>Seri No</th>
-                                <th>İade Zorunlu</th>
-                                <th>Durum</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for tip in zimmet_tipleri %}
-                            <tr>
-                                <td>
-                                    <strong>{{ tip.ad }}</strong>
-                                    {% if tip.aciklama %}
-                                    <div class="small text-muted">{{ tip.aciklama }}</div>
-                                    {% endif %}
-                                </td>
-                                <td><code>{{ tip.kod }}</code></td>
-                                <td><span class="badge bg-light text-dark">{{ tip.kategori or '-' }}</span></td>
-                                <td>
-                                    {% if tip.seri_no_zorunlu %}
-                                    <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
-                                    {% else %}
-                                    <span class="text-muted"><i class="bi bi-dash"></i></span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if tip.iade_zorunlu %}
-                                    <span class="badge bg-danger">Zorunlu</span>
-                                    {% else %}
-                                    <span class="badge bg-secondary">Opsiyonel</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if tip.aktif %}
-                                    <span class="text-success"><i class="bi bi-check-circle-fill"></i></span>
-                                    {% else %}
-                                    <span class="text-muted"><i class="bi bi-x-circle"></i></span>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% else %}
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-4">Zimmet tipi tanımlanmamış</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 dark:bg-[#252b36] text-xs text-text-muted dark:text-text-muted-dark uppercase">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium">Tip Adı</th>
+                            <th class="px-4 py-3 text-left font-medium">Kod</th>
+                            <th class="px-4 py-3 text-left font-medium">Kategori</th>
+                            <th class="px-4 py-3 text-left font-medium">Seri No</th>
+                            <th class="px-4 py-3 text-left font-medium">İade Zorunlu</th>
+                            <th class="px-4 py-3 text-left font-medium">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for tip in zimmet_tipleri %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                            <td class="px-4 py-3">
+                                <p class="font-medium text-text-primary dark:text-text-primary-dark">{{ tip.ad }}</p>
+                                {% if tip.aciklama %}
+                                <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ tip.aciklama }}</p>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                <code class="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-text-muted dark:text-text-muted-dark text-xs rounded">{{ tip.kod }}</code>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">{{ tip.kategori or '-' }}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if tip.seri_no_zorunlu %}
+                                <span class="material-symbols-outlined text-green-500">check_circle</span>
+                                {% else %}
+                                <span class="material-symbols-outlined text-gray-400 dark:text-gray-500">remove</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if tip.iade_zorunlu %}
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Zorunlu</span>
+                                {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-text-muted dark:text-text-muted-dark">Opsiyonel</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if tip.aktif %}
+                                <span class="material-symbols-outlined text-green-500">check_circle</span>
+                                {% else %}
+                                <span class="material-symbols-outlined text-gray-400 dark:text-gray-500">cancel</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Zimmet tipi tanımlanmamış</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Bilgi</h6>
+    <div>
+        <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">info</span>
+                    Bilgi
+                </h3>
             </div>
-            <div class="card-body">
-                <p class="small text-muted mb-3">
+            <div class="p-5">
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">
                     Zimmet tipleri, şirket envanterindeki malzeme kategorilerini tanımlar.
                 </p>
-                <h6 class="small text-uppercase text-muted mb-2">Örnek Kategoriler</h6>
-                <ul class="list-unstyled small">
-                    <li><span class="badge bg-light text-dark me-2">elektronik</span> Bilgisayar, telefon</li>
-                    <li><span class="badge bg-light text-dark me-2">arac</span> Araç anahtarı, HGS</li>
-                    <li><span class="badge bg-light text-dark me-2">ofis</span> Masa, sandalye</li>
-                    <li><span class="badge bg-light text-dark me-2">guvenlik</span> Giriş kartı, anahtar</li>
+                <h6 class="text-xs font-semibold text-text-muted dark:text-text-muted-dark uppercase tracking-wide mb-2">Örnek Kategoriler</h6>
+                <ul class="text-sm text-text-muted dark:text-text-muted-dark space-y-1">
+                    <li><span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 mr-2">elektronik</span> Bilgisayar, telefon</li>
+                    <li><span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 mr-2">arac</span> Araç anahtarı, HGS</li>
+                    <li><span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 mr-2">ofis</span> Masa, sandalye</li>
+                    <li><span class="inline-flex px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 mr-2">guvenlik</span> Giriş kartı, anahtar</li>
                 </ul>
             </div>
         </div>
@@ -93,53 +99,55 @@
 </div>
 
 <!-- Yeni Tip Modal -->
-<div class="modal fade" id="tipModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('ik.zimmet_tipi_ekle') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                    <h5 class="modal-title">Yeni Zimmet Tipi</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div id="tipModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-card-dark rounded-lg shadow-xl w-full max-w-md mx-4">
+        <form method="POST" action="{{ url_for('ik.zimmet_tipi_ekle') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-text-primary dark:text-text-primary-dark">Yeni Zimmet Tipi</h3>
+                <button type="button" onclick="document.getElementById('tipModal').classList.add('hidden')" class="text-gray-400 dark:text-gray-500 hover:text-text-muted dark:text-text-muted-dark">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Tip Adı *</label>
+                    <input type="text" name="ad" required placeholder="Laptop, Telefon vb." class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Tip Adı *</label>
-                        <input type="text" name="ad" class="form-control" required placeholder="Laptop, Telefon vb.">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Kod *</label>
-                        <input type="text" name="kod" class="form-control" required placeholder="LAPTOP, TELEFON vb.">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Kategori</label>
-                        <select name="kategori" class="form-select">
-                            <option value="elektronik">Elektronik</option>
-                            <option value="arac">Araç</option>
-                            <option value="ofis">Ofis</option>
-                            <option value="guvenlik">Güvenlik</option>
-                            <option value="diger">Diğer</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Açıklama</label>
-                        <textarea name="aciklama" class="form-control" rows="2"></textarea>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input type="checkbox" name="seri_no_zorunlu" class="form-check-input" id="seriCheck">
-                        <label class="form-check-label" for="seriCheck">Seri Numarası Zorunlu</label>
-                    </div>
-                    <div class="form-check">
-                        <input type="checkbox" name="iade_zorunlu" class="form-check-input" id="iadeCheck" checked>
-                        <label class="form-check-label" for="iadeCheck">İşten Çıkışta İade Zorunlu</label>
-                    </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Kod *</label>
+                    <input type="text" name="kod" required placeholder="LAPTOP, TELEFON vb." class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                <div>
+                    <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Kategori</label>
+                    <select name="kategori" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="elektronik">Elektronik</option>
+                        <option value="arac">Araç</option>
+                        <option value="ofis">Ofis</option>
+                        <option value="guvenlik">Güvenlik</option>
+                        <option value="diger">Diğer</option>
+                    </select>
                 </div>
-            </form>
-        </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Açıklama</label>
+                    <textarea name="aciklama" rows="2" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+                <div class="space-y-2">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="seri_no_zorunlu" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm text-text-primary dark:text-text-primary-dark">Seri Numarası Zorunlu</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="iade_zorunlu" checked class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-sm text-text-primary dark:text-text-primary-dark">İşten Çıkışta İade Zorunlu</span>
+                    </label>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('tipModal').classList.add('hidden')" class="px-4 py-2 border border-border-light dark:border-border-dark text-text-primary dark:text-text-primary-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Kaydet</button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

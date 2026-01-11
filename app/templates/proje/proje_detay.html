@@ -5,87 +5,72 @@
 
 {% block content %}
 <!-- İstatistikler -->
-<div class="row mb-4">
-    <div class="col-6 col-lg-3 mb-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h3 class="mb-0">{{ stats.toplam_kadro }}</h3>
-                <small class="text-muted">Hedef Kadro</small>
-            </div>
-        </div>
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-card-dark rounded-lg shadow-sm p-4 text-center">
+        <h3 class="text-2xl font-bold mb-1">{{ stats.toplam_kadro }}</h3>
+        <span class="text-sm text-text-muted dark:text-text-muted-dark">Hedef Kadro</span>
     </div>
-    <div class="col-6 col-lg-3 mb-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h3 class="mb-0 text-success">{{ stats.mevcut_calisan }}</h3>
-                <small class="text-muted">Mevcut Çalışan</small>
-            </div>
-        </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg shadow-sm p-4 text-center">
+        <h3 class="text-2xl font-bold text-emerald-600 mb-1">{{ stats.mevcut_calisan }}</h3>
+        <span class="text-sm text-text-muted dark:text-text-muted-dark">Mevcut Çalışan</span>
     </div>
-    <div class="col-6 col-lg-3 mb-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h3 class="mb-0 text-primary">{{ stats.arac_sayisi }}</h3>
-                <small class="text-muted">Araç</small>
-            </div>
-        </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg shadow-sm p-4 text-center">
+        <h3 class="text-2xl font-bold text-blue-600 mb-1">{{ stats.arac_sayisi }}</h3>
+        <span class="text-sm text-text-muted dark:text-text-muted-dark">Araç</span>
     </div>
-    <div class="col-6 col-lg-3 mb-3">
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center">
-                <h3 class="mb-0 text-warning">{{ stats.bekleyen_aday }}</h3>
-                <small class="text-muted">Bekleyen Aday</small>
-            </div>
-        </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg shadow-sm p-4 text-center">
+        <h3 class="text-2xl font-bold text-amber-600 mb-1">{{ stats.bekleyen_aday }}</h3>
+        <span class="text-sm text-text-muted dark:text-text-muted-dark">Bekleyen Aday</span>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-lg-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 space-y-4">
         <!-- Proje Bilgileri -->
-        <div class="card mb-4">
-            <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <h6 class="mb-0"><i class="bi bi-folder me-2"></i>Proje Bilgileri</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">folder</span>Proje Bilgileri
+                </h6>
                 {% if proje.aktif %}
-                <span class="badge bg-success">Aktif</span>
+                <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
                 {% else %}
-                <span class="badge bg-secondary">Pasif</span>
+                <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Pasif</span>
                 {% endif %}
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="text-muted small">Müşteri</label>
-                        <div class="fw-bold">
-                            <a href="{{ url_for('proje.musteri_detay', id=proje.musteri_id) }}" class="text-decoration-none">
+            <div class="p-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Müşteri</label>
+                        <div class="font-semibold text-[#111418] dark:text-white">
+                            <a href="{{ url_for('proje.musteri_detay', id=proje.musteri_id) }}" class="text-blue-600 hover:underline">
                                 {{ proje.musteri.display_name }}
                             </a>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="text-muted small">Proje Kodu</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Proje Kodu</label>
                         <div>{{ proje.kod or '-' }}</div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <label class="text-muted small">Doluluk Oranı</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Doluluk Oranı</label>
                         <div>
-                            <div class="progress mb-1" style="height: 8px;">
-                                <div class="progress-bar {% if stats.doluluk_orani >= 80 %}bg-success{% elif stats.doluluk_orani >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
-                                     style="width: {{ stats.doluluk_orani }}%"></div>
+                            <div class="w-full bg-gray-200 rounded-full h-2 mb-1">
+                                <div class="h-2 rounded-full {% if stats.doluluk_orani >= 80 %}bg-green-500{% elif stats.doluluk_orani >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}" style="width: {{ stats.doluluk_orani }}%"></div>
                             </div>
                             <strong>{{ stats.doluluk_orani }}%</strong>
                         </div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Başlangıç</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Başlangıç</label>
                         <div>{{ proje.baslangic_tarihi.strftime('%d.%m.%Y') if proje.baslangic_tarihi else '-' }}</div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Bitiş</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Bitiş</label>
                         <div>{{ proje.bitis_tarihi.strftime('%d.%m.%Y') if proje.bitis_tarihi else '-' }}</div>
                     </div>
-                    <div class="col-md-4 mb-3">
-                        <label class="text-muted small">Bütçe</label>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Bütçe</label>
                         <div>{% if proje.butce %}₺{{ '{:,.0f}'.format(proje.butce) }}{% else %}-{% endif %}</div>
                     </div>
                 </div>
@@ -93,213 +78,216 @@
         </div>
         
         <!-- Tabs -->
-        <ul class="nav nav-tabs" id="projeTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="kadrolar-tab" data-bs-toggle="tab" data-bs-target="#kadrolar" type="button">
-                    <i class="bi bi-people me-1"></i>Kadrolar <span class="badge bg-secondary">{{ kadrolar|length }}</span>
+        <div class="border-b border-border-light dark:border-border-dark">
+            <nav class="flex gap-4" id="projeTabs">
+                <button class="tab-btn active px-4 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600 dark:text-blue-400" data-target="kadrolar">
+                    <span class="material-symbols-outlined mr-1">group</span>Kadrolar <span class="ml-1 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">{{ kadrolar|length }}</span>
                 </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="araclar-tab" data-bs-toggle="tab" data-bs-target="#araclar" type="button">
-                    <i class="bi bi-truck me-1"></i>Araçlar <span class="badge bg-secondary">{{ araclar|length }}</span>
+                <button class="tab-btn px-4 py-2 text-sm font-medium border-b-2 border-transparent text-text-muted dark:text-text-muted-dark hover:text-text-muted dark:text-text-muted-dark" data-target="araclar">
+                    <span class="material-symbols-outlined mr-1">local_shipping</span>Araçlar <span class="ml-1 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">{{ araclar|length }}</span>
                 </button>
-            </li>
-        </ul>
+            </nav>
+        </div>
         
-        <div class="tab-content" id="projeTabsContent">
-            <!-- Kadrolar Tab -->
-            <div class="tab-pane fade show active" id="kadrolar" role="tabpanel">
-                <div class="card border-top-0 rounded-top-0">
-                    <div class="card-header bg-white d-flex justify-content-end">
-                        {% if has_permission('proje.edit') %}
-                        <a href="{{ url_for('proje.kadro_ekle', proje_id=proje.id) }}" class="btn btn-success btn-sm">
-                            <i class="bi bi-plus-lg me-1"></i>Kadro Ekle
-                        </a>
-                        {% endif %}
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Pozisyon</th>
-                                        <th>Lokasyon</th>
-                                        <th>Kadro</th>
-                                        <th>Aday</th>
-                                        <th>Öncelik</th>
-                                        <th width="80"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for k in kadrolar %}
-                                    <tr>
-                                        <td>
-                                            <a href="{{ url_for('proje.kadro_detay', id=k.id) }}" class="text-decoration-none fw-bold">
-                                                {{ k.pozisyon_adi }}
-                                            </a>
-                                            {% if k.departman %}
-                                            <br><small class="text-muted">{{ k.departman }}</small>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ k.il or '-' }}{% if k.ilce %} / {{ k.ilce }}{% endif %}</td>
-                                        <td>
-                                            <span class="fw-bold {% if k.eksik_sayi > 0 %}text-danger{% else %}text-success{% endif %}">
-                                                {{ k.mevcut_sayi }}
-                                            </span> / {{ k.hedef_sayi }}
-                                        </td>
-                                        <td>
-                                            {% if k.bekleyen_aday_sayisi > 0 %}
-                                            <span class="badge bg-warning">{{ k.bekleyen_aday_sayisi }}</span>
-                                            {% else %}
-                                            <span class="text-muted">-</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            {% if k.oncelik <= 3 %}
-                                            <span class="badge bg-danger">Acil</span>
-                                            {% elif k.oncelik <= 5 %}
-                                            <span class="badge bg-warning">Normal</span>
-                                            {% else %}
-                                            <span class="badge bg-secondary">Düşük</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <a href="{{ url_for('proje.kadro_detay', id=k.id) }}" class="btn btn-outline-primary btn-sm">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                        </td>
-                                    </tr>
+        <!-- Kadrolar Tab -->
+        <div class="tab-content" id="kadrolar">
+            <div class="bg-white dark:bg-card-dark rounded-b-xl shadow-sm border border-t-0 border-gray-200 dark:border-border-dark">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-end">
+                    {% if has_permission('proje.edit') %}
+                    <a href="{{ url_for('proje.kadro_ekle', proje_id=proje.id) }}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                        <span class="material-symbols-outlined">add</span>Kadro Ekle
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 dark:bg-[#111418]">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Pozisyon</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Lokasyon</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Kadro</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Aday</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Öncelik</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark w-20"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                            {% for k in kadrolar %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                                <td class="px-4 py-3">
+                                    <a href="{{ url_for('proje.kadro_detay', id=k.id) }}" class="font-semibold text-blue-600 hover:underline">
+                                        {{ k.pozisyon_adi }}
+                                    </a>
+                                    {% if k.departman %}
+                                    <br><span class="text-xs text-text-muted dark:text-text-muted-dark">{{ k.departman }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-text-muted dark:text-text-muted-dark">{{ k.il or '-' }}{% if k.ilce %} / {{ k.ilce }}{% endif %}</td>
+                                <td class="px-4 py-3">
+                                    <span class="font-semibold {% if k.eksik_sayi > 0 %}text-rose-600{% else %}text-emerald-600{% endif %}">
+                                        {{ k.mevcut_sayi }}
+                                    </span> / {{ k.hedef_sayi }}
+                                </td>
+                                <td class="px-4 py-3">
+                                    {% if k.bekleyen_aday_sayisi > 0 %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">{{ k.bekleyen_aday_sayisi }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3">
+                                    {% if k.oncelik <= 3 %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Acil</span>
+                                    {% elif k.oncelik <= 5 %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Normal</span>
                                     {% else %}
-                                    <tr>
-                                        <td colspan="6" class="text-center text-muted py-4">
-                                            Henüz kadro tanımlanmamış
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Düşük</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <a href="{{ url_for('proje.kadro_detay', id=k.id) }}" class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg">
+                                        <span class="material-symbols-outlined">visibility</span>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz kadro tanımlanmamış</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            
-            <!-- Araçlar Tab -->
-            <div class="tab-pane fade" id="araclar" role="tabpanel">
-                <div class="card border-top-0 rounded-top-0">
-                    <div class="card-header bg-white d-flex justify-content-end">
-                        {% if has_permission('filo.edit') %}
-                        <a href="{{ url_for('proje.arac_ata', proje_id=proje.id) }}" class="btn btn-success btn-sm">
-                            <i class="bi bi-plus-lg me-1"></i>Araç Ata
-                        </a>
-                        {% endif %}
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Plaka</th>
-                                        <th>Araç</th>
-                                        <th>Şoför</th>
-                                        <th>KM</th>
-                                        <th>Durum</th>
-                                        <th width="80"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for a in araclar %}
-                                    <tr>
-                                        <td>
-                                            <a href="{{ url_for('filo.detay', id=a.id) }}" class="text-decoration-none fw-bold">
-                                                {{ a.plaka }}
-                                            </a>
-                                        </td>
-                                        <td>{{ a.marka }} {{ a.model }}</td>
-                                        <td>{{ a.sofor.full_name if a.sofor else '-' }}</td>
-                                        <td>{{ '{:,.0f}'.format(a.kilometre) if a.kilometre else '-' }}</td>
-                                        <td>
-                                            {% if a.durum.value == 'aktif' %}
-                                            <span class="badge bg-success">Aktif</span>
-                                            {% elif a.durum.value == 'bakimda' %}
-                                            <span class="badge bg-warning">Bakımda</span>
-                                            {% elif a.durum.value == 'arizali' %}
-                                            <span class="badge bg-danger">Arızalı</span>
-                                            {% else %}
-                                            <span class="badge bg-secondary">{{ a.durum.value }}</span>
-                                            {% endif %}
-                                        </td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{{ url_for('filo.detay', id=a.id) }}" class="btn btn-outline-primary" title="Detay">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                                {% if has_permission('filo.edit') %}
-                                                <button type="button" class="btn btn-outline-danger" title="Projeden Çıkar"
-                                                        onclick="if(confirm('Bu aracı projeden çıkarmak istediğinize emin misiniz?')) location.href='{{ url_for('proje.arac_cikar', proje_id=proje.id, arac_id=a.id) }}'">
-                                                    <i class="bi bi-x-lg"></i>
-                                                </button>
-                                                {% endif %}
-                                            </div>
-                                        </td>
-                                    </tr>
+        </div>
+        
+        <!-- Araçlar Tab -->
+        <div class="tab-content hidden" id="araclar">
+            <div class="bg-white dark:bg-card-dark rounded-b-xl shadow-sm border border-t-0 border-gray-200 dark:border-border-dark">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-end">
+                    {% if has_permission('filo.edit') %}
+                    <a href="{{ url_for('proje.arac_ata', proje_id=proje.id) }}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
+                        <span class="material-symbols-outlined">add</span>Araç Ata
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 dark:bg-[#111418]">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Plaka</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Araç</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Şoför</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">KM</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+                                <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark w-20"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                            {% for a in araclar %}
+                            <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                                <td class="px-4 py-3">
+                                    <a href="{{ url_for('filo.detay', id=a.id) }}" class="font-semibold text-blue-600 hover:underline">
+                                        {{ a.plaka }}
+                                    </a>
+                                </td>
+                                <td class="px-4 py-3">{{ a.marka }} {{ a.model }}</td>
+                                <td class="px-4 py-3">{{ a.sofor.full_name if a.sofor else '-' }}</td>
+                                <td class="px-4 py-3">{{ '{:,.0f}'.format(a.kilometre) if a.kilometre else '-' }}</td>
+                                <td class="px-4 py-3">
+                                    {% if a.durum.value == 'aktif' %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
+                                    {% elif a.durum.value == 'bakimda' %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Bakımda</span>
+                                    {% elif a.durum.value == 'arizali' %}
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Arızalı</span>
                                     {% else %}
-                                    <tr>
-                                        <td colspan="6" class="text-center text-muted py-4">
-                                            Projeye atanmış araç yok
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                                    <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">{{ a.durum.value }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3">
+                                    <div class="flex items-center gap-1">
+                                        <a href="{{ url_for('filo.detay', id=a.id) }}" class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg" title="Detay">
+                                            <span class="material-symbols-outlined">visibility</span>
+                                        </a>
+                                        {% if has_permission('filo.edit') %}
+                                        <button type="button" class="inline-flex items-center justify-center w-8 h-8 text-rose-600 hover:bg-red-50 rounded-lg" title="Projeden Çıkar" onclick="if(confirm('Bu aracı projeden çıkarmak istediğinize emin misiniz?')) location.href='{{ url_for('proje.arac_cikar', proje_id=proje.id, arac_id=a.id) }}'">
+                                            <span class="material-symbols-outlined">close</span>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="6" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Projeye atanmış araç yok</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
     
-    <div class="col-lg-4">
+    <div class="space-y-4">
         <!-- Aksiyonlar -->
-        <div class="card mb-4">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-lightning me-2"></i>Aksiyonlar</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">bolt</span>Aksiyonlar
+                </h6>
             </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    {% if has_permission('proje.edit') %}
-                    <a href="{{ url_for('proje.proje_duzenle', id=proje.id) }}" class="btn btn-primary">
-                        <i class="bi bi-pencil me-1"></i>Düzenle
-                    </a>
-                    <a href="{{ url_for('proje.kadro_ekle', proje_id=proje.id) }}" class="btn btn-success">
-                        <i class="bi bi-people me-1"></i>Kadro Ekle
-                    </a>
-                    {% endif %}
-                    {% if has_permission('filo.edit') %}
-                    <a href="{{ url_for('proje.arac_ata', proje_id=proje.id) }}" class="btn btn-info">
-                        <i class="bi bi-truck me-1"></i>Araç Ata
-                    </a>
-                    {% endif %}
-                    <a href="{{ url_for('proje.musteri_detay', id=proje.musteri_id) }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-building me-1"></i>Müşteri Detay
-                    </a>
-                    <a href="{{ url_for('proje.proje_liste') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i>Listeye Dön
-                    </a>
-                </div>
+            <div class="p-4 space-y-2">
+                {% if has_permission('proje.edit') %}
+                <a href="{{ url_for('proje.proje_duzenle', id=proje.id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                    <span class="material-symbols-outlined">edit</span>Düzenle
+                </a>
+                <a href="{{ url_for('proje.kadro_ekle', proje_id=proje.id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                    <span class="material-symbols-outlined">add</span>Kadro Ekle
+                </a>
+                {% endif %}
+                {% if has_permission('filo.edit') %}
+                <a href="{{ url_for('proje.arac_ata', proje_id=proje.id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-cyan-500 text-white font-medium rounded-lg hover:bg-cyan-600 transition-colors">
+                    <span class="material-symbols-outlined">local_shipping</span>Araç Ata
+                </a>
+                {% endif %}
+                <a href="{{ url_for('proje.musteri_detay', id=proje.musteri_id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <span class="material-symbols-outlined">business</span>Müşteri Detay
+                </a>
+                <a href="{{ url_for('proje.proje_liste') }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <span class="material-symbols-outlined">arrow_back</span>Listeye Dön
+                </a>
             </div>
         </div>
         
         <!-- Notlar -->
         {% if proje.notlar %}
-        <div class="card">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-sticky me-2"></i>Notlar</h6>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">sticky_note_2</span>Notlar
+                </h6>
             </div>
-            <div class="card-body">
-                <p class="mb-0">{{ proje.notlar }}</p>
+            <div class="p-4">
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ proje.notlar }}</p>
             </div>
         </div>
         {% endif %}
     </div>
 </div>
+
+<script>
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        document.querySelectorAll('.tab-btn').forEach(b => {
+            b.classList.remove('active', 'border-blue-600', 'text-blue-600');
+            b.classList.add('border-transparent', 'text-text-muted dark:text-text-muted-dark');
+        });
+        this.classList.add('active', 'border-blue-600', 'text-blue-600');
+        this.classList.remove('border-transparent', 'text-text-muted dark:text-text-muted-dark');
+        
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+        document.getElementById(this.dataset.target).classList.remove('hidden');
+    });
+});
+</script>
 {% endblock %}

@@ -3,386 +3,419 @@
 {% block title %}{{ sozlesme.baslik }} - TG Portal{% endblock %}
 {% block page_title %}Sözleşme Detayı{% endblock %}
 
+{% macro badge_class(color) -%}
+  {%- if color == 'success' -%}bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200
+  {%- elif color == 'danger' -%}bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200
+  {%- elif color == 'warning' -%}bg-yellow-100 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-200
+  {%- elif color == 'info' -%}bg-sky-100 text-sky-900 dark:bg-sky-900/30 dark:text-sky-200
+  {%- elif color == 'primary' -%}bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-200
+  {%- else -%}bg-gray-100 text-gray-800 dark:bg-white/10 dark:text-gray-200
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro action_btn(kind='outline') -%}
+  {%- if kind == 'primary' -%}inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-dark
+  {%- elif kind == 'danger' -%}inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700
+  {%- else -%}inline-flex items-center justify-center gap-2 rounded-lg border border-border-light dark:border-border-dark px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-[#252b36]
+  {%- endif -%}
+{%- endmacro %}
+
 {% block content %}
-<div class="row g-4">
-    <!-- Sol: Sözleşme Bilgileri -->
-    <div class="col-lg-8">
-        <!-- Başlık ve Durum -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <div>
-                    <h5 class="mb-1">{{ sozlesme.baslik }}</h5>
-                    {% if sozlesme.sozlesme_no %}
-                    <code>{{ sozlesme.sozlesme_no }}</code>
-                    {% endif %}
-                </div>
-                <span class="badge bg-{{ sozlesme.durum_renk }} fs-6">{{ sozlesme.durum_text }}</span>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="text-muted small">Sözleşme Tipi</label>
-                        <p class="mb-0">
-                            <span class="badge bg-secondary">{{ sozlesme.tip.ad if sozlesme.tip else '-' }}</span>
-                        </p>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="text-muted small">Taraf</label>
-                        <p class="mb-0 fw-semibold">
-                            {{ sozlesme.taraf_adi }}
-                            <small class="text-muted">
-                                ({% if sozlesme.musteri_id %}Müşteri{% elif sozlesme.tedarikci_id %}Tedarikçi{% else %}Diğer{% endif %})
-                            </small>
-                        </p>
-                    </div>
-                    
-                    {% if sozlesme.sorumlu %}
-                    <div class="col-md-6">
-                        <label class="text-muted small">Sorumlu</label>
-                        <p class="mb-0">{{ sozlesme.sorumlu.ad_soyad }}</p>
-                    </div>
-                    {% endif %}
-                    
-                    {% if sozlesme.aciklama %}
-                    <div class="col-12">
-                        <label class="text-muted small">Açıklama</label>
-                        <p class="mb-0">{{ sozlesme.aciklama }}</p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+  <!-- Sol -->
+  <div class="lg:col-span-8 space-y-6">
+    <!-- Başlık -->
+    <div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-start justify-between gap-4">
+        <div>
+          <div class="text-xl font-extrabold">{{ sozlesme.baslik }}</div>
+          {% if sozlesme.sozlesme_no %}
+          <div class="mt-1"><code class="text-xs">{{ sozlesme.sozlesme_no }}</code></div>
+          {% endif %}
         </div>
-        
-        <!-- Tarih ve Süre -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0">Tarih ve Süre</h6>
+        <span class="inline-flex items-center rounded-full px-3 py-1.5 text-sm font-semibold {{ badge_class(sozlesme.durum_renk) }}">
+          {{ sozlesme.durum_text }}
+        </span>
+      </div>
+
+      <div class="p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <div class="text-xs text-text-muted dark:text-text-muted-dark">Sözleşme Tipi</div>
+            <div class="mt-1">
+              <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs bg-gray-100 dark:bg-white/10">
+                {{ sozlesme.tip.ad if sozlesme.tip else '-' }}
+              </span>
             </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-3">
-                        <div class="border rounded p-3">
-                            <small class="text-muted d-block">Başlangıç</small>
-                            <span class="fw-semibold">{{ sozlesme.baslangic_tarihi.strftime('%d.%m.%Y') }}</span>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="border rounded p-3">
-                            <small class="text-muted d-block">Bitiş</small>
-                            <span class="fw-semibold">{{ sozlesme.bitis_tarihi.strftime('%d.%m.%Y') }}</span>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="border rounded p-3 bg-{{ sozlesme.kalan_gun_renk }}-subtle">
-                            <small class="text-muted d-block">Kalan</small>
-                            <span class="fw-bold text-{{ sozlesme.kalan_gun_renk }}">
-                                {% if sozlesme.kalan_gun < 0 %}
-                                {{ sozlesme.kalan_gun|abs }} gün geçti
-                                {% else %}
-                                {{ sozlesme.kalan_gun }} gün
-                                {% endif %}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="border rounded p-3">
-                            <small class="text-muted d-block">Süre</small>
-                            <span class="fw-semibold">{{ sozlesme.sure_ay }} ay</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="row mt-3">
-                    {% if sozlesme.imza_tarihi %}
-                    <div class="col-md-4">
-                        <small class="text-muted">İmza Tarihi:</small>
-                        <span>{{ sozlesme.imza_tarihi.strftime('%d.%m.%Y') }}</span>
-                    </div>
-                    {% endif %}
-                    <div class="col-md-4">
-                        <small class="text-muted">Otomatik Yenileme:</small>
-                        {% if sozlesme.otomatik_yenileme %}
-                        <span class="text-success"><i class="bi bi-check-circle"></i> Evet ({{ sozlesme.yenileme_suresi_ay }} ay)</span>
-                        {% else %}
-                        <span class="text-muted">Hayır</span>
-                        {% endif %}
-                    </div>
-                </div>
+          </div>
+
+          <div>
+            <div class="text-xs text-text-muted dark:text-text-muted-dark">Taraf</div>
+            <div class="mt-1 font-semibold">
+              {{ sozlesme.taraf_adi }}
+              <span class="ml-2 text-xs text-text-muted dark:text-text-muted-dark">
+                ({% if sozlesme.musteri_id %}Müşteri{% elif sozlesme.tedarikci_id %}Tedarikçi{% else %}Diğer{% endif %})
+              </span>
             </div>
+          </div>
+
+          {% if sozlesme.sorumlu %}
+          <div>
+            <div class="text-xs text-text-muted dark:text-text-muted-dark">Sorumlu</div>
+            <div class="mt-1">{{ sozlesme.sorumlu.ad_soyad }}</div>
+          </div>
+          {% endif %}
+
+          {% if sozlesme.aciklama %}
+          <div class="md:col-span-2">
+            <div class="text-xs text-text-muted dark:text-text-muted-dark">Açıklama</div>
+            <div class="mt-1 whitespace-pre-wrap">{{ sozlesme.aciklama }}</div>
+          </div>
+          {% endif %}
         </div>
-        
-        <!-- Tutar Bilgileri -->
-        {% if sozlesme.tutar %}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0">Tutar Bilgileri</h6>
+      </div>
+    </div>
+
+    <!-- Tarih / Süre -->
+    <div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+        <div class="font-bold">Tarih ve Süre</div>
+      </div>
+
+      <div class="p-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="rounded-xl border border-border-light dark:border-border-dark p-4 text-center">
+            <div class="text-xs text-text-muted dark:text-text-muted-dark">Başlangıç</div>
+            <div class="mt-1 font-semibold">{{ sozlesme.baslangic_tarihi.strftime('%d.%m.%Y') }}</div>
+          </div>
+          <div class="rounded-xl border border-border-light dark:border-border-dark p-4 text-center">
+            <div class="text-xs text-text-muted dark:text-text-muted-dark">Bitiş</div>
+            <div class="mt-1 font-semibold">{{ sozlesme.bitis_tarihi.strftime('%d.%m.%Y') }}</div>
+          </div>
+          <div class="rounded-xl border border-border-light dark:border-border-dark p-4 text-center">
+            <div class="text-xs text-text-muted dark:text-text-muted-dark">Kalan</div>
+            <div class="mt-1 font-extrabold">
+              {% if sozlesme.kalan_gun < 0 %}
+                {{ sozlesme.kalan_gun|abs }} gün geçti
+              {% else %}
+                {{ sozlesme.kalan_gun }} gün
+              {% endif %}
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <label class="text-muted small">Tutar</label>
-                        <p class="mb-0 fs-4 fw-bold text-primary">
-                            {% if sozlesme.para_birimi == 'TRY' %}₺{% elif sozlesme.para_birimi == 'USD' %}${% elif sozlesme.para_birimi == 'EUR' %}€{% endif %}{{ "%.2f"|format(sozlesme.tutar) }}
-                        </p>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="text-muted small">KDV</label>
-                        <p class="mb-0">{{ 'Dahil' if sozlesme.kdv_dahil else 'Hariç' }}</p>
-                    </div>
-                    {% if sozlesme.odeme_periyodu %}
-                    <div class="col-md-4">
-                        <label class="text-muted small">Ödeme Periyodu</label>
-                        <p class="mb-0">
-                            {% if sozlesme.odeme_periyodu == 'aylik' %}Aylık
-                            {% elif sozlesme.odeme_periyodu == 'yillik' %}Yıllık
-                            {% else %}Tek Seferlik{% endif %}
-                        </p>
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
+          </div>
+          <div class="rounded-xl border border-border-light dark:border-border-dark p-4 text-center">
+            <div class="text-xs text-text-muted dark:text-text-muted-dark">Süre</div>
+            <div class="mt-1 font-semibold">{{ sozlesme.sure_ay }} ay</div>
+          </div>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+          {% if sozlesme.imza_tarihi %}
+          <div class="text-text-muted dark:text-text-muted-dark">
+            <span class="font-medium text-[#111418] dark:text-white">İmza Tarihi:</span>
+            {{ sozlesme.imza_tarihi.strftime('%d.%m.%Y') }}
+          </div>
+          {% endif %}
+          <div class="text-text-muted dark:text-text-muted-dark">
+            <span class="font-medium text-[#111418] dark:text-white">Otomatik Yenileme:</span>
+            {% if sozlesme.otomatik_yenileme %}
+              Evet ({{ sozlesme.yenileme_suresi_ay }} ay)
+            {% else %}
+              Hayır
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tutar -->
+    {% if sozlesme.tutar %}
+    <div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+        <div class="font-bold">Tutar Bilgileri</div>
+      </div>
+      <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <div class="text-xs text-text-muted dark:text-text-muted-dark">Tutar</div>
+          <div class="mt-1 text-2xl font-extrabold text-primary">
+            {% if sozlesme.para_birimi == 'TRY' %}₺{% elif sozlesme.para_birimi == 'USD' %}${% elif sozlesme.para_birimi == 'EUR' %}€{% endif %}{{ "%.2f"|format(sozlesme.tutar) }}
+          </div>
+        </div>
+        <div>
+          <div class="text-xs text-text-muted dark:text-text-muted-dark">KDV</div>
+          <div class="mt-1 font-semibold">{{ 'Dahil' if sozlesme.kdv_dahil else 'Hariç' }}</div>
+        </div>
+        {% if sozlesme.odeme_periyodu %}
+        <div>
+          <div class="text-xs text-text-muted dark:text-text-muted-dark">Ödeme Periyodu</div>
+          <div class="mt-1 font-semibold">
+            {% if sozlesme.odeme_periyodu == 'aylik' %}Aylık{% elif sozlesme.odeme_periyodu == 'yillik' %}Yıllık{% else %}Tek Seferlik{% endif %}
+          </div>
         </div>
         {% endif %}
-        
-        <!-- Özel Şartlar -->
-        {% if sozlesme.ozel_sartlar %}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0">Özel Şartlar</h6>
-            </div>
-            <div class="card-body">
-                <p class="mb-0" style="white-space: pre-wrap;">{{ sozlesme.ozel_sartlar }}</p>
-            </div>
-        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Özel Şartlar -->
+    {% if sozlesme.ozel_sartlar %}
+    <div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+        <div class="font-bold">Özel Şartlar</div>
+      </div>
+      <div class="p-6">
+        <div class="whitespace-pre-wrap">{{ sozlesme.ozel_sartlar }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Ekler -->
+    <div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+        <div class="font-bold">Ek Dosyalar</div>
+        {% if current_user.has_permission('sozlesme.edit') %}
+        <button onclick="openModal('ekEkleModal')" class="{{ action_btn('outline') }}">
+          <span class="material-symbols-outlined">attach_file</span> Ek Ekle
+        </button>
         {% endif %}
-        
-        <!-- Ek Dosyalar -->
-        <div class="card mt-4">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Ek Dosyalar</h6>
-                {% if current_user.has_permission('sozlesme.edit') %}
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#ekEkleModal">
-                    <i class="bi bi-plus-lg me-1"></i>Ek Ekle
+      </div>
+
+      <div class="p-6">
+        {% if ekler %}
+        <div class="space-y-3">
+          {% for ek in ekler %}
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 rounded-xl border border-border-light dark:border-border-dark p-4">
+            <div>
+              <div class="font-semibold flex items-center gap-2">
+                <span class="material-symbols-outlined">attachment</span>
+                {{ ek.baslik }}
+              </div>
+              {% if ek.aciklama %}
+              <div class="text-sm text-text-muted dark:text-text-muted-dark">{{ ek.aciklama }}</div>
+              {% endif %}
+            </div>
+
+            <div class="flex items-center gap-2">
+              <a href="{{ url_for('sozlesme.ek_indir', id=ek.id) }}" class="{{ action_btn('outline') }}" title="İndir">
+                <span class="material-symbols-outlined">download</span>
+              </a>
+
+              {% if current_user.has_permission('sozlesme.edit') %}
+              <form method="POST" action="{{ url_for('sozlesme.ek_sil', id=ek.id) }}" onsubmit="return confirm('Bu eki silmek istediğinize emin misiniz?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="{{ action_btn('danger') }}">
+                  <span class="material-symbols-outlined">delete</span>
                 </button>
-                {% endif %}
+              </form>
+              {% endif %}
             </div>
-            <div class="card-body">
-                {% if ekler %}
-                <div class="list-group list-group-flush">
-                    {% for ek in ekler %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <div>
-                            <i class="bi bi-paperclip me-2"></i>
-                            <strong>{{ ek.baslik }}</strong>
-                            {% if ek.aciklama %}
-                            <small class="text-muted d-block">{{ ek.aciklama }}</small>
-                            {% endif %}
-                        </div>
-                        <div>
-                            <a href="{{ url_for('sozlesme.ek_indir', id=ek.id) }}" class="btn btn-sm btn-outline-primary me-1">
-                                <i class="bi bi-download"></i>
-                            </a>
-                            {% if current_user.has_permission('sozlesme.edit') %}
-                            <form method="POST" action="{{ url_for('sozlesme.ek_sil', id=ek.id) }}" class="d-inline"
-                                  onsubmit="return confirm('Bu eki silmek istediğinize emin misiniz?')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
-                            {% endif %}
-                        </div>
-                    </div>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <p class="text-muted mb-0">Henüz ek dosya yok</p>
-                {% endif %}
-            </div>
+          </div>
+          {% endfor %}
         </div>
-    </div>
-    
-    <!-- Sağ: Dosya ve İşlemler -->
-    <div class="col-lg-4">
-        <!-- Ana Dosya -->
-        <div class="card">
-            <div class="card-header">
-                <h6 class="mb-0">Sözleşme Dosyası</h6>
-            </div>
-            <div class="card-body text-center">
-                {% if sozlesme.dosya_yolu %}
-                <i class="bi bi-file-earmark-pdf fs-1 text-danger d-block mb-2"></i>
-                <p class="mb-2">{{ sozlesme.dosya_adi }}</p>
-                <a href="{{ url_for('sozlesme.dosya_indir', id=sozlesme.id) }}" class="btn btn-primary">
-                    <i class="bi bi-download me-2"></i>İndir
-                </a>
-                {% else %}
-                <i class="bi bi-file-earmark fs-1 text-muted d-block mb-2"></i>
-                <p class="text-muted mb-0">Dosya yüklenmemiş</p>
-                {% endif %}
-            </div>
-        </div>
-        
-        <!-- İşlemler -->
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0">İşlemler</h6>
-            </div>
-            <div class="card-body">
-                <div class="d-grid gap-2">
-                    {% if current_user.has_permission('sozlesme.edit') %}
-                    <a href="{{ url_for('sozlesme.duzenle', id=sozlesme.id) }}" class="btn btn-outline-primary">
-                        <i class="bi bi-pencil me-2"></i>Düzenle
-                    </a>
-                    
-                    {% if sozlesme.durum == 'aktif' %}
-                    <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#yenileModal">
-                        <i class="bi bi-arrow-repeat me-2"></i>Yenile
-                    </button>
-                    {% endif %}
-                    
-                    <div class="dropdown">
-                        <button class="btn btn-outline-secondary dropdown-toggle w-100" data-bs-toggle="dropdown">
-                            <i class="bi bi-arrow-left-right me-2"></i>Durum Değiştir
-                        </button>
-                        <ul class="dropdown-menu w-100">
-                            <li>
-                                <form method="POST" action="{{ url_for('sozlesme.durum_degistir', id=sozlesme.id) }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="durum" value="aktif">
-                                    <button type="submit" class="dropdown-item">Aktif</button>
-                                </form>
-                            </li>
-                            <li>
-                                <form method="POST" action="{{ url_for('sozlesme.durum_degistir', id=sozlesme.id) }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="durum" value="askida">
-                                    <button type="submit" class="dropdown-item">Askıya Al</button>
-                                </form>
-                            </li>
-                            <li>
-                                <form method="POST" action="{{ url_for('sozlesme.durum_degistir', id=sozlesme.id) }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="durum" value="sona_erdi">
-                                    <button type="submit" class="dropdown-item">Sona Erdi</button>
-                                </form>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li>
-                                <form method="POST" action="{{ url_for('sozlesme.durum_degistir', id=sozlesme.id) }}">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="durum" value="iptal">
-                                    <button type="submit" class="dropdown-item text-danger">İptal Et</button>
-                                </form>
-                            </li>
-                        </ul>
-                    </div>
-                    {% endif %}
-                    
-                    {% if current_user.has_permission('sozlesme.delete') %}
-                    <form method="POST" action="{{ url_for('sozlesme.sil', id=sozlesme.id) }}"
-                          onsubmit="return confirm('Bu sözleşmeyi silmek istediğinize emin misiniz?')">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-outline-danger w-100">
-                            <i class="bi bi-trash me-2"></i>Sil
-                        </button>
-                    </form>
-                    {% endif %}
-                    
-                    <a href="{{ url_for('sozlesme.liste') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-2"></i>Listeye Dön
-                    </a>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Notlar -->
-        {% if sozlesme.notlar %}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h6 class="mb-0">Notlar</h6>
-            </div>
-            <div class="card-body">
-                <p class="mb-0 small" style="white-space: pre-wrap;">{{ sozlesme.notlar }}</p>
-            </div>
-        </div>
+        {% else %}
+        <div class="text-sm text-text-muted dark:text-text-muted-dark">Henüz ek dosya yok</div>
         {% endif %}
-        
-        <!-- Meta -->
-        <div class="card mt-4">
-            <div class="card-body small text-muted">
-                <div class="d-flex justify-content-between mb-1">
-                    <span>Oluşturulma:</span>
-                    <span>{{ sozlesme.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
-                </div>
-                <div class="d-flex justify-content-between">
-                    <span>Güncelleme:</span>
-                    <span>{{ sozlesme.updated_at.strftime('%d.%m.%Y %H:%M') }}</span>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
+  </div>
+
+  <!-- Sağ -->
+  <div class="lg:col-span-4 space-y-6">
+    <!-- Ana Dosya -->
+    <div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+        <div class="font-bold">Sözleşme Dosyası</div>
+      </div>
+      <div class="p-6 text-center">
+        {% if sozlesme.dosya_yolu %}
+          <div class="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
+            <span class="material-symbols-outlined">picture_as_pdf</span>
+          </div>
+          <div class="text-sm font-medium mb-3">{{ sozlesme.dosya_adi }}</div>
+          <a href="{{ url_for('sozlesme.dosya_indir', id=sozlesme.id) }}" class="{{ action_btn('primary') }}">
+            <span class="material-symbols-outlined">download</span> İndir
+          </a>
+        {% else %}
+          <div class="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-white/10">
+            <span class="material-symbols-outlined">description</span>
+          </div>
+          <div class="text-sm text-text-muted dark:text-text-muted-dark">Dosya yüklenmemiş</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- İşlemler -->
+    <div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+        <div class="font-bold">İşlemler</div>
+      </div>
+      <div class="p-6 space-y-2">
+        {% if current_user.has_permission('sozlesme.edit') %}
+          <a href="{{ url_for('sozlesme.duzenle', id=sozlesme.id) }}" class="{{ action_btn('outline') }} w-full">
+            <span class="material-symbols-outlined">edit</span> Düzenle
+          </a>
+
+          {% if sozlesme.durum == 'aktif' %}
+          <button onclick="openModal('yenileModal')" class="{{ action_btn('outline') }} w-full">
+            <span class="material-symbols-outlined">autorenew</span> Yenile
+          </button>
+          {% endif %}
+
+          <!-- Durum dropdown -->
+          <div class="relative">
+            <button type="button" onclick="toggleDropdown('durumMenu')" class="{{ action_btn('outline') }} w-full">
+              <span class="material-symbols-outlined">swap_horiz</span> Durum Değiştir
+              <span class="material-symbols-outlined ml-auto">expand_more</span>
+            </button>
+            <div id="durumMenu" class="hidden absolute z-20 mt-2 w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-lg overflow-hidden">
+              {% set durumlar = [
+                ('aktif','Aktif', false),
+                ('askida','Askıya Al', false),
+                ('sona_erdi','Sona Erdi', false),
+                ('iptal','İptal Et', true)
+              ] %}
+              {% for dval, dtext, is_danger in durumlar %}
+              <form method="POST" action="{{ url_for('sozlesme.durum_degistir', id=sozlesme.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="durum" value="{{ dval }}">
+                <button type="submit"
+                        class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-[#252b36] {% if is_danger %}text-red-600 dark:text-red-400{% endif %}">
+                  {{ dtext }}
+                </button>
+              </form>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+
+        {% if current_user.has_permission('sozlesme.delete') %}
+        <form method="POST" action="{{ url_for('sozlesme.sil', id=sozlesme.id) }}" onsubmit="return confirm('Bu sözleşmeyi silmek istediğinize emin misiniz?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="{{ action_btn('danger') }} w-full">
+            <span class="material-symbols-outlined">delete</span> Sil
+          </button>
+        </form>
+        {% endif %}
+
+        <a href="{{ url_for('sozlesme.liste') }}" class="{{ action_btn('outline') }} w-full">
+          <span class="material-symbols-outlined">arrow_back</span> Listeye Dön
+        </a>
+      </div>
+    </div>
+
+    {% if sozlesme.notlar %}
+    <div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+        <div class="font-bold">Notlar</div>
+      </div>
+      <div class="p-6 text-sm whitespace-pre-wrap">{{ sozlesme.notlar }}</div>
+    </div>
+    {% endif %}
+
+    <div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-2xl shadow-sm">
+      <div class="p-6 text-xs text-text-muted dark:text-text-muted-dark space-y-2">
+        <div class="flex items-center justify-between">
+          <span>Oluşturulma:</span>
+          <span>{{ sozlesme.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span>Güncelleme:</span>
+          <span>{{ sozlesme.updated_at.strftime('%d.%m.%Y %H:%M') }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Yenile Modal -->
-<div class="modal fade" id="yenileModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('sozlesme.yenile', id=sozlesme.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                    <h5 class="modal-title">Sözleşmeyi Yenile</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Yenileme Süresi (Ay)</label>
-                        <input type="number" name="ay" class="form-control" min="1" max="120"
-                               value="{{ sozlesme.yenileme_suresi_ay or 12 }}">
-                    </div>
-                    <p class="text-muted small mb-0">
-                        Sözleşme bitiş tarihi: <strong>{{ sozlesme.bitis_tarihi.strftime('%d.%m.%Y') }}</strong>
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-success">Yenile</button>
-                </div>
-            </form>
-        </div>
+<div id="yenileModal" class="hidden fixed inset-0 z-50">
+  <div class="absolute inset-0 bg-black/50" onclick="closeModal('yenileModal')"></div>
+  <div class="relative mx-auto mt-24 w-[92%] max-w-lg rounded-2xl bg-white dark:bg-card-dark border border-border-light dark:border-border-dark shadow-xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+      <div class="font-bold">Sözleşmeyi Yenile</div>
+      <button onclick="closeModal('yenileModal')" class="rounded-lg p-2 hover:bg-gray-50 dark:hover:bg-[#252b36]">
+        <span class="material-symbols-outlined">close</span>
+      </button>
     </div>
+
+    <form method="POST" action="{{ url_for('sozlesme.yenile', id=sozlesme.id) }}" class="p-6 space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div>
+        <label class="block text-sm font-medium mb-1">Yenileme Süresi (Ay)</label>
+        <input type="number" name="ay" min="1" max="120" value="{{ sozlesme.yenileme_suresi_ay or 12 }}"
+               class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+      </div>
+      <div class="text-sm text-text-muted dark:text-text-muted-dark">
+        Sözleşme bitiş tarihi: <span class="font-semibold text-[#111418] dark:text-white">{{ sozlesme.bitis_tarihi.strftime('%d.%m.%Y') }}</span>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button type="button" onclick="closeModal('yenileModal')" class="{{ action_btn('outline') }}">İptal</button>
+        <button type="submit" class="{{ action_btn('primary') }}">Yenile</button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <!-- Ek Ekle Modal -->
-<div class="modal fade" id="ekEkleModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="{{ url_for('sozlesme.ek_ekle', id=sozlesme.id) }}" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="modal-header">
-                    <h5 class="modal-title">Ek Dosya Ekle</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Başlık</label>
-                        <input type="text" name="baslik" class="form-control" placeholder="Ek adı">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Açıklama</label>
-                        <input type="text" name="aciklama" class="form-control" placeholder="Kısa açıklama">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Dosya *</label>
-                        <input type="file" name="dosya" class="form-control" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
-                    <button type="submit" class="btn btn-primary">Ekle</button>
-                </div>
-            </form>
-        </div>
+<div id="ekEkleModal" class="hidden fixed inset-0 z-50">
+  <div class="absolute inset-0 bg-black/50" onclick="closeModal('ekEkleModal')"></div>
+  <div class="relative mx-auto mt-24 w-[92%] max-w-lg rounded-2xl bg-white dark:bg-card-dark border border-border-light dark:border-border-dark shadow-xl overflow-hidden">
+    <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+      <div class="font-bold">Ek Dosya Ekle</div>
+      <button onclick="closeModal('ekEkleModal')" class="rounded-lg p-2 hover:bg-gray-50 dark:hover:bg-[#252b36]">
+        <span class="material-symbols-outlined">close</span>
+      </button>
     </div>
+
+    <form method="POST" action="{{ url_for('sozlesme.ek_ekle', id=sozlesme.id) }}" enctype="multipart/form-data" class="p-6 space-y-4">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Başlık</label>
+        <input type="text" name="baslik" placeholder="Ek adı"
+               class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Açıklama</label>
+        <input type="text" name="aciklama" placeholder="Kısa açıklama"
+               class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium mb-1">Dosya *</label>
+        <input type="file" name="dosya" required
+               class="w-full rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-3 py-2 text-sm">
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button type="button" onclick="closeModal('ekEkleModal')" class="{{ action_btn('outline') }}">İptal</button>
+        <button type="submit" class="{{ action_btn('primary') }}">Ekle</button>
+      </div>
+    </form>
+  </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  function openModal(id){ document.getElementById(id)?.classList.remove('hidden'); }
+  function closeModal(id){ document.getElementById(id)?.classList.add('hidden'); }
+
+  function toggleDropdown(id){
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('hidden');
+  }
+
+  // dropdown dışına tıklayınca kapat
+  document.addEventListener('click', function(e){
+    const menu = document.getElementById('durumMenu');
+    if (!menu) return;
+    const btn = menu.parentElement?.querySelector('button');
+    if (menu.classList.contains('hidden')) return;
+    if (menu.contains(e.target) || (btn && btn.contains(e.target))) return;
+    menu.classList.add('hidden');
+  });
+</script>
 {% endblock %}

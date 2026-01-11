@@ -5,15 +5,14 @@
 
 {% block content %}
 <!-- Filtreler -->
-<div class="card mb-4">
-    <div class="card-body">
-        <form method="GET" class="row g-3">
-            <div class="col-md-3">
-                <input type="text" name="search" class="form-control" placeholder="Plaka, marka ara..."
-                       value="{{ request.args.get('search', '') }}">
+<div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mb-4">
+    <div class="p-4">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <div class="md:col-span-2">
+                <input type="text" name="search" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Plaka, marka ara..." value="{{ request.args.get('search', '') }}">
             </div>
-            <div class="col-md-2">
-                <select name="durum" class="form-select">
+            <div>
+                <select name="durum" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">Tüm Durumlar</option>
                     {% for d in durumlar %}
                     <option value="{{ d.value }}" {% if request.args.get('durum') == d.value %}selected{% endif %}>
@@ -22,8 +21,8 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-3">
-                <select name="proje_id" class="form-select">
+            <div>
+                <select name="proje_id" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">Tüm Projeler</option>
                     {% for p in projeler %}
                     <option value="{{ p.id }}" {% if request.args.get('proje_id', type=int) == p.id %}selected{% endif %}>
@@ -32,15 +31,15 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-search me-1"></i>Ara
+            <div>
+                <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                    <span class="material-symbols-outlined">search</span>Ara
                 </button>
             </div>
-            <div class="col-md-2">
+            <div>
                 {% if has_permission('filo.create') %}
-                <a href="{{ url_for('filo.ekle') }}" class="btn btn-success w-100">
-                    <i class="bi bi-plus-lg me-1"></i>Yeni Araç
+                <a href="{{ url_for('filo.ekle') }}" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors">
+                    <span class="material-symbols-outlined">add</span>Yeni Araç
                 </a>
                 {% endif %}
             </div>
@@ -49,102 +48,98 @@
 </div>
 
 <!-- Liste -->
-<div class="card">
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Plaka</th>
-                        <th>Araç</th>
-                        <th>Proje</th>
-                        <th>Şoför</th>
-                        <th>KM</th>
-                        <th>Durum</th>
-                        <th width="100"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for arac in araclar %}
-                    <tr>
-                        <td>
-                            <a href="{{ url_for('filo.detay', id=arac.id) }}" class="text-decoration-none fw-bold">
-                                {{ arac.plaka }}
+<div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 dark:bg-[#111418]">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Plaka</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Araç</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Proje</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Şoför</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">KM</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+                    <th class="px-4 py-3 text-left font-medium text-[#111418] dark:text-white w-24"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for arac in araclar %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418]">
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('filo.detay', id=arac.id) }}" class="text-blue-600 hover:underline font-semibold">
+                            {{ arac.plaka }}
+                        </a>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div>{{ arac.marka }} {{ arac.model }}</div>
+                        {% if arac.model_yili %}
+                        <div class="text-xs text-text-muted dark:text-text-muted-dark">{{ arac.model_yili }}</div>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        {% if arac.proje %}
+                        <a href="{{ url_for('proje.proje_detay', id=arac.proje_id) }}" class="text-blue-600 hover:underline">
+                            {{ arac.proje.ad }}
+                        </a>
+                        <div class="text-xs text-text-muted dark:text-text-muted-dark">{{ arac.proje.musteri.display_name }}</div>
+                        {% else %}
+                        <span class="text-gray-400 dark:text-gray-500">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        {% if arac.atanan_calisan %}
+                        {{ arac.atanan_calisan.full_name }}
+                        {% else %}
+                        <span class="text-gray-400 dark:text-gray-500">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">{{ '{:,.0f}'.format(arac.km) if arac.km else '-' }}</td>
+                    <td class="px-4 py-3">
+                        {% if arac.durum.value == 'aktif' %}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
+                        {% elif arac.durum.value == 'bakimda' %}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Bakımda</span>
+                        {% elif arac.durum.value == 'arizali' %}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Arızalı</span>
+                        {% elif arac.durum.value == 'satildi' %}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Satıldı</span>
+                        {% else %}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">{{ arac.durum.value }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-1">
+                            <a href="{{ url_for('filo.detay', id=arac.id) }}" class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Detay">
+                                <span class="material-symbols-outlined">visibility</span>
                             </a>
-                        </td>
-                        <td>
-                            {{ arac.marka }} {{ arac.model }}
-                            {% if arac.model_yili %}
-                            <br><small class="text-muted">{{ arac.model_yili }}</small>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {% if arac.proje %}
-                            <a href="{{ url_for('proje.proje_detay', id=arac.proje_id) }}" class="text-decoration-none">
-                                {{ arac.proje.ad }}
+                            {% if has_permission('filo.edit') %}
+                            <a href="{{ url_for('filo.duzenle', id=arac.id) }}" class="inline-flex items-center justify-center w-8 h-8 text-text-muted dark:text-text-muted-dark hover:bg-gray-100 rounded-lg transition-colors" title="Düzenle">
+                                <span class="material-symbols-outlined">edit</span>
                             </a>
-                            <br><small class="text-muted">{{ arac.proje.musteri.display_name }}</small>
-                            {% else %}
-                            <span class="text-muted">-</span>
                             {% endif %}
-                        </td>
-                        <td>
-                            {% if arac.atanan_calisan %}
-                            {{ arac.atanan_calisan.full_name }}
-                            {% else %}
-                            <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ '{:,.0f}'.format(arac.km) if arac.km else '-' }}</td>
-                        <td>
-                            {% if arac.durum.value == 'aktif' %}
-                            <span class="badge bg-success">Aktif</span>
-                            {% elif arac.durum.value == 'bakimda' %}
-                            <span class="badge bg-warning">Bakımda</span>
-                            {% elif arac.durum.value == 'arizali' %}
-                            <span class="badge bg-danger">Arızalı</span>
-                            {% elif arac.durum.value == 'satildi' %}
-                            <span class="badge bg-secondary">Satıldı</span>
-                            {% else %}
-                            <span class="badge bg-secondary">{{ arac.durum.value }}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
-                                <a href="{{ url_for('filo.detay', id=arac.id) }}" class="btn btn-outline-primary" title="Detay">
-                                    <i class="bi bi-eye"></i>
-                                </a>
-                                {% if has_permission('filo.edit') %}
-                                <a href="{{ url_for('filo.duzenle', id=arac.id) }}" class="btn btn-outline-secondary" title="Düzenle">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                {% endif %}
-                            </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="7" class="text-center text-muted py-4">
-                            Kayıt bulunamadı
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Kayıt bulunamadı</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
     
     {% if pagination.pages > 1 %}
-    <div class="card-footer bg-white">
-        <nav>
-            <ul class="pagination pagination-sm mb-0 justify-content-center">
+    <div class="px-4 py-3 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-[#111418]">
+        <nav class="flex justify-center">
+            <ul class="inline-flex items-center gap-1">
                 {% for page in pagination.iter_pages() %}
                 {% if page %}
-                <li class="page-item {% if page == pagination.page %}active{% endif %}">
-                    <a class="page-link" href="{{ url_for('filo.liste', page=page, search=request.args.get('search', ''), durum=request.args.get('durum', ''), proje_id=request.args.get('proje_id', '')) }}">{{ page }}</a>
+                <li>
+                    <a href="{{ url_for('filo.liste', page=page, search=request.args.get('search', ''), durum=request.args.get('durum', ''), proje_id=request.args.get('proje_id', '')) }}" class="px-3 py-1.5 text-sm rounded-lg {% if page == pagination.page %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ page }}</a>
                 </li>
                 {% else %}
-                <li class="page-item disabled"><span class="page-link">...</span></li>
+                <li><span class="px-3 py-1.5 text-gray-400 dark:text-gray-500">...</span></li>
                 {% endif %}
                 {% endfor %}
             </ul>

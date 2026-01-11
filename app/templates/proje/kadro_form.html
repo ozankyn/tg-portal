@@ -7,81 +7,79 @@
 <form method="POST">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     
-    <div class="row">
-        <div class="col-lg-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 space-y-4">
             <!-- Temel Bilgiler -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-person-badge me-2"></i>Kadro Bilgileri</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">badge</span>Kadro Bilgileri
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-8">
-                            <label class="form-label">Pozisyon Adı <span class="text-danger">*</span></label>
-                            <input type="text" name="pozisyon_adi" class="form-control" required
-                                   value="{{ kadro.pozisyon_adi if kadro else '' }}" placeholder="Saha Satış Temsilcisi">
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div class="md:col-span-8">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Pozisyon Adı <span class="text-red-500">*</span></label>
+                            <input type="text" name="pozisyon_adi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="{{ kadro.pozisyon_adi if kadro else '' }}" placeholder="Saha Satış Temsilcisi">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Departman</label>
-                            <input type="text" name="departman" class="form-control"
-                                   value="{{ kadro.departman if kadro else '' }}" placeholder="Satış">
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Departman</label>
+                            <input type="text" name="departman" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ kadro.departman if kadro else '' }}" placeholder="Satış">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Hedef Sayı <span class="text-danger">*</span></label>
-                            <input type="number" name="hedef_sayi" class="form-control" min="1" required
-                                   value="{{ kadro.hedef_sayi if kadro else 1 }}">
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Hedef Sayı <span class="text-red-500">*</span></label>
+                            <input type="number" name="hedef_sayi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="1" required value="{{ kadro.hedef_sayi if kadro else 1 }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Öncelik (1-10)</label>
-                            <input type="number" name="oncelik" class="form-control" min="1" max="10"
-                                   value="{{ kadro.oncelik if kadro else 5 }}">
-                            <small class="text-muted">1 = En acil</small>
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Öncelik (1-10)</label>
+                            <input type="number" name="oncelik" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="1" max="10" value="{{ kadro.oncelik if kadro else 5 }}">
+                            <p class="text-xs text-gray-500 mt-1">1 = En acil</p>
                         </div>
                     </div>
                 </div>
             </div>
             
             <!-- Lokasyon -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Lokasyon</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">location_on</span>Lokasyon
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">İl</label>
-                            <input type="text" name="il" class="form-control"
-                                   value="{{ kadro.il if kadro else '' }}">
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">İl</label>
+                            <input type="text" name="il" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ kadro.il if kadro else '' }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">İlçe</label>
-                            <input type="text" name="ilce" class="form-control"
-                                   value="{{ kadro.ilce if kadro else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">İlçe</label>
+                            <input type="text" name="ilce" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ kadro.ilce if kadro else '' }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Bölge</label>
-                            <input type="text" name="bolge" class="form-control"
-                                   value="{{ kadro.bolge if kadro else '' }}" placeholder="Marmara">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Bölge</label>
+                            <input type="text" name="bolge" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ kadro.bolge if kadro else '' }}" placeholder="Marmara">
                         </div>
                     </div>
                 </div>
             </div>
             
             <!-- Gereksinimler -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-list-check me-2"></i>Gereksinimler</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">checklist</span>Gereksinimler
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Min. Tecrübe (Yıl)</label>
-                            <input type="number" name="min_tecrube_yil" class="form-control" min="0"
-                                   value="{{ kadro.min_tecrube_yil if kadro else 0 }}">
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Min. Tecrübe (Yıl)</label>
+                            <input type="number" name="min_tecrube_yil" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="0" value="{{ kadro.min_tecrube_yil if kadro else 0 }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Eğitim Seviyesi</label>
-                            <select name="egitim_seviyesi" class="form-select">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Eğitim Seviyesi</label>
+                            <select name="egitim_seviyesi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Farketmez</option>
                                 <option value="ilkokul" {% if kadro and kadro.egitim_seviyesi == 'ilkokul' %}selected{% endif %}>İlkokul</option>
                                 <option value="ortaokul" {% if kadro and kadro.egitim_seviyesi == 'ortaokul' %}selected{% endif %}>Ortaokul</option>
@@ -91,109 +89,107 @@
                                 <option value="yuksek_lisans" {% if kadro and kadro.egitim_seviyesi == 'yuksek_lisans' %}selected{% endif %}>Yüksek Lisans</option>
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Cinsiyet Tercihi</label>
-                            <select name="cinsiyet_tercihi" class="form-select">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Cinsiyet Tercihi</label>
+                            <select name="cinsiyet_tercihi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Farketmez</option>
                                 <option value="erkek" {% if kadro and kadro.cinsiyet_tercihi == 'erkek' %}selected{% endif %}>Erkek</option>
                                 <option value="kadin" {% if kadro and kadro.cinsiyet_tercihi == 'kadin' %}selected{% endif %}>Kadın</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Yaş Min</label>
-                            <input type="number" name="yas_min" class="form-control" min="18" max="65"
-                                   value="{{ kadro.yas_min if kadro else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Yaş Min</label>
+                            <input type="number" name="yas_min" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="18" max="65" value="{{ kadro.yas_min if kadro else '' }}">
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Yaş Max</label>
-                            <input type="number" name="yas_max" class="form-control" min="18" max="65"
-                                   value="{{ kadro.yas_max if kadro else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Yaş Max</label>
+                            <input type="number" name="yas_max" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="18" max="65" value="{{ kadro.yas_max if kadro else '' }}">
                         </div>
-                        <div class="col-md-3">
-                            <div class="form-check mt-4">
-                                <input type="checkbox" class="form-check-input" id="ehliyet_gerekli" name="ehliyet_gerekli"
-                                       {% if kadro and kadro.ehliyet_gerekli %}checked{% endif %}>
-                                <label class="form-check-label" for="ehliyet_gerekli">Ehliyet Gerekli</label>
+                        <div class="flex items-end">
+                            <div class="flex items-center">
+                                <input type="checkbox" class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500" id="ehliyet_gerekli" name="ehliyet_gerekli" {% if kadro and kadro.ehliyet_gerekli %}checked{% endif %}>
+                                <label class="ml-2 text-sm text-text-muted dark:text-text-muted-dark" for="ehliyet_gerekli">Ehliyet Gerekli</label>
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Ehliyet Sınıfı</label>
-                            <input type="text" name="ehliyet_sinifi" class="form-control"
-                                   value="{{ kadro.ehliyet_sinifi if kadro else '' }}" placeholder="B">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Ehliyet Sınıfı</label>
+                            <input type="text" name="ehliyet_sinifi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ kadro.ehliyet_sinifi if kadro else '' }}" placeholder="B">
                         </div>
                     </div>
                 </div>
             </div>
             
             <!-- Maaş -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-currency-exchange me-2"></i>Maaş Aralığı</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">currency_exchange</span>Maaş Aralığı
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Minimum (₺)</label>
-                            <input type="number" name="maas_min" class="form-control" step="0.01"
-                                   value="{{ kadro.maas_min if kadro else '' }}">
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Minimum (₺)</label>
+                            <input type="number" name="maas_min" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01" value="{{ kadro.maas_min if kadro else '' }}">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Maximum (₺)</label>
-                            <input type="number" name="maas_max" class="form-control" step="0.01"
-                                   value="{{ kadro.maas_max if kadro else '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Maximum (₺)</label>
+                            <input type="number" name="maas_max" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01" value="{{ kadro.maas_max if kadro else '' }}">
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         
-        <div class="col-lg-4">
+        <div class="space-y-4">
             <!-- Durum & Kaydet -->
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-gear me-2"></i>Durum</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">settings</span>Durum
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="form-check form-switch mb-3">
-                        <input type="checkbox" class="form-check-input" id="aktif" name="aktif"
-                               {% if not kadro or kadro.aktif %}checked{% endif %}>
-                        <label class="form-check-label" for="aktif">Aktif</label>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-check mt-4">
-                        <input type="checkbox" class="form-check-input" id="sms_dogrulama_zorunlu" name="sms_dogrulama_zorunlu"
-                               {% if kadro and kadro.sms_dogrulama_zorunlu %}checked{% endif %}>
-                        <label class="form-check-label" for="sms_dogrulama_zorunlu">
-                            <i class="bi bi-phone me-1"></i>SMS Doğrulama Zorunlu
-                        </label>
-                        <small class="d-block text-muted">Başvuruda telefon doğrulaması istenir</small>
+                <div class="p-4 space-y-4">
+                    <div class="flex items-center">
+                        <input type="checkbox" class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500" id="aktif" name="aktif" {% if not kadro or kadro.aktif %}checked{% endif %}>
+                        <label class="ml-2 text-sm text-text-muted dark:text-text-muted-dark" for="aktif">Aktif</label>
                     </div>
                     
-                    <label class="form-label">Notlar</label>
-                    <textarea name="notlar" class="form-control" rows="4">{{ kadro.notlar if kadro else '' }}</textarea>
-                </div>
-                <div class="card-footer bg-white">
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg me-1"></i>
-                            {% if kadro %}Güncelle{% else %}Kaydet{% endif %}
-                        </button>
-                        <a href="{{ url_for('proje.proje_detay', id=proje.id) }}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-lg me-1"></i>İptal
-                        </a>
+                    <div class="flex items-start">
+                        <input type="checkbox" class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500 mt-0.5" id="sms_dogrulama_zorunlu" name="sms_dogrulama_zorunlu" {% if kadro and kadro.sms_dogrulama_zorunlu %}checked{% endif %}>
+                        <div class="ml-2">
+                            <label class="text-sm text-gray-700 flex items-center gap-1" for="sms_dogrulama_zorunlu">
+                                <span class="material-symbols-outlined">smartphone</span>SMS Doğrulama Zorunlu
+                            </label>
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark">Başvuruda telefon doğrulaması istenir</p>
+                        </div>
                     </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Notlar</label>
+                        <textarea name="notlar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="4">{{ kadro.notlar if kadro else '' }}</textarea>
+                    </div>
+                </div>
+                <div class="px-4 py-3 border-t border-border-light dark:border-border-dark bg-gray-50 rounded-b-xl space-y-2">
+                    <button type="submit" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-symbols-outlined">check</span>{% if kadro %}Güncelle{% else %}Kaydet{% endif %}
+                    </button>
+                    <a href="{{ url_for('proje.proje_detay', id=proje.id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-100 transition-colors">
+                        <span class="material-symbols-outlined">close</span>İptal
+                    </a>
                 </div>
             </div>
             
             <!-- Proje Bilgisi -->
-            <div class="card">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-folder me-2"></i>Proje</h6>
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">folder</span>Proje
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <strong>{{ proje.ad }}</strong>
-                    <br><small class="text-muted">{{ proje.musteri.display_name }}</small>
+                <div class="p-4">
+                    <strong class="text-[#111418] dark:text-white">{{ proje.ad }}</strong>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ proje.musteri.display_name }}</p>
                 </div>
             </div>
         </div>
