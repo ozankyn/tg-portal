@@ -5,14 +5,14 @@
 {% block progress %}
 <div class="flex items-center justify-center gap-4 mb-8">
     <div class="flex items-center gap-2 text-white">
-        <span class="w-8 h-8 rounded-full bg-white text-primary flex items-center justify-center">
+        <span class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center">
             <span class="material-symbols-outlined text-lg">check</span>
         </span>
         <span class="font-medium hidden sm:inline">KVKK Onay</span>
     </div>
     <div class="w-12 h-0.5 bg-white"></div>
     <div class="flex items-center gap-2 text-white">
-        <span class="w-8 h-8 rounded-full bg-white text-primary flex items-center justify-center text-sm font-bold">2</span>
+        <span class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center text-sm font-bold">2</span>
         <span class="font-medium hidden sm:inline">Başvuru Formu</span>
     </div>
     <div class="w-12 h-0.5 bg-white/30"></div>
@@ -37,7 +37,7 @@
 {% block content %}
 <div class="max-w-4xl mx-auto">
     <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
-        <div class="bg-primary p-6 text-center">
+        <div class="bg-blue-600 p-6 text-center">
             <h4 class="text-white text-xl font-bold flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">badge</span>
                 İş Başvuru Formu
@@ -60,32 +60,32 @@
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Ad <span class="text-red-500">*</span></label>
                         <input type="text" name="ad" required value="{{ aday.ad or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Soyad <span class="text-red-500">*</span></label>
                         <input type="text" name="soyad" required value="{{ aday.soyad or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">T.C. Kimlik No <span class="text-red-500">*</span></label>
                         <input type="text" name="tc_kimlik" required maxlength="11" pattern="[0-9]{11}" value="{{ aday.tc_kimlik or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Doğum Tarihi <span class="text-red-500">*</span></label>
                         <input type="date" name="dogum_tarihi" required value="{{ aday.dogum_tarihi.strftime('%Y-%m-%d') if aday.dogum_tarihi else '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Doğum Yeri</label>
                         <input type="text" name="dogum_yeri" value="{{ aday.dogum_yeri or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block mb-1 text-sm font-medium text-gray-700">Cinsiyet <span class="text-red-500">*</span></label>
-                            <select name="cinsiyet" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                            <select name="cinsiyet" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçiniz</option>
                                 <option value="erkek" {{ 'selected' if aday.cinsiyet == 'erkek' else '' }}>Erkek</option>
                                 <option value="kadin" {{ 'selected' if aday.cinsiyet == 'kadin' else '' }}>Kadın</option>
@@ -93,7 +93,7 @@
                         </div>
                         <div>
                             <label class="block mb-1 text-sm font-medium text-gray-700">Medeni Durum</label>
-                            <select name="medeni_durum" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                            <select name="medeni_durum" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçiniz</option>
                                 <option value="bekar" {{ 'selected' if aday.medeni_durum == 'bekar' else '' }}>Bekâr</option>
                                 <option value="evli" {{ 'selected' if aday.medeni_durum == 'evli' else '' }}>Evli</option>
@@ -112,26 +112,26 @@
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Cep Telefonu <span class="text-red-500">*</span></label>
                         <input type="tel" name="telefon" required value="{{ aday.telefon or '' }}" placeholder="05XX XXX XX XX"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">E-posta <span class="text-red-500">*</span></label>
                         <input type="email" name="email" required value="{{ aday.email or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">İl <span class="text-red-500">*</span></label>
                         <input type="text" name="il" required value="{{ aday.il or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">İlçe</label>
                         <input type="text" name="ilce" value="{{ aday.ilce or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div class="md:col-span-2">
                         <label class="block mb-1 text-sm font-medium text-gray-700">Adres</label>
-                        <textarea name="adres" rows="2" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">{{ aday.adres or '' }}</textarea>
+                        <textarea name="adres" rows="2" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ aday.adres or '' }}</textarea>
                     </div>
                 </div>
                 
@@ -143,7 +143,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Eğitim Durumu <span class="text-red-500">*</span></label>
-                        <select name="egitim_durumu" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                        <select name="egitim_durumu" required class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Seçiniz</option>
                             <option value="ilkokul">İlkokul</option>
                             <option value="ortaokul">Ortaokul</option>
@@ -157,17 +157,17 @@
                     <div class="md:col-span-2">
                         <label class="block mb-1 text-sm font-medium text-gray-700">Okul Adı</label>
                         <input type="text" name="okul_adi" value="{{ aday.okul_adi or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Mezuniyet Yılı</label>
                         <input type="number" name="mezuniyet_yili" min="1970" max="2030" value="{{ aday.mezuniyet_yili or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div class="md:col-span-4">
                         <label class="block mb-1 text-sm font-medium text-gray-700">Bölüm</label>
                         <input type="text" name="bolum" value="{{ aday.bolum or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
                 
@@ -179,12 +179,12 @@
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" name="ehliyet_var" id="ehliyet_var" {{ 'checked' if aday.ehliyet_var else '' }}
-                               class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                               class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                         <span class="text-sm text-gray-700">Ehliyetim Var</span>
                     </label>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Ehliyet Sınıfı</label>
-                        <select name="ehliyet_sinifi" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                        <select name="ehliyet_sinifi" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Seçiniz</option>
                             <option value="A1">A1</option>
                             <option value="A2">A2</option>
@@ -198,16 +198,16 @@
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Ehliyet Tarihi</label>
                         <input type="date" name="ehliyet_tarihi" value="{{ aday.ehliyet_tarihi.strftime('%Y-%m-%d') if aday.ehliyet_tarihi else '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" name="src_belgesi" id="src_belgesi" {{ 'checked' if aday.src_belgesi else '' }}
-                               class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                               class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                         <span class="text-sm text-gray-700">SRC Belgem Var</span>
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer">
                         <input type="checkbox" name="psikoteknik" id="psikoteknik" {{ 'checked' if aday.psikoteknik else '' }}
-                               class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                               class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                         <span class="text-sm text-gray-700">Psikoteknik Belgem Var</span>
                     </label>
                 </div>
@@ -221,32 +221,32 @@
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Toplam Tecrübe (Yıl)</label>
                         <input type="number" name="toplam_tecrube_yil" min="0" max="50" value="{{ aday.toplam_tecrube_yil or 0 }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Son İş Yeri</label>
                         <input type="text" name="son_is_yeri" value="{{ aday.son_is_yeri or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Son Pozisyon</label>
                         <input type="text" name="son_pozisyon" value="{{ aday.son_pozisyon or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">İşe Başlangıç</label>
                         <input type="date" name="son_is_baslangic" value="{{ aday.son_is_baslangic.strftime('%Y-%m-%d') if aday.son_is_baslangic else '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">İşten Ayrılış</label>
                         <input type="date" name="son_is_bitis" value="{{ aday.son_is_bitis.strftime('%Y-%m-%d') if aday.son_is_bitis else '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Ayrılma Nedeni</label>
                         <input type="text" name="son_is_ayrilma_nedeni" value="{{ aday.son_is_ayrilma_nedeni or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
                 
@@ -259,16 +259,16 @@
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Referans Ad Soyad</label>
                         <input type="text" name="referans_ad" value="{{ aday.referans_ad or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Referans Telefon</label>
                         <input type="tel" name="referans_telefon" value="{{ aday.referans_telefon or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Yakınlık</label>
-                        <select name="referans_iliski" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                        <select name="referans_iliski" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Seçiniz</option>
                             <option value="eski_yonetici">Eski Yönetici</option>
                             <option value="is_arkadasi">İş Arkadaşı</option>
@@ -286,7 +286,7 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Askerlik Durumu</label>
-                        <select name="askerlik_durumu" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                        <select name="askerlik_durumu" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Seçiniz</option>
                             <option value="yapti">Yaptı</option>
                             <option value="muaf">Muaf</option>
@@ -297,25 +297,25 @@
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Tecil Bitiş Tarihi</label>
                         <input type="date" name="askerlik_tecil_tarihi"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <label class="flex items-center gap-2 cursor-pointer pt-6">
                         <input type="checkbox" name="saglik_sorunu" id="saglik_sorunu"
-                               class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                               class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                         <span class="text-sm text-gray-700">Sağlık Sorunum Var</span>
                     </label>
                     <label class="flex items-center gap-2 cursor-pointer pt-6">
                         <input type="checkbox" name="sabika_kaydi" id="sabika_kaydi"
-                               class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                               class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                         <span class="text-sm text-gray-700">Sabıka Kaydım Var</span>
                     </label>
                     <div class="md:col-span-2">
                         <label class="block mb-1 text-sm font-medium text-gray-700">Sağlık Sorunu Açıklaması</label>
-                        <textarea name="saglik_sorunu_aciklama" rows="2" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"></textarea>
+                        <textarea name="saglik_sorunu_aciklama" rows="2" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
                     </div>
                     <div class="md:col-span-2">
                         <label class="block mb-1 text-sm font-medium text-gray-700">Sabıka Açıklaması</label>
-                        <textarea name="sabika_aciklama" rows="2" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"></textarea>
+                        <textarea name="sabika_aciklama" rows="2" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
                     </div>
                 </div>
                 
@@ -328,17 +328,17 @@
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Çalışabileceğiniz İller</label>
                         <input type="text" name="calisabilecegi_iller" placeholder="İstanbul, Ankara, İzmir" value="{{ aday.calisabilecegi_iller or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <p class="text-xs text-gray-500 mt-1">Virgülle ayırarak yazın</p>
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Beklenen Maaş (₺)</label>
                         <input type="number" name="beklenen_maas" min="0" step="1000" value="{{ aday.beklenen_maas or '' }}"
-                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                               class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Ne Zaman Başlayabilirsiniz?</label>
-                        <select name="ne_zaman_baslayabilir" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                        <select name="ne_zaman_baslayabilir" class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">Seçiniz</option>
                             <option value="hemen">Hemen</option>
                             <option value="1_hafta">1 Hafta İçinde</option>
@@ -348,7 +348,7 @@
                     </div>
                     <label class="flex items-center gap-2 cursor-pointer pt-6">
                         <input type="checkbox" name="vardiyali_calisabilir" id="vardiyali" checked
-                               class="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary">
+                               class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                         <span class="text-sm text-gray-700">Vardiyalı Çalışabilirim</span>
                     </label>
                 </div>
@@ -368,52 +368,52 @@
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Vesikalık Fotoğraf</label>
                         <input type="file" name="foto" accept="image/*"
-                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-blue-600/10 file:text-blue-600 file:font-medium hover:file:bg-blue-600/20">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">CV (Özgeçmiş)</label>
                         <input type="file" name="cv_dosya" accept=".pdf,.doc,.docx"
-                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-blue-600/10 file:text-blue-600 file:font-medium hover:file:bg-blue-600/20">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Kimlik Ön Yüz</label>
                         <input type="file" name="kimlik_on" accept="image/*"
-                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-blue-600/10 file:text-blue-600 file:font-medium hover:file:bg-blue-600/20">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Kimlik Arka Yüz</label>
                         <input type="file" name="kimlik_arka" accept="image/*"
-                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-blue-600/10 file:text-blue-600 file:font-medium hover:file:bg-blue-600/20">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Ehliyet Fotoğrafı</label>
                         <input type="file" name="ehliyet_foto" accept="image/*"
-                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-blue-600/10 file:text-blue-600 file:font-medium hover:file:bg-blue-600/20">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Diploma/Mezuniyet Belgesi</label>
                         <input type="file" name="diploma_foto" accept="image/*,.pdf"
-                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-blue-600/10 file:text-blue-600 file:font-medium hover:file:bg-blue-600/20">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">SRC Belgesi</label>
                         <input type="file" name="src_foto" accept="image/*,.pdf"
-                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-blue-600/10 file:text-blue-600 file:font-medium hover:file:bg-blue-600/20">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">İkametgah Belgesi</label>
                         <input type="file" name="ikametgah" accept="image/*,.pdf"
-                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-blue-600/10 file:text-blue-600 file:font-medium hover:file:bg-blue-600/20">
                     </div>
                     <div>
                         <label class="block mb-1 text-sm font-medium text-gray-700">Adli Sicil Belgesi</label>
                         <input type="file" name="adli_sicil" accept="image/*,.pdf"
-                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-primary/10 file:text-primary file:font-medium hover:file:bg-primary/20">
+                               class="w-full p-2 border border-gray-300 rounded-lg text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-blue-600/10 file:text-blue-600 file:font-medium hover:file:bg-blue-600/20">
                     </div>
                 </div>
                 
                 <!-- Gönder -->
-                <button type="submit" class="w-full py-4 bg-primary hover:bg-primary-dark text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 text-lg">
+                <button type="submit" class="w-full py-4 bg-blue-600 hover:bg-blue-600-dark text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 text-lg">
                     <span class="material-symbols-outlined">send</span>
                     Başvuruyu Gönder
                 </button>
