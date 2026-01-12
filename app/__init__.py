@@ -9,6 +9,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
+from flask_mail import Mail
 import os
 
 # Extensions
@@ -16,6 +17,7 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
 csrf = CSRFProtect()
+mail = Mail()
 
 
 def create_app(config_name=None):
@@ -43,16 +45,26 @@ def create_app(config_name=None):
     app.config['NETGSM_PASSWORD'] = os.environ.get('NETGSM_PASSWORD', '')
     app.config['NETGSM_HEADER'] = os.environ.get('NETGSM_HEADER', '')
     
+    # Mail Settings
+    app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', '')
+    app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+    app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
+    app.config['MAIL_USE_SSL'] = os.environ.get('MAIL_USE_SSL', 'false').lower() == 'true'
+    app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
+    app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
+    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', '')
     
     # Şirket Ayarları
     app.config['COMPANY_NAME'] = os.environ.get('COMPANY_NAME', '')
     app.config['COMPANY_SUBTITLE'] = os.environ.get('COMPANY_SUBTITLE', 'ERP Sistemi')
     app.config['COMPANY_LOGO'] = os.environ.get('COMPANY_LOGO', 'logo.png')
+    
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
     csrf.init_app(app)
+    mail.init_app(app)
     
     # Login manager settings
     login_manager.login_view = 'core.login'

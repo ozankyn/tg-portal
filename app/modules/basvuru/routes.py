@@ -112,10 +112,54 @@ def send_otp_sms(aday):
 
 def send_email_davet(aday, basvuru_link):
     """Email ile davet gönder"""
-    # TODO: Flask-Mail entegrasyonu
-    current_app.logger.info(f"Email gönderilecek: {aday.email} - Link: {basvuru_link}")
-    return {'success': True, 'info': 'Email simüle edildi'}
-
+    try:
+        from flask_mail import Message
+        from app import mail
+        
+        if not current_app.config.get('MAIL_SERVER'):
+            current_app.logger.error("Mail sunucusu yapılandırılmamış")
+            return {'success': False, 'error': 'Mail servisi yapılandırılmamış'}
+        
+        # Kadro bilgisi
+        kadro_bilgi = ""
+        if aday.kadro:
+            musteri_ad = aday.kadro.proje.musteri.kisa_ad or aday.kadro.proje.musteri.ad
+            kadro_bilgi = f"{musteri_ad} - {aday.kadro.pozisyon_adi}"
+        
+        subject = f"İş Başvuru Daveti - {kadro_bilgi}" if kadro_bilgi else "İş Başvuru Daveti - Team Guerilla"
+        
+        html_body = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #1e40af, #3b82f6); padding: 30px; text-align: center;">
+                <h1 style="color: white; margin: 0;">Team Guerilla</h1>
+                <p style="color: rgba(255,255,255,0.8); margin: 10px 0 0 0;">İş Başvuru Daveti</p>
+            </div>
+            <div style="padding: 30px; background: #f9fafb;">
+                <p>Sayın <strong>{aday.ad} {aday.soyad}</strong>,</p>
+                <p>{kadro_bilgi + ' pozisyonu için ' if kadro_bilgi else ''}iş başvuru davetiniz aşağıdaki linkte yer almaktadır.</p>
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="{basvuru_link}" style="background: #2563eb; color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: bold;">Başvuruya Başla</a>
+                </div>
+                <p style="color: #6b7280; font-size: 14px;">Bu link 72 saat süreyle geçerlidir.</p>
+                <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+                <p style="color: #6b7280; font-size: 12px;">Bu e-posta Team Guerilla İK sistemi tarafından otomatik olarak gönderilmiştir.</p>
+            </div>
+        </div>
+        """
+        
+        msg = Message(
+            subject=subject,
+            recipients=[aday.email],
+            html=html_body
+        )
+        
+        mail.send(msg)
+        current_app.logger.info(f"Email gönderildi: {aday.email}")
+        return {'success': True}
+        
+    except Exception as e:
+        current_app.logger.error(f"Email gönderim hatası: {str(e)}")
+        return {'success': False, 'error': str(e)}
 
 # ==================== Public Routes ====================
 

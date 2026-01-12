@@ -33,3 +33,6 @@ twilio==8.10.0
 pandas
 openpyxl
 pandas
+
+#Email
+Flask-Mail==0.9.1
