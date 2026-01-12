@@ -307,6 +307,10 @@ def basvuru_form(token):
         aday.durum = 'basvurdu'
         
         db.session.commit()
+
+        # İK ekibine bildirim gönder
+        from app.services.notification import notify_yeni_basvuru
+        notify_yeni_basvuru(aday)
         
         return redirect(url_for('basvuru.basvuru_tamam', token=token))
     
