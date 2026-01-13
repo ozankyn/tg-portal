@@ -1,0 +1,155 @@
+{% extends "basvuru/base_public.html" %}
+
+{% block title %}Evrak Yükleme - {{ aday.full_name }}{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="text-center mb-8">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Evrak Yükleme</h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">Sayın {{ aday.ad }} {{ aday.soyad }}, lütfen istenen evrakları yükleyiniz.</p>
+    </div>
+    
+    <!-- İlerleme Durumu -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <div class="flex items-center justify-between mb-2">
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Evrak Tamamlanma Durumu</span>
+            <span class="text-sm font-bold {% if evrak_tamamlanma == 100 %}text-green-600{% elif evrak_tamamlanma >= 50 %}text-amber-600{% else %}text-red-600{% endif %}">%{{ evrak_tamamlanma }}</span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+            <div class="{% if evrak_tamamlanma == 100 %}bg-green-600{% elif evrak_tamamlanma >= 50 %}bg-amber-500{% else %}bg-red-500{% endif %} h-3 rounded-full transition-all" style="width: {{ evrak_tamamlanma }}%"></div>
+        </div>
+        {% if evrak_tamamlanma == 100 %}
+        <p class="text-sm text-green-600 mt-2 flex items-center gap-1">
+            <span class="material-symbols-outlined text-lg">check_circle</span>
+            Tüm zorunlu evraklar yüklendi!
+        </p>
+        {% endif %}
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sol: Evrak Yükle Formu -->
+        <div class="lg:col-span-1">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-blue-600 rounded-t-xl">
+                    <h6 class="font-medium text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">upload_file</span>
+                        Evrak Yükle
+                    </h6>
+                </div>
+                <form method="POST" action="{{ url_for('kariyer.evrak_yukle_post', token=token) }}" enctype="multipart/form-data" class="p-4 space-y-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Evrak Tipi *</label>
+                        <select name="evrak_tipi_id" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="">Seçiniz</option>
+                            {% for tip in evrak_tipleri %}
+                            <option value="{{ tip.id }}">{{ tip.ad }}{% if tip.zorunlu %} *{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dosya *</label>
+                        <input type="file" name="dosya" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">PDF, JPG, PNG, DOC, DOCX (Max 10MB)</p>
+                    </div>
+                    
+                    <button type="submit" class="w-full px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">upload</span>
+                        Yükle
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Eksik Evraklar -->
+            {% if eksik_evraklar %}
+            <div class="mt-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-700 p-4">
+                <h6 class="font-medium text-amber-800 dark:text-amber-400 flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined">warning</span>
+                    Eksik Zorunlu Evraklar
+                </h6>
+                <ul class="text-sm text-amber-700 dark:text-amber-300 space-y-1">
+                    {% for tip in eksik_evraklar %}
+                    <li class="flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">radio_button_unchecked</span>
+                        {{ tip.ad }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sağ: Yüklenen Evraklar -->
+        <div class="lg:col-span-2">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                    <h6 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">folder_open</span>
+                        Yüklenen Evraklar ({{ evraklar|length }})
+                    </h6>
+                </div>
+                
+                {% if evraklar %}
+                <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for evrak in evraklar %}
+                    <div class="p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg {% if evrak.durum == 'onaylandi' %}bg-green-100 dark:bg-green-900/30{% elif evrak.durum == 'reddedildi' %}bg-red-100 dark:bg-red-900/30{% else %}bg-blue-100 dark:bg-blue-900/30{% endif %} flex items-center justify-center">
+                                <span class="material-symbols-outlined {% if evrak.durum == 'onaylandi' %}text-green-600{% elif evrak.durum == 'reddedildi' %}text-red-600{% else %}text-blue-600{% endif %}">
+                                    {% if evrak.durum == 'onaylandi' %}check_circle{% elif evrak.durum == 'reddedildi' %}cancel{% else %}description{% endif %}
+                                </span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-900 dark:text-white">{{ evrak.evrak_tipi.ad if evrak.evrak_tipi else 'Belge' }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    {{ evrak.dosya_adi }} • {{ (evrak.dosya_boyut / 1024)|round(1) }} KB
+                                </p>
+                                {% if evrak.red_sebebi %}
+                                <p class="text-xs text-red-600 dark:text-red-400 mt-1">
+                                    <strong>Red sebebi:</strong> {{ evrak.red_sebebi }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {% if evrak.durum == 'onaylandi' %}
+                            <span class="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-bold rounded">Onaylı</span>
+                            {% elif evrak.durum == 'reddedildi' %}
+                            <span class="px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs font-bold rounded">Reddedildi</span>
+                            {% else %}
+                            <span class="px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-bold rounded">İnceleniyor</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="p-8 text-center">
+                    <span class="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600">folder_off</span>
+                    <p class="mt-2 text-gray-500 dark:text-gray-400">Henüz evrak yüklenmemiş</p>
+                    <p class="text-sm text-gray-400 dark:text-gray-500">Soldaki formdan evraklarınızı yükleyebilirsiniz.</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Bilgi Notu -->
+            <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700 p-4">
+                <div class="flex gap-3">
+                    <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">info</span>
+                    <div class="text-sm text-blue-700 dark:text-blue-300">
+                        <p class="font-medium">Bilgilendirme</p>
+                        <ul class="mt-1 space-y-1 text-blue-600 dark:text-blue-400">
+                            <li>• Yüklediğiniz evraklar İK birimimiz tarafından incelenecektir.</li>
+                            <li>• Zorunlu evrakların tamamı onaylandıktan sonra işe alım süreciniz devam edecektir.</li>
+                            <li>• Reddedilen evrakları düzelterek tekrar yükleyebilirsiniz.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

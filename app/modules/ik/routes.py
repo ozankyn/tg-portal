@@ -1216,3 +1216,143 @@ def kullanici_olustur(id):
         flash(f'Kullanıcı oluşturuldu ama email gönderilemedi. Şifre: {password}', 'warning')
 
     return redirect(url_for('ik.detay', id=id))
+
+
+# ============================================================
+# ÇALIŞAN EVRAK YÖNETİMİ
+# ============================================================
+
+@ik_bp.route('/calisan/<int:id>/evraklar')
+@login_required
+@permission_required('ik.view')
+def calisan_evraklar(id):
+    """Çalışan evrakları listesi"""
+    calisan = Calisan.query.get_or_404(id)
+    evrak_tipleri = EvrakTipi.query.filter_by(aktif=True).order_by(EvrakTipi.sira).all()
+    evraklar = calisan.evraklar.all() if hasattr(calisan, 'evraklar') else []
+    
+    from datetime import date as dt_date
+    return render_template('ik/calisan_evraklar.html',
+                          today=dt_date.today(),
+                          calisan=calisan,
+                          evraklar=evraklar,
+                          evrak_tipleri=evrak_tipleri)
+
+
+@ik_bp.route('/calisan/<int:id>/evrak', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def calisan_evrak_yukle(id):
+    """Çalışan evrak yükle"""
+    calisan = Calisan.query.get_or_404(id)
+    
+    if 'dosya' not in request.files:
+        flash('Dosya seçilmedi.', 'danger')
+        return redirect(url_for('ik.calisan_evraklar', id=id))
+    
+    dosya = request.files['dosya']
+    if dosya.filename == '':
+        flash('Dosya seçilmedi.', 'danger')
+        return redirect(url_for('ik.calisan_evraklar', id=id))
+    
+    if dosya and allowed_file(dosya.filename):
+        evrak_tipi_id = int(request.form['evrak_tipi_id'])
+        
+        # Dosya adı oluştur
+        filename = secure_filename(dosya.filename)
+        ext = filename.rsplit('.', 1)[1].lower()
+        new_filename = f"calisan_{id}_{evrak_tipi_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}"
+        
+        # Klasör oluştur
+        upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'evraklar', 'calisanlar', str(id))
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # Dosyayı kaydet
+        filepath = os.path.join(upload_folder, new_filename)
+        dosya.save(filepath)
+        
+        # Geçerlilik tarihi
+        gecerlilik = None
+        if request.form.get('gecerlilik_bitis'):
+            gecerlilik = datetime.strptime(request.form['gecerlilik_bitis'], '%Y-%m-%d').date()
+        
+        # Veritabanına ekle
+        evrak = CalisanEvrak(
+            calisan_id=id,
+            evrak_tipi_id=evrak_tipi_id,
+            dosya_adi=filename,
+            dosya_yolu=filepath,
+            dosya_boyut=os.path.getsize(filepath),
+            mime_type=dosya.content_type,
+            gecerlilik_bitis=gecerlilik
+        )
+        db.session.add(evrak)
+        db.session.commit()
+        
+        flash('Evrak başarıyla yüklendi.', 'success')
+    else:
+        flash('Geçersiz dosya formatı. (PDF, JPG, PNG, DOC, DOCX)', 'danger')
+    
+    return redirect(url_for('ik.calisan_evraklar', id=id))
+
+
+@ik_bp.route('/calisan/evrak/<int:id>/indir')
+@login_required
+@permission_required('ik.view')
+def calisan_evrak_indir(id):
+    """Çalışan evrak indir"""
+    evrak = CalisanEvrak.query.get_or_404(id)
+    return send_file(evrak.dosya_yolu, as_attachment=True, download_name=evrak.dosya_adi)
+
+
+@ik_bp.route('/calisan/evrak/<int:id>/sil', methods=['POST'])
+@login_required
+@permission_required('ik.delete')
+def calisan_evrak_sil(id):
+    """Çalışan evrak sil"""
+    evrak = CalisanEvrak.query.get_or_404(id)
+    calisan_id = evrak.calisan_id
+    
+    # Dosyayı sil
+    if os.path.exists(evrak.dosya_yolu):
+        os.remove(evrak.dosya_yolu)
+    
+    db.session.delete(evrak)
+    db.session.commit()
+    
+    flash('Evrak silindi.', 'success')
+    return redirect(url_for('ik.calisan_evraklar', id=calisan_id))
+
+
+@ik_bp.route('/aday/<int:id>/evraklar')
+@login_required
+@permission_required('ik.view')
+def aday_evraklar(id):
+    """Aday evrakları sayfası"""
+    aday = Aday.query.get_or_404(id)
+    evrak_tipleri = EvrakTipi.query.filter_by(aktif=True).order_by(EvrakTipi.sira).all()
+    evraklar = aday.evraklar.all()
+    
+    # Eksik evraklar
+    yuklenen_tipler = [e.evrak_tipi_id for e in aday.evraklar.filter(
+        AdayEvrak.durum.in_(['yuklendi', 'onaylandi'])
+    ).all()]
+    eksik_evraklar = [t for t in EvrakTipi.query.filter_by(zorunlu=True, aktif=True).all() if t.id not in yuklenen_tipler]
+    
+    # Tamamlanma oranı
+    zorunlu_count = EvrakTipi.query.filter_by(zorunlu=True, aktif=True).count()
+    if zorunlu_count == 0:
+        evrak_tamamlanma = 100
+    else:
+        onaylanan = aday.evraklar.join(EvrakTipi).filter(
+            EvrakTipi.zorunlu == True,
+            AdayEvrak.durum == 'onaylandi'
+        ).count()
+        evrak_tamamlanma = int((onaylanan / zorunlu_count) * 100)
+    
+    return render_template('ik/aday_evraklar.html',
+                          aday=aday,
+                          evraklar=evraklar,
+                          evrak_tipleri=evrak_tipleri,
+                          eksik_evraklar=eksik_evraklar,
+                          evrak_tamamlanma=evrak_tamamlanma)

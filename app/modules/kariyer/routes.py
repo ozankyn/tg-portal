@@ -7,7 +7,7 @@ Açık pozisyonları görüntüleme ve doğrudan başvuru - Login gerektirmez
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from datetime import datetime
 from app import db
-from app.models.ik import Aday, KAYNAK_TURLERI
+from app.models.ik import Aday, KAYNAK_TURLERI, EvrakTipi, AdayEvrak
 from app.models.proje import HedefKadro, Proje, Musteri
 
 kariyer_bp = Blueprint('kariyer', __name__)
@@ -208,3 +208,110 @@ def basvuru_tamam(token):
     """Başvuru tamamlandı sayfası"""
     aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first_or_404()
     return render_template('kariyer/tamam.html', aday=aday)
+
+
+# ============================================================
+# ADAY EVRAK YÜKLEME (PUBLIC - TOKEN İLE)
+# ============================================================
+
+@kariyer_bp.route('/evrak/<token>')
+def evrak_yukle_sayfa(token):
+    """Aday evrak yükleme sayfası (public)"""
+    from datetime import datetime
+    
+    aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first()
+    
+    if not aday:
+        flash('Geçersiz veya süresi dolmuş link.', 'danger')
+        return redirect(url_for('kariyer.basvuru'))
+    
+    # Token süresi kontrolü (opsiyonel - evrak için daha uzun süre verilebilir)
+    # if aday.davet_token_expires and aday.davet_token_expires < datetime.utcnow():
+    #     flash('Link süresi dolmuş.', 'danger')
+    #     return redirect(url_for('kariyer.basvuru'))
+    
+    evrak_tipleri = EvrakTipi.query.filter_by(aktif=True).order_by(EvrakTipi.sira).all()
+    evraklar = aday.evraklar.all()
+    
+    # Eksik evraklar
+    yuklenen_tipler = [e.evrak_tipi_id for e in aday.evraklar.filter(
+        AdayEvrak.durum.in_(['yuklendi', 'onaylandi'])
+    ).all()]
+    eksik_evraklar = [t for t in EvrakTipi.query.filter_by(zorunlu=True, aktif=True).all() if t.id not in yuklenen_tipler]
+    
+    # Tamamlanma oranı
+    zorunlu_count = EvrakTipi.query.filter_by(zorunlu=True, aktif=True).count()
+    if zorunlu_count == 0:
+        evrak_tamamlanma = 100
+    else:
+        tamamlanan = len([t for t in EvrakTipi.query.filter_by(zorunlu=True, aktif=True).all() if t.id in yuklenen_tipler])
+        evrak_tamamlanma = int((tamamlanan / zorunlu_count) * 100)
+    
+    return render_template('kariyer/evrak_yukle.html',
+                          aday=aday,
+                          token=token,
+                          evraklar=evraklar,
+                          evrak_tipleri=evrak_tipleri,
+                          eksik_evraklar=eksik_evraklar,
+                          evrak_tamamlanma=evrak_tamamlanma)
+
+
+@kariyer_bp.route('/evrak/<token>/yukle', methods=['POST'])
+def evrak_yukle_post(token):
+    """Aday evrak yükleme işlemi (public)"""
+    from datetime import datetime
+    from werkzeug.utils import secure_filename
+    import os
+    
+    aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first()
+    
+    if not aday:
+        flash('Geçersiz link.', 'danger')
+        return redirect(url_for('kariyer.basvuru'))
+    
+    if 'dosya' not in request.files:
+        flash('Dosya seçilmedi.', 'danger')
+        return redirect(url_for('kariyer.evrak_yukle_sayfa', token=token))
+    
+    dosya = request.files['dosya']
+    if dosya.filename == '':
+        flash('Dosya seçilmedi.', 'danger')
+        return redirect(url_for('kariyer.evrak_yukle_sayfa', token=token))
+    
+    ALLOWED_EXTENSIONS = {'pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'}
+    def allowed_file(filename):
+        return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    
+    if dosya and allowed_file(dosya.filename):
+        evrak_tipi_id = int(request.form['evrak_tipi_id'])
+        
+        # Dosya adı oluştur
+        filename = secure_filename(dosya.filename)
+        ext = filename.rsplit('.', 1)[1].lower()
+        new_filename = f"aday_{aday.id}_{evrak_tipi_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}"
+        
+        # Klasör oluştur
+        upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'evraklar', 'adaylar', str(aday.id))
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # Dosyayı kaydet
+        filepath = os.path.join(upload_folder, new_filename)
+        dosya.save(filepath)
+        
+        # Veritabanına ekle
+        evrak = AdayEvrak(
+            aday_id=aday.id,
+            evrak_tipi_id=evrak_tipi_id,
+            dosya_adi=filename,
+            dosya_yolu=filepath,
+            dosya_boyut=os.path.getsize(filepath),
+            mime_type=dosya.content_type
+        )
+        db.session.add(evrak)
+        db.session.commit()
+        
+        flash('Evrak başarıyla yüklendi.', 'success')
+    else:
+        flash('Geçersiz dosya formatı. (PDF, JPG, PNG, DOC, DOCX)', 'danger')
+    
+    return redirect(url_for('kariyer.evrak_yukle_sayfa', token=token))
