@@ -23,7 +23,7 @@
             <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
                 <div class="{% if islem_tipi == 'teslim' %}bg-green-600{% else %}bg-yellow-500{% endif %} text-white px-4 py-3 rounded-t-xl">
                     <h6 class="font-medium flex items-center gap-2">
-                        <span class="material-symbols-outlined">{% if islem_tipi == 'teslim' %}logout{% else %}login{% endif %}</span><!--</span>
+                        <span class="material-symbols-outlined">{% if islem_tipi == 'teslim' %}logout{% else %}login{% endif %}</span>
                         Araç Bilgileri
                     </h6>
                 </div>
@@ -220,7 +220,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.0.0/dist/signature_pad.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
 <script>
 // İmza pad'leri
 var signaturePadTeslimEden = new SignaturePad(document.getElementById('signatureTeslimEden'));
