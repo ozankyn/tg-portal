@@ -75,6 +75,17 @@
                     <span class="material-symbols-outlined text-lg">edit</span>
                     Düzenle
                 </a>
+                {% if not calisan.user_account %}
+                <button type="button" onclick="document.getElementById('kullaniciModal').classList.remove('hidden')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 mt-3">
+                    <span class="material-symbols-outlined text-lg">person_add</span>
+                    Portal Kullanıcısı Oluştur
+                </button>
+                {% else %}
+                <div class="w-full bg-gray-100 dark:bg-[#111418] text-gray-600 dark:text-gray-400 font-medium py-2.5 rounded-lg flex items-center justify-center gap-2 mt-3 text-sm">
+                    <span class="material-symbols-outlined text-lg">check_circle</span>
+                    Portal Kullanıcısı Mevcut
+                </div>
+                {% endif %}
                 <div class="grid grid-cols-2 gap-3">
                     <a href="{{ url_for('ik.calisan_zimmetler', id=calisan.id) }}" class="bg-gray-100 dark:bg-[#111418] hover:bg-gray-200 dark:hover:bg-[#252b36] text-sm font-bold py-2 rounded-lg transition-all text-center">Zimmetler</a>
                     {% if calisan.durum.value == 'aktif' %}
@@ -341,6 +352,43 @@
         </div>
         {% endif %}
         
+    </div>
+</div>
+
+<!-- Kullanıcı Oluştur Modal -->
+<div id="kullaniciModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald-600">person_add</span>
+                Portal Kullanıcısı Oluştur
+            </h3>
+        </div>
+        <div class="p-6">
+            <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">
+                <strong>{{ calisan.ad }} {{ calisan.soyad }}</strong> için portal kullanıcısı oluşturulacak.
+            </p>
+            <div class="bg-gray-50 dark:bg-[#111418] rounded-lg p-4 mb-4">
+                <p class="text-sm"><strong>Email:</strong> {{ calisan.email or "Email adresi yok!" }}</p>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mt-1">Şifre otomatik oluşturulup email ile gönderilecek.</p>
+            </div>
+            {% if not calisan.email %}
+            <p class="text-sm text-red-600 mb-4">⚠️ Kullanıcı oluşturmak için önce çalışana email adresi ekleyin.</p>
+            {% endif %}
+        </div>
+        <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3">
+            <button type="button" onclick="document.getElementById('kullaniciModal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-colors">
+                İptal
+            </button>
+            {% if calisan.email %}
+            <form method="POST" action="{{ url_for('ik.kullanici_olustur', id=calisan.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors">
+                    Kullanıcı Oluştur
+                </button>
+            </form>
+            {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}

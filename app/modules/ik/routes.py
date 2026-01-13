@@ -1153,3 +1153,66 @@ def aday_ekle():
                           pozisyonlar=pozisyonlar)
 
 
+
+
+# ============================================================
+# ÇALIŞAN KULLANICI OLUŞTUR
+# ============================================================
+@ik_bp.route('/<int:id>/kullanici-olustur', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def kullanici_olustur(id):
+    """Çalışan için portal kullanıcısı oluştur"""
+    import secrets
+    from app.models.core import User
+    from app.services.notification import send_notification
+    from flask import render_template as rt
+    
+    calisan = Calisan.query.get_or_404(id)
+    
+    # Zaten kullanıcısı var mı?
+    if calisan.user_account:
+        flash('Bu çalışanın zaten bir portal kullanıcısı var.', 'warning')
+        return redirect(url_for('ik.detay', id=id))
+    
+    # Email zorunlu
+    if not calisan.email:
+        flash('Kullanıcı oluşturmak için çalışanın email adresi gerekli.', 'error')
+        return redirect(url_for('ik.detay', id=id))
+    
+    # Email zaten kullanılıyor mu?
+    existing_user = User.query.filter_by(email=calisan.email, is_deleted=False).first()
+    if existing_user:
+        flash('Bu email adresi ile zaten bir kullanıcı mevcut.', 'error')
+        return redirect(url_for('ik.detay', id=id))
+    
+    # Rastgele şifre oluştur
+    password = secrets.token_urlsafe(12)
+    
+    # Kullanıcı oluştur
+    user = User(
+        email=calisan.email,
+        ad=calisan.ad,
+        soyad=calisan.soyad,
+        telefon=calisan.telefon,
+        is_active=True,
+        calisan_id=calisan.id
+    )
+    user.set_password(password)
+    
+    db.session.add(user)
+    db.session.commit()
+    
+    # Email gönder
+    try:
+        html_body = rt('emails/kullanici_olusturuldu.html', calisan=calisan, email=calisan.email, password=password)
+        send_notification(
+            to=calisan.email,
+            subject='TG Portal - Kullanıcı Hesabınız Oluşturuldu',
+            html_body=html_body
+        )
+        flash(f'Kullanıcı oluşturuldu ve giriş bilgileri {calisan.email} adresine gönderildi.', 'success')
+    except Exception as e:
+        flash(f'Kullanıcı oluşturuldu ama email gönderilemedi. Şifre: {password}', 'warning')
+
+    return redirect(url_for('ik.detay', id=id))
