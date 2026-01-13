@@ -136,4 +136,9 @@ def create_app(config_name=None):
         seed_all()
         print('Örnek veriler yüklendi.')
     
+
+    # CLI komutlarını register et
+    from app.scripts import import_calisanlar
+    import_calisanlar.init_app(app)
+
     return app
