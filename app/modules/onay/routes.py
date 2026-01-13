@@ -91,6 +91,11 @@ def onayla(id):
     basarili, hata = OnayServisi.onayla(id, current_user.id, not_)
     
     if basarili:
+        # Talep sahibine bildirim gönder
+        from app.services.notification import notify_onay_sonucu
+        kayit = OnayKaydi.query.get(id)
+        if kayit and kayit.talep:
+            notify_onay_sonucu(kayit.talep, onaylandi=True, aciklama=not_)
         flash('Talep onaylandı.', 'success')
     else:
         flash(f'Hata: {hata}', 'danger')
@@ -118,6 +123,11 @@ def reddet(id):
     basarili, hata = OnayServisi.reddet(id, current_user.id, not_)
     
     if basarili:
+        # Talep sahibine bildirim gönder
+        from app.services.notification import notify_onay_sonucu
+        kayit = OnayKaydi.query.get(id)
+        if kayit and kayit.talep:
+            notify_onay_sonucu(kayit.talep, onaylandi=False, aciklama=not_)
         flash('Talep reddedildi.', 'info')
     else:
         flash(f'Hata: {hata}', 'danger')
@@ -221,8 +231,8 @@ def yetki_devri_ekle():
     # Devredilebilecek kullanıcılar
     kullanicilar = User.query.filter(
         User.id != current_user.id,
-        User.aktif == True
-    ).order_by(User.username).all()
+        User.is_active == True
+    ).order_by(User.ad).all()
     
     return render_template('onay/yetki_devri_form.html', kullanicilar=kullanicilar)
 
