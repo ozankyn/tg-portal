@@ -36,7 +36,10 @@
         </div>
         <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
           <span class="text-text-muted dark:text-text-muted-dark">Talep Eden</span>
-          <strong class="text-[#111418] dark:text-white">{{ talep.talep_eden.username }}</strong>
+          <strong class="text-[#111418] dark:text-white">{{ talep.talep_eden.full_name }}</strong>
+          {% if talep.talep_eden.calisan %}
+          <span class="text-sm text-text-muted dark:text-text-muted-dark">- {{ talep.talep_eden.calisan.pozisyon.ad if talep.talep_eden.calisan.pozisyon else "" }}</span>
+          {% endif %}
         </div>
         <div class="flex justify-between py-2 border-b border-border-light dark:border-border-dark">
           <span class="text-text-muted dark:text-text-muted-dark">Tarih</span>
@@ -155,7 +158,7 @@
                 <strong class="text-[#111418] dark:text-white">Talep Oluşturuldu</strong>
                 <span class="text-xs text-text-muted dark:text-text-muted-dark">{{ talep.talep_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
               </div>
-              <div class="text-xs text-text-muted dark:text-text-muted-dark mt-1">{{ talep.talep_eden.username }} tarafından</div>
+              <div class="text-xs text-text-muted dark:text-text-muted-dark mt-1">{{ talep.talep_eden.full_name }} tarafından</div>
             </div>
           </div>
 

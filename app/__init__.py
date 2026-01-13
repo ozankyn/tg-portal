@@ -53,6 +53,9 @@ def create_app(config_name=None):
     app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
     app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
     app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', '')
+
+    # Anthropic AI
+    app.config['ANTHROPIC_API_KEY'] = os.environ.get('ANTHROPIC_API_KEY', '')
     
     # Şirket Ayarları
     app.config['COMPANY_NAME'] = os.environ.get('COMPANY_NAME', '')

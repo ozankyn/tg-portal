@@ -62,11 +62,17 @@ def talep_detay(id):
     
     # Yetki kontrolü - talep eden veya onaylayıcı mı?
     is_talep_eden = talep.talep_eden_id == current_user.id
+    # Normal kullanıcı için bekleyen kayıt
     bekleyen_kayit = talep.kayitlar.filter_by(
         onaylayici_id=current_user.id, 
         durum='bekliyor'
     ).first()
     is_admin = current_user.has_permission('onay.admin')
+    
+    # Admin için bekleyen kayıt yoksa, herhangi bir bekleyen kayıt al
+    if is_admin and not bekleyen_kayit:
+        bekleyen_kayit = talep.kayitlar.filter_by(durum='bekliyor').first()
+    
     
     if not (is_talep_eden or bekleyen_kayit or is_admin):
         flash('Bu talebi görüntüleme yetkiniz yok.', 'danger')

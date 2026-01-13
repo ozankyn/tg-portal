@@ -539,3 +539,108 @@ def api_kategori_detay(id):
         'gunluk_limit': float(kategori.gunluk_limit) if kategori.gunluk_limit else None,
         'aylik_limit': float(kategori.aylik_limit) if kategori.aylik_limit else None
     })
+
+
+# ============================================================
+# AI FİŞ TANIMA
+# ============================================================
+
+@masraf_bp.route('/fis-tani', methods=['POST'])
+@login_required
+def fis_tani():
+    """Fiş/fatura görselinden bilgi çıkar (Claude AI)"""
+    import anthropic
+    import json
+    import base64
+    
+    if 'dosya' not in request.files:
+        return jsonify({'success': False, 'error': 'Dosya yüklenmedi'}), 400
+    
+    dosya = request.files['dosya']
+    if dosya.filename == '':
+        return jsonify({'success': False, 'error': 'Dosya seçilmedi'}), 400
+    
+    # Dosya tipini kontrol et
+    allowed = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
+    ext = dosya.filename.rsplit('.', 1)[1].lower() if '.' in dosya.filename else ''
+    if ext not in allowed:
+        return jsonify({'success': False, 'error': 'Sadece görsel dosyalar desteklenir (JPG, PNG)'}), 400
+    
+    # Dosyayı base64'e çevir
+    image_data = base64.standard_b64encode(dosya.read()).decode('utf-8')
+    
+    # MIME type belirle
+    mime_types = {
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'webp': 'image/webp'
+    }
+    media_type = mime_types.get(ext, 'image/jpeg')
+    
+    # Claude API çağrısı
+    try:
+        client = anthropic.Anthropic(api_key=current_app.config.get('ANTHROPIC_API_KEY'))
+        
+        message = client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=1024,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image",
+                            "source": {
+                                "type": "base64",
+                                "media_type": media_type,
+                                "data": image_data
+                            }
+                        },
+                        {
+                            "type": "text",
+                            "text": """Bu bir Türk fişi veya faturası görseli. Lütfen aşağıdaki bilgileri JSON formatında çıkar:
+
+{
+    "firma_adi": "Faturayı kesen firma/işletme adı",
+    "tarih": "YYYY-MM-DD formatında tarih",
+    "tutar": "Fişte yazan TOPLAM tutar (KDV dahil genel toplam, sadece sayı, nokta ile ondalık ayracı)",
+    "kdv_orani": "0",
+    "fatura_no": "Fatura veya fiş numarası",
+    "aciklama": "Satın alınan ürün/hizmetin kısa açıklaması (örn: Yemek, Taksi, Ofis malzemesi)"
+}
+
+KURALLAR:
+- tutar alanına her zaman fişin EN ALTINDAKİ TOPLAM tutarı yaz (KDV dahil)
+- kdv_orani her zaman 0 olsun (kullanıcı manuel seçecek)
+- Türk lirası formatında virgül ondalık ayracı olabilir, bunu noktaya çevir (örn: 5.670,50 -> 5670.50)
+- Eğer bir bilgiyi okuyamıyorsan null yaz
+- Sadece JSON döndür, başka açıklama ekleme"""
+                        }
+                    ]
+                }
+            ]
+        )
+        
+        # Response'u parse et
+        response_text = message.content[0].text.strip()
+        
+        # JSON'u çıkar (bazen markdown code block içinde gelebilir)
+        if response_text.startswith('```'):
+            response_text = response_text.split('```')[1]
+            if response_text.startswith('json'):
+                response_text = response_text[4:]
+        response_text = response_text.strip()
+        
+        import json
+        result = json.loads(response_text)
+        
+        return jsonify({'success': True, 'data': result})
+        
+    except anthropic.APIError as e:
+        return jsonify({'success': False, 'error': f'API hatası: {str(e)}'}), 500
+    except json.JSONDecodeError:
+        return jsonify({'success': False, 'error': 'AI yanıtı işlenemedi'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500

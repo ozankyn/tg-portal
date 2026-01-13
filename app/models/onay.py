@@ -359,13 +359,15 @@ class OnayServisi:
         
         elif adim.onaylayici_tipi == 'yonetici':
             # Talep edenin yöneticisini bul
-            calisan = Calisan.query.filter_by(user_id=talep_eden_id, is_deleted=False).first()
+            user = User.query.get(talep_eden_id)
+            calisan = user.calisan if user else None
             if calisan and calisan.yonetici_id:
                 yonetici = Calisan.query.get(calisan.yonetici_id)
-                return yonetici.user_id if yonetici else None
+                return yonetici.user_account.id if yonetici and yonetici.user_account else None
         
         elif adim.onaylayici_tipi == 'departman_yoneticisi':
-            calisan = Calisan.query.filter_by(user_id=talep_eden_id, is_deleted=False).first()
+            user = User.query.get(talep_eden_id)
+            calisan = user.calisan if user else None
             if calisan and calisan.departman and calisan.departman.yonetici_id:
                 return calisan.departman.yonetici_id
         
