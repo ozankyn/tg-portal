@@ -91,6 +91,7 @@ def create_app(config_name=None):
     from app.modules.talep.routes import talep_bp
     from app.modules.rapor.routes import rapor_bp
     from app.modules.ayarlar.routes import ayarlar_bp
+    from app.modules.sirket.routes import sirket_bp
     
     app.register_blueprint(core_bp)
     app.register_blueprint(ik_bp, url_prefix='/ik')
@@ -108,6 +109,7 @@ def create_app(config_name=None):
     app.register_blueprint(talep_bp, url_prefix="/talep")
     app.register_blueprint(rapor_bp, url_prefix="/rapor")
     app.register_blueprint(ayarlar_bp, url_prefix="/ayarlar")
+    app.register_blueprint(sirket_bp, url_prefix="/sirket")
 
     from app.modules.onay.routes import onay_bp
     app.register_blueprint(onay_bp, url_prefix="/onay")

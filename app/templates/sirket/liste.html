@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Tüzel Kişiler - TG Portal{% endblock %}
+{% block page_title %}Tüzel Kişiler{% endblock %}
+
+{% block content %}
+<div class="bg-white dark:bg-card-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark">
+    <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+        <h6 class="font-semibold text-[#111418] dark:text-white">Şirketler / Tüzel Kişiler</h6>
+        {% if has_permission('ayarlar.edit') %}
+        <a href="{{ url_for('sirket.ekle') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+            <span class="material-symbols-outlined">add</span>Yeni Tüzel Kişi
+        </a>
+        {% endif %}
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-[600px] text-sm">
+            <thead class="bg-gray-50 dark:bg-[#111418]">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Şirket Adı</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Vergi No</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">SGK Dosya Sayısı</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark w-20"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for tk in tuzel_kisiler %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                    <td class="px-4 py-3">
+                        <strong class="text-[#111418] dark:text-white">{{ tk.display_name }}</strong>
+                        {% if tk.kisa_ad and tk.kisa_ad != tk.ad %}
+                        <br><span class="text-xs text-text-muted dark:text-text-muted-dark">{{ tk.ad }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-text-muted dark:text-text-muted-dark">{{ tk.vergi_no or '-' }}</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            {{ tk.sgk_dosyalari.filter_by(is_deleted=False).count() }} dosya
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        {% if tk.aktif %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Pasif</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('sirket.detay', id=tk.id) }}" class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg">
+                            <span class="material-symbols-outlined">visibility</span>
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">
+                        Henüz tüzel kişi eklenmemiş
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

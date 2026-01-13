@@ -27,6 +27,9 @@ from app.models.ik import (
 from app.models.tedarikci import Tedarikci
 # Proje models (Filo'dan önce import edilmeli!)
 from app.models.proje import Musteri, Proje, HedefKadro
+
+# Şirket models
+from app.models.sirket import TuzelKisi, SgkDosya
 # Filo models (Proje'den sonra)
 from app.models.filo import (
     Arac,
@@ -119,6 +122,9 @@ __all__ = [
     'Musteri',
     'Proje',
     'HedefKadro',
+    # Şirket
+    'TuzelKisi',
+    'SgkDosya',
     # Filo
     'Arac',
     'FiloIslem',

@@ -242,6 +242,17 @@
                 </div>
                 <div>
                     <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        SGK Dosyası
+                    </label>
+                    <select name="sgk_dosya_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="">Seçiniz</option>
+                        {% for sgk in sgk_dosyalari or [] %}
+                        <option value="{{ sgk.id }}" {% if calisan and calisan.sgk_dosya_id == sgk.id %}selected{% endif %}>{{ sgk.tuzel_kisi.kisa_ad or sgk.tuzel_kisi.ad }} - {{ sgk.dosya_no }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
                         İşe Başlama Tarihi
                     </label>
                     <input type="date" name="ise_baslama" value="{{ calisan.ise_baslama.strftime('%Y-%m-%d') if calisan and calisan.ise_baslama else '' }}"

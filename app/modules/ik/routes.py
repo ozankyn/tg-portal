@@ -9,6 +9,7 @@ from decimal import Decimal
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, send_file, jsonify
 from flask_login import login_required, current_user
 from app.models.ik import ZimmetTipi, Zimmet, ZimmetLog
+from app.models.sirket import SgkDosya
 from werkzeug.utils import secure_filename
 import os
 
@@ -168,6 +169,7 @@ def ekle():
             ilce=request.form.get('ilce', '').strip() or None,
             departman_id=int(request.form.get('departman_id')) if request.form.get('departman_id') else None,
             pozisyon_id=int(request.form.get('pozisyon_id')) if request.form.get('pozisyon_id') else None,
+            sgk_dosya_id=int(request.form.get('sgk_dosya_id')) if request.form.get('sgk_dosya_id') else None,
             ise_baslama=datetime.strptime(request.form.get('ise_baslama'), '%Y-%m-%d').date() if request.form.get('ise_baslama') else None,
             calisma_tipi=request.form.get('calisma_tipi') or None,
             durum=CalisanDurumu(request.form.get('durum')) if request.form.get('durum') else CalisanDurumu.AKTIF,
@@ -184,10 +186,12 @@ def ekle():
     departmanlar = Departman.query.filter_by(aktif=True).order_by(Departman.ad).all()
     pozisyonlar = Pozisyon.query.filter_by(aktif=True).order_by(Pozisyon.ad).all()
     
+    sgk_dosyalari = SgkDosya.query.filter_by(is_deleted=False, aktif=True).all()
     return render_template('ik/form.html',
                           calisan=None,
                           departmanlar=departmanlar,
                           pozisyonlar=pozisyonlar,
+                          sgk_dosyalari=sgk_dosyalari,
                           durumlar=CalisanDurumu)
 
 
@@ -224,6 +228,7 @@ def duzenle(id):
         calisan.departman_id = int(request.form.get('departman_id')) if request.form.get('departman_id') else None
         calisan.pozisyon_id = int(request.form.get('pozisyon_id')) if request.form.get('pozisyon_id') else None
         calisan.ise_baslama = datetime.strptime(request.form.get('ise_baslama'), '%Y-%m-%d').date() if request.form.get('ise_baslama') else None
+        calisan.sgk_dosya_id = int(request.form.get('sgk_dosya_id')) if request.form.get('sgk_dosya_id') else None
         calisan.calisma_tipi = request.form.get('calisma_tipi') or None
         calisan.durum = CalisanDurumu(request.form.get('durum')) if request.form.get('durum') else CalisanDurumu.AKTIF
         calisan.notlar = request.form.get('notlar', '').strip() or None
@@ -237,10 +242,12 @@ def duzenle(id):
     departmanlar = Departman.query.filter_by(aktif=True).order_by(Departman.ad).all()
     pozisyonlar = Pozisyon.query.filter_by(aktif=True).order_by(Pozisyon.ad).all()
     
+    sgk_dosyalari = SgkDosya.query.filter_by(is_deleted=False, aktif=True).all()
     return render_template('ik/form.html',
                           calisan=calisan,
                           departmanlar=departmanlar,
                           pozisyonlar=pozisyonlar,
+                          sgk_dosyalari=sgk_dosyalari,
                           durumlar=CalisanDurumu)
 
 

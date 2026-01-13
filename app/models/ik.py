@@ -82,6 +82,15 @@ class Calisan(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     pozisyon_id = db.Column(db.Integer, db.ForeignKey('pozisyonlar.id'))
     yonetici_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'))
     kadro_id = db.Column(db.Integer, db.ForeignKey('hedef_kadrolar.id'))
+    sgk_dosya_id = db.Column(db.Integer, db.ForeignKey('sgk_dosyalari.id'))
+    
+    # Ek Bilgiler
+    kidem_tarihi = db.Column(db.Date)  # Kıdem başlangıç tarihi
+    egitim_durumu = db.Column(db.String(50))  # ilkokul, ortaokul, lise, onlisans, lisans, yukseklisans, doktora
+    is_grubu = db.Column(db.String(100))  # İş grup adı
+    yemek_karti = db.Column(db.String(50))  # Yemek kartı numarası
+    beden = db.Column(db.String(10))  # Kıyafet bedeni (S, M, L, XL, XXL)
+    kargo_subesi = db.Column(db.String(100))  # Kargo şubesi
     
     ise_baslama = db.Column(db.Date)
     isten_ayrilma = db.Column(db.Date)
