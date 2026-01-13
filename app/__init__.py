@@ -140,5 +140,7 @@ def create_app(config_name=None):
     # CLI komutlarını register et
     from app.scripts import import_calisanlar
     import_calisanlar.init_app(app)
+    from app.scripts import import_araclar
+    import_araclar.init_app(app)
 
     return app
