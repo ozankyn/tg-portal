@@ -85,7 +85,7 @@
                     {% for masraf in son_masraflar %}
                     <tr onclick="window.location='{{ url_for('masraf.detay', id=masraf.id) }}'" class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418] cursor-pointer">
                         <td class="px-4 py-3 text-sm">{{ masraf.masraf_tarihi.strftime('%d.%m') }}</td>
-                        <td class="px-4 py-3 text-sm">{{ masraf.calisan.ad_soyad if masraf.calisan else '-' }}</td>
+                        <td class="px-4 py-3 text-sm">{{ masraf.calisan.full_name if masraf.calisan else '-' }}</td>
                         <td class="px-4 py-3 text-sm">{{ masraf.baslik|truncate(25) }}</td>
                         <td class="px-4 py-3 text-sm text-right font-semibold">₺{{ "%.2f"|format(masraf.tl_karsiligi or masraf.toplam_tutar) }}</td>
                         <td class="px-4 py-3">

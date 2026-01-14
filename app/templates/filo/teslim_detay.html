@@ -9,7 +9,7 @@
         <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
             <div class="{% if teslim.islem_tipi == 'teslim' %}bg-green-600{% else %}bg-yellow-500{% endif %} text-white px-4 py-3 rounded-t-xl flex justify-between items-center">
                 <h6 class="font-medium flex items-center gap-2">
-                    <span class="material-symbols-outlined">{% if teslim.islem_tipi == 'teslim' %}logout{% else %}login{% endif %}</span><!--</span>
+                    <span class="material-symbols-outlined">{% if teslim.islem_tipi == 'teslim' %}logout{% else %}login{% endif %}</span>
                     {{ teslim.arac.plaka }} - {{ teslim.arac.marka }} {{ teslim.arac.model }}
                 </h6>
                 <a href="{{ url_for('filo.teslim_pdf', id=teslim.id) }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-white text-[#111418] dark:text-white text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors" target="_blank">

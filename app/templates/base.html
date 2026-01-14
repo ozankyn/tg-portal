@@ -272,6 +272,16 @@
                     <span class="material-symbols-outlined">receipt_long</span>
                     <span class="font-medium">Masraflarım</span>
                 </a>
+                <a href="{{ url_for('masraf.rapor_liste') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.endpoint == 'masraf.rapor_liste' or request.endpoint == 'masraf.rapor_detay' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">summarize</span>
+                    <span class="font-medium">Masraf Raporlarım</span>
+                </a>
+                {% if has_permission('masraf.admin') %}
+                <a href="{{ url_for('masraf.toplu_odeme') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.endpoint == 'masraf.toplu_odeme' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">payments</span>
+                    <span class="font-medium">Toplu Ödeme</span>
+                </a>
+                {% endif %}
                 
                 {% if has_permission('sozlesme.view') %}
                 <!-- Sözleşmeler -->
@@ -452,7 +462,7 @@
                 
                 <!-- Footer -->
                 <div class="mt-8 text-center text-xs text-text-muted dark:text-[#586474]">
-                    <p>© 2024 TG Portal ERP Sistemi. Tüm hakları saklıdır.</p>
+                    <p>© 2026 TG Portal ERP Sistemi. Tüm hakları saklıdır.</p>
                 </div>
             </main>
         </div>

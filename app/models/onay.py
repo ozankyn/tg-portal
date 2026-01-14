@@ -7,6 +7,15 @@ Dinamik onay akışları, paralel onay, yetki devri
 from datetime import datetime, date
 from app import db
 from app.models.base import TimestampMixin, SoftDeleteMixin
+# Referans tablo -> Model mapping (onay callback için)
+REFERANS_MODEL_MAP = {
+    'masraflar': {'module': 'app.models.masraf', 'model': 'Masraf', 'durum_field': 'durum', 'onaylandi': 'onaylandi', 'reddedildi': 'reddedildi'},
+    'izinler': {'module': 'app.models.ik', 'model': 'Izin', 'durum_field': 'durum', 'onaylandi': 'onaylandi', 'reddedildi': 'reddedildi'},
+    'arac_talepleri': {'module': 'app.models.filo', 'model': 'AracTalebi', 'durum_field': 'durum', 'onaylandi': 'onaylandi', 'reddedildi': 'reddedildi'},
+    'evraklar': {'module': 'app.models.basvuru', 'model': 'Evrak', 'durum_field': 'durum', 'onaylandi': 'onaylandi', 'reddedildi': 'reddedildi'},
+}
+
+
 
 
 class OnayTipi(db.Model, TimestampMixin):
@@ -350,33 +359,69 @@ class OnayServisi:
     
     @staticmethod
     def _onaylayici_bul(adim, talep_eden_id):
-        """Adım için onaylayıcıyı bul"""
+        """Adım için onaylayıcıyı bul - Fallback mekanizması ile"""
         from app.models.core import User
         from app.models.ik import Calisan
         
+        onaylayici_id = None
+        
         if adim.onaylayici_tipi == 'kullanici':
-            return adim.onaylayici_kullanici_id
+            # Sabit kullanıcı
+            onaylayici_id = adim.onaylayici_kullanici_id
         
         elif adim.onaylayici_tipi == 'yonetici':
-            # Talep edenin yöneticisini bul
+            # Talep edenin direkt yöneticisi
             user = User.query.get(talep_eden_id)
             calisan = user.calisan if user else None
             if calisan and calisan.yonetici_id:
                 yonetici = Calisan.query.get(calisan.yonetici_id)
-                return yonetici.user_account.id if yonetici and yonetici.user_account else None
+                if yonetici and yonetici.user_account:
+                    onaylayici_id = yonetici.user_account.id
         
         elif adim.onaylayici_tipi == 'departman_yoneticisi':
+            # Departman yöneticisi
             user = User.query.get(talep_eden_id)
             calisan = user.calisan if user else None
             if calisan and calisan.departman and calisan.departman.yonetici_id:
-                return calisan.departman.yonetici_id
+                yonetici = Calisan.query.get(calisan.departman.yonetici_id)
+                if yonetici and yonetici.user_account:
+                    onaylayici_id = yonetici.user_account.id
         
         elif adim.onaylayici_tipi == 'rol':
-            # Belirli roldeki ilk kullanıcı (geliştirilebilir)
+            # Belirli roldeki kullanıcı
             user = User.query.join(User.roles).filter_by(name=adim.onaylayici_rol).first()
-            return user.id if user else None
+            if user:
+                onaylayici_id = user.id
         
-        return None
+        # ============================================================
+        # FALLBACK MEKANİZMASI
+        # Yönetici bulunamazsa, sırasıyla şunları dene:
+        # 1. onay_yetkilisi rolü
+        # 2. ik_yonetici rolü  
+        # 3. Admin kullanıcı
+        # ============================================================
+        if onaylayici_id is None and adim.onaylayici_tipi in ['yonetici', 'departman_yoneticisi']:
+            # Log için (opsiyonel)
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Onaylayıcı bulunamadı (tip: {adim.onaylayici_tipi}, talep_eden: {talep_eden_id}). Fallback deneniyor...")
+            
+            # Fallback 1: onay_yetkilisi rolü
+            fallback_user = User.query.join(User.roles).filter_by(name='onay_yetkilisi').filter(User.is_active == True).first()
+            
+            # Fallback 2: ik_yonetici rolü
+            if not fallback_user:
+                fallback_user = User.query.join(User.roles).filter_by(name='ik_yonetici').filter(User.is_active == True).first()
+            
+            # Fallback 3: Herhangi bir admin
+            if not fallback_user:
+                fallback_user = User.query.filter_by(is_admin=True, is_active=True).first()
+            
+            if fallback_user:
+                onaylayici_id = fallback_user.id
+                logger.info(f"Fallback onaylayıcı atandı: {fallback_user.email}")
+        
+        return onaylayici_id
     
     @staticmethod
     def _vekil_kontrol(onaylayici_id, onay_tipi_id):
@@ -421,6 +466,10 @@ class OnayServisi:
         talep = kayit.talep
         OnayServisi._sonraki_adim_kontrol(talep)
         
+        # Talep tamamlandıysa referans kaydı güncelle
+        if talep.durum == 'onaylandi':
+            OnayServisi._referans_guncelle(talep, 'onaylandi')
+        
         db.session.commit()
         return True, None
     
@@ -447,6 +496,9 @@ class OnayServisi:
         talep.durum = 'reddedildi'
         talep.sonuc_tarihi = datetime.utcnow()
         talep.sonuc_notu = not_
+        
+        # Referans kaydı güncelle
+        OnayServisi._referans_guncelle(talep, 'reddedildi')
         
         db.session.commit()
         return True, None
@@ -503,6 +555,37 @@ class OnayServisi:
             talep.durum = 'onaylandi'
             talep.sonuc_tarihi = datetime.utcnow()
     
+
+    @staticmethod
+    def _referans_guncelle(talep, yeni_durum):
+        """Onay talebiyle ilişkili referans kaydın durumunu güncelle."""
+        referans_tablo = talep.referans_tablo
+        referans_id = talep.referans_id
+        
+        if referans_tablo not in REFERANS_MODEL_MAP:
+            import logging
+            logging.getLogger(__name__).warning(f"Bilinmeyen referans tablo: {referans_tablo}")
+            return
+        
+        config = REFERANS_MODEL_MAP[referans_tablo]
+        
+        try:
+            import importlib
+            module = importlib.import_module(config['module'])
+            Model = getattr(module, config['model'])
+            
+            kayit = Model.query.get(referans_id)
+            if kayit:
+                durum_field = config['durum_field']
+                yeni_deger = config.get(yeni_durum, yeni_durum)
+                setattr(kayit, durum_field, yeni_deger)
+                
+                import logging
+                logging.getLogger(__name__).info(f"Referans güncellendi: {referans_tablo}#{referans_id} -> {yeni_deger}")
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Referans güncelleme hatası: {e}")
+
     @staticmethod
     def bekleyen_onaylar(kullanici_id):
         """Kullanıcının bekleyen onaylarını getir"""

@@ -13,7 +13,7 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 
 from app import db
-from app.models.masraf import Masraf, MasrafKategorisi, MasrafKalemi, MasrafAvans, get_calisan_masraf_ozeti
+from app.models.masraf import Masraf, MasrafKategorisi, MasrafKalemi, MasrafAvans, MasrafRaporu, get_calisan_masraf_ozeti
 from app.models.ik import Calisan
 from app.models.proje import Proje
 from app.models.onay import OnayServisi
@@ -335,6 +335,29 @@ def onaya_gonder(id):
     return redirect(url_for('masraf.detay', id=id))
 
 
+
+
+# ============================================================
+# ÖDENDİ İŞARETLE
+# ============================================================
+@masraf_bp.route('/<int:id>/odendi-isaretle', methods=['POST'])
+@login_required
+@permission_required('masraf.admin')
+def odendi_isaretle(id):
+    """Masrafı ödendi olarak işaretle"""
+    masraf = Masraf.query.get_or_404(id)
+    
+    if masraf.durum != 'onaylandi':
+        flash('Sadece onaylanmış masraflar ödendi olarak işaretlenebilir.', 'warning')
+        return redirect(url_for('masraf.detay', id=id))
+    
+    masraf.durum = 'odendi'
+    masraf.odeme_tarihi = date.today()
+    db.session.commit()
+    
+    flash('Masraf ödendi olarak işaretlendi.', 'success')
+    return redirect(url_for('masraf.detay', id=id))
+
 # ============================================================
 # DOSYA İNDİR
 # ============================================================
@@ -644,3 +667,448 @@ KURALLAR:
         return jsonify({'success': False, 'error': 'AI yanıtı işlenemedi'}), 500
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+
+# ============================================================
+# MASRAF RAPORU
+# ============================================================
+
+@masraf_bp.route('/raporlarim')
+@login_required
+def rapor_liste():
+    """Çalışanın masraf raporları listesi"""
+    calisan = Calisan.query.filter_by(email=current_user.email, is_deleted=False).first()
+    
+    if not calisan:
+        flash('Çalışan kaydınız bulunamadı.', 'warning')
+        return redirect(url_for('core.dashboard'))
+    
+    raporlar = MasrafRaporu.query.filter_by(
+        calisan_id=calisan.id,
+        is_deleted=False
+    ).order_by(MasrafRaporu.donem_yil.desc(), MasrafRaporu.donem_ay.desc()).all()
+    
+    return render_template('masraf/rapor_liste.html', raporlar=raporlar, calisan=calisan)
+
+
+@masraf_bp.route('/rapor/olustur', methods=['GET', 'POST'])
+@login_required
+def rapor_olustur():
+    """Yeni masraf raporu oluştur"""
+    calisan = Calisan.query.filter_by(email=current_user.email, is_deleted=False).first()
+    
+    if not calisan:
+        flash('Çalışan kaydınız bulunamadı.', 'warning')
+        return redirect(url_for('core.dashboard'))
+    
+    if request.method == 'POST':
+        donem_yil = int(request.form.get('donem_yil'))
+        donem_ay = int(request.form.get('donem_ay'))
+        avans_tutari = request.form.get('avans_tutari', '0')
+        avans_tutari = Decimal(avans_tutari.replace(',', '.')) if avans_tutari else Decimal('0')
+        
+        # Bu dönem için rapor var mı kontrol et
+        mevcut = MasrafRaporu.query.filter_by(
+            calisan_id=calisan.id,
+            donem_yil=donem_yil,
+            donem_ay=donem_ay,
+            is_deleted=False
+        ).first()
+        
+        if mevcut:
+            flash('Bu dönem için zaten bir rapor mevcut.', 'warning')
+            return redirect(url_for('masraf.rapor_detay', id=mevcut.id))
+        
+        # Onaylanmış masrafları bul
+        masraflar = Masraf.query.filter(
+            Masraf.calisan_id == calisan.id,
+            Masraf.donem_yil == donem_yil,
+            Masraf.donem_ay == donem_ay,
+            Masraf.durum == 'onaylandi',
+            Masraf.is_deleted == False
+        ).all()
+        
+        if not masraflar:
+            flash('Bu dönemde onaylanmış masrafınız bulunmuyor.', 'warning')
+            return redirect(url_for('masraf.rapor_olustur'))
+        
+        # Rapor oluştur
+        aylar = ['', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+        
+        rapor = MasrafRaporu(
+            calisan_id=calisan.id,
+            donem_yil=donem_yil,
+            donem_ay=donem_ay,
+            baslik=f"{aylar[donem_ay]} {donem_yil} Masraf Raporu",
+            avans_tutari=avans_tutari
+        )
+        
+        # Masrafları rapora ekle
+        toplam = Decimal('0')
+        for masraf in masraflar:
+            rapor.masraflar.append(masraf)
+            toplam += masraf.tl_karsiligi or Decimal('0')
+        
+        rapor.toplam_masraf = toplam
+        rapor.net_odeme = toplam - avans_tutari
+        
+        db.session.add(rapor)
+        db.session.commit()
+        
+        flash('Masraf raporu oluşturuldu.', 'success')
+        return redirect(url_for('masraf.rapor_detay', id=rapor.id))
+    
+    # GET - Form göster
+    bugun = date.today()
+    
+    # Mevcut avansları getir
+    avanslar = MasrafAvans.query.filter_by(
+        calisan_id=calisan.id,
+        durum='aktif',
+        is_deleted=False
+    ).all()
+    
+    toplam_avans = sum(a.kalan_tutar for a in avanslar)
+    
+    return render_template('masraf/rapor_olustur.html',
+                          calisan=calisan,
+                          bugun=bugun,
+                          avanslar=avanslar,
+                          toplam_avans=toplam_avans)
+
+
+@masraf_bp.route('/rapor/<int:id>')
+@login_required
+def rapor_detay(id):
+    """Masraf raporu detayı"""
+    rapor = MasrafRaporu.query.get_or_404(id)
+    
+    # Yetki kontrolü
+    calisan = Calisan.query.filter_by(email=current_user.email, is_deleted=False).first()
+    is_owner = calisan and rapor.calisan_id == calisan.id
+    is_admin = current_user.has_permission('masraf.admin')
+    
+    # Yönetici mi kontrol (onaylama yetkisi için)
+    is_yonetici = False
+    if calisan and rapor.calisan.yonetici_id == calisan.id:
+        is_yonetici = True
+    
+    if not is_owner and not is_admin and not is_yonetici:
+        flash('Bu raporu görüntüleme yetkiniz yok.', 'danger')
+        return redirect(url_for('masraf.liste'))
+    
+    return render_template('masraf/rapor_detay.html',
+                          rapor=rapor,
+                          is_owner=is_owner,
+                          is_admin=is_admin,
+                          is_yonetici=is_yonetici)
+
+
+@masraf_bp.route('/rapor/<int:id>/onaya-gonder', methods=['POST'])
+@login_required
+def rapor_onaya_gonder(id):
+    """Masraf raporunu onaya gönder"""
+    rapor = MasrafRaporu.query.get_or_404(id)
+    
+    # Yetki kontrolü
+    calisan = Calisan.query.filter_by(email=current_user.email, is_deleted=False).first()
+    if not calisan or rapor.calisan_id != calisan.id:
+        flash('Bu raporu onaya gönderme yetkiniz yok.', 'danger')
+        return redirect(url_for('masraf.rapor_liste'))
+    
+    if rapor.durum not in ['taslak', 'reddedildi']:
+        flash('Bu rapor onaya gönderilemez.', 'warning')
+        return redirect(url_for('masraf.rapor_detay', id=id))
+    
+    rapor.durum = 'onay_bekliyor'
+    db.session.commit()
+    
+    # Yöneticiye email gönder
+    try:
+        from app.services.notification import notify_masraf_raporu_onay
+        print(f"DEBUG: Email gönderiliyor rapor #{rapor.id}")
+        result = notify_masraf_raporu_onay(rapor)
+        print(f"DEBUG: Email sonucu: {result}")
+        if result:
+            rapor.yonetici_mail_gonderildi = True
+            db.session.commit()
+            flash('Email gönderildi!', 'info')
+        else:
+            flash('Email gönderilemedi!', 'warning')
+    except Exception as e:
+        print(f"DEBUG: Email hatası: {str(e)}")
+        flash(f'Email hatası: {str(e)}', 'danger')
+    
+    flash('Masraf raporu onaya gönderildi.', 'success')
+    return redirect(url_for('masraf.rapor_detay', id=id))
+
+
+@masraf_bp.route('/rapor/<int:id>/onayla', methods=['POST'])
+@login_required
+def rapor_onayla(id):
+    """Masraf raporunu onayla (yönetici)"""
+    rapor = MasrafRaporu.query.get_or_404(id)
+    
+    # Yetki kontrolü - yönetici veya admin
+    calisan = Calisan.query.filter_by(email=current_user.email, is_deleted=False).first()
+    is_yonetici = calisan and rapor.calisan.yonetici_id == calisan.id
+    is_admin = current_user.has_permission('masraf.admin')
+    
+    if not is_yonetici and not is_admin:
+        flash('Bu raporu onaylama yetkiniz yok.', 'danger')
+        return redirect(url_for('masraf.rapor_detay', id=id))
+    
+    if rapor.durum != 'onay_bekliyor':
+        flash('Bu rapor onaylanamaz.', 'warning')
+        return redirect(url_for('masraf.rapor_detay', id=id))
+    
+    rapor.durum = 'onaylandi'
+    rapor.onaylayan_id = current_user.id
+    rapor.onay_tarihi = datetime.utcnow()
+    rapor.onay_notu = request.form.get('not', '').strip() or None
+    db.session.commit()
+    
+    # Muhasebeye ve çalışana email gönder
+    from app.services.notification import notify_masraf_raporu_muhasebe, notify_masraf_raporu_sonuc
+    notify_masraf_raporu_muhasebe(rapor)
+    notify_masraf_raporu_sonuc(rapor, onaylandi=True)
+    rapor.muhasebe_mail_gonderildi = True
+    db.session.commit()
+    
+    flash('Masraf raporu onaylandı.', 'success')
+    return redirect(url_for('masraf.rapor_detay', id=id))
+
+
+@masraf_bp.route('/rapor/<int:id>/reddet', methods=['POST'])
+@login_required
+def rapor_reddet(id):
+    """Masraf raporunu reddet (yönetici)"""
+    rapor = MasrafRaporu.query.get_or_404(id)
+    
+    # Yetki kontrolü
+    calisan = Calisan.query.filter_by(email=current_user.email, is_deleted=False).first()
+    is_yonetici = calisan and rapor.calisan.yonetici_id == calisan.id
+    is_admin = current_user.has_permission('masraf.admin')
+    
+    if not is_yonetici and not is_admin:
+        flash('Bu raporu reddetme yetkiniz yok.', 'danger')
+        return redirect(url_for('masraf.rapor_detay', id=id))
+    
+    if rapor.durum != 'onay_bekliyor':
+        flash('Bu rapor reddedilemez.', 'warning')
+        return redirect(url_for('masraf.rapor_detay', id=id))
+    
+    rapor.durum = 'reddedildi'
+    rapor.onaylayan_id = current_user.id
+    rapor.onay_tarihi = datetime.utcnow()
+    rapor.onay_notu = request.form.get('not', '').strip() or None
+    db.session.commit()
+    
+    # Çalışana email gönder
+    from app.services.notification import notify_masraf_raporu_sonuc
+    notify_masraf_raporu_sonuc(rapor, onaylandi=False, aciklama=rapor.onay_notu)
+    db.session.commit()
+    
+    flash('Masraf raporu reddedildi.', 'success')
+    return redirect(url_for('masraf.rapor_detay', id=id))
+
+
+@masraf_bp.route('/rapor/<int:id>/excel')
+@login_required
+def rapor_excel(id):
+    """Masraf raporu Excel export"""
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, Border, Side, PatternFill
+    from openpyxl.utils import get_column_letter
+    
+    rapor = MasrafRaporu.query.get_or_404(id)
+    
+    # Yetki kontrolü
+    calisan = Calisan.query.filter_by(email=current_user.email, is_deleted=False).first()
+    is_owner = calisan and rapor.calisan_id == calisan.id
+    is_admin = current_user.has_permission('masraf.admin')
+    
+    if not is_owner and not is_admin:
+        flash('Bu raporu indirme yetkiniz yok.', 'danger')
+        return redirect(url_for('masraf.liste'))
+    
+    # Excel oluştur
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Masraf Raporu"
+    
+    # Stiller
+    header_font = Font(bold=True, size=14)
+    bold_font = Font(bold=True)
+    thin_border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    header_fill = PatternFill(start_color="1F4E79", end_color="1F4E79", fill_type="solid")
+    header_font_white = Font(bold=True, color="FFFFFF")
+    
+    # Başlık
+    ws.merge_cells('A1:G1')
+    ws['A1'] = f"MASRAF RAPORU - {rapor.donem_text}"
+    ws['A1'].font = header_font
+    ws['A1'].alignment = Alignment(horizontal='center')
+    
+    # Çalışan bilgileri
+    ws['A3'] = "Çalışan:"
+    ws['B3'] = rapor.calisan.full_name
+    ws['A4'] = "Departman:"
+    ws['B4'] = rapor.calisan.departman.ad if rapor.calisan.departman else "-"
+    ws['A5'] = "Dönem:"
+    ws['B5'] = rapor.donem_text
+    ws['A3'].font = bold_font
+    ws['A4'].font = bold_font
+    ws['A5'].font = bold_font
+    
+    # Tablo başlıkları
+    headers = ['#', 'Tarih', 'Kategori', 'Açıklama', 'Firma', 'Fatura No', 'Tutar (₺)']
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=7, column=col, value=header)
+        cell.font = header_font_white
+        cell.fill = header_fill
+        cell.border = thin_border
+        cell.alignment = Alignment(horizontal='center')
+    
+    # Masraf satırları
+    row = 8
+    for idx, masraf in enumerate(rapor.masraflar, 1):
+        ws.cell(row=row, column=1, value=idx).border = thin_border
+        ws.cell(row=row, column=2, value=masraf.masraf_tarihi.strftime('%d.%m.%Y') if masraf.masraf_tarihi else '-').border = thin_border
+        ws.cell(row=row, column=3, value=masraf.kategori.ad if masraf.kategori else '-').border = thin_border
+        ws.cell(row=row, column=4, value=masraf.baslik or masraf.aciklama or '-').border = thin_border
+        ws.cell(row=row, column=5, value=masraf.firma_adi or '-').border = thin_border
+        ws.cell(row=row, column=6, value=masraf.fatura_no or '-').border = thin_border
+        tutar_cell = ws.cell(row=row, column=7, value=float(masraf.tl_karsiligi or 0))
+        tutar_cell.border = thin_border
+        tutar_cell.number_format = '#,##0.00'
+        row += 1
+    
+    # Özet satırları
+    row += 1
+    ws.merge_cells(f'A{row}:F{row}')
+    ws.cell(row=row, column=1, value="TOPLAM MASRAF").font = bold_font
+    ws.cell(row=row, column=7, value=float(rapor.toplam_masraf or 0)).font = bold_font
+    ws.cell(row=row, column=7).number_format = '#,##0.00'
+    
+    row += 1
+    ws.merge_cells(f'A{row}:F{row}')
+    ws.cell(row=row, column=1, value="Avans Mahsup").font = bold_font
+    ws.cell(row=row, column=7, value=float(rapor.avans_tutari or 0))
+    ws.cell(row=row, column=7).number_format = '#,##0.00'
+    
+    row += 1
+    ws.merge_cells(f'A{row}:F{row}')
+    ws.cell(row=row, column=1, value="NET ÖDEME").font = Font(bold=True, size=12)
+    net_cell = ws.cell(row=row, column=7, value=float(rapor.net_odeme or 0))
+    net_cell.font = Font(bold=True, size=12, color="006600")
+    net_cell.number_format = '#,##0.00'
+    
+    # Sütun genişlikleri
+    ws.column_dimensions['A'].width = 5
+    ws.column_dimensions['B'].width = 12
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 30
+    ws.column_dimensions['E'].width = 20
+    ws.column_dimensions['F'].width = 15
+    ws.column_dimensions['G'].width = 15
+    
+    # Dosyayı kaydet
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    filename = f"masraf_raporu_{rapor.calisan.full_name.replace(' ', '_')}_{rapor.donem_yil}_{rapor.donem_ay:02d}.xlsx"
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )
+
+
+@masraf_bp.route('/rapor/<int:id>/odendi', methods=['POST'])
+@login_required
+@permission_required('masraf.admin')
+def rapor_odendi(id):
+    """Masraf raporunu ödendi olarak işaretle ve masrafları güncelle"""
+    rapor = MasrafRaporu.query.get_or_404(id)
+    
+    if rapor.durum != 'onaylandi':
+        flash('Sadece onaylanmış raporlar ödendi olarak işaretlenebilir.', 'warning')
+        return redirect(url_for('masraf.rapor_detay', id=id))
+    
+    # Raporu ödendi yap
+    rapor.durum = 'odendi'
+    rapor.odeme_tarihi = date.today()
+    rapor.odeme_referans = request.form.get('referans', '').strip() or None
+    
+    # Rapordaki tüm masrafları ödendi yap
+    for masraf in rapor.masraflar:
+        masraf.durum = 'odendi'
+        masraf.odeme_tarihi = date.today()
+    
+    db.session.commit()
+    
+    flash(f'Rapor ve {len(rapor.masraflar)} masraf ödendi olarak işaretlendi.', 'success')
+    return redirect(url_for('masraf.rapor_detay', id=id))
+
+
+# ============================================================
+# TOPLU ÖDEME (ADMIN)
+# ============================================================
+
+@masraf_bp.route('/toplu-odeme', methods=['GET', 'POST'])
+@login_required
+@permission_required('masraf.admin')
+def toplu_odeme():
+    """Toplu masraf ödeme - onaylanmış raporları listele ve öde"""
+    
+    if request.method == 'POST':
+        rapor_ids = request.form.getlist('rapor_ids')
+        odeme_referans = request.form.get('odeme_referans', '').strip()
+        
+        if not rapor_ids:
+            flash('Lütfen en az bir rapor seçin.', 'warning')
+            return redirect(url_for('masraf.toplu_odeme'))
+        
+        odenen_sayisi = 0
+        for rapor_id in rapor_ids:
+            rapor = MasrafRaporu.query.get(int(rapor_id))
+            if rapor and rapor.durum == 'onaylandi':
+                rapor.durum = 'odendi'
+                rapor.odeme_tarihi = date.today()
+                rapor.odeme_referans = odeme_referans
+                
+                # Masrafları da ödendi yap
+                for masraf in rapor.masraflar:
+                    masraf.durum = 'odendi'
+                    masraf.odeme_tarihi = date.today()
+                
+                odenen_sayisi += 1
+        
+        db.session.commit()
+        flash(f'{odenen_sayisi} rapor ödendi olarak işaretlendi.', 'success')
+        return redirect(url_for('masraf.toplu_odeme'))
+    
+    # GET - Onaylanmış raporları listele
+    raporlar = MasrafRaporu.query.filter_by(
+        durum='onaylandi',
+        is_deleted=False
+    ).order_by(MasrafRaporu.donem_yil.desc(), MasrafRaporu.donem_ay.desc()).all()
+    
+    # Özet hesapla
+    toplam_odeme = sum(r.net_odeme or 0 for r in raporlar)
+    
+    return render_template('masraf/toplu_odeme.html',
+                          raporlar=raporlar,
+                          toplam_odeme=toplam_odeme)

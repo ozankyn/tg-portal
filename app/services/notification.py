@@ -183,3 +183,136 @@ def notify_onay_sonucu(talep, onaylandi=True, aciklama=None):
     """
     
     return send_notification(calisan.email, subject, html_body)
+
+
+def notify_masraf_raporu_onay(rapor):
+    """Masraf raporu onay bekliyor - Yöneticiye bildirim"""
+    from app.models.ik import Calisan
+    
+    calisan = rapor.calisan
+    
+    # Yöneticiyi bul, yoksa admin'e fallback
+    yonetici = None
+    alici_email = None
+    alici_ad = "Yetkili"
+    
+    if calisan.yonetici_id:
+        yonetici = Calisan.query.get(calisan.yonetici_id)
+        if yonetici and yonetici.email:
+            alici_email = yonetici.email
+            alici_ad = yonetici.full_name
+    
+    # Fallback: masraf.admin yetkisi olan kullanıcılar
+    if not alici_email:
+        from app.models.core import User
+        admin_users = User.query.filter(User.is_active == True, User.email.isnot(None)).all()
+        admin_emails = [u.email for u in admin_users if u.has_permission('masraf.admin')]
+        if admin_emails:
+            alici_email = admin_emails
+            alici_ad = "Muhasebe/Admin"
+            current_app.logger.info(f"Yönetici bulunamadı, admin'e gönderiliyor: {admin_emails}")
+        else:
+            current_app.logger.warning(f"Çalışan {calisan.id} için yönetici ve admin bulunamadı")
+            return False
+    
+    subject = f"Masraf Raporu Onayı - {calisan.full_name} ({rapor.donem_text})"
+    
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #d97706, #f59e0b); padding: 20px; text-align: center;">
+            <h2 style="color: white; margin: 0;">Masraf Raporu Onayı Bekliyor</h2>
+        </div>
+        <div style="padding: 25px; background: #f9fafb;">
+            <p>Sayın <strong>{alici_ad}</strong>,</p>
+            <p><strong>{calisan.full_name}</strong> tarafından oluşturulan masraf raporu onayınızı beklemektedir.</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                <tr><td style="padding: 8px; color: #6b7280;">Dönem:</td><td style="padding: 8px;"><strong>{rapor.donem_text}</strong></td></tr>
+                <tr><td style="padding: 8px; color: #6b7280;">Masraf Sayısı:</td><td style="padding: 8px;"><strong>{len(rapor.masraflar)} adet</strong></td></tr>
+                <tr><td style="padding: 8px; color: #6b7280;">Toplam:</td><td style="padding: 8px;"><strong>₺{rapor.toplam_masraf:,.2f}</strong></td></tr>
+                <tr><td style="padding: 8px; color: #6b7280;">Net Ödeme:</td><td style="padding: 8px;"><strong style="color: #059669;">₺{rapor.net_odeme:,.2f}</strong></td></tr>
+            </table>
+            <div style="text-align: center; margin-top: 25px;">
+                <a href="{url_for('masraf.rapor_detay', id=rapor.id, _external=True)}" 
+                   style="background: #2563eb; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px;">Raporu İncele</a>
+            </div>
+        </div>
+    </div>
+    """
+    
+    return send_notification(alici_email, subject, html_body)
+
+
+def notify_masraf_raporu_muhasebe(rapor):
+    """Onaylanan masraf raporu - Muhasebeye bildirim"""
+    from app.models.core import User
+    
+    calisan = rapor.calisan
+    
+    muhasebe_emails = []
+    users = User.query.filter(User.is_active == True, User.email.isnot(None)).all()
+    for u in users:
+        if u.has_permission('masraf.admin'):
+            muhasebe_emails.append(u.email)
+    
+    if not muhasebe_emails:
+        current_app.logger.warning("Muhasebe yetkili kullanıcı bulunamadı")
+        return False
+    
+    subject = f"Masraf Raporu Onaylandı - {calisan.full_name} ({rapor.donem_text})"
+    
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #059669, #10b981); padding: 20px; text-align: center;">
+            <h2 style="color: white; margin: 0;">Masraf Raporu Onaylandı</h2>
+        </div>
+        <div style="padding: 25px; background: #f9fafb;">
+            <p>Aşağıdaki masraf raporu onaylanmıştır:</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                <tr><td style="padding: 8px; color: #6b7280;">Çalışan:</td><td style="padding: 8px;"><strong>{calisan.full_name}</strong></td></tr>
+                <tr><td style="padding: 8px; color: #6b7280;">Departman:</td><td style="padding: 8px;">{calisan.departman.ad if calisan.departman else '-'}</td></tr>
+                <tr><td style="padding: 8px; color: #6b7280;">Dönem:</td><td style="padding: 8px;"><strong>{rapor.donem_text}</strong></td></tr>
+                <tr><td style="padding: 8px; color: #6b7280;">Net Ödeme:</td><td style="padding: 8px;"><strong style="color: #059669; font-size: 18px;">₺{rapor.net_odeme:,.2f}</strong></td></tr>
+            </table>
+            <div style="text-align: center; margin-top: 25px;">
+                <a href="{url_for('masraf.rapor_detay', id=rapor.id, _external=True)}" 
+                   style="background: #2563eb; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px;">Raporu Görüntüle</a>
+            </div>
+        </div>
+    </div>
+    """
+    
+    return send_notification(muhasebe_emails, subject, html_body)
+
+
+def notify_masraf_raporu_sonuc(rapor, onaylandi=True, aciklama=None):
+    """Masraf raporu sonucu - Çalışana bildirim"""
+    
+    calisan = rapor.calisan
+    if not calisan.email:
+        return False
+    
+    durum = "Onaylandı" if onaylandi else "Reddedildi"
+    renk = "#059669" if onaylandi else "#dc2626"
+    
+    subject = f"Masraf Raporunuz {durum} - {rapor.donem_text}"
+    
+    aciklama_html = f'<div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;"><strong>Not:</strong> {aciklama}</div>' if aciklama else ''
+    
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: {renk}; padding: 20px; text-align: center;">
+            <h2 style="color: white; margin: 0;">Masraf Raporu {durum}</h2>
+        </div>
+        <div style="padding: 25px; background: #f9fafb;">
+            <p>Sayın <strong>{calisan.full_name}</strong>,</p>
+            <p><strong>{rapor.donem_text}</strong> dönemi masraf raporunuz <strong style="color: {renk};">{durum.lower()}</strong>.</p>
+            <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+                <tr><td style="padding: 8px; color: #6b7280;">Toplam Masraf:</td><td style="padding: 8px;"><strong>₺{rapor.toplam_masraf:,.2f}</strong></td></tr>
+                <tr><td style="padding: 8px; color: #6b7280;">Net Ödeme:</td><td style="padding: 8px;"><strong style="color: #059669;">₺{rapor.net_odeme:,.2f}</strong></td></tr>
+            </table>
+            {aciklama_html}
+        </div>
+    </div>
+    """
+    
+    return send_notification(calisan.email, subject, html_body)

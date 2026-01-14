@@ -42,7 +42,7 @@
                     
                     <div>
                         <label class="text-xs text-text-muted dark:text-text-muted-dark uppercase tracking-wide">Çalışan</label>
-                        <p class="text-[#111418] dark:text-white">{{ masraf.calisan.ad_soyad }}</p>
+                        <p class="text-[#111418] dark:text-white">{{ masraf.calisan.full_name }}</p>
                     </div>
                     
                     {% if masraf.aciklama %}
@@ -192,6 +192,18 @@
                     <button type="submit" class="flex items-center justify-center gap-2 w-full px-4 py-2.5 border border-red-500 text-red-600 rounded-lg hover:bg-red-50 transition-colors">
                         <span class="material-symbols-outlined text-lg">delete</span>
                         Sil
+                    </button>
+                </form>
+                {% endif %}
+                
+
+                {% if current_user.has_permission('masraf.admin') and masraf.durum == 'onaylandi' %}
+                <form method="POST" action="{{ url_for('masraf.odendi_isaretle', id=masraf.id) }}"
+                      onsubmit="return confirm('Bu masrafı ödendi olarak işaretlemek istediğinize emin misiniz?')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-symbols-outlined text-lg">payments</span>
+                        Ödendi İşaretle
                     </button>
                 </form>
                 {% endif %}

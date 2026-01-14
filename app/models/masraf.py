@@ -213,6 +213,103 @@ class MasrafAvans(db.Model, TimestampMixin, SoftDeleteMixin):
         return f'<MasrafAvans {self.id} - {self.tutar}>'
 
 
+
+
+# ============================================================
+# MASRAF RAPORU
+# ============================================================
+class MasrafRaporu(db.Model, TimestampMixin, SoftDeleteMixin):
+    """Aylık masraf raporu - Çalışanın dönemsel masraf özeti"""
+    __tablename__ = 'masraf_raporlari'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Rapor sahibi
+    calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'), nullable=False)
+    
+    # Dönem
+    donem_yil = db.Column(db.Integer, nullable=False)
+    donem_ay = db.Column(db.Integer, nullable=False)
+    
+    # Başlık ve açıklama
+    baslik = db.Column(db.String(200))
+    aciklama = db.Column(db.Text)
+    
+    # Tutarlar
+    toplam_masraf = db.Column(db.Numeric(12, 2), default=0)
+    avans_tutari = db.Column(db.Numeric(12, 2), default=0)
+    net_odeme = db.Column(db.Numeric(12, 2), default=0)  # toplam - avans
+    
+    # Durum: taslak, onay_bekliyor, onaylandi, reddedildi, odendi
+    durum = db.Column(db.String(20), default='taslak')
+    
+    # Onay bilgileri
+    onay_talebi_id = db.Column(db.Integer, db.ForeignKey('onay_talepleri.id'))
+    onaylayan_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    onay_tarihi = db.Column(db.DateTime)
+    onay_notu = db.Column(db.Text)
+    
+    # Ödeme bilgileri
+    odeme_tarihi = db.Column(db.Date)
+    odeme_referans = db.Column(db.String(100))  # Dekont no vs.
+    
+    # Email gönderim durumu
+    yonetici_mail_gonderildi = db.Column(db.Boolean, default=False)
+    muhasebe_mail_gonderildi = db.Column(db.Boolean, default=False)
+    
+    # İlişkiler
+    calisan = db.relationship('Calisan', backref=db.backref('masraf_raporlari', lazy='dynamic'))
+    onaylayan = db.relationship('User', foreign_keys=[onaylayan_id])
+    masraflar = db.relationship('Masraf', secondary='masraf_raporu_kalemleri', backref='raporlar')
+    
+    @property
+    def durum_text(self):
+        durum_map = {
+            'taslak': 'Taslak',
+            'onay_bekliyor': 'Onay Bekliyor',
+            'onaylandi': 'Onaylandı',
+            'reddedildi': 'Reddedildi',
+            'odendi': 'Ödendi'
+        }
+        return durum_map.get(self.durum, self.durum)
+    
+    @property
+    def durum_renk(self):
+        renk_map = {
+            'taslak': 'secondary',
+            'onay_bekliyor': 'warning',
+            'onaylandi': 'success',
+            'reddedildi': 'danger',
+            'odendi': 'info'
+        }
+        return renk_map.get(self.durum, 'secondary')
+    
+    @property
+    def donem_text(self):
+        aylar = ['', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+                 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
+        return f"{aylar[self.donem_ay]} {self.donem_yil}"
+    
+    def hesapla(self):
+        """Rapor tutarlarını hesapla"""
+        from sqlalchemy import func
+        toplam = db.session.query(func.sum(Masraf.tl_karsiligi)).filter(
+            Masraf.id.in_([m.id for m in self.masraflar])
+        ).scalar() or 0
+        
+        self.toplam_masraf = toplam
+        self.net_odeme = toplam - (self.avans_tutari or 0)
+    
+    def __repr__(self):
+        return f'<MasrafRaporu {self.id} - {self.donem_ay}/{self.donem_yil}>'
+
+
+# Masraf-Rapor many-to-many ilişki tablosu
+masraf_raporu_kalemleri = db.Table('masraf_raporu_kalemleri',
+    db.Column('rapor_id', db.Integer, db.ForeignKey('masraf_raporlari.id'), primary_key=True),
+    db.Column('masraf_id', db.Integer, db.ForeignKey('masraflar.id'), primary_key=True)
+)
+
 # ============================================================
 # YARDIMCI FONKSİYONLAR
 # ============================================================

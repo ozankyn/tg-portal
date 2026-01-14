@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Departmanlar - TG Portal{% endblock %}
+{% block page_title %}Departman Yönetimi{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-2 text-sm text-text-muted dark:text-text-muted-dark">
+        <a class="hover:text-primary transition-colors" href="{{ url_for('ayarlar.dashboard') }}">Ayarlar</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <span class="text-[#111418] dark:text-white font-medium">Departmanlar</span>
+    </div>
+    <a href="{{ url_for('ayarlar.departman_ekle') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-lg transition-all">
+        <span class="material-symbols-outlined">add</span>Yeni Departman
+    </a>
+</div>
+
+<div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+    <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+        <h3 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">corporate_fare</span>
+            Departmanlar ({{ departmanlar|length }})
+        </h3>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-[#111418]">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Departman</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Kod</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Yönetici</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Üst Departman</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Çalışan</th>
+                    <th class="px-6 py-3 text-left text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Durum</th>
+                    <th class="px-6 py-3 text-right text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">İşlem</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for dept in departmanlar %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#111418]/50 transition-colors">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-primary">folder</span>
+                            </div>
+                            <div>
+                                <p class="font-medium text-[#111418] dark:text-white">{{ dept.ad }}</p>
+                                {% if dept.aciklama %}
+                                <p class="text-xs text-text-muted dark:text-text-muted-dark">{{ dept.aciklama[:50] }}...</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if dept.kod %}
+                        <span class="px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-800 rounded">{{ dept.kod }}</span>
+                        {% else %}
+                        <span class="text-text-muted dark:text-text-muted-dark">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if dept.yonetici_id %}
+                            {% set yonetici = dept.calisanlar|selectattr('id', 'eq', dept.yonetici_id)|first %}
+                            {% if yonetici %}
+                            <div class="flex items-center gap-2">
+                                <div class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                                    <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">{{ yonetici.ad[0] }}</span>
+                                </div>
+                                <span class="text-sm">{{ yonetici.full_name }}</span>
+                            </div>
+                            {% else %}
+                            <span class="text-amber-600 dark:text-amber-400 text-sm">⚠️ Atanmış (ID: {{ dept.yonetici_id }})</span>
+                            {% endif %}
+                        {% else %}
+                        <span class="text-rose-500 dark:text-rose-400 text-sm flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">warning</span>Atanmadı
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if dept.ust_departman %}
+                        <span class="text-sm">{{ dept.ust_departman.ad }}</span>
+                        {% else %}
+                        <span class="text-text-muted dark:text-text-muted-dark">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 text-xs font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-full">
+                            {{ dept.calisan_sayisi }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if dept.aktif %}
+                        <span class="px-2 py-1 text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full">Aktif</span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full">Pasif</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end gap-2">
+                            <a href="{{ url_for('ayarlar.departman_duzenle', id=dept.id) }}" 
+                               class="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                               title="Düzenle">
+                                <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">edit</span>
+                            </a>
+                            <form action="{{ url_for('ayarlar.departman_sil', id=dept.id) }}" method="POST" 
+                                  onsubmit="return confirm('Bu departmanı silmek istediğinize emin misiniz?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-colors" title="Sil">
+                                    <span class="material-symbols-outlined text-rose-500">delete</span>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-6 py-12 text-center text-text-muted dark:text-text-muted-dark">
+                        <span class="material-symbols-outlined text-4xl mb-2">folder_off</span>
+                        <p>Henüz departman eklenmemiş.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Bilgi Kutusu -->
+<div class="mt-6 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-xl p-4">
+    <div class="flex items-start gap-3">
+        <span class="material-symbols-outlined text-amber-600 dark:text-amber-400">info</span>
+        <div>
+            <h4 class="font-bold text-amber-800 dark:text-amber-300">Onay Sistemi Hakkında</h4>
+            <p class="text-sm text-amber-700 dark:text-amber-400 mt-1">
+                Departman yöneticisi atanmadığında, o departmandaki çalışanların talepleri (izin, masraf vb.) 
+                onay akışına giremez. Lütfen her departmana bir yönetici atayın.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

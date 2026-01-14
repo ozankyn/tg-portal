@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}{% if departman %}Departman Düzenle{% else %}Yeni Departman{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if departman %}Departman Düzenle{% else %}Yeni Departman Ekle{% endif %}{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-2 text-sm text-text-muted dark:text-text-muted-dark">
+        <a class="hover:text-primary transition-colors" href="{{ url_for('ayarlar.dashboard') }}">Ayarlar</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <a class="hover:text-primary transition-colors" href="{{ url_for('ayarlar.departman_liste') }}">Departmanlar</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <span class="text-[#111418] dark:text-white font-medium">{% if departman %}Düzenle{% else %}Yeni{% endif %}</span>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('ayarlar.departman_liste') }}" class="px-4 py-2 text-sm font-bold text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-all">İptal</a>
+        <button type="submit" form="departmanForm" class="px-6 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">Kaydet</button>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2">
+        <form id="departmanForm" method="POST" class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">corporate_fare</span>
+                    Departman Bilgileri
+                </h3>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                            Departman Adı <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="ad" value="{{ departman.ad if departman else '' }}" placeholder="Örn: İnsan Kaynakları" required
+                               class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                            Departman Kodu
+                        </label>
+                        <input type="text" name="kod" value="{{ departman.kod if departman else '' }}" placeholder="Örn: IK" maxlength="20"
+                               class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5 uppercase font-mono">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Açıklama
+                    </label>
+                    <textarea name="aciklama" rows="3" placeholder="Departman hakkında kısa açıklama..."
+                              class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">{{ departman.aciklama if departman else '' }}</textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                            Üst Departman
+                        </label>
+                        <select name="ust_departman_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                            <option value="">Ana Departman (Üst Yok)</option>
+                            {% for dept in departmanlar or [] %}
+                            <option value="{{ dept.id }}" {% if departman and departman.ust_departman_id == dept.id %}selected{% endif %}>
+                                {{ dept.ad }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <p class="mt-1 text-xs text-text-muted dark:text-text-muted-dark">Hiyerarşik yapı için üst departman seçin</p>
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                            Departman Yöneticisi <span class="text-amber-500">⚠️ Önemli</span>
+                        </label>
+                        <select name="yonetici_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                            <option value="">Seçiniz</option>
+                            {% for calisan in calisanlar or [] %}
+                            <option value="{{ calisan.id }}" {% if departman and departman.yonetici_id == calisan.id %}selected{% endif %}>
+                                {{ calisan.full_name }} {% if calisan.pozisyon %}- {{ calisan.pozisyon.ad }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">Onay akışları için yönetici ataması zorunludur!</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3 pt-4 border-t border-border-light dark:border-border-dark">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="aktif" class="sr-only peer" {% if not departman or departman.aktif %}checked{% endif %}>
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                    </label>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">Aktif Departman</span>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="space-y-6">
+        <!-- Bilgi Kutusu -->
+        <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-xl p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="material-symbols-outlined text-blue-500">info</span>
+                <h4 class="font-bold text-blue-900 dark:text-blue-200">Yönetici Ataması</h4>
+            </div>
+            <ul class="space-y-3 text-sm text-blue-800 dark:text-blue-300/80">
+                <li class="flex gap-2">
+                    <span class="material-symbols-outlined text-xs mt-1">check_circle</span>
+                    <span>Departman yöneticisi, bu departmandaki çalışanların taleplerini onaylar.</span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="material-symbols-outlined text-xs mt-1">check_circle</span>
+                    <span>İzin, masraf ve diğer talepler yönetici onayına gider.</span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="material-symbols-outlined text-xs mt-1">warning</span>
+                    <span>Yönetici atanmazsa talepler onay akışına giremez!</span>
+                </li>
+            </ul>
+        </div>
+        
+        {% if departman %}
+        <!-- Departman İstatistikleri -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm p-6">
+            <h4 class="font-bold text-[#111418] dark:text-white mb-4">Departman Bilgisi</h4>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Çalışan Sayısı</span>
+                    <span class="font-bold text-primary">{{ departman.calisan_sayisi }}</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-border-light dark:border-border-dark">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Oluşturulma</span>
+                    <span class="text-sm">{{ departman.created_at.strftime('%d.%m.%Y') if departman.created_at else '-' }}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
