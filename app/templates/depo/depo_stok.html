@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}{{ depo.ad }} - Stok Durumu{% endblock %}
+{% block page_title %}{{ depo.ad }} - Stok Durumu{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex items-center gap-4">
+        <a href="{{ url_for('depo.depo_liste') }}" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1a1f2b]">
+            <span class="material-symbols-outlined">arrow_back</span>
+        </a>
+        <div>
+            <h2 class="text-xl font-bold text-[#111418] dark:text-white">{{ depo.ad }}</h2>
+            <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ depo.kod }} · {{ depo.adres or 'Adres belirtilmemiş' }}</p>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="font-bold text-[#111418] dark:text-white">Stok Kartları</h3>
+        </div>
+        
+        {% if stok_kartlari %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-[#1a1f2b]">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Ürün Kodu</th>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Ürün Adı</th>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Proje</th>
+                        <th class="px-4 py-3 text-right font-semibold text-text-muted dark:text-text-muted-dark">Miktar</th>
+                        <th class="px-4 py-3 text-right font-semibold text-text-muted dark:text-text-muted-dark">Rezerve</th>
+                        <th class="px-4 py-3 text-right font-semibold text-text-muted dark:text-text-muted-dark">Kullanılabilir</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                    {% for sk in stok_kartlari %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-[#1a1f2b]">
+                        <td class="px-4 py-3 font-mono text-[#111418] dark:text-white">{{ sk.urun.kod }}</td>
+                        <td class="px-4 py-3 text-[#111418] dark:text-white">{{ sk.urun.ad }}</td>
+                        <td class="px-4 py-3 text-text-muted dark:text-text-muted-dark">{{ sk.proje.ad if sk.proje else '-' }}</td>
+                        <td class="px-4 py-3 text-right font-medium text-[#111418] dark:text-white">{{ sk.miktar }} {{ sk.urun.birim }}</td>
+                        <td class="px-4 py-3 text-right text-amber-600">{{ sk.rezerve_miktar or 0 }}</td>
+                        <td class="px-4 py-3 text-right font-bold text-green-600">{{ sk.kullanilabilir_miktar }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <span class="material-symbols-outlined text-5xl text-text-muted dark:text-text-muted-dark mb-4">inventory_2</span>
+            <p class="text-text-muted dark:text-text-muted-dark">Bu depoda henüz stok bulunmuyor.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

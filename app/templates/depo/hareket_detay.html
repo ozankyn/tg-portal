@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}{{ hareket.hareket_no }} - TG Portal{% endblock %}
+{% block page_title %}Stok Hareketi{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    
+    <!-- Hareket Bilgileri -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between
+                    {% if hareket.tip == 'giris' %}bg-green-50 dark:bg-green-900/20{% elif hareket.tip in ['cikis', 'zimmet'] %}bg-red-50 dark:bg-red-900/20{% else %}bg-blue-50 dark:bg-blue-900/20{% endif %}">
+            <div class="flex items-center gap-3">
+                {% if hareket.tip == 'giris' %}
+                <span class="material-symbols-outlined text-2xl text-green-600">add_box</span>
+                {% elif hareket.tip in ['cikis', 'zimmet'] %}
+                <span class="material-symbols-outlined text-2xl text-red-600">outbox</span>
+                {% else %}
+                <span class="material-symbols-outlined text-2xl text-blue-600">swap_horiz</span>
+                {% endif %}
+                <div>
+                    <h3 class="font-bold text-lg text-[#111418] dark:text-white font-mono">{{ hareket.hareket_no }}</h3>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ hareket.tip_text }}</p>
+                </div>
+            </div>
+            {% set durum_colors = {'taslak': 'bg-amber-100 text-amber-700', 'onaylandi': 'bg-green-100 text-green-700', 'iptal': 'bg-gray-100 text-gray-700'} %}
+            <span class="px-3 py-1 rounded-full text-sm font-bold {{ durum_colors.get(hareket.durum, 'bg-gray-100') }}">
+                {{ hareket.durum_text }}
+            </span>
+        </div>
+        
+        <div class="p-6 space-y-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">Tarih</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{{ hareket.tarih.strftime('%d.%m.%Y %H:%M') }}</p>
+                </div>
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">Depo</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{{ hareket.depo.ad }}</p>
+                </div>
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">İlgili Taraf</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">
+                        {% if hareket.tedarikci %}{{ hareket.tedarikci.ad }}
+                        {% elif hareket.calisan %}{{ hareket.calisan.full_name }}
+                        {% elif hareket.sirket_adi %}{{ hareket.sirket_adi }}
+                        {% else %}-{% endif %}
+                    </p>
+                </div>
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">Proje</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{{ hareket.proje.ad if hareket.proje else 'Genel' }}</p>
+                </div>
+            </div>
+            
+            {% if hareket.belge_no %}
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">Belge No</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{{ hareket.belge_no }}</p>
+                </div>
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">Belge Tarihi</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{{ hareket.belge_tarihi.strftime('%d.%m.%Y') if hareket.belge_tarihi else '-' }}</p>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if hareket.aciklama %}
+            <div>
+                <span class="text-sm text-text-muted dark:text-text-muted-dark">Açıklama</span>
+                <p class="text-[#111418] dark:text-white mt-1">{{ hareket.aciklama }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Kalem Ekle (Taslak ise) -->
+    {% if hareket.durum == 'taslak' %}
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+            <h4 class="font-bold text-[#111418] dark:text-white">Ürün Ekle</h4>
+        </div>
+        <form method="POST" action="{{ url_for('depo.hareket_kalem_ekle', id=hareket.id) }}" class="p-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Ürün *</label>
+                    <select name="urun_id" required class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                        <option value="">Seçin</option>
+                        {% for u in urunler %}
+                        <option value="{{ u.id }}">{{ u.kod }} - {{ u.ad }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Miktar *</label>
+                    <input type="number" name="miktar" step="0.01" required class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Birim Fiyat</label>
+                    <input type="number" name="birim_fiyat" step="0.01" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+                        Ekle
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+    
+    <!-- Kalemler Listesi -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+            <h4 class="font-bold text-[#111418] dark:text-white">Ürünler</h4>
+            <span class="text-sm text-text-muted dark:text-text-muted-dark">{{ kalemler|length }} kalem</span>
+        </div>
+        
+        {% if kalemler %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-[#1a1f2b]">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Ürün</th>
+                        <th class="px-4 py-3 text-right font-semibold text-text-muted dark:text-text-muted-dark">Miktar</th>
+                        <th class="px-4 py-3 text-right font-semibold text-text-muted dark:text-text-muted-dark">Birim Fiyat</th>
+                        <th class="px-4 py-3 text-right font-semibold text-text-muted dark:text-text-muted-dark">Toplam</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                    {% for kalem in kalemler %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-[#1a1f2b]">
+                        <td class="px-4 py-3">
+                            <p class="font-medium text-[#111418] dark:text-white">{{ kalem.urun.ad }}</p>
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark">{{ kalem.urun.kod }}</p>
+                        </td>
+                        <td class="px-4 py-3 text-right text-[#111418] dark:text-white">{{ kalem.miktar }} {{ kalem.urun.birim }}</td>
+                        <td class="px-4 py-3 text-right text-[#111418] dark:text-white">
+                            {% if kalem.birim_fiyat %}₺{{ "{:,.2f}".format(kalem.birim_fiyat) }}{% else %}-{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right font-medium text-[#111418] dark:text-white">
+                            {% if kalem.birim_fiyat %}₺{{ "{:,.2f}".format(kalem.toplam) }}{% else %}-{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if hareket.toplam_tutar > 0 %}
+                <tfoot class="bg-gray-50 dark:bg-[#1a1f2b]">
+                    <tr>
+                        <td colspan="3" class="px-4 py-3 text-right font-bold text-[#111418] dark:text-white">Genel Toplam:</td>
+                        <td class="px-4 py-3 text-right font-bold text-primary">₺{{ "{:,.2f}".format(hareket.toplam_tutar) }}</td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-text-muted dark:text-text-muted-dark">
+            Henüz ürün eklenmemiş
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- İmza Alanı -->
+    {% if hareket.durum == 'onaylandi' and hareket.tip in ['cikis', 'zimmet'] %}
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+            <h4 class="font-bold text-[#111418] dark:text-white">İmza</h4>
+        </div>
+        <div class="p-6">
+            {% if hareket.imza_data %}
+            <div class="text-center">
+                <img src="{{ hareket.imza_data }}" alt="İmza" class="max-w-xs mx-auto border rounded-lg">
+                <p class="mt-2 text-sm text-text-muted dark:text-text-muted-dark">
+                    {{ hareket.imzalayan_ad }} - {{ hareket.imza_tarihi.strftime('%d.%m.%Y %H:%M') if hareket.imza_tarihi else '' }}
+                </p>
+            </div>
+            {% else %}
+            <form method="POST" action="{{ url_for('depo.hareket_imzala', id=hareket.id) }}" class="space-y-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Teslim Alan Adı</label>
+                    <input type="text" name="imzalayan_ad" required class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">İmza</label>
+                    <canvas id="imzaCanvas" class="w-full h-40 border border-border-light dark:border-border-dark rounded-xl bg-white cursor-crosshair"></canvas>
+                    <input type="hidden" name="imza_data" id="imza_data">
+                </div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="clearSignature()" class="px-4 py-2 border border-border-light dark:border-border-dark rounded-xl text-text-muted hover:bg-gray-50">Temizle</button>
+                    <button type="submit" onclick="saveSignature()" class="px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary-dark">İmzayı Kaydet</button>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Aksiyonlar -->
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('depo.hareket_liste') }}" class="flex-1 text-center px-4 py-2.5 border border-border-light dark:border-border-dark rounded-xl text-text-muted hover:bg-gray-50 dark:hover:bg-[#1a1f2b] transition">
+            Listeye Dön
+        </a>
+        
+        {% if hareket.durum == 'taslak' and kalemler %}
+        <form method="POST" action="{{ url_for('depo.hareket_onayla', id=hareket.id) }}" class="flex-1">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="w-full px-4 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition"
+                    onclick="return confirm('Hareketi onaylamak istediğinize emin misiniz? Stok güncellenecektir.')">
+                Onayla
+            </button>
+        </form>
+        {% endif %}
+        
+        {% if hareket.durum == 'onaylandi' %}
+        <a href="{{ url_for('depo.hareket_yazdir', id=hareket.id) }}" target="_blank" class="px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+            <span class="material-symbols-outlined align-middle mr-1">print</span>
+            Yazdır
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+{% if hareket.durum == 'onaylandi' and hareket.tip in ['cikis', 'zimmet'] and not hareket.imza_data %}
+<script>
+const canvas = document.getElementById('imzaCanvas');
+const ctx = canvas.getContext('2d');
+let isDrawing = false;
+
+canvas.addEventListener('mousedown', startDrawing);
+canvas.addEventListener('mousemove', draw);
+canvas.addEventListener('mouseup', stopDrawing);
+canvas.addEventListener('mouseout', stopDrawing);
+canvas.addEventListener('touchstart', handleTouch);
+canvas.addEventListener('touchmove', handleTouch);
+canvas.addEventListener('touchend', stopDrawing);
+
+function startDrawing(e) {
+    isDrawing = true;
+    draw(e);
+}
+
+function draw(e) {
+    if (!isDrawing) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = '#000';
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+}
+
+function handleTouch(e) {
+    e.preventDefault();
+    const touch = e.touches[0];
+    const mouseEvent = new MouseEvent(e.type === 'touchstart' ? 'mousedown' : 'mousemove', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+    });
+    canvas.dispatchEvent(mouseEvent);
+}
+
+function stopDrawing() {
+    isDrawing = false;
+    ctx.beginPath();
+}
+
+function clearSignature() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function saveSignature() {
+    document.getElementById('imza_data').value = canvas.toDataURL();
+}
+</script>
+{% endif %}
+{% endblock %}

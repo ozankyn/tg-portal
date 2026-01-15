@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Dava Düzenle' if dava else 'Yeni Dava' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'Dava Düzenle' if dava else 'Yeni Dava' }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="font-bold text-lg text-[#111418] dark:text-white">Dava Bilgileri</h3>
+        </div>
+        
+        <form method="POST" class="p-6 space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <!-- Dosya Bilgileri -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Dosya No</label>
+                    <input type="text" name="dosya_no" value="{{ dava.dosya_no if dava else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Esas No</label>
+                    <input type="text" name="esas_no" value="{{ dava.esas_no if dava else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Dava Türü *</label>
+                    <select name="dava_turu" required class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                        <option value="">Seçin</option>
+                        <option value="ise_iade" {% if dava and dava.dava_turu == 'ise_iade' %}selected{% endif %}>İşe İade</option>
+                        <option value="alacak" {% if dava and dava.dava_turu == 'alacak' %}selected{% endif %}>İşçi Alacağı</option>
+                        <option value="tespit" {% if dava and dava.dava_turu == 'tespit' %}selected{% endif %}>Tespit Davası</option>
+                        <option value="tazminat" {% if dava and dava.dava_turu == 'tazminat' %}selected{% endif %}>Tazminat</option>
+                        <option value="ceza" {% if dava and dava.dava_turu == 'ceza' %}selected{% endif %}>Ceza Davası</option>
+                        <option value="diger" {% if dava and dava.dava_turu == 'diger' %}selected{% endif %}>Diğer</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Mahkeme *</label>
+                <input type="text" name="mahkeme" value="{{ dava.mahkeme if dava else '' }}" required
+                       placeholder="Örn: İstanbul 5. İş Mahkemesi"
+                       class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+            </div>
+            
+            <!-- Taraflar -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Davacı *</label>
+                    <input type="text" name="davaci" value="{{ dava.davaci if dava else '' }}" required
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Davalı *</label>
+                    <input type="text" name="davali" value="{{ dava.davali if dava else '' }}" required
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">İlişkili Çalışan</label>
+                <select name="calisan_id" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                    <option value="">Seçin (opsiyonel)</option>
+                    {% for c in calisanlar %}
+                    <option value="{{ c.id }}" {% if dava and dava.calisan_id == c.id %}selected{% endif %}>{{ c.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <!-- Tarihler -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Açılış Tarihi *</label>
+                    <input type="date" name="acilis_tarihi" value="{{ dava.acilis_tarihi.strftime('%Y-%m-%d') if dava and dava.acilis_tarihi else '' }}" required
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Sonraki Duruşma</label>
+                    <input type="date" name="sonraki_durusma" value="{{ dava.sonraki_durusma.strftime('%Y-%m-%d') if dava and dava.sonraki_durusma else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                {% if dava %}
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Son Duruşma</label>
+                    <input type="date" name="son_durusma" value="{{ dava.son_durusma.strftime('%Y-%m-%d') if dava.son_durusma else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if dava %}
+            <!-- Durum ve Sonuç (Sadece düzenleme) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Durum</label>
+                    <select name="durum" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                        <option value="devam_ediyor" {% if dava.durum == 'devam_ediyor' %}selected{% endif %}>Devam Ediyor</option>
+                        <option value="karara_baglandi" {% if dava.durum == 'karara_baglandi' %}selected{% endif %}>Karara Bağlandı</option>
+                        <option value="temyiz" {% if dava.durum == 'temyiz' %}selected{% endif %}>Temyizde</option>
+                        <option value="kapandi" {% if dava.durum == 'kapandi' %}selected{% endif %}>Kapandı</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Sonuç</label>
+                    <select name="sonuc" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                        <option value="">Belirlenmedi</option>
+                        <option value="kabul" {% if dava.sonuc == 'kabul' %}selected{% endif %}>Kabul</option>
+                        <option value="ret" {% if dava.sonuc == 'ret' %}selected{% endif %}>Ret</option>
+                        <option value="kismi_kabul" {% if dava.sonuc == 'kismi_kabul' %}selected{% endif %}>Kısmi Kabul</option>
+                        <option value="sulh" {% if dava.sonuc == 'sulh' %}selected{% endif %}>Sulh</option>
+                        <option value="feragat" {% if dava.sonuc == 'feragat' %}selected{% endif %}>Feragat</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Karar Tarihi</label>
+                    <input type="date" name="karar_tarihi" value="{{ dava.karar_tarihi.strftime('%Y-%m-%d') if dava.karar_tarihi else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Tutarlar -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Talep Tutarı (₺)</label>
+                    <input type="number" name="talep_tutari" step="0.01" value="{{ dava.talep_tutari if dava and dava.talep_tutari else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                {% if dava %}
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Karar Tutarı (₺)</label>
+                    <input type="number" name="karar_tutari" step="0.01" value="{{ dava.karar_tutari if dava.karar_tutari else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Avukat Bilgileri -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Avukat</label>
+                    <input type="text" name="avukat" value="{{ dava.avukat if dava else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Avukat Telefon</label>
+                    <input type="text" name="avukat_telefon" value="{{ dava.avukat_telefon if dava else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Konu Özeti</label>
+                <textarea name="konu_ozeti" rows="3" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">{{ dava.konu_ozeti if dava else '' }}</textarea>
+            </div>
+            
+            {% if dava %}
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Notlar</label>
+                <textarea name="notlar" rows="3" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">{{ dava.notlar if dava else '' }}</textarea>
+            </div>
+            {% endif %}
+            
+            <div class="flex items-center gap-3 pt-4">
+                <button type="submit" class="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+                    {{ 'Güncelle' if dava else 'Kaydet' }}
+                </button>
+                <a href="{{ url_for('ik.dava_liste') }}" class="px-4 py-2.5 border border-border-light dark:border-border-dark rounded-xl text-text-muted hover:bg-gray-50 dark:hover:bg-[#1a1f2b] transition">
+                    İptal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

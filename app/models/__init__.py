@@ -148,3 +148,5 @@ __all__ = [
     'TestSonuc',
     'TestCevap',
 ]
+
+from app.models.depo import Depo, UrunKategori, Urun, StokKarti, StokHareketi, StokHareketiKalem

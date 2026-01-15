@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+
+{% block title %}Dava Takibi - TG Portal{% endblock %}
+{% block page_title %}Dava Takibi{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Özet Kartları -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">gavel</span>
+                </div>
+                <div>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">Toplam Dava</p>
+                    <p class="text-2xl font-bold text-[#111418] dark:text-white">{{ davalar|length }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-amber-600 dark:text-amber-400">pending</span>
+                </div>
+                <div>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">Devam Eden</p>
+                    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ devam_eden }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-green-600 dark:text-green-400">check_circle</span>
+                </div>
+                <div>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">Kapanan</p>
+                    <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ kapanan }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <p class="text-text-muted dark:text-text-muted-dark">Hukuki dava süreçlerini takip edin.</p>
+        <a href="{{ url_for('ik.dava_ekle') }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+            <span class="material-symbols-outlined text-lg">add</span>
+            Yeni Dava
+        </a>
+    </div>
+
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        {% if davalar %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-[#1a1f2b]">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Dosya No</th>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Mahkeme</th>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Dava Türü</th>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Davacı / Davalı</th>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Sonraki Duruşma</th>
+                        <th class="px-4 py-3 text-center font-semibold text-text-muted dark:text-text-muted-dark">Durum</th>
+                        <th class="px-4 py-3 text-center font-semibold text-text-muted dark:text-text-muted-dark">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                    {% for dava in davalar %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-[#1a1f2b] transition">
+                        <td class="px-4 py-3">
+                            <span class="font-medium text-[#111418] dark:text-white">{{ dava.dosya_no or '-' }}</span>
+                        </td>
+                        <td class="px-4 py-3 text-[#111418] dark:text-white">{{ dava.mahkeme|truncate(30) }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                {{ dava.dava_turu_text }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-sm">
+                            <p class="text-[#111418] dark:text-white">{{ dava.davaci|truncate(20) }}</p>
+                            <p class="text-text-muted dark:text-text-muted-dark text-xs">vs {{ dava.davali|truncate(20) }}</p>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if dava.sonraki_durusma %}
+                            <span class="{% if dava.sonraki_durusma < today %}text-red-600{% else %}text-[#111418] dark:text-white{% endif %}">
+                                {{ dava.sonraki_durusma.strftime('%d.%m.%Y') }}
+                            </span>
+                            {% else %}
+                            <span class="text-text-muted dark:text-text-muted-dark">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            {% set durum_colors = {'devam_ediyor': 'bg-amber-100 text-amber-700', 'karara_baglandi': 'bg-blue-100 text-blue-700', 'temyiz': 'bg-purple-100 text-purple-700', 'kapandi': 'bg-green-100 text-green-700'} %}
+                            <span class="px-2 py-1 rounded-full text-xs font-bold {{ durum_colors.get(dava.durum, 'bg-gray-100 text-gray-700') }}">
+                                {{ dava.durum_text }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <a href="{{ url_for('ik.dava_detay', id=dava.id) }}" class="text-primary hover:underline">Detay</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <span class="material-symbols-outlined text-5xl text-text-muted dark:text-text-muted-dark mb-4">gavel</span>
+            <p class="text-text-muted dark:text-text-muted-dark">Henüz dava kaydı bulunmuyor.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

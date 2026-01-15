@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Disiplin Kaydı Düzenle' if kayit else 'Yeni Disiplin Kaydı' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'Disiplin Kaydı Düzenle' if kayit else 'Yeni Disiplin Kaydı' }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="font-bold text-lg text-[#111418] dark:text-white">Disiplin Kaydı Bilgileri</h3>
+        </div>
+        
+        <form method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Çalışan *</label>
+                    <select name="calisan_id" required class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                        <option value="">Seçin</option>
+                        {% for c in calisanlar %}
+                        <option value="{{ c.id }}" {% if kayit and kayit.calisan_id == c.id %}selected{% endif %}>{{ c.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Tarih *</label>
+                    <input type="date" name="tarih" value="{{ kayit.tarih.strftime('%Y-%m-%d') if kayit and kayit.tarih else '' }}" required
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Disiplin Türü *</label>
+                    <select name="tur" required class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                        <option value="">Seçin</option>
+                        <option value="uyari" {% if kayit and kayit.tur == 'uyari' %}selected{% endif %}>Sözlü Uyarı</option>
+                        <option value="ihtar" {% if kayit and kayit.tur == 'ihtar' %}selected{% endif %}>Yazılı İhtar</option>
+                        <option value="fesih_uyarisi" {% if kayit and kayit.tur == 'fesih_uyarisi' %}selected{% endif %}>Fesih Uyarısı</option>
+                        <option value="is_akdi_feshi" {% if kayit and kayit.tur == 'is_akdi_feshi' %}selected{% endif %}>İş Akdi Feshi</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Seviye *</label>
+                    <select name="seviye" required class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                        <option value="1" {% if kayit and kayit.seviye == 1 %}selected{% endif %}>Hafif</option>
+                        <option value="2" {% if kayit and kayit.seviye == 2 %}selected{% endif %}>Orta</option>
+                        <option value="3" {% if kayit and kayit.seviye == 3 %}selected{% endif %}>Ağır</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Konu *</label>
+                <input type="text" name="konu" value="{{ kayit.konu if kayit else '' }}" required
+                       class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Açıklama</label>
+                <textarea name="aciklama" rows="4" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">{{ kayit.aciklama if kayit else '' }}</textarea>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Belge</label>
+                <input type="file" name="belge" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                       class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                {% if kayit and kayit.belge_path %}
+                <p class="mt-1 text-xs text-text-muted dark:text-text-muted-dark">Mevcut: {{ kayit.belge_path }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="flex items-center gap-3 pt-4">
+                <button type="submit" class="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+                    {{ 'Güncelle' if kayit else 'Kaydet' }}
+                </button>
+                <a href="{{ url_for('ik.disiplin_liste') }}" class="px-4 py-2.5 border border-border-light dark:border-border-dark rounded-xl text-text-muted hover:bg-gray-50 dark:hover:bg-[#1a1f2b] transition">
+                    İptal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

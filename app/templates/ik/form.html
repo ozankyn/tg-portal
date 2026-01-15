@@ -311,7 +311,7 @@
             <div class="flex flex-col items-center">
                 <div class="w-32 h-32 rounded-full bg-gray-100 dark:bg-[#111418] border-2 border-dashed border-border-light dark:border-border-dark flex items-center justify-center mb-4 overflow-hidden">
                     {% if calisan and calisan.foto %}
-                    <img src="{{ url_for('static', filename='uploads/' + calisan.foto) }}" alt="Fotoğraf" class="w-full h-full object-cover" id="previewImg">
+                    <img src="{{ url_for('uploaded_file', filename=calisan.foto) }}" alt="Fotoğraf" class="w-full h-full object-cover" id="previewImg">
                     {% else %}
                     <span class="material-symbols-outlined text-4xl text-gray-400" id="previewIcon">person</span>
                     <img src="#" alt="Fotoğraf" class="w-full h-full object-cover hidden" id="previewImg">

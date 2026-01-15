@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Organizasyon Şeması - TG Portal{% endblock %}
+{% block page_title %}Organizasyon Şeması{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Özet Kartları -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-primary">groups</span>
+                </div>
+                <div>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">Toplam Çalışan</p>
+                    <p class="text-2xl font-bold text-[#111418] dark:text-white">{{ calisanlar|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-green-600 dark:text-green-400">apartment</span>
+                </div>
+                <div>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">Departman</p>
+                    <p class="text-2xl font-bold text-[#111418] dark:text-white">{{ departman_gruplari|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-amber-600 dark:text-amber-400">supervisor_account</span>
+                </div>
+                <div>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">Yönetici</p>
+                    <p class="text-2xl font-bold text-[#111418] dark:text-white">{{ calisanlar|selectattr('astlar')|list|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">layers</span>
+                </div>
+                <div>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">Seviye</p>
+                    <p class="text-2xl font-bold text-[#111418] dark:text-white">{{ seviyeler|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Seçimi -->
+    <div class="border-b border-border-light dark:border-border-dark">
+        <nav class="flex gap-4" id="orgTabs">
+            <button onclick="showTab('tree')" id="tab-tree" 
+                    class="tab-btn px-4 py-2 font-medium text-primary border-b-2 border-primary">
+                <span class="material-symbols-outlined text-lg align-middle mr-1">account_tree</span>
+                Hiyerarşi
+            </button>
+            <button onclick="showTab('dept')" id="tab-dept"
+                    class="tab-btn px-4 py-2 font-medium text-text-muted dark:text-text-muted-dark hover:text-primary border-b-2 border-transparent">
+                <span class="material-symbols-outlined text-lg align-middle mr-1">domain</span>
+                Departman
+            </button>
+            <button onclick="showTab('level')" id="tab-level"
+                    class="tab-btn px-4 py-2 font-medium text-text-muted dark:text-text-muted-dark hover:text-primary border-b-2 border-transparent">
+                <span class="material-symbols-outlined text-lg align-middle mr-1">format_list_numbered</span>
+                Seviye
+            </button>
+        </nav>
+    </div>
+
+    <!-- Tab İçerikleri -->
+    
+    <!-- Hiyerarşi Görünümü -->
+    <div id="content-tree" class="tab-content">
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark p-6 overflow-x-auto">
+            {% if tree %}
+            <div class="org-tree">
+                {% macro render_node(node, level=0) %}
+                <div class="org-node ml-{{ level * 8 }} {% if level > 0 %}border-l-2 border-border-light dark:border-border-dark pl-4{% endif %}">
+                    <div class="flex items-center gap-3 py-2">
+                        <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            {% if node.calisan.fotograf %}
+                            <img src="{{ url_for('uploaded_file', filename=node.calisan.foto) }}" class="w-10 h-10 rounded-full object-cover">
+                            {% else %}
+                            <span class="material-symbols-outlined text-primary">person</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <a href="{{ url_for('ik.detay', id=node.calisan.id) }}" class="font-medium text-[#111418] dark:text-white hover:text-primary truncate block">
+                                {{ node.calisan.full_name }}
+                            </a>
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark truncate">
+                                {{ node.calisan.pozisyon.ad if node.calisan.pozisyon else '-' }}
+                                {% if node.calisan.departman %}· {{ node.calisan.departman.ad }}{% endif %}
+                            </p>
+                        </div>
+                        {% if node.children %}
+                        <span class="text-xs text-text-muted dark:text-text-muted-dark bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
+                            {{ node.children|length }} ast
+                        </span>
+                        {% endif %}
+                    </div>
+                    {% if node.children %}
+                    <div class="ml-4 border-l-2 border-border-light dark:border-border-dark">
+                        {% for child in node.children %}
+                        {{ render_node(child, level + 1) }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endmacro %}
+                
+                {% for node in tree %}
+                {{ render_node(node) }}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-12 text-text-muted dark:text-text-muted-dark">
+                <span class="material-symbols-outlined text-5xl mb-4">account_tree</span>
+                <p>Henüz yönetici-ast ilişkisi tanımlanmamış.</p>
+                <p class="text-sm mt-2">Çalışan düzenleme sayfasından yönetici ataması yapabilirsiniz.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Departman Görünümü -->
+    <div id="content-dept" class="tab-content hidden">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for dept, calisanlar_list in departman_gruplari.items() %}
+            <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark overflow-hidden">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark bg-gray-50 dark:bg-[#1a1f2b]">
+                    <div class="flex items-center justify-between">
+                        <h3 class="font-bold text-[#111418] dark:text-white">{{ dept }}</h3>
+                        <span class="text-sm text-text-muted dark:text-text-muted-dark">{{ calisanlar_list|length }} kişi</span>
+                    </div>
+                </div>
+                <div class="divide-y divide-border-light dark:divide-border-dark max-h-80 overflow-y-auto">
+                    {% for calisan in calisanlar_list|sort(attribute='pozisyon.seviye') %}
+                    <a href="{{ url_for('ik.detay', id=calisan.id) }}" class="flex items-center gap-3 px-5 py-3 hover:bg-gray-50 dark:hover:bg-[#1a1f2b] transition">
+                        <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <span class="material-symbols-outlined text-primary text-sm">person</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium text-sm text-[#111418] dark:text-white truncate">{{ calisan.full_name }}</p>
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark truncate">{{ calisan.pozisyon.ad if calisan.pozisyon else '-' }}</p>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Seviye Görünümü -->
+    <div id="content-level" class="tab-content hidden">
+        <div class="space-y-4">
+            {% for seviye in seviyeler %}
+            {% set seviye_adi = {1: 'Üst Yönetim', 2: 'Kıdemli Yönetim', 3: 'Orta Yönetim', 4: 'Alt Yönetim', 5: 'Takım Lideri', 6: 'Kıdemli Uzman', 7: 'Uzman', 8: 'Asistan', 9: 'Stajyer', 10: 'Giriş Seviyesi'} %}
+            <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark overflow-hidden">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark bg-gray-50 dark:bg-[#1a1f2b]">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold text-sm">{{ seviye }}</span>
+                            <h3 class="font-bold text-[#111418] dark:text-white">{{ seviye_adi.get(seviye, 'Seviye ' + seviye|string) }}</h3>
+                        </div>
+                        <span class="text-sm text-text-muted dark:text-text-muted-dark">{{ seviye_gruplari[seviye]|length }} kişi</span>
+                    </div>
+                </div>
+                <div class="p-4">
+                    <div class="flex flex-wrap gap-2">
+                        {% for calisan in seviye_gruplari[seviye] %}
+                        <a href="{{ url_for('ik.detay', id=calisan.id) }}" 
+                           class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100 dark:bg-[#1a1f2b] hover:bg-gray-200 dark:hover:bg-[#252b36] transition">
+                            <span class="font-medium text-sm text-[#111418] dark:text-white">{{ calisan.full_name }}</span>
+                            <span class="text-xs text-text-muted dark:text-text-muted-dark">{{ calisan.pozisyon.ad if calisan.pozisyon else '' }}</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showTab(tab) {
+    // Tüm tab butonlarını pasif yap
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('text-primary', 'border-primary');
+        btn.classList.add('text-text-muted', 'border-transparent');
+    });
+    
+    // Tüm içerikleri gizle
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Seçili tab'ı aktif yap
+    document.getElementById('tab-' + tab).classList.remove('text-text-muted', 'border-transparent');
+    document.getElementById('tab-' + tab).classList.add('text-primary', 'border-primary');
+    
+    // Seçili içeriği göster
+    document.getElementById('content-' + tab).classList.remove('hidden');
+}
+</script>
+{% endblock %}

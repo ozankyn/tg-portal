@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Ürünler - TG Portal{% endblock %}
+{% block page_title %}Ürünler{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <p class="text-text-muted dark:text-text-muted-dark">Ürün ve malzeme tanımlarını yönetin.</p>
+        <div class="flex gap-2">
+            <a href="{{ url_for('depo.kategori_liste') }}" class="inline-flex items-center gap-2 px-4 py-2.5 border border-border-light dark:border-border-dark rounded-xl hover:bg-gray-50 dark:hover:bg-[#1a1f2b] transition">
+                <span class="material-symbols-outlined text-lg">category</span>
+                Kategoriler
+            </a>
+            <a href="{{ url_for('depo.urun_ekle') }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+                <span class="material-symbols-outlined text-lg">add</span>
+                Yeni Ürün
+            </a>
+        </div>
+    </div>
+
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        {% if urunler %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-[#1a1f2b]">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Kod</th>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Ürün Adı</th>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Kategori</th>
+                        <th class="px-4 py-3 text-center font-semibold text-text-muted dark:text-text-muted-dark">Birim</th>
+                        <th class="px-4 py-3 text-right font-semibold text-text-muted dark:text-text-muted-dark">Stok</th>
+                        <th class="px-4 py-3 text-right font-semibold text-text-muted dark:text-text-muted-dark">Alış Fiyatı</th>
+                        <th class="px-4 py-3 text-center font-semibold text-text-muted dark:text-text-muted-dark">Durum</th>
+                        <th class="px-4 py-3 text-center font-semibold text-text-muted dark:text-text-muted-dark">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                    {% for urun in urunler %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-[#1a1f2b] transition">
+                        <td class="px-4 py-3 font-mono text-[#111418] dark:text-white">{{ urun.kod }}</td>
+                        <td class="px-4 py-3">
+                            <p class="font-medium text-[#111418] dark:text-white">{{ urun.ad }}</p>
+                            {% if urun.barkod %}
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark">{{ urun.barkod }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-text-muted dark:text-text-muted-dark">{{ urun.kategori.ad if urun.kategori else '-' }}</td>
+                        <td class="px-4 py-3 text-center text-[#111418] dark:text-white">{{ urun.birim }}</td>
+                        <td class="px-4 py-3 text-right">
+                            {% set stok = urun.toplam_stok %}
+                            <span class="font-bold {% if urun.min_stok and stok < urun.min_stok %}text-red-600{% elif stok > 0 %}text-green-600{% else %}text-text-muted{% endif %}">
+                                {{ stok }}
+                            </span>
+                            {% if urun.min_stok and stok < urun.min_stok %}
+                            <span class="material-symbols-outlined text-sm text-red-500 align-middle">warning</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right text-[#111418] dark:text-white">
+                            {% if urun.alis_fiyati %}₺{{ "{:,.2f}".format(urun.alis_fiyati) }}{% else %}-{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            {% if urun.aktif %}
+                            <span class="px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Aktif</span>
+                            {% else %}
+                            <span class="px-2 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">Pasif</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <a href="{{ url_for('depo.urun_duzenle', id=urun.id) }}" class="text-primary hover:underline">Düzenle</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <span class="material-symbols-outlined text-5xl text-text-muted dark:text-text-muted-dark mb-4">inventory_2</span>
+            <p class="text-text-muted dark:text-text-muted-dark">Henüz ürün tanımlanmamış.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Mal Girişi - TG Portal{% endblock %}
+{% block page_title %}Mal Girişi{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark bg-green-50 dark:bg-green-900/20">
+            <div class="flex items-center gap-3">
+                <span class="material-symbols-outlined text-green-600">add_box</span>
+                <h3 class="font-bold text-lg text-[#111418] dark:text-white">Yeni Mal Girişi</h3>
+            </div>
+        </div>
+        
+        <form method="POST" class="p-6 space-y-5">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Depo *</label>
+                    <select name="depo_id" required class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                        <option value="">Seçin</option>
+                        {% for d in depolar %}
+                        <option value="{{ d.id }}">{{ d.ad }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Tarih *</label>
+                    <input type="datetime-local" name="tarih" value="{{ now().strftime('%Y-%m-%dT%H:%M') if now else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Giriş Tipi *</label>
+                <select name="taraf_tipi" id="taraf_tipi" onchange="toggleTarafFields()" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                    <option value="tedarikci">Tedarikçiden</option>
+                    <option value="diger">Diğer Şirketten</option>
+                </select>
+            </div>
+            
+            <div id="tedarikci_field">
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Tedarikçi</label>
+                <select name="tedarikci_id" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                    <option value="">Seçin</option>
+                    {% for t in tedarikciler %}
+                    <option value="{{ t.id }}">{{ t.ad }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div id="sirket_field" class="hidden">
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Şirket Adı</label>
+                <input type="text" name="sirket_adi" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Proje</label>
+                <select name="proje_id" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                    <option value="">Genel Stok</option>
+                    {% for p in projeler %}
+                    <option value="{{ p.id }}">{{ p.ad }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Belge No (Fatura/İrsaliye)</label>
+                    <input type="text" name="belge_no" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Belge Tarihi</label>
+                    <input type="date" name="belge_tarihi" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Açıklama</label>
+                <textarea name="aciklama" rows="2" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm"></textarea>
+            </div>
+            
+            <div class="flex items-center gap-3 pt-4">
+                <button type="submit" class="flex-1 px-4 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition">
+                    Oluştur ve Ürün Ekle
+                </button>
+                <a href="{{ url_for('depo.hareket_liste') }}" class="px-4 py-2.5 border border-border-light dark:border-border-dark rounded-xl text-text-muted hover:bg-gray-50 dark:hover:bg-[#1a1f2b] transition">
+                    İptal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleTarafFields() {
+    const tip = document.getElementById('taraf_tipi').value;
+    document.getElementById('tedarikci_field').classList.toggle('hidden', tip !== 'tedarikci');
+    document.getElementById('sirket_field').classList.toggle('hidden', tip !== 'diger');
+}
+</script>
+{% endblock %}

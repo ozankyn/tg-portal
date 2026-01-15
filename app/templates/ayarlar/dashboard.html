@@ -134,4 +134,52 @@
     </a>
     
 </div>
+
+<!-- Organizasyon Ayarları -->
+<h2 class="text-xl font-bold text-[#111418] dark:text-white mt-8 mb-4">Organizasyon Ayarları</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    
+    <!-- Departmanlar -->
+    <a href="{{ url_for('ayarlar.departman_liste') }}" class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-2xl text-teal-600 dark:text-teal-400">domain</span>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-1">Departmanlar</h3>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">Şirket departmanlarını tanımlama ve düzenleme.</p>
+            </div>
+            <span class="material-symbols-outlined text-gray-300 dark:text-gray-600 group-hover:text-primary transition-colors">chevron_right</span>
+        </div>
+    </a>
+    
+    <!-- Pozisyonlar -->
+    <a href="{{ url_for('ayarlar.pozisyon_liste') }}" class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-2xl text-indigo-600 dark:text-indigo-400">work</span>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-1">Pozisyonlar</h3>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">İş pozisyonları ve seviye tanımları.</p>
+            </div>
+            <span class="material-symbols-outlined text-gray-300 dark:text-gray-600 group-hover:text-primary transition-colors">chevron_right</span>
+        </div>
+    </a>
+    
+    <!-- Masraf Kategorileri -->
+    <a href="{{ url_for('masraf.kategori_liste') }}" class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm hover:shadow-md hover:border-primary/30 transition-all group">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span class="material-symbols-outlined text-2xl text-orange-600 dark:text-orange-400">category</span>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-1">Masraf Kategorileri</h3>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">Masraf türlerini tanımlama ve düzenleme.</p>
+            </div>
+            <span class="material-symbols-outlined text-gray-300 dark:text-gray-600 group-hover:text-primary transition-colors">chevron_right</span>
+        </div>
+    </a>
+    
+</div>
 {% endblock %}

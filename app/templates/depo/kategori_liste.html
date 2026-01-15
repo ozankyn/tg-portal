@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block title %}Kategoriler - TG Portal{% endblock %}
+{% block page_title %}Ürün Kategorileri{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <p class="text-text-muted dark:text-text-muted-dark">Ürün kategorilerini yönetin.</p>
+        <button onclick="document.getElementById('kategoriModal').classList.remove('hidden')" 
+                class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+            <span class="material-symbols-outlined text-lg">add</span>
+            Yeni Kategori
+        </button>
+    </div>
+
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        {% if kategoriler %}
+        <div class="divide-y divide-border-light dark:divide-border-dark">
+            {% for kat in kategoriler %}
+            <div class="px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#1a1f2b]">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-primary">folder</span>
+                    <div>
+                        <p class="font-medium text-[#111418] dark:text-white">{{ kat.ad }}</p>
+                        {% if kat.ust_kategori %}
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark">{{ kat.ust_kategori.ad }} altında</p>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if kat.aktif %}
+                <span class="px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Aktif</span>
+                {% else %}
+                <span class="px-2 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">Pasif</span>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <span class="material-symbols-outlined text-5xl text-text-muted dark:text-text-muted-dark mb-4">category</span>
+            <p class="text-text-muted dark:text-text-muted-dark">Henüz kategori tanımlanmamış.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="kategoriModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-card-dark rounded-2xl shadow-xl w-full max-w-md mx-4">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+            <h3 class="font-bold text-lg text-[#111418] dark:text-white">Yeni Kategori</h3>
+            <button onclick="document.getElementById('kategoriModal').classList.add('hidden')" class="text-text-muted hover:text-[#111418]">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <form method="POST" action="{{ url_for('depo.kategori_ekle') }}" class="p-6 space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Kategori Adı *</label>
+                <input type="text" name="ad" required class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Üst Kategori</label>
+                <select name="ust_kategori_id" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                    <option value="">Ana Kategori</option>
+                    {% for k in kategoriler %}
+                    <option value="{{ k.id }}">{{ k.ad }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="w-full px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+                Kaydet
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Depo Yönetimi - TG Portal{% endblock %}
+{% block page_title %}Depo Yönetimi{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Özet Kartları -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">warehouse</span>
+                </div>
+                <div>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">Depo Sayısı</p>
+                    <p class="text-2xl font-bold text-[#111418] dark:text-white">{{ toplam_depo }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-green-600 dark:text-green-400">inventory_2</span>
+                </div>
+                <div>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">Ürün Çeşidi</p>
+                    <p class="text-2xl font-bold text-[#111418] dark:text-white">{{ toplam_urun }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-amber-600 dark:text-amber-400">warning</span>
+                </div>
+                <div>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">Kritik Stok</p>
+                    <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">{{ kritik_stok|length }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark p-5">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-purple-600 dark:text-purple-400">payments</span>
+                </div>
+                <div>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">Stok Değeri</p>
+                    <p class="text-xl font-bold text-[#111418] dark:text-white">₺{{ "{:,.0f}".format(toplam_deger) }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hızlı İşlemler -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <a href="{{ url_for('depo.hareket_giris') }}" class="flex flex-col items-center gap-2 p-6 rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark hover:border-primary/50 hover:shadow-md transition group">
+            <div class="w-14 h-14 rounded-2xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center group-hover:scale-110 transition">
+                <span class="material-symbols-outlined text-2xl text-green-600 dark:text-green-400">add_box</span>
+            </div>
+            <span class="font-medium text-[#111418] dark:text-white">Mal Girişi</span>
+        </a>
+        <a href="{{ url_for('depo.hareket_cikis') }}" class="flex flex-col items-center gap-2 p-6 rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark hover:border-primary/50 hover:shadow-md transition group">
+            <div class="w-14 h-14 rounded-2xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center group-hover:scale-110 transition">
+                <span class="material-symbols-outlined text-2xl text-red-600 dark:text-red-400">outbox</span>
+            </div>
+            <span class="font-medium text-[#111418] dark:text-white">Mal Çıkışı</span>
+        </a>
+        <a href="{{ url_for('depo.urun_liste') }}" class="flex flex-col items-center gap-2 p-6 rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark hover:border-primary/50 hover:shadow-md transition group">
+            <div class="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:scale-110 transition">
+                <span class="material-symbols-outlined text-2xl text-blue-600 dark:text-blue-400">inventory</span>
+            </div>
+            <span class="font-medium text-[#111418] dark:text-white">Ürünler</span>
+        </a>
+        <a href="{{ url_for('depo.hareket_liste') }}" class="flex flex-col items-center gap-2 p-6 rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark hover:border-primary/50 hover:shadow-md transition group">
+            <div class="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center group-hover:scale-110 transition">
+                <span class="material-symbols-outlined text-2xl text-purple-600 dark:text-purple-400">swap_horiz</span>
+            </div>
+            <span class="font-medium text-[#111418] dark:text-white">Hareketler</span>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Kritik Stok Uyarıları -->
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+                <h3 class="font-bold text-[#111418] dark:text-white">Kritik Stok Uyarıları</h3>
+                <span class="material-symbols-outlined text-amber-500">warning</span>
+            </div>
+            {% if kritik_stok %}
+            <div class="divide-y divide-border-light dark:divide-border-dark max-h-80 overflow-y-auto">
+                {% for urun in kritik_stok %}
+                <div class="px-6 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#1a1f2b]">
+                    <div>
+                        <p class="font-medium text-[#111418] dark:text-white">{{ urun.ad }}</p>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark">{{ urun.kod }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-red-600">{{ urun.toplam_stok }} {{ urun.birim }}</p>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark">Min: {{ urun.min_stok }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-8 text-center text-text-muted dark:text-text-muted-dark">
+                <span class="material-symbols-outlined text-4xl text-green-500 mb-2">check_circle</span>
+                <p>Kritik stok uyarısı yok</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Son Hareketler -->
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+                <h3 class="font-bold text-[#111418] dark:text-white">Son Hareketler</h3>
+                <a href="{{ url_for('depo.hareket_liste') }}" class="text-sm text-primary hover:underline">Tümü</a>
+            </div>
+            {% if son_hareketler %}
+            <div class="divide-y divide-border-light dark:divide-border-dark max-h-80 overflow-y-auto">
+                {% for hareket in son_hareketler %}
+                <a href="{{ url_for('depo.hareket_detay', id=hareket.id) }}" class="px-6 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-[#1a1f2b] block">
+                    <div class="flex items-center gap-3">
+                        {% if hareket.tip == 'giris' %}
+                        <span class="material-symbols-outlined text-green-600">add_box</span>
+                        {% elif hareket.tip == 'cikis' %}
+                        <span class="material-symbols-outlined text-red-600">outbox</span>
+                        {% elif hareket.tip == 'zimmet' %}
+                        <span class="material-symbols-outlined text-purple-600">person</span>
+                        {% else %}
+                        <span class="material-symbols-outlined text-blue-600">swap_horiz</span>
+                        {% endif %}
+                        <div>
+                            <p class="font-medium text-[#111418] dark:text-white">{{ hareket.hareket_no }}</p>
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark">{{ hareket.depo.ad }}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-[#111418] dark:text-white">{{ hareket.tarih.strftime('%d.%m.%Y') }}</p>
+                        {% set durum_colors = {'taslak': 'text-amber-600', 'onaylandi': 'text-green-600', 'iptal': 'text-gray-500'} %}
+                        <p class="text-xs {{ durum_colors.get(hareket.durum, '') }}">{{ hareket.durum_text }}</p>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="p-8 text-center text-text-muted dark:text-text-muted-dark">
+                Henüz hareket yok
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Depolar -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+            <h3 class="font-bold text-[#111418] dark:text-white">Depolar</h3>
+            <a href="{{ url_for('depo.depo_ekle') }}" class="text-sm text-primary hover:underline">+ Yeni Depo</a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 p-6">
+            {% for depo in depolar %}
+            <a href="{{ url_for('depo.depo_stok', id=depo.id) }}" class="p-4 rounded-xl border border-border-light dark:border-border-dark hover:border-primary/50 hover:shadow-md transition">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="material-symbols-outlined text-primary">warehouse</span>
+                    <span class="font-bold text-[#111418] dark:text-white">{{ depo.ad }}</span>
+                </div>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ depo.kod }}</p>
+            </a>
+            {% else %}
+            <p class="text-text-muted dark:text-text-muted-dark col-span-3 text-center py-4">Henüz depo tanımlanmamış</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

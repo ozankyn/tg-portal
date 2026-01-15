@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ hareket.hareket_no }}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 12px; padding: 20px; }
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .header h1 { font-size: 18px; margin-bottom: 5px; }
+        .header h2 { font-size: 14px; color: #666; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .info-box { border: 1px solid #ddd; padding: 10px; }
+        .info-box h4 { font-size: 11px; color: #666; margin-bottom: 5px; text-transform: uppercase; }
+        .info-box p { font-size: 13px; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: left; }
+        th { background: #f5f5f5; font-size: 11px; text-transform: uppercase; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .footer { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .signature-box { border: 1px solid #ddd; padding: 15px; min-height: 100px; }
+        .signature-box h4 { font-size: 11px; color: #666; margin-bottom: 40px; }
+        .signature-box .line { border-top: 1px solid #333; margin-top: 30px; padding-top: 5px; text-align: center; font-size: 10px; }
+        .signature-img { max-width: 150px; max-height: 60px; }
+        @media print { body { padding: 0; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Team Guerilla</h1>
+        <h2>
+            {% if hareket.tip == 'giris' %}MAL GİRİŞ FİŞİ
+            {% elif hareket.tip == 'zimmet' %}ZİMMET FORMU
+            {% else %}MAL ÇIKIŞ FİŞİ{% endif %}
+        </h2>
+    </div>
+    
+    <div class="info-grid">
+        <div class="info-box">
+            <h4>Fiş No</h4>
+            <p>{{ hareket.hareket_no }}</p>
+        </div>
+        <div class="info-box">
+            <h4>Tarih</h4>
+            <p>{{ hareket.tarih.strftime('%d.%m.%Y %H:%M') }}</p>
+        </div>
+        <div class="info-box">
+            <h4>Depo</h4>
+            <p>{{ hareket.depo.ad }}</p>
+        </div>
+        <div class="info-box">
+            <h4>{% if hareket.tip == 'giris' %}Tedarikçi/Kaynak{% else %}Teslim Alan{% endif %}</h4>
+            <p>
+                {% if hareket.tedarikci %}{{ hareket.tedarikci.ad }}
+                {% elif hareket.calisan %}{{ hareket.calisan.full_name }}
+                {% elif hareket.sirket_adi %}{{ hareket.sirket_adi }}
+                {% else %}-{% endif %}
+            </p>
+        </div>
+        {% if hareket.proje %}
+        <div class="info-box">
+            <h4>Proje</h4>
+            <p>{{ hareket.proje.ad }}</p>
+        </div>
+        {% endif %}
+        {% if hareket.belge_no %}
+        <div class="info-box">
+            <h4>Belge No</h4>
+            <p>{{ hareket.belge_no }}</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 60px;">#</th>
+                <th>Ürün Kodu</th>
+                <th>Ürün Adı</th>
+                <th class="text-center" style="width: 80px;">Miktar</th>
+                <th class="text-center" style="width: 60px;">Birim</th>
+                {% if hareket.tip == 'giris' %}
+                <th class="text-right" style="width: 100px;">Birim Fiyat</th>
+                <th class="text-right" style="width: 100px;">Toplam</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for kalem in kalemler %}
+            <tr>
+                <td class="text-center">{{ loop.index }}</td>
+                <td>{{ kalem.urun.kod }}</td>
+                <td>{{ kalem.urun.ad }}</td>
+                <td class="text-center">{{ kalem.miktar }}</td>
+                <td class="text-center">{{ kalem.urun.birim }}</td>
+                {% if hareket.tip == 'giris' %}
+                <td class="text-right">{% if kalem.birim_fiyat %}₺{{ "{:,.2f}".format(kalem.birim_fiyat) }}{% endif %}</td>
+                <td class="text-right">{% if kalem.birim_fiyat %}₺{{ "{:,.2f}".format(kalem.toplam) }}{% endif %}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if hareket.tip == 'giris' and hareket.toplam_tutar > 0 %}
+        <tfoot>
+            <tr>
+                <td colspan="5"></td>
+                <td class="text-right"><strong>Toplam:</strong></td>
+                <td class="text-right"><strong>₺{{ "{:,.2f}".format(hareket.toplam_tutar) }}</strong></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+    
+    {% if hareket.aciklama %}
+    <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #ddd;">
+        <strong>Açıklama:</strong> {{ hareket.aciklama }}
+    </div>
+    {% endif %}
+    
+    <div class="footer">
+        <div class="signature-box">
+            <h4>TESLİM EDEN</h4>
+            <div class="line">Ad Soyad / İmza / Tarih</div>
+        </div>
+        <div class="signature-box">
+            <h4>TESLİM ALAN</h4>
+            {% if hareket.imza_data %}
+            <img src="{{ hareket.imza_data }}" class="signature-img">
+            <div class="line">{{ hareket.imzalayan_ad }} / {{ hareket.imza_tarihi.strftime('%d.%m.%Y') if hareket.imza_tarihi else '' }}</div>
+            {% else %}
+            <div class="line">Ad Soyad / İmza / Tarih</div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <script>window.onload = function() { window.print(); }</script>
+</body>
+</html>

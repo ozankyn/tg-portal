@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'İcra Dosyası Düzenle' if dosya else 'Yeni İcra Dosyası' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'İcra Dosyası Düzenle' if dosya else 'Yeni İcra Dosyası' }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="font-bold text-lg text-[#111418] dark:text-white">İcra Dosyası Bilgileri</h3>
+        </div>
+        
+        <form method="POST" class="p-6 space-y-5">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Çalışan *</label>
+                <select name="calisan_id" required {% if dosya %}disabled{% endif %}
+                        class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                    <option value="">Seçin</option>
+                    {% for c in calisanlar %}
+                    <option value="{{ c.id }}" {% if dosya and dosya.calisan_id == c.id %}selected{% endif %}>{{ c.full_name }}</option>
+                    {% endfor %}
+                </select>
+                {% if dosya %}<input type="hidden" name="calisan_id" value="{{ dosya.calisan_id }}">{% endif %}
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Dosya No *</label>
+                    <input type="text" name="dosya_no" value="{{ dosya.dosya_no if dosya else '' }}" required
+                           placeholder="2024/12345"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Başlangıç Tarihi</label>
+                    <input type="date" name="baslangic_tarihi" value="{{ dosya.baslangic_tarihi.strftime('%Y-%m-%d') if dosya and dosya.baslangic_tarihi else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">İcra Dairesi *</label>
+                <input type="text" name="icra_dairesi" value="{{ dosya.icra_dairesi if dosya else '' }}" required
+                       placeholder="İstanbul 5. İcra Dairesi"
+                       class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Alacaklı</label>
+                <input type="text" name="alacakli" value="{{ dosya.alacakli if dosya else '' }}"
+                       placeholder="Alacaklı kişi veya kurum"
+                       class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Toplam Borç (₺) *</label>
+                    <input type="number" name="toplam_borc" step="0.01" value="{{ dosya.toplam_borc if dosya else '' }}" required
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Taksit Sayısı</label>
+                    <input type="number" name="taksit_sayisi" value="{{ dosya.taksit_sayisi if dosya and dosya.taksit_sayisi else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Taksit Tutarı (₺)</label>
+                    <input type="number" name="taksit_tutari" step="0.01" value="{{ dosya.taksit_tutari if dosya and dosya.taksit_tutari else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Kesinti Oranı (%)</label>
+                <input type="number" name="kesinti_orani" step="0.01" max="100" value="{{ dosya.kesinti_orani if dosya and dosya.kesinti_orani else '' }}"
+                       placeholder="Örn: 25 (maaşın %25'i)"
+                       class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+            </div>
+            
+            {% if dosya %}
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Durum</label>
+                <select name="durum" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                    <option value="aktif" {% if dosya.durum == 'aktif' %}selected{% endif %}>Aktif</option>
+                    <option value="beklemede" {% if dosya.durum == 'beklemede' %}selected{% endif %}>Beklemede</option>
+                    <option value="tamamlandi" {% if dosya.durum == 'tamamlandi' %}selected{% endif %}>Tamamlandı</option>
+                    <option value="iptal" {% if dosya.durum == 'iptal' %}selected{% endif %}>İptal</option>
+                </select>
+            </div>
+            {% endif %}
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Notlar</label>
+                <textarea name="notlar" rows="3" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">{{ dosya.notlar if dosya else '' }}</textarea>
+            </div>
+            
+            <div class="flex items-center gap-3 pt-4">
+                <button type="submit" class="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+                    {{ 'Güncelle' if dosya else 'Kaydet' }}
+                </button>
+                <a href="{{ url_for('ik.icra_liste') }}" class="px-4 py-2.5 border border-border-light dark:border-border-dark rounded-xl text-text-muted hover:bg-gray-50 dark:hover:bg-[#1a1f2b] transition">
+                    İptal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

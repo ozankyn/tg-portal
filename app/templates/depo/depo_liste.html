@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Depolar - TG Portal{% endblock %}
+{% block page_title %}Depolar{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <p class="text-text-muted dark:text-text-muted-dark">Depo tanımlarını yönetin.</p>
+        <a href="{{ url_for('depo.depo_ekle') }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+            <span class="material-symbols-outlined text-lg">add</span>
+            Yeni Depo
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for depo in depolar %}
+        <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark p-6 hover:shadow-md transition">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <span class="material-symbols-outlined text-primary">warehouse</span>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-[#111418] dark:text-white">{{ depo.ad }}</h3>
+                        <p class="text-sm text-text-muted dark:text-text-muted-dark font-mono">{{ depo.kod }}</p>
+                    </div>
+                </div>
+                {% if depo.aktif %}
+                <span class="px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Aktif</span>
+                {% else %}
+                <span class="px-2 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">Pasif</span>
+                {% endif %}
+            </div>
+            
+            {% if depo.adres %}
+            <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">{{ depo.adres|truncate(60) }}</p>
+            {% endif %}
+            
+            {% if depo.sorumlu %}
+            <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">
+                <span class="material-symbols-outlined text-sm align-middle">person</span>
+                {{ depo.sorumlu.full_name }}
+            </p>
+            {% endif %}
+            
+            <div class="flex items-center gap-2 pt-4 border-t border-border-light dark:border-border-dark">
+                <a href="{{ url_for('depo.depo_stok', id=depo.id) }}" class="flex-1 text-center px-3 py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition">
+                    Stok Durumu
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-span-3 p-12 text-center rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark">
+            <span class="material-symbols-outlined text-5xl text-text-muted dark:text-text-muted-dark mb-4">warehouse</span>
+            <p class="text-text-muted dark:text-text-muted-dark">Henüz depo tanımlanmamış.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

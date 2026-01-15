@@ -112,7 +112,7 @@
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden shrink-0">
                                 {% if calisan.foto %}
-                                <img src="{{ url_for('static', filename='uploads/' + calisan.foto) }}" alt="{{ calisan.ad }}" class="w-full h-full object-cover"/>
+                                <img src="{{ url_for('uploaded_file', filename=calisan.foto) }}" alt="{{ calisan.ad }}" class="w-full h-full object-cover"/>
                                 {% else %}
                                 <span class="text-sm font-bold text-gray-500 dark:text-gray-400">{{ calisan.ad[0] if calisan.ad else '' }}{{ calisan.soyad[0] if calisan.soyad else '' }}</span>
                                 {% endif %}

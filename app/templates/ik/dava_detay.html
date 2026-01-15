@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Dava #{{ dava.id }} - TG Portal{% endblock %}
+{% block page_title %}Dava Detayı{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    
+    <!-- Ana Bilgiler -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+            <div>
+                <h3 class="font-bold text-lg text-[#111418] dark:text-white">{{ dava.dosya_no or 'Dosya No Girilmemiş' }}</h3>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ dava.mahkeme }}</p>
+            </div>
+            {% set durum_colors = {'devam_ediyor': 'bg-amber-100 text-amber-700', 'karara_baglandi': 'bg-blue-100 text-blue-700', 'temyiz': 'bg-purple-100 text-purple-700', 'kapandi': 'bg-green-100 text-green-700'} %}
+            <span class="px-3 py-1 rounded-full text-sm font-bold {{ durum_colors.get(dava.durum, 'bg-gray-100 text-gray-700') }}">
+                {{ dava.durum_text }}
+            </span>
+        </div>
+        
+        <div class="p-6 space-y-6">
+            <!-- Taraflar -->
+            <div class="grid grid-cols-2 gap-6">
+                <div class="p-4 rounded-xl bg-red-50 dark:bg-red-900/20">
+                    <p class="text-xs text-red-600 dark:text-red-400 font-medium mb-1">DAVACI</p>
+                    <p class="font-bold text-[#111418] dark:text-white">{{ dava.davaci }}</p>
+                </div>
+                <div class="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20">
+                    <p class="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">DAVALI</p>
+                    <p class="font-bold text-[#111418] dark:text-white">{{ dava.davali }}</p>
+                </div>
+            </div>
+            
+            <!-- Detaylar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">Dava Türü</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{{ dava.dava_turu_text }}</p>
+                </div>
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">Esas No</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{{ dava.esas_no or '-' }}</p>
+                </div>
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">Açılış Tarihi</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{{ dava.acilis_tarihi.strftime('%d.%m.%Y') }}</p>
+                </div>
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">İlişkili Çalışan</span>
+                    <p class="font-medium mt-1">
+                        {% if dava.calisan %}
+                        <a href="{{ url_for('ik.detay', id=dava.calisan.id) }}" class="text-primary hover:underline">{{ dava.calisan.full_name }}</a>
+                        {% else %}
+                        <span class="text-text-muted dark:text-text-muted-dark">-</span>
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Duruşma Tarihleri -->
+            <div class="grid grid-cols-3 gap-4 text-sm">
+                <div class="p-4 rounded-xl border border-border-light dark:border-border-dark">
+                    <span class="text-text-muted dark:text-text-muted-dark">Son Duruşma</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{{ dava.son_durusma.strftime('%d.%m.%Y') if dava.son_durusma else '-' }}</p>
+                </div>
+                <div class="p-4 rounded-xl border-2 border-amber-400 bg-amber-50 dark:bg-amber-900/20">
+                    <span class="text-amber-600 dark:text-amber-400">Sonraki Duruşma</span>
+                    <p class="font-bold text-amber-700 dark:text-amber-300 mt-1">{{ dava.sonraki_durusma.strftime('%d.%m.%Y') if dava.sonraki_durusma else '-' }}</p>
+                </div>
+                <div class="p-4 rounded-xl border border-border-light dark:border-border-dark">
+                    <span class="text-text-muted dark:text-text-muted-dark">Karar Tarihi</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{{ dava.karar_tarihi.strftime('%d.%m.%Y') if dava.karar_tarihi else '-' }}</p>
+                </div>
+            </div>
+            
+            <!-- Tutarlar -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="p-4 rounded-xl bg-gray-50 dark:bg-[#1a1f2b]">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Talep Tutarı</span>
+                    <p class="text-xl font-bold text-[#111418] dark:text-white mt-1">
+                        {% if dava.talep_tutari %}₺{{ "{:,.2f}".format(dava.talep_tutari) }}{% else %}-{% endif %}
+                    </p>
+                </div>
+                <div class="p-4 rounded-xl bg-gray-50 dark:bg-[#1a1f2b]">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Karar Tutarı</span>
+                    <p class="text-xl font-bold {% if dava.karar_tutari %}text-green-600 dark:text-green-400{% else %}text-[#111418] dark:text-white{% endif %} mt-1">
+                        {% if dava.karar_tutari %}₺{{ "{:,.2f}".format(dava.karar_tutari) }}{% else %}-{% endif %}
+                    </p>
+                </div>
+            </div>
+            
+            {% if dava.sonuc %}
+            <div class="p-4 rounded-xl bg-green-50 dark:bg-green-900/20">
+                <span class="text-sm text-green-600 dark:text-green-400">Sonuç</span>
+                <p class="font-bold text-green-700 dark:text-green-300 mt-1">
+                    {% set sonuc_text = {'kabul': 'Kabul', 'ret': 'Ret', 'kismi_kabul': 'Kısmi Kabul', 'sulh': 'Sulh', 'feragat': 'Feragat'} %}
+                    {{ sonuc_text.get(dava.sonuc, dava.sonuc) }}
+                </p>
+            </div>
+            {% endif %}
+            
+            {% if dava.konu_ozeti %}
+            <div>
+                <span class="text-sm text-text-muted dark:text-text-muted-dark">Konu Özeti</span>
+                <p class="text-[#111418] dark:text-white mt-1">{{ dava.konu_ozeti }}</p>
+            </div>
+            {% endif %}
+            
+            {% if dava.notlar %}
+            <div>
+                <span class="text-sm text-text-muted dark:text-text-muted-dark">Notlar</span>
+                <p class="text-[#111418] dark:text-white mt-1">{{ dava.notlar }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Avukat Bilgileri -->
+    {% if dava.avukat %}
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-6">
+        <h4 class="font-bold text-[#111418] dark:text-white mb-4">Avukat Bilgileri</h4>
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                <span class="material-symbols-outlined text-primary">person</span>
+            </div>
+            <div>
+                <p class="font-medium text-[#111418] dark:text-white">{{ dava.avukat }}</p>
+                {% if dava.avukat_telefon %}
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ dava.avukat_telefon }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Aksiyonlar -->
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('ik.dava_liste') }}" class="flex-1 text-center px-4 py-2.5 border border-border-light dark:border-border-dark rounded-xl text-text-muted hover:bg-gray-50 dark:hover:bg-[#1a1f2b] transition">
+            Listeye Dön
+        </a>
+        <a href="{{ url_for('ik.dava_duzenle', id=dava.id) }}" class="px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+            Düzenle
+        </a>
+        <form method="POST" action="{{ url_for('ik.dava_sil', id=dava.id) }}" onsubmit="return confirm('Bu davayı silmek istediğinize emin misiniz?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="px-4 py-2.5 border border-red-500 text-red-600 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                Sil
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

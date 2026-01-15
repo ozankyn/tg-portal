@@ -95,6 +95,7 @@ def create_app(config_name=None):
     from app.modules.rapor.routes import rapor_bp
     from app.modules.ayarlar.routes import ayarlar_bp
     from app.modules.sirket.routes import sirket_bp
+    from app.modules.depo.routes import depo_bp
     
     app.register_blueprint(core_bp)
     app.register_blueprint(ik_bp, url_prefix='/ik')
@@ -113,6 +114,7 @@ def create_app(config_name=None):
     app.register_blueprint(rapor_bp, url_prefix="/rapor")
     app.register_blueprint(ayarlar_bp, url_prefix="/ayarlar")
     app.register_blueprint(sirket_bp, url_prefix="/sirket")
+    app.register_blueprint(depo_bp, url_prefix="/depo")
 
     from app.modules.onay.routes import onay_bp
     app.register_blueprint(onay_bp, url_prefix="/onay")
@@ -146,4 +148,10 @@ def create_app(config_name=None):
     from app.scripts import import_araclar
     import_araclar.init_app(app)
 
+    # Uploads klasörü için route
+    @app.route('/uploads/<path:filename>')
+    def uploaded_file(filename):
+        from flask import send_from_directory
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    
     return app

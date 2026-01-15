@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Ürün Düzenle' if urun else 'Yeni Ürün' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'Ürün Düzenle' if urun else 'Yeni Ürün' }}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="font-bold text-lg text-[#111418] dark:text-white">Ürün Bilgileri</h3>
+        </div>
+        
+        <form method="POST" class="p-6 space-y-5">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Ürün Kodu *</label>
+                    <input type="text" name="kod" value="{{ urun.kod if urun else '' }}" required
+                           placeholder="URN-001"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Barkod</label>
+                    <input type="text" name="barkod" value="{{ urun.barkod if urun else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Ürün Adı *</label>
+                <input type="text" name="ad" value="{{ urun.ad if urun else '' }}" required
+                       class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Kategori</label>
+                    <select name="kategori_id" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                        <option value="">Seçin</option>
+                        {% for kat in kategoriler %}
+                        <option value="{{ kat.id }}" {% if urun and urun.kategori_id == kat.id %}selected{% endif %}>{{ kat.ad }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Birim</label>
+                    <select name="birim" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                        <option value="Adet" {% if urun and urun.birim == 'Adet' %}selected{% endif %}>Adet</option>
+                        <option value="Kg" {% if urun and urun.birim == 'Kg' %}selected{% endif %}>Kg</option>
+                        <option value="Lt" {% if urun and urun.birim == 'Lt' %}selected{% endif %}>Lt</option>
+                        <option value="Mt" {% if urun and urun.birim == 'Mt' %}selected{% endif %}>Metre</option>
+                        <option value="Kutu" {% if urun and urun.birim == 'Kutu' %}selected{% endif %}>Kutu</option>
+                        <option value="Paket" {% if urun and urun.birim == 'Paket' %}selected{% endif %}>Paket</option>
+                        <option value="Koli" {% if urun and urun.birim == 'Koli' %}selected{% endif %}>Koli</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Alış Fiyatı (₺)</label>
+                    <input type="number" name="alis_fiyati" step="0.01" value="{{ urun.alis_fiyati if urun and urun.alis_fiyati else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Satış Fiyatı (₺)</label>
+                    <input type="number" name="satis_fiyati" step="0.01" value="{{ urun.satis_fiyati if urun and urun.satis_fiyati else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Minimum Stok</label>
+                    <input type="number" name="min_stok" value="{{ urun.min_stok if urun else '0' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                    <p class="mt-1 text-xs text-text-muted dark:text-text-muted-dark">Bu seviyenin altına düşünce uyarı verilir</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Maksimum Stok</label>
+                    <input type="number" name="max_stok" value="{{ urun.max_stok if urun and urun.max_stok else '' }}"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Açıklama</label>
+                <textarea name="aciklama" rows="3" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">{{ urun.aciklama if urun else '' }}</textarea>
+            </div>
+            
+            {% if urun %}
+            <div class="flex items-center gap-2">
+                <input type="checkbox" name="aktif" id="aktif" {% if urun.aktif %}checked{% endif %}
+                       class="rounded border-border-light dark:border-border-dark">
+                <label for="aktif" class="text-sm text-[#111418] dark:text-white">Aktif</label>
+            </div>
+            {% endif %}
+            
+            <div class="flex items-center gap-3 pt-4">
+                <button type="submit" class="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+                    {{ 'Güncelle' if urun else 'Kaydet' }}
+                </button>
+                <a href="{{ url_for('depo.urun_liste') }}" class="px-4 py-2.5 border border-border-light dark:border-border-dark rounded-xl text-text-muted hover:bg-gray-50 dark:hover:bg-[#1a1f2b] transition">
+                    İptal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -184,6 +184,24 @@ def ekle():
         db.session.add(calisan)
         db.session.commit()
         
+        # Fotoğraf yükleme
+        if 'foto' in request.files:
+            foto = request.files['foto']
+            if foto and foto.filename:
+                from werkzeug.utils import secure_filename
+                import uuid
+                
+                ext = foto.filename.rsplit('.', 1)[-1].lower() if '.' in foto.filename else 'jpg'
+                filename = f"calisan_{calisan.id}_{uuid.uuid4().hex[:8]}.{ext}"
+                
+                upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'photos')
+                os.makedirs(upload_folder, exist_ok=True)
+                
+                filepath = os.path.join(upload_folder, filename)
+                foto.save(filepath)
+                calisan.foto = f"photos/{filename}"
+                db.session.commit()
+        
         flash(f'{calisan.full_name} çalışanı oluşturuldu.', 'success')
         return redirect(url_for('ik.detay', id=calisan.id))
     
@@ -243,6 +261,32 @@ def duzenle(id):
         calisan.durum = CalisanDurumu(request.form.get('durum')) if request.form.get('durum') else CalisanDurumu.AKTIF
         calisan.notlar = request.form.get('notlar', '').strip() or None
         calisan.updated_by = current_user.id
+        
+        # Fotoğraf yükleme
+        if 'foto' in request.files:
+            foto = request.files['foto']
+            if foto and foto.filename:
+                from werkzeug.utils import secure_filename
+                import uuid
+                
+                # Dosya adı oluştur
+                ext = foto.filename.rsplit('.', 1)[-1].lower() if '.' in foto.filename else 'jpg'
+                filename = f"calisan_{calisan.id}_{uuid.uuid4().hex[:8]}.{ext}"
+                
+                # Klasör oluştur
+                upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'photos')
+                os.makedirs(upload_folder, exist_ok=True)
+                
+                # Eski fotoğrafı sil
+                if calisan.foto:
+                    old_path = os.path.join(current_app.config['UPLOAD_FOLDER'], calisan.foto)
+                    if os.path.exists(old_path):
+                        os.remove(old_path)
+                
+                # Yeni fotoğrafı kaydet
+                filepath = os.path.join(upload_folder, filename)
+                foto.save(filepath)
+                calisan.foto = f"photos/{filename}"
         
         db.session.commit()
         
@@ -1367,3 +1411,436 @@ def aday_evraklar(id):
                           evrak_tipleri=evrak_tipleri,
                           eksik_evraklar=eksik_evraklar,
                           evrak_tamamlanma=evrak_tamamlanma)
+
+
+
+# ============================================================
+# ORGANİZASYON ŞEMASI
+# ============================================================
+
+@ik_bp.route('/organizasyon')
+@login_required
+@permission_required('ik.view')
+def organizasyon():
+    """Organizasyon şeması"""
+    from sqlalchemy import func
+    
+    # Tüm çalışanları seviyeye göre grupla
+    calisanlar = Calisan.query.filter_by(is_deleted=False).all()
+    
+    # Seviyeye göre grupla (pozisyon seviyesi)
+    seviye_gruplari = {}
+    for calisan in calisanlar:
+        seviye = calisan.pozisyon.seviye if calisan.pozisyon and calisan.pozisyon.seviye else 10
+        if seviye not in seviye_gruplari:
+            seviye_gruplari[seviye] = []
+        seviye_gruplari[seviye].append(calisan)
+    
+    # Sıralı seviyeler
+    seviyeler = sorted(seviye_gruplari.keys())
+    
+    # Hiyerarşi ağacı oluştur (yönetici-ast ilişkisi)
+    def build_tree(calisan_id=None):
+        children = []
+        for c in calisanlar:
+            if c.yonetici_id == calisan_id:
+                children.append({
+                    'calisan': c,
+                    'children': build_tree(c.id)
+                })
+        return children
+    
+    # Kök düğümler (yöneticisi olmayan en üst seviyedekiler)
+    tree = build_tree(None)
+    
+    # Departman bazlı gruplama
+    departman_gruplari = {}
+    for calisan in calisanlar:
+        dept = calisan.departman.ad if calisan.departman else 'Diğer'
+        if dept not in departman_gruplari:
+            departman_gruplari[dept] = []
+        departman_gruplari[dept].append(calisan)
+    
+    return render_template('ik/organizasyon.html',
+                          calisanlar=calisanlar,
+                          seviye_gruplari=seviye_gruplari,
+                          seviyeler=seviyeler,
+                          tree=tree,
+                          departman_gruplari=departman_gruplari)
+
+
+
+# ============================================================
+# DİSİPLİN YÖNETİMİ
+# ============================================================
+
+@ik_bp.route('/disiplin')
+@login_required
+@permission_required('ik.view')
+def disiplin_liste():
+    """Disiplin kayıtları listesi"""
+    from app.models.ik import DisiplinKaydi
+    
+    kayitlar = DisiplinKaydi.query.filter_by(is_deleted=False).order_by(DisiplinKaydi.tarih.desc()).all()
+    return render_template('ik/disiplin_liste.html', kayitlar=kayitlar)
+
+
+@ik_bp.route('/disiplin/ekle', methods=['GET', 'POST'])
+@login_required
+@permission_required('ik.edit')
+def disiplin_ekle():
+    """Yeni disiplin kaydı"""
+    from app.models.ik import DisiplinKaydi
+    
+    if request.method == 'POST':
+        kayit = DisiplinKaydi(
+            calisan_id=int(request.form.get('calisan_id')),
+            tarih=datetime.strptime(request.form.get('tarih'), '%Y-%m-%d').date(),
+            tur=request.form.get('tur'),
+            seviye=int(request.form.get('seviye', 1)),
+            konu=request.form.get('konu'),
+            aciklama=request.form.get('aciklama'),
+            durum='onaylandi',
+            olusturan_id=current_user.id
+        )
+        
+        # Belge yükleme
+        if 'belge' in request.files:
+            belge = request.files['belge']
+            if belge and belge.filename:
+                import uuid
+                ext = belge.filename.rsplit('.', 1)[-1].lower()
+                filename = f"disiplin_{uuid.uuid4().hex[:8]}.{ext}"
+                upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'disiplin')
+                os.makedirs(upload_folder, exist_ok=True)
+                belge.save(os.path.join(upload_folder, filename))
+                kayit.belge_path = f"disiplin/{filename}"
+        
+        db.session.add(kayit)
+        db.session.commit()
+        
+        flash('Disiplin kaydı oluşturuldu.', 'success')
+        return redirect(url_for('ik.disiplin_liste'))
+    
+    calisanlar = Calisan.query.filter_by(is_deleted=False).order_by(Calisan.ad).all()
+    return render_template('ik/disiplin_form.html', kayit=None, calisanlar=calisanlar)
+
+
+@ik_bp.route('/disiplin/<int:id>')
+@login_required
+@permission_required('ik.view')
+def disiplin_detay(id):
+    """Disiplin kaydı detay"""
+    from app.models.ik import DisiplinKaydi
+    
+    kayit = DisiplinKaydi.query.get_or_404(id)
+    return render_template('ik/disiplin_detay.html', kayit=kayit)
+
+
+@ik_bp.route('/disiplin/<int:id>/sil', methods=['POST'])
+@login_required
+@permission_required('ik.delete')
+def disiplin_sil(id):
+    """Disiplin kaydı sil"""
+    from app.models.ik import DisiplinKaydi
+    
+    kayit = DisiplinKaydi.query.get_or_404(id)
+    kayit.is_deleted = True
+    db.session.commit()
+    
+    flash('Disiplin kaydı silindi.', 'success')
+    return redirect(url_for('ik.disiplin_liste'))
+
+
+# ============================================================
+# DAVA YÖNETİMİ
+# ============================================================
+
+@ik_bp.route('/davalar')
+@login_required
+@permission_required('ik.view')
+def dava_liste():
+    """Dava listesi"""
+    from app.models.ik import Dava
+    
+    davalar = Dava.query.filter_by(is_deleted=False).order_by(Dava.acilis_tarihi.desc()).all()
+    
+    # İstatistikler
+    devam_eden = Dava.query.filter_by(is_deleted=False, durum='devam_ediyor').count()
+    kapanan = Dava.query.filter_by(is_deleted=False, durum='kapandi').count()
+    
+    return render_template('ik/dava_liste.html', davalar=davalar, devam_eden=devam_eden, kapanan=kapanan)
+
+
+@ik_bp.route('/dava/ekle', methods=['GET', 'POST'])
+@login_required
+@permission_required('ik.edit')
+def dava_ekle():
+    """Yeni dava kaydı"""
+    from app.models.ik import Dava
+    
+    if request.method == 'POST':
+        dava = Dava(
+            dosya_no=request.form.get('dosya_no'),
+            esas_no=request.form.get('esas_no'),
+            mahkeme=request.form.get('mahkeme'),
+            dava_turu=request.form.get('dava_turu'),
+            davaci=request.form.get('davaci'),
+            davali=request.form.get('davali'),
+            calisan_id=int(request.form.get('calisan_id')) if request.form.get('calisan_id') else None,
+            acilis_tarihi=datetime.strptime(request.form.get('acilis_tarihi'), '%Y-%m-%d').date(),
+            sonraki_durusma=datetime.strptime(request.form.get('sonraki_durusma'), '%Y-%m-%d').date() if request.form.get('sonraki_durusma') else None,
+            talep_tutari=float(request.form.get('talep_tutari')) if request.form.get('talep_tutari') else None,
+            konu_ozeti=request.form.get('konu_ozeti'),
+            avukat=request.form.get('avukat'),
+            avukat_telefon=request.form.get('avukat_telefon'),
+            durum='devam_ediyor',
+            sorumlu_id=current_user.id
+        )
+        
+        db.session.add(dava)
+        db.session.commit()
+        
+        flash('Dava kaydı oluşturuldu.', 'success')
+        return redirect(url_for('ik.dava_liste'))
+    
+    calisanlar = Calisan.query.filter_by(is_deleted=False).order_by(Calisan.ad).all()
+    return render_template('ik/dava_form.html', dava=None, calisanlar=calisanlar)
+
+
+@ik_bp.route('/dava/<int:id>')
+@login_required
+@permission_required('ik.view')
+def dava_detay(id):
+    """Dava detay"""
+    from app.models.ik import Dava
+    
+    dava = Dava.query.get_or_404(id)
+    return render_template('ik/dava_detay.html', dava=dava)
+
+
+@ik_bp.route('/dava/<int:id>/duzenle', methods=['GET', 'POST'])
+@login_required
+@permission_required('ik.edit')
+def dava_duzenle(id):
+    """Dava düzenle"""
+    from app.models.ik import Dava
+    
+    dava = Dava.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        dava.dosya_no = request.form.get('dosya_no')
+        dava.esas_no = request.form.get('esas_no')
+        dava.mahkeme = request.form.get('mahkeme')
+        dava.dava_turu = request.form.get('dava_turu')
+        dava.davaci = request.form.get('davaci')
+        dava.davali = request.form.get('davali')
+        dava.calisan_id = int(request.form.get('calisan_id')) if request.form.get('calisan_id') else None
+        dava.acilis_tarihi = datetime.strptime(request.form.get('acilis_tarihi'), '%Y-%m-%d').date()
+        dava.sonraki_durusma = datetime.strptime(request.form.get('sonraki_durusma'), '%Y-%m-%d').date() if request.form.get('sonraki_durusma') else None
+        dava.son_durusma = datetime.strptime(request.form.get('son_durusma'), '%Y-%m-%d').date() if request.form.get('son_durusma') else None
+        dava.karar_tarihi = datetime.strptime(request.form.get('karar_tarihi'), '%Y-%m-%d').date() if request.form.get('karar_tarihi') else None
+        dava.talep_tutari = float(request.form.get('talep_tutari')) if request.form.get('talep_tutari') else None
+        dava.karar_tutari = float(request.form.get('karar_tutari')) if request.form.get('karar_tutari') else None
+        dava.durum = request.form.get('durum')
+        dava.sonuc = request.form.get('sonuc') if request.form.get('sonuc') else None
+        dava.konu_ozeti = request.form.get('konu_ozeti')
+        dava.notlar = request.form.get('notlar')
+        dava.avukat = request.form.get('avukat')
+        dava.avukat_telefon = request.form.get('avukat_telefon')
+        
+        db.session.commit()
+        
+        flash('Dava güncellendi.', 'success')
+        return redirect(url_for('ik.dava_detay', id=id))
+    
+    calisanlar = Calisan.query.filter_by(is_deleted=False).order_by(Calisan.ad).all()
+    return render_template('ik/dava_form.html', dava=dava, calisanlar=calisanlar)
+
+
+@ik_bp.route('/dava/<int:id>/sil', methods=['POST'])
+@login_required
+@permission_required('ik.delete')
+def dava_sil(id):
+    """Dava sil"""
+    from app.models.ik import Dava
+    
+    dava = Dava.query.get_or_404(id)
+    dava.is_deleted = True
+    db.session.commit()
+    
+    flash('Dava kaydı silindi.', 'success')
+    return redirect(url_for('ik.dava_liste'))
+
+
+
+# ============================================================
+# İCRA DOSYASI YÖNETİMİ
+# ============================================================
+
+@ik_bp.route('/icra')
+@login_required
+@permission_required('ik.view')
+def icra_liste():
+    """İcra dosyaları listesi"""
+    from app.models.ik import IcraDosyasi
+    
+    dosyalar = IcraDosyasi.query.filter_by(is_deleted=False).order_by(IcraDosyasi.created_at.desc()).all()
+    
+    # İstatistikler
+    aktif = sum(1 for d in dosyalar if d.durum == 'aktif')
+    toplam_borc = sum(float(d.toplam_borc or 0) for d in dosyalar if d.durum == 'aktif')
+    toplam_kesilen = sum(float(d.toplam_kesilen or 0) for d in dosyalar)
+    
+    return render_template('ik/icra_liste.html', 
+                          dosyalar=dosyalar,
+                          aktif=aktif,
+                          toplam_borc=toplam_borc,
+                          toplam_kesilen=toplam_kesilen)
+
+
+@ik_bp.route('/icra/ekle', methods=['GET', 'POST'])
+@login_required
+@permission_required('ik.edit')
+def icra_ekle():
+    """Yeni icra dosyası"""
+    from app.models.ik import IcraDosyasi
+    
+    if request.method == 'POST':
+        dosya = IcraDosyasi(
+            calisan_id=int(request.form.get('calisan_id')),
+            dosya_no=request.form.get('dosya_no'),
+            icra_dairesi=request.form.get('icra_dairesi'),
+            alacakli=request.form.get('alacakli'),
+            toplam_borc=float(request.form.get('toplam_borc')),
+            kalan_borc=float(request.form.get('toplam_borc')),
+            taksit_sayisi=int(request.form.get('taksit_sayisi')) if request.form.get('taksit_sayisi') else None,
+            taksit_tutari=float(request.form.get('taksit_tutari')) if request.form.get('taksit_tutari') else None,
+            kesinti_orani=float(request.form.get('kesinti_orani')) if request.form.get('kesinti_orani') else None,
+            baslangic_tarihi=datetime.strptime(request.form.get('baslangic_tarihi'), '%Y-%m-%d').date() if request.form.get('baslangic_tarihi') else None,
+            notlar=request.form.get('notlar'),
+            durum='aktif'
+        )
+        
+        db.session.add(dosya)
+        db.session.commit()
+        
+        flash('İcra dosyası oluşturuldu.', 'success')
+        return redirect(url_for('ik.icra_detay', id=dosya.id))
+    
+    calisanlar = Calisan.query.filter_by(is_deleted=False).order_by(Calisan.ad).all()
+    return render_template('ik/icra_form.html', dosya=None, calisanlar=calisanlar)
+
+
+@ik_bp.route('/icra/<int:id>')
+@login_required
+@permission_required('ik.view')
+def icra_detay(id):
+    """İcra dosyası detay"""
+    from app.models.ik import IcraDosyasi
+    
+    dosya = IcraDosyasi.query.get_or_404(id)
+    kesintiler = dosya.kesintiler.filter_by(is_deleted=False).order_by(IcraDosyasi.created_at.desc()).all()
+    
+    return render_template('ik/icra_detay.html', dosya=dosya, kesintiler=kesintiler)
+
+
+@ik_bp.route('/icra/<int:id>/duzenle', methods=['GET', 'POST'])
+@login_required
+@permission_required('ik.edit')
+def icra_duzenle(id):
+    """İcra dosyası düzenle"""
+    from app.models.ik import IcraDosyasi
+    
+    dosya = IcraDosyasi.query.get_or_404(id)
+    
+    if request.method == 'POST':
+        dosya.dosya_no = request.form.get('dosya_no')
+        dosya.icra_dairesi = request.form.get('icra_dairesi')
+        dosya.alacakli = request.form.get('alacakli')
+        dosya.toplam_borc = float(request.form.get('toplam_borc'))
+        dosya.taksit_sayisi = int(request.form.get('taksit_sayisi')) if request.form.get('taksit_sayisi') else None
+        dosya.taksit_tutari = float(request.form.get('taksit_tutari')) if request.form.get('taksit_tutari') else None
+        dosya.kesinti_orani = float(request.form.get('kesinti_orani')) if request.form.get('kesinti_orani') else None
+        dosya.baslangic_tarihi = datetime.strptime(request.form.get('baslangic_tarihi'), '%Y-%m-%d').date() if request.form.get('baslangic_tarihi') else None
+        dosya.durum = request.form.get('durum')
+        dosya.notlar = request.form.get('notlar')
+        
+        # Kalan borcu güncelle
+        dosya.kalan_borc = float(dosya.toplam_borc) - float(dosya.toplam_kesilen)
+        
+        db.session.commit()
+        
+        flash('İcra dosyası güncellendi.', 'success')
+        return redirect(url_for('ik.icra_detay', id=id))
+    
+    calisanlar = Calisan.query.filter_by(is_deleted=False).order_by(Calisan.ad).all()
+    return render_template('ik/icra_form.html', dosya=dosya, calisanlar=calisanlar)
+
+
+@ik_bp.route('/icra/<int:id>/kesinti-ekle', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def icra_kesinti_ekle(id):
+    """İcra kesintisi ekle"""
+    from app.models.ik import IcraDosyasi, IcraKesinti
+    
+    dosya = IcraDosyasi.query.get_or_404(id)
+    
+    kesinti = IcraKesinti(
+        icra_dosyasi_id=id,
+        donem=request.form.get('donem'),
+        tutar=float(request.form.get('tutar')),
+        kesinti_tarihi=datetime.strptime(request.form.get('kesinti_tarihi'), '%Y-%m-%d').date() if request.form.get('kesinti_tarihi') else None,
+        durum=request.form.get('durum', 'kesildi'),
+        notlar=request.form.get('notlar')
+    )
+    
+    db.session.add(kesinti)
+    
+    # Kalan borcu güncelle
+    dosya.kalan_borc = float(dosya.toplam_borc) - float(dosya.toplam_kesilen) - float(kesinti.tutar)
+    if dosya.kalan_borc <= 0:
+        dosya.kalan_borc = 0
+        dosya.durum = 'tamamlandi'
+    
+    db.session.commit()
+    
+    flash('Kesinti kaydedildi.', 'success')
+    return redirect(url_for('ik.icra_detay', id=id))
+
+
+@ik_bp.route('/icra/kesinti/<int:id>/sil', methods=['POST'])
+@login_required
+@permission_required('ik.delete')
+def icra_kesinti_sil(id):
+    """İcra kesintisi sil"""
+    from app.models.ik import IcraKesinti
+    
+    kesinti = IcraKesinti.query.get_or_404(id)
+    dosya_id = kesinti.icra_dosyasi_id
+    kesinti.is_deleted = True
+    
+    # Kalan borcu güncelle
+    dosya = kesinti.icra_dosyasi
+    dosya.kalan_borc = float(dosya.toplam_borc) - float(dosya.toplam_kesilen)
+    
+    db.session.commit()
+    
+    flash('Kesinti silindi.', 'success')
+    return redirect(url_for('ik.icra_detay', id=dosya_id))
+
+
+@ik_bp.route('/icra/<int:id>/sil', methods=['POST'])
+@login_required
+@permission_required('ik.delete')
+def icra_sil(id):
+    """İcra dosyası sil"""
+    from app.models.ik import IcraDosyasi
+    
+    dosya = IcraDosyasi.query.get_or_404(id)
+    dosya.is_deleted = True
+    db.session.commit()
+    
+    flash('İcra dosyası silindi.', 'success')
+    return redirect(url_for('ik.icra_liste'))

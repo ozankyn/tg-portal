@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Depo Düzenle' if depo else 'Yeni Depo' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'Depo Düzenle' if depo else 'Yeni Depo' }}{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto">
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="font-bold text-lg text-[#111418] dark:text-white">Depo Bilgileri</h3>
+        </div>
+        
+        <form method="POST" class="p-6 space-y-5">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Depo Kodu *</label>
+                    <input type="text" name="kod" value="{{ depo.kod if depo else '' }}" required
+                           placeholder="DPO-01"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Depo Adı *</label>
+                    <input type="text" name="ad" value="{{ depo.ad if depo else '' }}" required
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Adres</label>
+                <textarea name="adres" rows="2" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">{{ depo.adres if depo else '' }}</textarea>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Sorumlu</label>
+                <select name="sorumlu_id" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                    <option value="">Seçin</option>
+                    {% for k in kullanicilar %}
+                    <option value="{{ k.id }}" {% if depo and depo.sorumlu_id == k.id %}selected{% endif %}>{{ k.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Notlar</label>
+                <textarea name="notlar" rows="2" class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">{{ depo.notlar if depo else '' }}</textarea>
+            </div>
+            
+            <div class="flex items-center gap-3 pt-4">
+                <button type="submit" class="flex-1 px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+                    {{ 'Güncelle' if depo else 'Kaydet' }}
+                </button>
+                <a href="{{ url_for('depo.depo_liste') }}" class="px-4 py-2.5 border border-border-light dark:border-border-dark rounded-xl text-text-muted hover:bg-gray-50 dark:hover:bg-[#1a1f2b] transition">
+                    İptal
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

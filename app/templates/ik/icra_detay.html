@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block title %}İcra Dosyası #{{ dosya.id }} - TG Portal{% endblock %}
+{% block page_title %}İcra Dosyası{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    
+    <!-- Dosya Bilgileri -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+            <div>
+                <h3 class="font-bold text-lg text-[#111418] dark:text-white font-mono">{{ dosya.dosya_no }}</h3>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ dosya.icra_dairesi }}</p>
+            </div>
+            {% set durum_colors = {'aktif': 'bg-amber-100 text-amber-700', 'tamamlandi': 'bg-green-100 text-green-700', 'iptal': 'bg-gray-100 text-gray-700', 'beklemede': 'bg-blue-100 text-blue-700'} %}
+            <span class="px-3 py-1 rounded-full text-sm font-bold {{ durum_colors.get(dosya.durum, 'bg-gray-100 text-gray-700') }}">
+                {{ dosya.durum_text }}
+            </span>
+        </div>
+        
+        <div class="p-6 space-y-6">
+            <!-- Çalışan ve Alacaklı -->
+            <div class="grid grid-cols-2 gap-6">
+                <div class="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20">
+                    <p class="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">ÇALIŞAN</p>
+                    <a href="{{ url_for('ik.detay', id=dosya.calisan.id) }}" class="font-bold text-[#111418] dark:text-white hover:text-primary">
+                        {{ dosya.calisan.full_name }}
+                    </a>
+                </div>
+                <div class="p-4 rounded-xl bg-gray-50 dark:bg-[#1a1f2b]">
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark font-medium mb-1">ALACAKLI</p>
+                    <p class="font-bold text-[#111418] dark:text-white">{{ dosya.alacakli or '-' }}</p>
+                </div>
+            </div>
+            
+            <!-- İlerleme -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Ödeme İlerlemesi</span>
+                    <span class="text-sm font-bold text-[#111418] dark:text-white">%{{ dosya.ilerleme_yuzdesi }}</span>
+                </div>
+                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-green-500 rounded-full transition-all" style="width: {{ dosya.ilerleme_yuzdesi }}%"></div>
+                </div>
+            </div>
+            
+            <!-- Tutarlar -->
+            <div class="grid grid-cols-3 gap-4">
+                <div class="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 text-center">
+                    <p class="text-xs text-red-600 dark:text-red-400 mb-1">Toplam Borç</p>
+                    <p class="text-xl font-bold text-red-700 dark:text-red-300">₺{{ "{:,.2f}".format(dosya.toplam_borc) }}</p>
+                </div>
+                <div class="p-4 rounded-xl bg-green-50 dark:bg-green-900/20 text-center">
+                    <p class="text-xs text-green-600 dark:text-green-400 mb-1">Kesilen</p>
+                    <p class="text-xl font-bold text-green-700 dark:text-green-300">₺{{ "{:,.2f}".format(dosya.toplam_kesilen) }}</p>
+                </div>
+                <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-center">
+                    <p class="text-xs text-amber-600 dark:text-amber-400 mb-1">Kalan</p>
+                    <p class="text-xl font-bold text-amber-700 dark:text-amber-300">₺{{ "{:,.2f}".format(dosya.kalan_borc or 0) }}</p>
+                </div>
+            </div>
+            
+            <!-- Detaylar -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">Taksit Sayısı</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{{ dosya.taksit_sayisi or '-' }}</p>
+                </div>
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">Taksit Tutarı</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{% if dosya.taksit_tutari %}₺{{ "{:,.2f}".format(dosya.taksit_tutari) }}{% else %}-{% endif %}</p>
+                </div>
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">Kesinti Oranı</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{% if dosya.kesinti_orani %}%{{ dosya.kesinti_orani }}{% else %}-{% endif %}</p>
+                </div>
+                <div>
+                    <span class="text-text-muted dark:text-text-muted-dark">Başlangıç</span>
+                    <p class="font-medium text-[#111418] dark:text-white mt-1">{{ dosya.baslangic_tarihi.strftime('%d.%m.%Y') if dosya.baslangic_tarihi else '-' }}</p>
+                </div>
+            </div>
+            
+            {% if dosya.notlar %}
+            <div>
+                <span class="text-sm text-text-muted dark:text-text-muted-dark">Notlar</span>
+                <p class="text-[#111418] dark:text-white mt-1">{{ dosya.notlar }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Kesinti Ekle -->
+    {% if dosya.durum == 'aktif' %}
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+            <h4 class="font-bold text-[#111418] dark:text-white">Kesinti Ekle</h4>
+        </div>
+        <form method="POST" action="{{ url_for('ik.icra_kesinti_ekle', id=dosya.id) }}" class="p-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Dönem *</label>
+                    <input type="month" name="donem" required
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Tutar (₺) *</label>
+                    <input type="number" name="tutar" step="0.01" value="{{ dosya.taksit_tutari or '' }}" required
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-2">Kesinti Tarihi</label>
+                    <input type="date" name="kesinti_tarihi"
+                           class="w-full rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] px-4 py-2.5 text-sm">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full px-4 py-2.5 bg-green-600 text-white rounded-xl hover:bg-green-700 transition">
+                        Kesinti Ekle
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    {% endif %}
+    
+    <!-- Kesinti Listesi -->
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+            <h4 class="font-bold text-[#111418] dark:text-white">Kesinti Geçmişi</h4>
+        </div>
+        {% if kesintiler %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-[#1a1f2b]">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Dönem</th>
+                        <th class="px-4 py-3 text-right font-semibold text-text-muted dark:text-text-muted-dark">Tutar</th>
+                        <th class="px-4 py-3 text-left font-semibold text-text-muted dark:text-text-muted-dark">Kesinti Tarihi</th>
+                        <th class="px-4 py-3 text-center font-semibold text-text-muted dark:text-text-muted-dark">Durum</th>
+                        <th class="px-4 py-3 text-center font-semibold text-text-muted dark:text-text-muted-dark">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                    {% for kesinti in kesintiler %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-[#1a1f2b]">
+                        <td class="px-4 py-3 text-[#111418] dark:text-white font-medium">{{ kesinti.donem }}</td>
+                        <td class="px-4 py-3 text-right text-[#111418] dark:text-white">₺{{ "{:,.2f}".format(kesinti.tutar) }}</td>
+                        <td class="px-4 py-3 text-[#111418] dark:text-white">{{ kesinti.kesinti_tarihi.strftime('%d.%m.%Y') if kesinti.kesinti_tarihi else '-' }}</td>
+                        <td class="px-4 py-3 text-center">
+                            {% set k_colors = {'bekliyor': 'bg-amber-100 text-amber-700', 'kesildi': 'bg-green-100 text-green-700', 'iptal': 'bg-gray-100 text-gray-700'} %}
+                            <span class="px-2 py-1 rounded-full text-xs font-bold {{ k_colors.get(kesinti.durum, 'bg-gray-100') }}">
+                                {{ kesinti.durum_text }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            <form method="POST" action="{{ url_for('ik.icra_kesinti_sil', id=kesinti.id) }}" class="inline" onsubmit="return confirm('Bu kesintiyi silmek istediğinize emin misiniz?')">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="text-red-600 hover:underline text-sm">Sil</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-8 text-center text-text-muted dark:text-text-muted-dark">
+            Henüz kesinti kaydı bulunmuyor.
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Aksiyonlar -->
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('ik.icra_liste') }}" class="flex-1 text-center px-4 py-2.5 border border-border-light dark:border-border-dark rounded-xl text-text-muted hover:bg-gray-50 dark:hover:bg-[#1a1f2b] transition">
+            Listeye Dön
+        </a>
+        <a href="{{ url_for('ik.icra_duzenle', id=dosya.id) }}" class="px-4 py-2.5 bg-primary text-white rounded-xl hover:bg-primary-dark transition">
+            Düzenle
+        </a>
+        <form method="POST" action="{{ url_for('ik.icra_sil', id=dosya.id) }}" onsubmit="return confirm('Bu dosyayı silmek istediğinize emin misiniz?')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="px-4 py-2.5 border border-red-500 text-red-600 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition">
+                Sil
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

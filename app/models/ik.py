@@ -816,3 +816,208 @@ def zimmet_iade_bekliyor(self):
     '''İade bekleyen zimmet var mı?'''
     return self.aktif_zimmet_sayisi > 0
 """
+
+# ============================================================
+# DİSİPLİN YÖNETİMİ
+# ============================================================
+
+class DisiplinKaydi(db.Model, TimestampMixin, SoftDeleteMixin):
+    """Çalışan disiplin kayıtları"""
+    __tablename__ = 'disiplin_kayitlari'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'), nullable=False)
+    
+    # Disiplin bilgileri
+    tarih = db.Column(db.Date, nullable=False)
+    tur = db.Column(db.String(50), nullable=False)  # uyari, ihtar, fesih_uyarisi, is_akdi_feshi
+    seviye = db.Column(db.Integer, default=1)  # 1: Hafif, 2: Orta, 3: Ağır
+    konu = db.Column(db.String(200), nullable=False)
+    aciklama = db.Column(db.Text)
+    
+    # Belge
+    belge_path = db.Column(db.String(500))
+    
+    # Onay bilgileri
+    olusturan_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    onaylayan_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    onay_tarihi = db.Column(db.DateTime)
+    durum = db.Column(db.String(30), default='taslak')  # taslak, onaylandi, iptal
+    
+    # İlişkiler
+    calisan = db.relationship('Calisan', backref=db.backref('disiplin_kayitlari', lazy='dynamic'))
+    olusturan = db.relationship('User', foreign_keys=[olusturan_id])
+    onaylayan = db.relationship('User', foreign_keys=[onaylayan_id])
+    
+    @property
+    def tur_text(self):
+        turler = {
+            'uyari': 'Sözlü Uyarı',
+            'ihtar': 'Yazılı İhtar',
+            'fesih_uyarisi': 'Fesih Uyarısı',
+            'is_akdi_feshi': 'İş Akdi Feshi'
+        }
+        return turler.get(self.tur, self.tur)
+    
+    @property
+    def seviye_text(self):
+        seviyeler = {1: 'Hafif', 2: 'Orta', 3: 'Ağır'}
+        return seviyeler.get(self.seviye, '-')
+
+
+# ============================================================
+# DAVA YÖNETİMİ
+# ============================================================
+
+class Dava(db.Model, TimestampMixin, SoftDeleteMixin):
+    """Hukuki dava kayıtları"""
+    __tablename__ = 'davalar'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    
+    # Dava bilgileri
+    dosya_no = db.Column(db.String(50), unique=True)
+    esas_no = db.Column(db.String(50))
+    mahkeme = db.Column(db.String(200), nullable=False)
+    dava_turu = db.Column(db.String(100), nullable=False)  # ise_iade, alacak, tespit, tazminat, ceza
+    
+    # Taraflar
+    davaci = db.Column(db.String(200), nullable=False)
+    davali = db.Column(db.String(200), nullable=False)
+    calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'))  # İlişkili çalışan varsa
+    
+    # Tarihler
+    acilis_tarihi = db.Column(db.Date, nullable=False)
+    son_durusma = db.Column(db.Date)
+    sonraki_durusma = db.Column(db.Date)
+    karar_tarihi = db.Column(db.Date)
+    
+    # Tutarlar
+    talep_tutari = db.Column(db.Numeric(12, 2))
+    karar_tutari = db.Column(db.Numeric(12, 2))
+    
+    # Durum
+    durum = db.Column(db.String(30), default='devam_ediyor')  # devam_ediyor, karara_baglandi, temyiz, kapandi
+    sonuc = db.Column(db.String(50))  # kabul, ret, kismi_kabul, sulh, feragat
+    
+    # Açıklamalar
+    konu_ozeti = db.Column(db.Text)
+    notlar = db.Column(db.Text)
+    
+    # Avukat bilgileri
+    avukat = db.Column(db.String(200))
+    avukat_telefon = db.Column(db.String(20))
+    
+    # Sorumlu
+    sorumlu_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    
+    # İlişkiler
+    calisan = db.relationship('Calisan', backref=db.backref('davalar', lazy='dynamic'))
+    sorumlu = db.relationship('User', foreign_keys=[sorumlu_id])
+    
+    @property
+    def durum_text(self):
+        durumlar = {
+            'devam_ediyor': 'Devam Ediyor',
+            'karara_baglandi': 'Karara Bağlandı',
+            'temyiz': 'Temyizde',
+            'kapandi': 'Kapandı'
+        }
+        return durumlar.get(self.durum, self.durum)
+    
+    @property
+    def dava_turu_text(self):
+        turler = {
+            'ise_iade': 'İşe İade',
+            'alacak': 'İşçi Alacağı',
+            'tespit': 'Tespit Davası',
+            'tazminat': 'Tazminat',
+            'ceza': 'Ceza Davası',
+            'diger': 'Diğer'
+        }
+        return turler.get(self.dava_turu, self.dava_turu)
+
+
+
+# ============================================================
+# İCRA DOSYASI YÖNETİMİ
+# ============================================================
+
+class IcraDosyasi(db.Model, TimestampMixin, SoftDeleteMixin):
+    """Çalışan icra dosyaları ve kesinti takibi"""
+    __tablename__ = 'icra_dosyalari'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'), nullable=False)
+    
+    # Dosya bilgileri
+    dosya_no = db.Column(db.String(100), nullable=False)
+    icra_dairesi = db.Column(db.String(200), nullable=False)
+    alacakli = db.Column(db.String(200))  # Alacaklı kişi/kurum
+    
+    # Tutar bilgileri
+    toplam_borc = db.Column(db.Numeric(12, 2), nullable=False)
+    kalan_borc = db.Column(db.Numeric(12, 2))
+    
+    # Taksit bilgileri
+    taksit_sayisi = db.Column(db.Integer)
+    taksit_tutari = db.Column(db.Numeric(12, 2))
+    baslangic_tarihi = db.Column(db.Date)
+    bitis_tarihi = db.Column(db.Date)
+    
+    # Kesinti oranı (maaşın yüzdesi olarak)
+    kesinti_orani = db.Column(db.Numeric(5, 2))  # Örn: 25.00 = %25
+    
+    # Durum
+    durum = db.Column(db.String(30), default='aktif')  # aktif, tamamlandi, iptal, beklemede
+    notlar = db.Column(db.Text)
+    
+    # İlişkiler
+    calisan = db.relationship('Calisan', backref=db.backref('icra_dosyalari', lazy='dynamic'))
+    kesintiler = db.relationship('IcraKesinti', backref='icra_dosyasi', lazy='dynamic', cascade='all, delete-orphan')
+    
+    @property
+    def durum_text(self):
+        durumlar = {
+            'aktif': 'Aktif',
+            'tamamlandi': 'Tamamlandı',
+            'iptal': 'İptal',
+            'beklemede': 'Beklemede'
+        }
+        return durumlar.get(self.durum, self.durum)
+    
+    @property
+    def toplam_kesilen(self):
+        return sum(k.tutar for k in self.kesintiler.filter_by(is_deleted=False).all()) or 0
+    
+    @property
+    def ilerleme_yuzdesi(self):
+        if not self.toplam_borc or self.toplam_borc == 0:
+            return 0
+        return min(100, int((self.toplam_kesilen / float(self.toplam_borc)) * 100))
+
+
+class IcraKesinti(db.Model, TimestampMixin, SoftDeleteMixin):
+    """Aylık icra kesintileri"""
+    __tablename__ = 'icra_kesintileri'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    icra_dosyasi_id = db.Column(db.Integer, db.ForeignKey('icra_dosyalari.id'), nullable=False)
+    
+    # Kesinti bilgileri
+    donem = db.Column(db.String(7), nullable=False)  # YYYY-MM formatında
+    tutar = db.Column(db.Numeric(12, 2), nullable=False)
+    kesinti_tarihi = db.Column(db.Date)
+    
+    # Durum
+    durum = db.Column(db.String(30), default='bekliyor')  # bekliyor, kesildi, iptal
+    notlar = db.Column(db.Text)
+    
+    @property
+    def durum_text(self):
+        durumlar = {
+            'bekliyor': 'Bekliyor',
+            'kesildi': 'Kesildi',
+            'iptal': 'İptal'
+        }
+        return durumlar.get(self.durum, self.durum)
