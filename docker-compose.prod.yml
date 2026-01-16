@@ -1,0 +1,66 @@
+services:
+  web:
+    build: .
+    restart: always
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - DATABASE_URL=postgresql://tgportal:${DB_PASSWORD}@db:5432/tgportal
+      - REDIS_URL=redis://redis:6379/0
+      - FLASK_ENV=production
+      - COMPANY_NAME=${COMPANY_NAME}
+      - COMPANY_SUBTITLE=${COMPANY_SUBTITLE}
+      - UPLOAD_FOLDER=/app/uploads
+      # Mail
+      - MAIL_SERVER=${MAIL_SERVER}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USE_TLS=${MAIL_USE_TLS}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_DEFAULT_SENDER=${MAIL_DEFAULT_SENDER}
+      # NetGSM
+      - NETGSM_USERCODE=${NETGSM_USERCODE}
+      - NETGSM_PASSWORD=${NETGSM_PASSWORD}
+      - NETGSM_HEADER=${NETGSM_HEADER}
+      # Anthropic
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      - db
+      - redis
+    expose:
+      - "5000"
+
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=tgportal
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=tgportal
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - redis_data:/data
+
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - web
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads:
