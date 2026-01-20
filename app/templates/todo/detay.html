@@ -1,0 +1,292 @@
+{% extends "base.html" %}
+
+{% block title %}{{ gorev.baslik }} - TG Portal{% endblock %}
+{% block page_title %}Görev Detay{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <!-- Üst Bar -->
+    <div class="flex items-center justify-between">
+        <a href="{{ url_for('todo.liste') }}" class="flex items-center gap-2 text-text-muted dark:text-text-muted-dark hover:text-primary">
+            <span class="material-symbols-outlined">arrow_back</span>
+            Görevlere Dön
+        </a>
+        <div class="flex items-center gap-2">
+            <a href="{{ url_for('todo.duzenle', id=gorev.id) }}" class="px-4 py-2 border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#252b36] rounded-lg text-sm font-medium flex items-center gap-2">
+                <span class="material-symbols-outlined text-base">edit</span>
+                Düzenle
+            </a>
+            {% if gorev.durum != 'tamamlandi' %}
+            <form method="POST" action="{{ url_for('todo.tamamla', id=gorev.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-sm font-bold flex items-center gap-2">
+                    <span class="material-symbols-outlined text-base">check</span>
+                    Tamamla
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Sol: Ana İçerik -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Başlık ve Açıklama -->
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="p-6">
+                    <div class="flex items-start gap-4">
+                        <!-- Durum İkonu -->
+                        <div class="mt-1">
+                            {% if gorev.durum == 'tamamlandi' %}
+                            <span class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-emerald-600">check_circle</span>
+                            </span>
+                            {% elif gorev.durum == 'devam_ediyor' %}
+                            <span class="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-cyan-600">sync</span>
+                            </span>
+                            {% else %}
+                            <span class="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-amber-600">pending</span>
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex-1">
+                            <h1 class="text-xl font-bold text-[#111418] dark:text-white {{ 'line-through' if gorev.durum == 'tamamlandi' }}">
+                                {{ gorev.baslik }}
+                            </h1>
+                            {% if gorev.aciklama %}
+                            <p class="mt-3 text-text-muted dark:text-text-muted-dark whitespace-pre-line">{{ gorev.aciklama }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Durum Değiştirme -->
+                <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex items-center gap-2">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark mr-2">Durum:</span>
+                    <form method="POST" action="{{ url_for('todo.durum_degistir', id=gorev.id) }}" class="flex gap-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" name="durum" value="bekliyor" class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors {{ 'bg-amber-500 text-white' if gorev.durum == 'bekliyor' else 'bg-gray-100 dark:bg-gray-800 hover:bg-amber-100' }}">
+                            Bekliyor
+                        </button>
+                        <button type="submit" name="durum" value="devam_ediyor" class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors {{ 'bg-cyan-500 text-white' if gorev.durum == 'devam_ediyor' else 'bg-gray-100 dark:bg-gray-800 hover:bg-cyan-100' }}">
+                            Devam Ediyor
+                        </button>
+                        <button type="submit" name="durum" value="tamamlandi" class="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors {{ 'bg-emerald-500 text-white' if gorev.durum == 'tamamlandi' else 'bg-gray-100 dark:bg-gray-800 hover:bg-emerald-100' }}">
+                            Tamamlandı
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Alt Görevler -->
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+                    <h3 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">checklist</span>
+                        Alt Görevler
+                        {% if alt_gorevler %}
+                        <span class="text-sm font-normal text-text-muted">({{ alt_gorevler|selectattr('durum', 'eq', 'tamamlandi')|list|length }}/{{ alt_gorevler|length }})</span>
+                        {% endif %}
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <!-- Mevcut Alt Görevler -->
+                    {% if alt_gorevler %}
+                    <div class="space-y-2 mb-4">
+                        {% for alt in alt_gorevler %}
+                        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-[#1a1f2b]">
+                            <form method="POST" action="{{ url_for('todo.tamamla', id=alt.id) }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="w-5 h-5 rounded border-2 flex items-center justify-center {{ 'bg-emerald-500 border-emerald-500 text-white' if alt.durum == 'tamamlandi' else 'border-gray-300 dark:border-gray-600 hover:border-primary' }}">
+                                    {% if alt.durum == 'tamamlandi' %}
+                                    <span class="material-symbols-outlined text-sm">check</span>
+                                    {% endif %}
+                                </button>
+                            </form>
+                            <span class="{{ 'line-through text-text-muted' if alt.durum == 'tamamlandi' }}">{{ alt.baslik }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Yeni Alt Görev Ekle -->
+                    <form method="POST" action="{{ url_for('todo.alt_gorev_ekle', id=gorev.id) }}" class="flex gap-2">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="text" name="baslik" placeholder="Alt görev ekle..." required
+                               class="flex-1 px-3 py-2 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                        <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium">
+                            Ekle
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Yorumlar -->
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+                    <h3 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">chat</span>
+                        Yorumlar
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <!-- Mevcut Yorumlar -->
+                    {% if yorumlar %}
+                    <div class="space-y-4 mb-6">
+                        {% for y in yorumlar %}
+                        <div class="flex gap-3">
+                            <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span class="text-xs font-bold text-primary">{{ y.user.first_name[0] }}{{ y.user.last_name[0] }}</span>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-medium text-sm text-[#111418] dark:text-white">{{ y.user.full_name }}</span>
+                                    <span class="text-xs text-text-muted dark:text-text-muted-dark">{{ y.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                                </div>
+                                <p class="mt-1 text-sm text-text-muted dark:text-text-muted-dark">{{ y.yorum }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Yeni Yorum -->
+                    <form method="POST" action="{{ url_for('todo.yorum_ekle', id=gorev.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <textarea name="yorum" rows="2" placeholder="Yorum yaz..." required
+                                  class="w-full px-3 py-2 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm mb-2"></textarea>
+                        <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium">
+                            Gönder
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ: Detaylar -->
+        <div class="space-y-6">
+            <!-- Bilgiler -->
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                    <h3 class="font-bold text-[#111418] dark:text-white">Detaylar</h3>
+                </div>
+                <div class="p-5 space-y-4 text-sm">
+                    <!-- Öncelik -->
+                    <div class="flex items-center justify-between">
+                        <span class="text-text-muted dark:text-text-muted-dark">Öncelik</span>
+                        {% set oncelik_renk = {
+                            'acil': 'bg-rose-100 text-rose-700',
+                            'yuksek': 'bg-orange-100 text-orange-700',
+                            'orta': 'bg-amber-100 text-amber-700',
+                            'dusuk': 'bg-emerald-100 text-emerald-700'
+                        } %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full {{ oncelik_renk.get(gorev.oncelik, '') }}">
+                            {{ gorev.oncelik|title }}
+                        </span>
+                    </div>
+
+                    <!-- Kategori -->
+                    {% if gorev.kategori %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-text-muted dark:text-text-muted-dark">Kategori</span>
+                        <span class="flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm" style="color: {{ gorev.kategori.renk }}">{{ gorev.kategori.ikon }}</span>
+                            {{ gorev.kategori.ad }}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Bitiş Tarihi -->
+                    {% if gorev.bitis_tarihi %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-text-muted dark:text-text-muted-dark">Deadline</span>
+                        <span class="{{ 'text-rose-500 font-medium' if gorev.gecikti_mi }}">
+                            {{ gorev.bitis_tarihi.strftime('%d.%m.%Y %H:%M') }}
+                        </span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Oluşturan -->
+                    <div class="flex items-center justify-between">
+                        <span class="text-text-muted dark:text-text-muted-dark">Oluşturan</span>
+                        <span>{{ gorev.olusturan.full_name }}</span>
+                    </div>
+
+                    <!-- Atanan -->
+                    {% if gorev.atanan %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-text-muted dark:text-text-muted-dark">Atanan</span>
+                        <span>{{ gorev.atanan.full_name }}</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Proje -->
+                    {% if gorev.proje %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-text-muted dark:text-text-muted-dark">Proje</span>
+                        <span>{{ gorev.proje.ad }}</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- Oluşturulma -->
+                    <div class="flex items-center justify-between">
+                        <span class="text-text-muted dark:text-text-muted-dark">Oluşturulma</span>
+                        <span>{{ gorev.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                    </div>
+
+                    <!-- Tamamlanma -->
+                    {% if gorev.tamamlanma_tarihi %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-text-muted dark:text-text-muted-dark">Tamamlanma</span>
+                        <span class="text-emerald-600">{{ gorev.tamamlanma_tarihi.strftime('%d.%m.%Y %H:%M') }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Aktivite Logu -->
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                    <h3 class="font-bold text-[#111418] dark:text-white">Aktivite</h3>
+                </div>
+                <div class="p-5">
+                    {% if loglar %}
+                    <div class="space-y-3">
+                        {% for log in loglar %}
+                        <div class="flex gap-3 text-xs">
+                            <span class="text-text-muted dark:text-text-muted-dark">{{ log.created_at.strftime('%d.%m %H:%M') }}</span>
+                            <span class="text-[#111418] dark:text-white">
+                                {{ log.user.first_name }}
+                                {% if log.aksiyon == 'olusturuldu' %}görevi oluşturdu
+                                {% elif log.aksiyon == 'guncellendi' %}görevi güncelledi
+                                {% elif log.aksiyon == 'durum_degisti' %}durumu değiştirdi
+                                {% elif log.aksiyon == 'tamamlandi' %}görevi tamamladı
+                                {% elif log.aksiyon == 'yorum_eklendi' %}yorum ekledi
+                                {% else %}{{ log.aksiyon }}{% endif %}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark">Henüz aktivite yok.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sil Butonu -->
+            {% if gorev.olusturan_id == current_user.id %}
+            <form method="POST" action="{{ url_for('todo.sil', id=gorev.id) }}" onsubmit="return confirm('Bu görevi silmek istediğinize emin misiniz?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="w-full px-4 py-2 border border-rose-300 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-lg text-sm font-medium">
+                    <span class="material-symbols-outlined text-base align-middle mr-1">delete</span>
+                    Görevi Sil
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

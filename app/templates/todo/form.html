@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Görev Düzenle' if gorev else 'Yeni Görev' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'Görev Düzenle' if gorev else 'Yeni Görev' }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <form method="POST" class="space-y-6">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- Ana Kart -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+                <h2 class="text-lg font-bold text-[#111418] dark:text-white">Görev Bilgileri</h2>
+            </div>
+            <div class="p-6 space-y-5">
+                <!-- Başlık -->
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Başlık *</label>
+                    <input type="text" name="baslik" value="{{ gorev.baslik if gorev else '' }}" required
+                           placeholder="Görev başlığı..."
+                           class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent">
+                </div>
+
+                <!-- Açıklama -->
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Açıklama</label>
+                    <textarea name="aciklama" rows="4" placeholder="Detaylı açıklama..."
+                              class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-transparent">{{ gorev.aciklama if gorev else '' }}</textarea>
+                </div>
+
+                <!-- Öncelik ve Kategori -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Öncelik</label>
+                        <select name="oncelik" class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                            <option value="dusuk" {{ 'selected' if gorev and gorev.oncelik == 'dusuk' }}>🟢 Düşük</option>
+                            <option value="orta" {{ 'selected' if not gorev or gorev.oncelik == 'orta' }}>🟡 Orta</option>
+                            <option value="yuksek" {{ 'selected' if gorev and gorev.oncelik == 'yuksek' }}>🟠 Yüksek</option>
+                            <option value="acil" {{ 'selected' if gorev and gorev.oncelik == 'acil' }}>🔴 Acil</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Kategori</label>
+                        <select name="kategori_id" class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                            <option value="">Kategori Seç</option>
+                            {% for k in kategoriler %}
+                            <option value="{{ k.id }}" {{ 'selected' if gorev and gorev.kategori_id == k.id }}>{{ k.ad }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tarihler -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Bitiş Tarihi (Deadline)</label>
+                        <input type="datetime-local" name="bitis_tarihi"
+                               value="{{ gorev.bitis_tarihi.strftime('%Y-%m-%dT%H:%M') if gorev and gorev.bitis_tarihi else '' }}"
+                               class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Hatırlatma</label>
+                        <input type="datetime-local" name="hatirlatma_tarihi"
+                               value="{{ gorev.hatirlatma_tarihi.strftime('%Y-%m-%dT%H:%M') if gorev and gorev.hatirlatma_tarihi else '' }}"
+                               class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    </div>
+                </div>
+
+                <!-- Atama ve Proje -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Atanan Kişi</label>
+                        <select name="atanan_id" class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                            <option value="">Kendime</option>
+                            {% for u in kullanicilar %}
+                            <option value="{{ u.id }}" {{ 'selected' if gorev and gorev.atanan_id == u.id }}>{{ u.full_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">İlişkili Proje</label>
+                        <select name="proje_id" class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                            <option value="">Proje Seç</option>
+                            {% for p in projeler %}
+                            <option value="{{ p.id }}" {{ 'selected' if gorev and gorev.proje_id == p.id }}>{{ p.ad }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Etiketler -->
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Etiketler</label>
+                    <input type="text" name="etiketler" placeholder="etiket1, etiket2, etiket3"
+                           value="{{ gorev.etiketler|default('')|replace('[', '')|replace(']', '')|replace('"', '')|replace("'", '') if gorev else '' }}"
+                           class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    <p class="mt-1 text-xs text-text-muted dark:text-text-muted-dark">Virgülle ayırarak birden fazla etiket ekleyebilirsiniz</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Butonlar -->
+        <div class="flex justify-end gap-3">
+            <a href="{{ url_for('todo.liste') }}" class="px-6 py-3 border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#252b36] rounded-lg font-medium transition-colors">
+                İptal
+            </a>
+            <button type="submit" class="px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors">
+                {{ 'Güncelle' if gorev else 'Oluştur' }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

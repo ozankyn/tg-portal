@@ -144,6 +144,14 @@
                     <span class="ml-auto bg-orange-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full" id="onayBadge" style="display:none;"></span>
                 </a>
                 
+
+                <!-- Görevlerim -->
+                <a href="{{ url_for('todo.liste') }}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors
+                          {% if request.blueprint == 'todo' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">task_alt</span>
+                    <span class="font-medium">Görevlerim</span>
+                </a>
                 {% if has_permission('proje.view') %}
                 <!-- Proje Yönetimi Section -->
                 <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Proje Yönetimi</p>

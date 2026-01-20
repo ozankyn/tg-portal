@@ -107,6 +107,9 @@ def create_app(config_name=None):
     app.register_blueprint(kariyer_bp, url_prefix='/kariyer')
     from app.modules.egitim.routes import egitim_bp
     app.register_blueprint(egitim_bp, url_prefix="/egitim")
+
+    from app.modules.todo.routes import todo_bp
+    app.register_blueprint(todo_bp, url_prefix="/todo")
     app.register_blueprint(masraf_bp, url_prefix="/masraf")
     app.register_blueprint(sozlesme_bp, url_prefix="/sozlesme")
     app.register_blueprint(satinalma_bp, url_prefix="/satinalma")
