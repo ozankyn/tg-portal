@@ -78,7 +78,11 @@ class Egitim(db.Model, TimestampMixin, SoftDeleteMixin):
     
     notlar = db.Column(db.Text)
     olusturan_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    
+   
+    # Jitsi Online Eğitim
+    jitsi_room_name = db.Column(db.String(100))  # Oda adı
+    jitsi_aktif = db.Column(db.Boolean, default=False)  # Canlı yayın aktif mi 
+   
     # İlişkiler
     proje = db.relationship('Proje', backref=db.backref('egitimler', lazy='dynamic'))
     egitmen = db.relationship('Calisan', foreign_keys=[egitmen_id], backref='verdigi_egitimler')
@@ -155,6 +159,18 @@ class EgitimKatilimci(db.Model, TimestampMixin):
     
     # Mazeret
     mazeret_nedeni = db.Column(db.Text)
+
+    # Jitsi Online Katılım Takibi
+    jitsi_katilim_baslangic = db.Column(db.DateTime)
+    jitsi_katilim_bitis = db.Column(db.DateTime)
+    jitsi_toplam_sure = db.Column(db.Integer, default=0)  # saniye cinsinden
+    jitsi_katilim_sayisi = db.Column(db.Integer, default=0)  # kaç kez girdi
+
+    # Jitsi Online Katılım Takibi
+    jitsi_katilim_baslangic = db.Column(db.DateTime)
+    jitsi_katilim_bitis = db.Column(db.DateTime)
+    jitsi_toplam_sure = db.Column(db.Integer, default=0)  # saniye cinsinden
+    jitsi_katilim_sayisi = db.Column(db.Integer, default=0)  # kaç kez girdi
     
     # İlişkiler
     calisan = db.relationship('Calisan', backref=db.backref('egitim_kayitlari', lazy='dynamic'))

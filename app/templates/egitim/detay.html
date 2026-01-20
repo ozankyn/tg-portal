@@ -109,6 +109,78 @@
             </div>
         </div>
         
+
+        <!-- Jitsi Online Eğitim Kartı -->
+        <!-- DEBUG: lokasyon_tipi = {{ egitim.lokasyon_tipi }} -->
+        {% if egitim.lokasyon_tipi == "online" or egitim.lokasyon_tipi == "hibrit" %}
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-cyan-500">videocam</span>
+                    Canlı Eğitim
+                    {% if egitim.jitsi_aktif %}
+                    <span class="relative flex h-3 w-3 ml-2">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                    </span>
+                    <span class="text-xs font-normal text-red-500">CANLI</span>
+                    {% endif %}
+                </h6>
+            </div>
+            <div class="p-5">
+                {% if egitim.jitsi_aktif %}
+                <!-- Canlı yayın aktif -->
+                <div class="text-center">
+                    <div class="mb-4">
+                        <span class="material-symbols-outlined text-5xl text-cyan-500">video_call</span>
+                    </div>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">Eğitim şu an canlı yayında!</p>
+                    <a href="{{ url_for('egitim.jitsi_katil', id=egitim.id) }}" target="_blank" 
+                       class="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500 hover:bg-cyan-600 text-white font-bold rounded-lg transition-colors">
+                        <span class="material-symbols-outlined">login</span>
+                        Eğitime Katıl
+                    </a>
+                    {% if current_user.has_permission('egitim.edit') %}
+                    <form method="POST" action="{{ url_for('egitim.jitsi_durdur', id=egitim.id) }}" class="mt-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="text-sm text-rose-500 hover:text-rose-600 font-medium">
+                            <span class="material-symbols-outlined text-base align-middle">stop_circle</span>
+                            Yayını Durdur
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% else %}
+                <!-- Canlı yayın aktif değil -->
+                <div class="text-center">
+                    <div class="mb-4">
+                        <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600">videocam_off</span>
+                    </div>
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">Canlı yayın henüz başlamadı.</p>
+                    {% if current_user.has_permission('egitim.edit') %}
+                    <form method="POST" action="{{ url_for('egitim.jitsi_baslat', id=egitim.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="inline-flex items-center gap-2 px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-lg transition-colors">
+                            <span class="material-symbols-outlined">play_circle</span>
+                            Canlı Eğitimi Başlat
+                        </button>
+                    </form>
+                    {% else %}
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark">Eğitmen yayını başlattığında buradan katılabilirsiniz.</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            <!-- Katılım Raporu Linki -->
+            <div class="px-5 py-3 border-t border-border-light dark:border-border-dark">
+                <a href="{{ url_for('egitim.katilim_raporu', id=egitim.id) }}" class="text-sm text-primary hover:text-primary-dark font-medium flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined text-base">assessment</span>
+                    Katılım Raporunu Görüntüle
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Katılım İstatistikleri -->
         <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
             <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">

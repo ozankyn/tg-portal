@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from app import csrf
 """
 TG Portal - Eğitim Routes
 Eğitim yönetimi, katılımcı takibi
@@ -23,6 +24,7 @@ from app.models.ik import Calisan, Pozisyon
 from app.models.proje import Proje, HedefKadro
 from app.models.base import CalisanDurumu
 from app.utils import permission_required, paginate_query
+from app.services.jitsi import JitsiService
 
 egitim_bp = Blueprint('egitim', __name__)
 
@@ -1124,7 +1126,7 @@ def test_baslat(id):
     test = Test.query.get_or_404(id)
     
     # Kullanıcının çalışan kaydını bul
-    calisan = Calisan.query.filter_by(user_id=current_user.id, is_deleted=False).first()
+    calisan = current_user.calisan if hasattr(current_user, "calisan") else None
     if not calisan:
         flash('Çalışan kaydınız bulunamadı.', 'danger')
         return redirect(url_for('egitim.test_liste'))
@@ -1183,7 +1185,7 @@ def test_coz(sonuc_id):
     test = sonuc.test
     
     # Yetki kontrolü
-    calisan = Calisan.query.filter_by(user_id=current_user.id, is_deleted=False).first()
+    calisan = current_user.calisan if hasattr(current_user, "calisan") else None
     if not calisan or sonuc.calisan_id != calisan.id:
         flash('Bu sınava erişim yetkiniz yok.', 'danger')
         return redirect(url_for('egitim.test_liste'))
@@ -1320,7 +1322,7 @@ def test_sonuc(sonuc_id):
     test = sonuc.test
     
     # Yetki kontrolü
-    calisan = Calisan.query.filter_by(user_id=current_user.id, is_deleted=False).first()
+    calisan = current_user.calisan if hasattr(current_user, "calisan") else None
     is_owner = calisan and sonuc.calisan_id == calisan.id
     is_admin = current_user.has_permission('egitim.edit')
     
@@ -1358,3 +1360,251 @@ def egitim_testleri(id):
     return render_template('egitim/egitim_testleri.html',
                           egitim=egitim,
                           testler=testler)
+
+# ============================================================
+# JITSI ONLINE EĞİTİM
+# ============================================================
+
+@egitim_bp.route('/<int:id>/jitsi/baslat', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def jitsi_baslat(id):
+    """Online eğitimi başlat - Jitsi odası oluştur"""
+    egitim = Egitim.query.get_or_404(id)
+
+    if egitim.lokasyon_tipi not in ['online', 'hibrit']:
+        flash('Bu eğitim online değil.', 'warning')
+        return redirect(url_for('egitim.detay', id=id))
+
+    # Oda adı oluştur
+    if not egitim.jitsi_room_name:
+        egitim.jitsi_room_name = JitsiService.create_room_name('egitim', egitim.id)
+
+    egitim.jitsi_aktif = True
+    egitim.durum = 'devam_ediyor'
+    db.session.commit()
+
+    flash('Online eğitim başlatıldı!', 'success')
+    return redirect(url_for('egitim.detay', id=id))
+
+
+@egitim_bp.route('/<int:id>/jitsi/durdur', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def jitsi_durdur(id):
+    """Online eğitimi durdur"""
+    egitim = Egitim.query.get_or_404(id)
+
+    egitim.jitsi_aktif = False
+    db.session.commit()
+
+    flash('Online eğitim durduruldu.', 'info')
+    return redirect(url_for('egitim.detay', id=id))
+
+
+@egitim_bp.route('/<int:id>/jitsi/katil')
+@login_required
+def jitsi_katil(id):
+    """Online eğitime katıl - JWT ile Jitsi'ye yönlendir"""
+    egitim = Egitim.query.get_or_404(id)
+
+    if not egitim.jitsi_aktif:
+        flash('Bu eğitimin canlı yayını şu an aktif değil.', 'warning')
+        return redirect(url_for('egitim.detay', id=id))
+
+    # Kullanıcı bilgilerini al
+    calisan = current_user.calisan if hasattr(current_user, "calisan") else None
+
+    if calisan:
+        user_obj = calisan
+    else:
+        user_obj = current_user
+
+    # Eğitmen mi kontrol et (moderatör yetkisi için)
+    is_moderator = False
+    if egitim.egitmen_id and calisan and egitim.egitmen_id == calisan.id:
+        is_moderator = True
+    if current_user.has_permission('egitim.edit'):
+        is_moderator = True
+
+    # Jitsi URL oluştur
+    meeting_url = JitsiService.get_meeting_url(
+        egitim.jitsi_room_name,
+        user_obj,
+        is_moderator
+    )
+
+    # Katılım kaydı oluştur/güncelle
+    if calisan:
+        katilimci = EgitimKatilimci.query.filter_by(
+            egitim_id=id,
+            calisan_id=calisan.id
+        ).first()
+
+        if katilimci:
+            katilimci.katilim_tarihi = datetime.now()
+            katilimci.durum = 'katildi'
+            db.session.commit()
+
+    return redirect(meeting_url)
+
+
+@egitim_bp.route('/<int:id>/jitsi/embed')
+@login_required
+def jitsi_embed(id):
+    """Jitsi'yi iframe içinde göster (opsiyonel)"""
+    egitim = Egitim.query.get_or_404(id)
+
+    if not egitim.jitsi_aktif:
+        flash('Bu eğitimin canlı yayını şu an aktif değil.', 'warning')
+        return redirect(url_for('egitim.detay', id=id))
+
+    calisan = current_user.calisan if hasattr(current_user, "calisan") else None
+    user_obj = calisan if calisan else current_user
+
+    is_moderator = False
+    if egitim.egitmen_id and calisan and egitim.egitmen_id == calisan.id:
+        is_moderator = True
+    if current_user.has_permission('egitim.edit'):
+        is_moderator = True
+
+    token = JitsiService.generate_token(
+        user_obj,
+        egitim.jitsi_room_name,
+        is_moderator
+    )
+
+    return render_template('egitim/jitsi_embed.html',
+                          egitim=egitim,
+                          jitsi_domain=JitsiService.JITSI_DOMAIN,
+                          room_name=egitim.jitsi_room_name,
+                          jwt_token=token,
+                          user_name=user_obj.full_name if hasattr(user_obj, 'full_name') else user_obj.username)
+
+
+# ============================================================
+# JITSI WEBHOOK - Katılım Takibi
+# ============================================================
+
+@csrf.exempt
+@egitim_bp.route('/jitsi/webhook', methods=['POST'])
+def jitsi_webhook():
+    """
+    Jitsi webhook endpoint - katılım takibi için
+    Jitsi'den gelen eventler:
+    - participant_joined: Kullanıcı odaya girdi
+    - participant_left: Kullanıcı odadan çıktı
+    """
+    from flask import request, jsonify
+    import json
+
+    # Webhook secret kontrolü (güvenlik için)
+    webhook_secret = request.headers.get('X-Webhook-Secret', '')
+    if webhook_secret != 'TgPortalJitsiWebhook2025!':
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data'}), 400
+
+        event_type = data.get('event')
+        room_name = data.get('room_name', '')
+        participant = data.get('participant', {})
+        user_email = participant.get('email', '')
+        user_name = participant.get('name', '')
+        timestamp = datetime.now()
+
+        # Room name'den egitim_id çıkar (format: egitim_123_xxx)
+        egitim_id = None
+        if room_name.startswith('egitim_'):
+            parts = room_name.split('_')
+            if len(parts) >= 2:
+                try:
+                    egitim_id = int(parts[1])
+                except ValueError:
+                    pass
+
+        if not egitim_id:
+            return jsonify({'status': 'ignored', 'reason': 'not an education room'}), 200
+
+        # Eğitimi bul
+        egitim = Egitim.query.get(egitim_id)
+        if not egitim:
+            return jsonify({'status': 'ignored', 'reason': 'education not found'}), 200
+
+        # Kullanıcıyı email ile bul
+        calisan = None
+        if user_email:
+            calisan = Calisan.query.filter_by(email=user_email, is_deleted=False).first()
+
+        if not calisan:
+            # Email ile bulunamadıysa isimle dene
+            if user_name:
+                parts = user_name.strip().split(' ', 1)
+                if len(parts) == 2:
+                    calisan = Calisan.query.filter_by(
+                        ad=parts[0],
+                        soyad=parts[1],
+                        is_deleted=False
+                    ).first()
+
+        if not calisan:
+            return jsonify({'status': 'ignored', 'reason': 'participant not found'}), 200
+
+        # Katılımcı kaydını bul
+        katilimci = EgitimKatilimci.query.filter_by(
+            egitim_id=egitim_id,
+            calisan_id=calisan.id
+        ).first()
+
+        if not katilimci:
+            return jsonify({'status': 'ignored', 'reason': 'not a registered participant'}), 200
+
+        if event_type == 'participant_joined':
+            # Katılım başlangıcını kaydet
+            katilimci.jitsi_katilim_baslangic = timestamp
+            katilimci.jitsi_katilim_sayisi = (katilimci.jitsi_katilim_sayisi or 0) + 1
+            katilimci.durum = 'katildi'
+            if not katilimci.katilim_tarihi:
+                katilimci.katilim_tarihi = timestamp
+            db.session.commit()
+
+        elif event_type == 'participant_left':
+            # Süreyi hesapla ve kaydet
+            if katilimci.jitsi_katilim_baslangic:
+                sure_saniye = int((timestamp - katilimci.jitsi_katilim_baslangic).total_seconds())
+                katilimci.jitsi_toplam_sure = (katilimci.jitsi_toplam_sure or 0) + sure_saniye
+                katilimci.jitsi_katilim_bitis = timestamp
+            db.session.commit()
+
+        return jsonify({'status': 'ok'}), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+@egitim_bp.route('/<int:id>/katilim-raporu')
+@login_required
+@permission_required('egitim.view')
+def katilim_raporu(id):
+    """Online eğitim katılım raporu"""
+    egitim = Egitim.query.get_or_404(id)
+
+    katilimcilar = EgitimKatilimci.query.filter_by(egitim_id=id).join(Calisan).order_by(Calisan.ad).all()
+
+    # İstatistikler
+    toplam_katilimci = len(katilimcilar)
+    online_katilan = sum(1 for k in katilimcilar if k.jitsi_toplam_sure and k.jitsi_toplam_sure > 0)
+
+    # Ortalama katılım süresi
+    toplam_sure = sum(k.jitsi_toplam_sure or 0 for k in katilimcilar)
+    ortalama_sure = toplam_sure // online_katilan if online_katilan > 0 else 0
+
+    return render_template('egitim/katilim_raporu.html',
+                          egitim=egitim,
+                          katilimcilar=katilimcilar,
+                          toplam_katilimci=toplam_katilimci,
+                          online_katilan=online_katilan,
+                          ortalama_sure=ortalama_sure)
