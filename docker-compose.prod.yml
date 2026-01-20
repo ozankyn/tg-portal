@@ -23,6 +23,11 @@ services:
       - NETGSM_HEADER=${NETGSM_HEADER}
       # Anthropic
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # Outlook
+      - OUTLOOK_CLIENT_ID=${OUTLOOK_CLIENT_ID}
+      - OUTLOOK_CLIENT_SECRET=${OUTLOOK_CLIENT_SECRET}
+      - OUTLOOK_TENANT_ID=${OUTLOOK_TENANT_ID}
+      - OUTLOOK_REDIRECT_URI=${OUTLOOK_REDIRECT_URI}
     volumes:
       - uploads:/app/uploads
     depends_on:

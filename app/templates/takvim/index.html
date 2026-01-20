@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Takvim - TG Portal{% endblock %}
+{% block page_title %}Takvim{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+<style>
+    .fc-event { cursor: pointer; }
+    .fc-toolbar-title { font-size: 1.25rem !important; }
+    .fc-button { padding: 0.4rem 0.8rem !important; }
+    .fc-daygrid-day-number { color: inherit; }
+    .fc-day-today { background-color: rgba(99, 102, 241, 0.1) !important; }
+    .dark .fc-theme-standard td, .dark .fc-theme-standard th { border-color: #374151; }
+    .dark .fc-daygrid-day-number { color: #e5e7eb; }
+    .dark .fc-col-header-cell-cushion { color: #9ca3af; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Outlook Butonu -->
+<div class="mb-4 flex justify-end">
+    <a href="{{ url_for('takvim.outlook_baglanti') }}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M7.88 12.04q0 .45-.11.87-.1.41-.33.74-.22.33-.58.52-.37.2-.87.2t-.85-.2q-.35-.21-.57-.55-.22-.33-.33-.75-.1-.42-.1-.86t.1-.87q.1-.43.34-.76.22-.34.59-.54.36-.2.87-.2t.86.2q.35.21.57.55.22.34.31.77.1.43.1.88zM24 12v9.38q0 .46-.33.8-.33.32-.8.32H7.13q-.46 0-.8-.33-.32-.33-.32-.8V18H1q-.41 0-.7-.3-.3-.29-.3-.7V7q0-.41.3-.7Q.58 6 1 6h6.5V2.55q0-.44.3-.75.3-.3.75-.3h12.9q.44 0 .75.3.3.3.3.75V12z"/>
+        </svg>
+        Outlook
+    </a>
+</div>
+
+<div class="space-y-6">
+    <!-- Üst Bar -->
+    <div class="flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <h2 class="text-xl font-bold text-[#111418] dark:text-white">
+                {{ ['', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'][ay] }} {{ yil }}
+            </h2>
+        </div>
+        <a href="{{ url_for('takvim.etkinlik_ekle') }}" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-bold flex items-center gap-2">
+            <span class="material-symbols-outlined text-base">add</span>
+            Yeni Etkinlik
+        </a>
+    </div>
+
+    <!-- Takvim -->
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm p-4">
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<!-- Etkinlik Detay Modal -->
+<div id="eventModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl w-full max-w-md">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+            <h5 class="font-bold text-lg text-[#111418] dark:text-white" id="modalTitle">Etkinlik</h5>
+            <button onclick="document.getElementById('eventModal').classList.add('hidden')" class="p-1 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="p-6" id="modalContent">
+            <!-- İçerik JS ile doldurulacak -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'tr',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        buttonText: {
+            today: 'Bugün',
+            month: 'Ay',
+            week: 'Hafta',
+            day: 'Gün'
+        },
+        events: '{{ url_for("takvim.api_etkinlikler") }}',
+        editable: false,
+        selectable: true,
+        selectMirror: true,
+        dayMaxEvents: 3,
+        eventClick: function(info) {
+            info.jsEvent.preventDefault();
+            if (info.event.url) {
+                window.location.href = info.event.url;
+            }
+        },
+        select: function(info) {
+            // Seçilen tarihe etkinlik ekle
+            const tarih = info.startStr.split('T')[0];
+            window.location.href = '{{ url_for("takvim.etkinlik_ekle") }}?tarih=' + tarih;
+        },
+        eventDidMount: function(info) {
+            // Tooltip ekle
+            if (info.event.extendedProps.konum) {
+                info.el.title = info.event.extendedProps.konum;
+            }
+        }
+    });
+    calendar.render();
+});
+</script>
+{% endblock %}

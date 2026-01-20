@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}{{ etkinlik.baslik }} - TG Portal{% endblock %}
+{% block page_title %}Etkinlik Detay{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <!-- Üst Bar -->
+    <div class="flex items-center justify-between">
+        <a href="{{ url_for('takvim.index') }}" class="flex items-center gap-2 text-text-muted dark:text-text-muted-dark hover:text-primary">
+            <span class="material-symbols-outlined">arrow_back</span>
+            Takvime Dön
+        </a>
+        <div class="flex items-center gap-2">
+            <a href="{{ url_for('takvim.etkinlik_duzenle', id=etkinlik.id) }}" class="px-4 py-2 border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#252b36] rounded-lg text-sm font-medium flex items-center gap-2">
+                <span class="material-symbols-outlined text-base">edit</span>
+                Düzenle
+            </a>
+            <form method="POST" action="{{ url_for('takvim.etkinlik_sil', id=etkinlik.id) }}" onsubmit="return confirm('Bu etkinliği silmek istediğinize emin misiniz?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="px-4 py-2 border border-rose-300 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-lg text-sm font-medium flex items-center gap-2">
+                    <span class="material-symbols-outlined text-base">delete</span>
+                    Sil
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ana Kart -->
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+        <div class="p-6">
+            <!-- Başlık ve Renk -->
+            <div class="flex items-start gap-4">
+                <div class="w-4 h-4 rounded-full mt-1.5" style="background-color: {{ etkinlik.renk }}"></div>
+                <div class="flex-1">
+                    <h1 class="text-xl font-bold text-[#111418] dark:text-white">{{ etkinlik.baslik }}</h1>
+
+                    <!-- Tip Badge -->
+                    {% set tip_renkler = {
+                        'genel': 'bg-gray-100 text-gray-700',
+                        'toplanti': 'bg-blue-100 text-blue-700',
+                        'gorev': 'bg-amber-100 text-amber-700',
+                        'egitim': 'bg-cyan-100 text-cyan-700',
+                        'izin': 'bg-emerald-100 text-emerald-700',
+                        'dogum_gunu': 'bg-pink-100 text-pink-700'
+                    } %}
+                    {% set tip_adlar = {
+                        'genel': 'Genel',
+                        'toplanti': 'Toplantı',
+                        'gorev': 'Görev',
+                        'egitim': 'Eğitim',
+                        'izin': 'İzin',
+                        'dogum_gunu': 'Doğum Günü'
+                    } %}
+                    <span class="inline-block mt-2 px-2 py-1 text-xs font-medium rounded-full {{ tip_renkler.get(etkinlik.etkinlik_tipi, 'bg-gray-100 text-gray-700') }}">
+                        {{ tip_adlar.get(etkinlik.etkinlik_tipi, 'Genel') }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Detaylar -->
+            <div class="mt-6 space-y-4">
+                <!-- Tarih/Saat -->
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="material-symbols-outlined text-text-muted">schedule</span>
+                    <div>
+                        {% if etkinlik.tum_gun %}
+                        <span class="font-medium">{{ etkinlik.baslangic.strftime('%d %B %Y, %A') }}</span>
+                        <span class="text-text-muted dark:text-text-muted-dark">(Tüm gün)</span>
+                        {% else %}
+                        <span class="font-medium">{{ etkinlik.baslangic.strftime('%d %B %Y, %A') }}</span>
+                        <span class="text-text-muted dark:text-text-muted-dark">
+                            {{ etkinlik.baslangic.strftime('%H:%M') }}
+                            {% if etkinlik.bitis %} - {{ etkinlik.bitis.strftime('%H:%M') }}{% endif %}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Konum -->
+                {% if etkinlik.konum %}
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="material-symbols-outlined text-text-muted">location_on</span>
+                    <span>{{ etkinlik.konum }}</span>
+                </div>
+                {% endif %}
+
+                <!-- Hatırlatma -->
+                {% if etkinlik.hatirlatma > 0 %}
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="material-symbols-outlined text-text-muted">notifications</span>
+                    <span>
+                        {% if etkinlik.hatirlatma == 5 %}5 dakika önce
+                        {% elif etkinlik.hatirlatma == 15 %}15 dakika önce
+                        {% elif etkinlik.hatirlatma == 30 %}30 dakika önce
+                        {% elif etkinlik.hatirlatma == 60 %}1 saat önce
+                        {% elif etkinlik.hatirlatma == 1440 %}1 gün önce
+                        {% else %}{{ etkinlik.hatirlatma }} dakika önce{% endif %}
+                    </span>
+                </div>
+                {% endif %}
+
+                <!-- Oluşturan -->
+                <div class="flex items-center gap-3 text-sm">
+                    <span class="material-symbols-outlined text-text-muted">person</span>
+                    <span>{{ etkinlik.olusturan.ad }} {{ etkinlik.olusturan.soyad }}</span>
+                </div>
+
+                <!-- Açıklama -->
+                {% if etkinlik.aciklama %}
+                <div class="mt-4 pt-4 border-t border-border-light dark:border-border-dark">
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark whitespace-pre-line">{{ etkinlik.aciklama }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Katılımcılar -->
+        {% if etkinlik.katilimcilar.count() > 0 %}
+        <div class="px-6 py-4 border-t border-border-light dark:border-border-dark">
+            <h3 class="font-medium text-sm text-[#111418] dark:text-white mb-3">Katılımcılar</h3>
+            <div class="flex flex-wrap gap-2">
+                {% for k in etkinlik.katilimcilar %}
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-full text-sm">
+                    <div class="w-6 h-6 bg-primary/20 rounded-full flex items-center justify-center">
+                        <span class="text-xs font-bold text-primary">{{ k.user.ad[0] }}</span>
+                    </div>
+                    <span>{{ k.user.ad }} {{ k.user.soyad }}</span>
+                    {% set durum_renkler = {'kabul': 'text-emerald-500', 'red': 'text-rose-500', 'belki': 'text-amber-500', 'bekliyor': 'text-gray-400'} %}
+                    <span class="material-symbols-outlined text-sm {{ durum_renkler.get(k.durum, 'text-gray-400') }}">
+                        {% if k.durum == 'kabul' %}check_circle
+                        {% elif k.durum == 'red' %}cancel
+                        {% elif k.durum == 'belki' %}help
+                        {% else %}schedule{% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

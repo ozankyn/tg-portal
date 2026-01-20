@@ -110,6 +110,10 @@ def create_app(config_name=None):
 
     from app.modules.todo.routes import todo_bp
     app.register_blueprint(todo_bp, url_prefix="/todo")
+
+    from app.modules.takvim.routes import takvim_bp
+    app.register_blueprint(takvim_bp, url_prefix="/takvim")
+    csrf.exempt(takvim_bp)
     app.register_blueprint(masraf_bp, url_prefix="/masraf")
     app.register_blueprint(sozlesme_bp, url_prefix="/sozlesme")
     app.register_blueprint(satinalma_bp, url_prefix="/satinalma")
@@ -157,4 +161,8 @@ def create_app(config_name=None):
         from flask import send_from_directory
         return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
     
+    # Scheduler baslat
+    from app.scheduler import init_scheduler
+    init_scheduler(app)
+
     return app

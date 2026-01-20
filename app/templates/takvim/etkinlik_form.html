@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Etkinlik Düzenle' if etkinlik else 'Yeni Etkinlik' }} - TG Portal{% endblock %}
+{% block page_title %}{{ 'Etkinlik Düzenle' if etkinlik else 'Yeni Etkinlik' }}{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <form method="POST" class="space-y-6">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+                <h2 class="text-lg font-bold text-[#111418] dark:text-white">Etkinlik Bilgileri</h2>
+            </div>
+            <div class="p-6 space-y-5">
+                <!-- Başlık -->
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Başlık *</label>
+                    <input type="text" name="baslik" value="{{ etkinlik.baslik if etkinlik else '' }}" required
+                           placeholder="Etkinlik başlığı..."
+                           class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                </div>
+
+                <!-- Tüm Gün -->
+                <div class="flex items-center gap-3">
+                    <input type="checkbox" name="tum_gun" id="tum_gun" {{ 'checked' if etkinlik and etkinlik.tum_gun }}
+                           class="w-4 h-4 text-primary rounded" onchange="toggleTimeFields()">
+                    <label for="tum_gun" class="text-sm font-medium text-[#111418] dark:text-white">Tüm gün</label>
+                </div>
+
+                <!-- Tarih ve Saat -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Başlangıç Tarihi *</label>
+                        <input type="date" name="baslangic_tarih" required
+                               value="{{ etkinlik.baslangic.strftime('%Y-%m-%d') if etkinlik else tarih }}"
+                               class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    </div>
+                    <div id="baslangicSaatDiv">
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Başlangıç Saati</label>
+                        <input type="time" name="baslangic_saat"
+                               value="{{ etkinlik.baslangic.strftime('%H:%M') if etkinlik else saat|default('09:00') }}"
+                               class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5" id="bitisDiv">
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Bitiş Tarihi</label>
+                        <input type="date" name="bitis_tarih"
+                               value="{{ etkinlik.bitis.strftime('%Y-%m-%d') if etkinlik and etkinlik.bitis else '' }}"
+                               class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    </div>
+                    <div id="bitisSaatDiv">
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Bitiş Saati</label>
+                        <input type="time" name="bitis_saat"
+                               value="{{ etkinlik.bitis.strftime('%H:%M') if etkinlik and etkinlik.bitis else '10:00' }}"
+                               class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                    </div>
+                </div>
+
+                <!-- Konum -->
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Konum</label>
+                    <input type="text" name="konum" value="{{ etkinlik.konum if etkinlik else '' }}"
+                           placeholder="Toplantı odası, adres veya online link..."
+                           class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                </div>
+
+                <!-- Tip ve Renk -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Etkinlik Tipi</label>
+                        <select name="etkinlik_tipi" class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                            <option value="genel" {{ 'selected' if not etkinlik or etkinlik.etkinlik_tipi == 'genel' }}>Genel</option>
+                            <option value="toplanti" {{ 'selected' if etkinlik and etkinlik.etkinlik_tipi == 'toplanti' }}>Toplantı</option>
+                            <option value="gorev" {{ 'selected' if etkinlik and etkinlik.etkinlik_tipi == 'gorev' }}>Görev</option>
+                            <option value="egitim" {{ 'selected' if etkinlik and etkinlik.etkinlik_tipi == 'egitim' }}>Eğitim</option>
+                            <option value="izin" {{ 'selected' if etkinlik and etkinlik.etkinlik_tipi == 'izin' }}>İzin</option>
+                            <option value="dogum_gunu" {{ 'selected' if etkinlik and etkinlik.etkinlik_tipi == 'dogum_gunu' }}>Doğum Günü</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Renk</label>
+                        <div class="flex gap-2">
+                            {% set renkler = ['#6366f1', '#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#8b5cf6', '#ec4899'] %}
+                            {% for renk in renkler %}
+                            <label class="cursor-pointer">
+                                <input type="radio" name="renk" value="{{ renk }}" class="hidden peer"
+                                       {{ 'checked' if (etkinlik and etkinlik.renk == renk) or (not etkinlik and renk == '#6366f1') }}>
+                                <span class="block w-8 h-8 rounded-full peer-checked:ring-2 peer-checked:ring-offset-2 peer-checked:ring-gray-400"
+                                      style="background-color: {{ renk }}"></span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hatırlatma -->
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Hatırlatma</label>
+                    <select name="hatirlatma" class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                        <option value="0" {{ 'selected' if etkinlik and etkinlik.hatirlatma == 0 }}>Hatırlatma yok</option>
+                        <option value="5" {{ 'selected' if etkinlik and etkinlik.hatirlatma == 5 }}>5 dakika önce</option>
+                        <option value="15" {{ 'selected' if not etkinlik or etkinlik.hatirlatma == 15 }}>15 dakika önce</option>
+                        <option value="30" {{ 'selected' if etkinlik and etkinlik.hatirlatma == 30 }}>30 dakika önce</option>
+                        <option value="60" {{ 'selected' if etkinlik and etkinlik.hatirlatma == 60 }}>1 saat önce</option>
+                        <option value="1440" {{ 'selected' if etkinlik and etkinlik.hatirlatma == 1440 }}>1 gün önce</option>
+                    </select>
+                </div>
+
+                <!-- Katılımcılar -->
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Katılımcılar</label>
+                    <select name="katilimcilar" multiple size="5"
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">
+                        {% for u in kullanicilar %}
+                        <option value="{{ u.id }}" {{ 'selected' if etkinlik and u.id in etkinlik.katilimcilar|map(attribute='user_id')|list }}>
+                            {{ u.ad }} {{ u.soyad }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <p class="mt-1 text-xs text-text-muted dark:text-text-muted-dark">Ctrl/Cmd tuşu ile birden fazla seçebilirsiniz</p>
+                </div>
+
+                <!-- Açıklama -->
+                <div>
+                    <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Açıklama</label>
+                    <textarea name="aciklama" rows="3" placeholder="Etkinlik detayları..."
+                              class="w-full px-4 py-3 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm">{{ etkinlik.aciklama if etkinlik else '' }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Butonlar -->
+        <div class="flex justify-end gap-3">
+            <a href="{{ url_for('takvim.index') }}" class="px-6 py-3 border border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#252b36] rounded-lg font-medium transition-colors">
+                İptal
+            </a>
+            <button type="submit" class="px-6 py-3 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors">
+                {{ 'Güncelle' if etkinlik else 'Oluştur' }}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleTimeFields() {
+    const tumGun = document.getElementById('tum_gun').checked;
+    document.getElementById('baslangicSaatDiv').style.display = tumGun ? 'none' : 'block';
+    document.getElementById('bitisSaatDiv').style.display = tumGun ? 'none' : 'block';
+}
+// Sayfa yüklendiğinde kontrol et
+document.addEventListener('DOMContentLoaded', toggleTimeFields);
+</script>
+{% endblock %}
