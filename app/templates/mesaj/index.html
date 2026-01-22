@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Mesajlar - TG Portal{% endblock %}
+{% block page_title %}Mesajlar{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Ust Bar -->
+    <div class="flex items-center justify-between">
+        <div class="flex gap-2">
+            <a href="{{ url_for('mesaj.index') }}"
+               class="px-4 py-2 rounded-lg text-sm font-medium {% if aktif_sekme == 'gelen' %}bg-primary text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                Gelen Kutusu
+                {% if aktif_sekme == 'gelen' and okunmamis_sayisi %}
+                <span class="ml-1 px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">{{ okunmamis_sayisi }}</span>
+                {% endif %}
+            </a>
+            <a href="{{ url_for('mesaj.gonderilenler') }}"
+               class="px-4 py-2 rounded-lg text-sm font-medium {% if aktif_sekme == 'gonderilen' %}bg-primary text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
+                Gonderilenler
+            </a>
+        </div>
+        <a href="{{ url_for('mesaj.yeni') }}" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-bold flex items-center gap-2">
+            <span class="material-symbols-outlined text-base">edit</span>
+            Yeni Mesaj
+        </a>
+    </div>
+
+    <!-- Mesaj Listesi -->
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
+        {% if mesajlar.items %}
+        <div class="divide-y divide-gray-100 dark:divide-gray-700">
+            {% for mesaj in mesajlar.items %}
+            <a href="{{ url_for('mesaj.detay', id=mesaj.id) }}"
+               class="block p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors {% if not mesaj.okundu and aktif_sekme == 'gelen' %}bg-blue-50 dark:bg-blue-900/20{% endif %}">
+                <div class="flex items-start gap-4">
+                    <div class="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <span class="text-primary font-bold">
+                            {% if aktif_sekme == 'gelen' %}
+                            {{ mesaj.gonderen.ad[0] }}{{ mesaj.gonderen.soyad[0] if mesaj.gonderen.soyad else '' }}
+                            {% else %}
+                            {{ mesaj.alici.ad[0] }}{{ mesaj.alici.soyad[0] if mesaj.alici.soyad else '' }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-1">
+                            <p class="font-medium text-gray-900 dark:text-white {% if not mesaj.okundu and aktif_sekme == 'gelen' %}font-bold{% endif %}">
+                                {% if aktif_sekme == 'gelen' %}
+                                {{ mesaj.gonderen.ad_soyad }}
+                                {% else %}
+                                Kime: {{ mesaj.alici.ad_soyad }}
+                                {% endif %}
+                            </p>
+                            <span class="text-xs text-gray-500">{{ mesaj.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                        </div>
+                        <p class="text-sm font-medium text-gray-800 dark:text-gray-200 {% if not mesaj.okundu and aktif_sekme == 'gelen' %}font-bold{% endif %}">{{ mesaj.konu }}</p>
+                        <p class="text-sm text-gray-500 truncate">{{ mesaj.ozet }}</p>
+                        {% if mesaj.dosya_adi %}
+                        <p class="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">attach_file</span>
+                            {{ mesaj.dosya_adi }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    {% if not mesaj.okundu and aktif_sekme == 'gelen' %}
+                    <span class="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-2"></span>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if mesajlar.pages > 1 %}
+        <div class="px-4 py-3 border-t border-gray-100 dark:border-gray-700 flex justify-center gap-2">
+            {% if mesajlar.has_prev %}
+            <a href="?sayfa={{ mesajlar.prev_num }}" class="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 text-sm">Onceki</a>
+            {% endif %}
+            <span class="px-3 py-1 text-sm text-gray-500">{{ mesajlar.page }} / {{ mesajlar.pages }}</span>
+            {% if mesajlar.has_next %}
+            <a href="?sayfa={{ mesajlar.next_num }}" class="px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 text-sm">Sonraki</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="p-12 text-center">
+            <span class="material-symbols-outlined text-6xl text-gray-300 mb-4">inbox</span>
+            <p class="text-gray-500">Henuz mesaj yok</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

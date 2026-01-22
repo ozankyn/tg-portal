@@ -112,8 +112,11 @@ def create_app(config_name=None):
     app.register_blueprint(todo_bp, url_prefix="/todo")
 
     from app.modules.takvim.routes import takvim_bp
+    from app.modules.mesaj.routes import mesaj_bp
     app.register_blueprint(takvim_bp, url_prefix="/takvim")
     csrf.exempt(takvim_bp)
+    app.register_blueprint(mesaj_bp, url_prefix="/mesaj")
+    csrf.exempt(mesaj_bp)
     app.register_blueprint(masraf_bp, url_prefix="/masraf")
     app.register_blueprint(sozlesme_bp, url_prefix="/sozlesme")
     app.register_blueprint(satinalma_bp, url_prefix="/satinalma")

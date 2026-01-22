@@ -6,8 +6,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from datetime import datetime, timedelta
 import os
+import atexit
 
-scheduler = BackgroundScheduler()
+scheduler = None
 
 
 def outlook_otomatik_senkronizasyon(app):
@@ -29,7 +30,6 @@ def outlook_otomatik_senkronizasyon(app):
             try:
                 token = get_outlook_token(ent.user_id)
                 if not token:
-                    print(f"[Scheduler] Kullanici {ent.user_id} icin token alinamadi")
                     continue
 
                 headers = {'Authorization': f'Bearer {token}'}
@@ -40,7 +40,6 @@ def outlook_otomatik_senkronizasyon(app):
                 response = http_requests.get(url, headers=headers)
 
                 if response.status_code != 200:
-                    print(f"[Scheduler] Kullanici {ent.user_id} icin API hatasi: {response.status_code}")
                     continue
 
                 outlook_events = response.json().get('value', [])
@@ -76,11 +75,9 @@ def outlook_otomatik_senkronizasyon(app):
                 ent.son_senkronizasyon = datetime.now()
                 db.session.commit()
 
-                if imported_count > 0:
-                    print(f"[Scheduler] Kullanici {ent.user_id}: {imported_count} yeni etkinlik eklendi")
-
             except Exception as e:
                 print(f"[Scheduler] Kullanici {ent.user_id} hatasi: {str(e)}")
+                db.session.rollback()
                 continue
 
         print(f"[Scheduler] Outlook senkronizasyonu tamamlandi")
@@ -88,15 +85,27 @@ def outlook_otomatik_senkronizasyon(app):
 
 def init_scheduler(app):
     """Scheduler i baslat"""
+    global scheduler
+
+    # Zaten calisiyorsa tekrar baslatma
+    if scheduler is not None:
+        return
+
     if os.environ.get('FLASK_ENV') == 'production':
+        scheduler = BackgroundScheduler(daemon=True)
+
         # Her 15 dakikada bir calistir
         scheduler.add_job(
             func=lambda: outlook_otomatik_senkronizasyon(app),
             trigger=IntervalTrigger(minutes=15),
             id='outlook_sync',
             name='Outlook Otomatik Senkronizasyon',
-            replace_existing=True
+            replace_existing=True,
+            max_instances=1
         )
 
         scheduler.start()
         print("[Scheduler] Outlook otomatik senkronizasyon aktif (her 15 dakika)")
+
+        # Uygulama kapaninca scheduler i durdur
+        atexit.register(lambda: scheduler.shutdown(wait=False))

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ mesaj.konu }} - TG Portal{% endblock %}
+{% block page_title %}Mesaj{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="mb-6">
+        <a href="{{ url_for('mesaj.index') }}" class="text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">arrow_back</span>
+            Mesajlara Don
+        </a>
+    </div>
+
+    <!-- Ana Mesaj -->
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mb-4">
+        <div class="p-6 border-b border-gray-100 dark:border-gray-700">
+            <div class="flex items-start justify-between">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span class="text-primary font-bold text-lg">{{ mesaj.gonderen.ad[0] }}{{ mesaj.gonderen.soyad[0] if mesaj.gonderen.soyad else '' }}</span>
+                    </div>
+                    <div>
+                        <p class="font-bold text-gray-900 dark:text-white">{{ mesaj.gonderen.ad_soyad }}</p>
+                        <p class="text-sm text-gray-500">{{ mesaj.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                    </div>
+                </div>
+                <form action="{{ url_for('mesaj.sil', id=mesaj.id) }}" method="POST" onsubmit="return confirm('Mesaji silmek istediginize emin misiniz?')">
+                    <button type="submit" class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg">
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
+                </form>
+            </div>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white mt-4">{{ mesaj.konu }}</h1>
+            <p class="text-sm text-gray-500 mt-1">Kime: {{ mesaj.alici.ad_soyad }}</p>
+        </div>
+
+        <div class="p-6">
+            <div class="prose dark:prose-invert max-w-none">
+                {{ mesaj.icerik|nl2br }}
+            </div>
+
+            {% if mesaj.dosya_adi %}
+            <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center gap-3">
+                <span class="material-symbols-outlined text-gray-400">attach_file</span>
+                <a href="{{ url_for('static', filename='uploads/' + mesaj.dosya_yolu) }}" target="_blank" class="text-primary hover:underline">
+                    {{ mesaj.dosya_adi }}
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Yanitlar -->
+    {% if mesaj.yanitlar.count() > 0 %}
+    <div class="space-y-4 mb-4">
+        {% for yanit in mesaj.yanitlar.order_by(Mesaj.created_at.asc()) %}
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm {% if yanit.gonderen_id == current_user.id %}ml-8{% else %}mr-8{% endif %}">
+            <div class="p-4">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span class="text-primary font-bold text-sm">{{ yanit.gonderen.ad[0] }}{{ yanit.gonderen.soyad[0] if yanit.gonderen.soyad else '' }}</span>
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-900 dark:text-white text-sm">{{ yanit.gonderen.ad_soyad }}</p>
+                        <p class="text-xs text-gray-500">{{ yanit.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                    </div>
+                </div>
+                <div class="prose dark:prose-invert max-w-none text-sm">
+                    {{ yanit.icerik|nl2br }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Yanit Formu -->
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+        <div class="p-4 border-b border-gray-100 dark:border-gray-700">
+            <h3 class="font-medium text-gray-900 dark:text-white">Yanit Yaz</h3>
+        </div>
+        <form action="{{ url_for('mesaj.yanitla', id=mesaj.id) }}" method="POST" class="p-4">
+            <textarea name="icerik" rows="3" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white" placeholder="Yanitinizi yazin..."></textarea>
+            <div class="flex justify-end mt-3">
+                <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium">
+                    Yanit Gonder
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
