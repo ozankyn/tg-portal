@@ -10,6 +10,52 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from datetime import datetime, date
 from werkzeug.utils import secure_filename
+from PIL import Image
+import io
+
+def resize_image(file, max_size=1920, quality=85):
+    """Fotoğrafı yeniden boyutlandır ve optimize et"""
+    try:
+        img = Image.open(file)
+
+        # EXIF orientation düzelt
+        try:
+            from PIL import ExifTags
+            for orientation in ExifTags.TAGS.keys():
+                if ExifTags.TAGS[orientation] == 'Orientation':
+                    break
+            exif = img._getexif()
+            if exif:
+                orientation_value = exif.get(orientation)
+                if orientation_value == 3:
+                    img = img.rotate(180, expand=True)
+                elif orientation_value == 6:
+                    img = img.rotate(270, expand=True)
+                elif orientation_value == 8:
+                    img = img.rotate(90, expand=True)
+        except:
+            pass
+
+        # RGB'ye çevir (RGBA ise)
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+
+        # Boyutlandır
+        if max(img.size) > max_size:
+            ratio = max_size / max(img.size)
+            new_size = tuple(int(dim * ratio) for dim in img.size)
+            img = img.resize(new_size, Image.Resampling.LANCZOS)
+
+        # BytesIO'ya kaydet
+        output = io.BytesIO()
+        img.save(output, format='JPEG', quality=quality, optimize=True)
+        output.seek(0)
+        return output
+    except Exception as e:
+        print(f"Resize hatası: {e}")
+        file.seek(0)
+        return file
+
 from app import db
 from app.models.filo import Arac, FiloIslem, YakitKayit, Sigorta, Muayene, Kaza
 from app.models.filo_update import AracTeslim, KazaFotograf, IkameArac, TrafikCezasi, VARSAYILAN_AKSESUARLAR
@@ -500,15 +546,23 @@ def arac_teslim(id):
             imza_teslim_alan=request.form.get('imza_teslim_alan')
         )
         
-        # Fotoğrafları kaydet
+        # Fotoğrafları kaydet (resize ile)
         fotograflar = []
         if 'fotograflar' in request.files:
             for file in request.files.getlist('fotograflar'):
                 if file and file.filename:
-                    filename = secure_filename(f"{arac.plaka}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
+                    # Dosya adını oluştur
+                    ext = os.path.splitext(file.filename)[1].lower()
+                    if ext not in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                        continue
+                    filename = secure_filename(f"{arac.plaka}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename.rsplit('.', 1)[0]}.jpg")
                     upload_path = os.path.join(current_app.config.get('UPLOAD_FOLDER', 'uploads'), 'teslim')
                     os.makedirs(upload_path, exist_ok=True)
-                    file.save(os.path.join(upload_path, filename))
+
+                    # Resize et ve kaydet
+                    resized = resize_image(file, max_size=1920, quality=85)
+                    with open(os.path.join(upload_path, filename), 'wb') as f:
+                        f.write(resized.read())
                     fotograflar.append(f"teslim/{filename}")
         
         teslim.fotograflar = fotograflar
@@ -565,15 +619,23 @@ def arac_iade(id):
             imza_teslim_alan=request.form.get('imza_teslim_alan')
         )
         
-        # Fotoğrafları kaydet
+        # Fotoğrafları kaydet (resize ile)
         fotograflar = []
         if 'fotograflar' in request.files:
             for file in request.files.getlist('fotograflar'):
                 if file and file.filename:
-                    filename = secure_filename(f"{arac.plaka}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename}")
+                    # Dosya adını oluştur
+                    ext = os.path.splitext(file.filename)[1].lower()
+                    if ext not in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                        continue
+                    filename = secure_filename(f"{arac.plaka}_{datetime.now().strftime('%Y%m%d%H%M%S')}_{file.filename.rsplit('.', 1)[0]}.jpg")
                     upload_path = os.path.join(current_app.config.get('UPLOAD_FOLDER', 'uploads'), 'teslim')
                     os.makedirs(upload_path, exist_ok=True)
-                    file.save(os.path.join(upload_path, filename))
+
+                    # Resize et ve kaydet
+                    resized = resize_image(file, max_size=1920, quality=85)
+                    with open(os.path.join(upload_path, filename), 'wb') as f:
+                        f.write(resized.read())
                     fotograflar.append(f"teslim/{filename}")
         
         iade.fotograflar = fotograflar

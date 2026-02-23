@@ -8,7 +8,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from datetime import datetime, date
 from app import db
-from app.models.proje import Musteri, Proje, HedefKadro
+from app.models.proje import Musteri, Proje, HedefKadro, Direktorluk, Mudurluk, Il, Ilce
 from app.models.ik import Aday, Calisan
 from app.utils import permission_required
 
@@ -280,8 +280,10 @@ def kadro_ekle(proje_id):
             proje_id=proje_id,
             pozisyon_adi=request.form.get('pozisyon_adi'),
             departman=request.form.get('departman'),
-            il=request.form.get('il'),
-            ilce=request.form.get('ilce'),
+            il_id=request.form.get('il_id', type=int) or None,
+            ilce_id=request.form.get('ilce_id', type=int) or None,
+            direktorluk_id=request.form.get('direktorluk_id', type=int) or None,
+            mudurluk_id=request.form.get('mudurluk_id', type=int) or None,
             bolge=request.form.get('bolge'),
             hedef_sayi=request.form.get('hedef_sayi', 1, type=int),
             oncelik=request.form.get('oncelik', 5, type=int),
@@ -303,7 +305,10 @@ def kadro_ekle(proje_id):
         flash('Kadro başarıyla eklendi.', 'success')
         return redirect(url_for('proje.proje_detay', id=proje_id))
     
-    return render_template('proje/kadro_form.html', proje=proje, kadro=None)
+    iller = Il.query.order_by(Il.ad).all()
+    direktorlukler = Direktorluk.query.filter_by(aktif=True, is_deleted=False).order_by(Direktorluk.ad).all()
+    mudurlukler = Mudurluk.query.filter_by(aktif=True, is_deleted=False).order_by(Mudurluk.ad).all()
+    return render_template('proje/kadro_form.html', proje=proje, kadro=None, iller=iller, direktorlukler=direktorlukler, mudurlukler=mudurlukler)
 
 
 @proje_bp.route('/kadro/<int:id>')
@@ -332,8 +337,10 @@ def kadro_duzenle(id):
     if request.method == 'POST':
         kadro.pozisyon_adi = request.form.get('pozisyon_adi')
         kadro.departman = request.form.get('departman')
-        kadro.il = request.form.get('il')
-        kadro.ilce = request.form.get('ilce')
+        kadro.il_id = request.form.get('il_id', type=int) or None
+        kadro.ilce_id = request.form.get('ilce_id', type=int) or None
+        kadro.direktorluk_id = request.form.get('direktorluk_id', type=int) or None
+        kadro.mudurluk_id = request.form.get('mudurluk_id', type=int) or None
         kadro.bolge = request.form.get('bolge')
         kadro.hedef_sayi = request.form.get('hedef_sayi', 1, type=int)
         kadro.oncelik = request.form.get('oncelik', 5, type=int)
@@ -354,7 +361,10 @@ def kadro_duzenle(id):
         flash('Kadro başarıyla güncellendi.', 'success')
         return redirect(url_for('proje.kadro_detay', id=id))
     
-    return render_template('proje/kadro_form.html', proje=kadro.proje, kadro=kadro)
+    iller = Il.query.order_by(Il.ad).all()
+    direktorlukler = Direktorluk.query.filter_by(aktif=True, is_deleted=False).order_by(Direktorluk.ad).all()
+    mudurlukler = Mudurluk.query.filter_by(aktif=True, is_deleted=False).order_by(Mudurluk.ad).all()
+    return render_template('proje/kadro_form.html', proje=kadro.proje, kadro=kadro, iller=iller, direktorlukler=direktorlukler, mudurlukler=mudurlukler)
 
 
 @proje_bp.route('/kadro/<int:id>/aday/ekle', methods=['GET', 'POST'])
@@ -581,3 +591,31 @@ def aday_durum_degistir(id, durum):
     return redirect(request.referrer or url_for('proje.proje_liste'))
 
 
+
+
+# ==================== API ENDPOINTS ====================
+
+@proje_bp.route('/api/ilceler')
+@login_required
+def api_ilceler():
+    """İl ID'sine göre ilçeleri getir (AJAX için)"""
+    il_id = request.args.get('il_id', type=int)
+    if not il_id:
+        return jsonify([])
+
+    ilceler = Ilce.query.filter_by(il_id=il_id).order_by(Ilce.ad).all()
+    return jsonify([{'id': i.id, 'ad': i.ad} for i in ilceler])
+
+
+@proje_bp.route('/api/mudurlukler')
+@login_required
+def api_mudurlukler():
+    """Direktörlük ID'sine göre müdürlükleri getir"""
+    direktorluk_id = request.args.get('direktorluk_id', type=int)
+
+    query = Mudurluk.query.filter_by(aktif=True, is_deleted=False)
+    if direktorluk_id:
+        query = query.filter_by(direktorluk_id=direktorluk_id)
+
+    mudurlukler = query.order_by(Mudurluk.ad).all()
+    return jsonify([{'id': m.id, 'ad': m.ad, 'direktorluk_id': m.direktorluk_id} for m in mudurlukler])

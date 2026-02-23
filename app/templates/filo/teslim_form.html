@@ -235,7 +235,13 @@ function clearSignature(type) {
 }
 
 // Form submit öncesi imzaları kaydet
-document.querySelector('form').addEventListener('submit', function() {
+document.querySelector('form').addEventListener('submit', function(e) {
+    // Çift tıklama koruması
+    var submitBtn = this.querySelector('button[type="submit"]');
+    if (submitBtn.disabled) { e.preventDefault(); return false; }
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Kaydediliyor...';
+
     if (!signaturePadTeslimEden.isEmpty()) {
         document.getElementById('imzaTeslimEden').value = signaturePadTeslimEden.toDataURL();
     }

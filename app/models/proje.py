@@ -1,12 +1,56 @@
 # -*- coding: utf-8 -*-
 """
 TG Portal - Proje Modelleri
-Müşteri, Proje, Hedef Kadro
+Müşteri, Proje, Hedef Kadro, Direktörlük, Müdürlük
 """
 
 from datetime import datetime
 from app import db
 from app.models.base import TimestampMixin, SoftDeleteMixin
+
+
+class Direktorluk(db.Model, TimestampMixin, SoftDeleteMixin):
+    """Direktörlük - Üst bölge/birim tanımı"""
+    __tablename__ = 'direktorlukler'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ad = db.Column(db.String(100), nullable=False)
+    kod = db.Column(db.String(20))  # DIR-001
+    aciklama = db.Column(db.Text)
+    aktif = db.Column(db.Boolean, default=True)
+    
+    # İlişkiler
+    mudurlukler = db.relationship('Mudurluk', back_populates='direktorluk', lazy='dynamic')
+    kadrolar = db.relationship('HedefKadro', back_populates='direktorluk', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<Direktorluk {self.ad}>'
+
+
+class Mudurluk(db.Model, TimestampMixin, SoftDeleteMixin):
+    """Müdürlük - Alt bölge/birim tanımı"""
+    __tablename__ = 'mudurlukler'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ad = db.Column(db.String(100), nullable=False)
+    kod = db.Column(db.String(20))  # MUD-001
+    direktorluk_id = db.Column(db.Integer, db.ForeignKey('direktorlukler.id'), nullable=True)
+    aciklama = db.Column(db.Text)
+    aktif = db.Column(db.Boolean, default=True)
+    
+    # İlişkiler
+    direktorluk = db.relationship('Direktorluk', back_populates='mudurlukler')
+    kadrolar = db.relationship('HedefKadro', back_populates='mudurluk', lazy='dynamic')
+    
+    @property
+    def full_name(self):
+        """Direktörlük > Müdürlük şeklinde"""
+        if self.direktorluk:
+            return f"{self.direktorluk.ad} > {self.ad}"
+        return self.ad
+    
+    def __repr__(self):
+        return f'<Mudurluk {self.ad}>'
 
 
 class Musteri(db.Model, TimestampMixin, SoftDeleteMixin):
@@ -140,10 +184,18 @@ class HedefKadro(db.Model, TimestampMixin, SoftDeleteMixin):
     pozisyon_adi = db.Column(db.String(100), nullable=False)  # Saha Satış Temsilcisi
     departman = db.Column(db.String(100))  # Satış, Operasyon
     
-    # Lokasyon
+    # Lokasyon - Yeni FK'ler (nullable, eski veriler için)
+    il_id = db.Column(db.Integer, db.ForeignKey('iller.id'), nullable=True)
+    ilce_id = db.Column(db.Integer, db.ForeignKey('ilceler.id'), nullable=True)
+    
+    # Eski VARCHAR alanlar (geriye uyumluluk için korunuyor)
     il = db.Column(db.String(50))
     ilce = db.Column(db.String(50))
     bolge = db.Column(db.String(100))  # Marmara, Ege vb.
+    
+    # Organizasyon yapısı - Yeni FK'ler
+    mudurluk_id = db.Column(db.Integer, db.ForeignKey('mudurlukler.id'), nullable=True)
+    direktorluk_id = db.Column(db.Integer, db.ForeignKey('direktorlukler.id'), nullable=True)
     
     # Sayılar
     hedef_sayi = db.Column(db.Integer, default=1)  # Kaç kişi alınacak
@@ -166,13 +218,33 @@ class HedefKadro(db.Model, TimestampMixin, SoftDeleteMixin):
     aktif = db.Column(db.Boolean, default=True)
     notlar = db.Column(db.Text)
     
+    # SMS Doğrulama Ayarı
+    sms_dogrulama_zorunlu = db.Column(db.Boolean, default=False)
+    
     # İlişkiler
     proje = db.relationship('Proje', back_populates='kadrolar')
     adaylar = db.relationship('Aday', backref='kadro', lazy='dynamic')
     calisanlar = db.relationship('Calisan', backref='kadro', lazy='dynamic')
-
-    # SMS Doğrulama Ayarı
-    sms_dogrulama_zorunlu = db.Column(db.Boolean, default=False)
+    
+    # Yeni ilişkiler
+    il_obj = db.relationship('Il', backref='kadrolar', foreign_keys=[il_id])
+    ilce_obj = db.relationship('Ilce', backref='kadrolar', foreign_keys=[ilce_id])
+    mudurluk = db.relationship('Mudurluk', back_populates='kadrolar')
+    direktorluk = db.relationship('Direktorluk', back_populates='kadrolar')
+    
+    @property
+    def il_adi(self):
+        """İl adını döndür (önce FK, sonra eski alan)"""
+        if self.il_obj:
+            return self.il_obj.ad
+        return self.il
+    
+    @property
+    def ilce_adi(self):
+        """İlçe adını döndür (önce FK, sonra eski alan)"""
+        if self.ilce_obj:
+            return self.ilce_obj.ad
+        return self.ilce
     
     @property
     def mevcut_sayi(self):
@@ -206,15 +278,29 @@ class HedefKadro(db.Model, TimestampMixin, SoftDeleteMixin):
     def full_title(self):
         """Pozisyon - İl şeklinde"""
         parts = [self.pozisyon_adi]
-        if self.il:
-            parts.append(self.il)
+        il_name = self.il_adi
+        if il_name:
+            parts.append(il_name)
         return ' - '.join(parts)
+    
+    @property
+    def organizasyon_bilgisi(self):
+        """Direktörlük > Müdürlük şeklinde"""
+        parts = []
+        if self.direktorluk:
+            parts.append(self.direktorluk.ad)
+        if self.mudurluk:
+            parts.append(self.mudurluk.ad)
+        return ' > '.join(parts) if parts else None
     
     def to_dict(self):
         return {
             'id': self.id,
             'pozisyon_adi': self.pozisyon_adi,
-            'il': self.il,
+            'il': self.il_adi,
+            'ilce': self.ilce_adi,
+            'mudurluk': self.mudurluk.ad if self.mudurluk else None,
+            'direktorluk': self.direktorluk.ad if self.direktorluk else None,
             'hedef_sayi': self.hedef_sayi,
             'mevcut_sayi': self.mevcut_sayi,
             'eksik_sayi': self.eksik_sayi,
@@ -223,4 +309,33 @@ class HedefKadro(db.Model, TimestampMixin, SoftDeleteMixin):
         }
     
     def __repr__(self):
-        return f'<HedefKadro {self.pozisyon_adi} - {self.il}>'
+        return f'<HedefKadro {self.pozisyon_adi} - {self.il_adi}>'
+
+
+# İl ve İlçe modelleri (eğer yoksa ekle)
+class Il(db.Model):
+    """Türkiye İlleri"""
+    __tablename__ = 'iller'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ad = db.Column(db.String(50), nullable=False)
+    plaka_kodu = db.Column(db.String(2))
+    
+    ilceler = db.relationship('Ilce', back_populates='il', lazy='dynamic')
+    
+    def __repr__(self):
+        return f'<Il {self.ad}>'
+
+
+class Ilce(db.Model):
+    """İlçeler"""
+    __tablename__ = 'ilceler'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    il_id = db.Column(db.Integer, db.ForeignKey('iller.id'), nullable=False)
+    ad = db.Column(db.String(100), nullable=False)
+    
+    il = db.relationship('Il', back_populates='ilceler')
+    
+    def __repr__(self):
+        return f'<Ilce {self.ad}>'

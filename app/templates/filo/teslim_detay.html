@@ -1,6 +1,72 @@
 {% extends "base.html" %}
 
-{% block title %}Teslim/İade Detay - {{ teslim.arac.plaka }} - TG Portal{% endblock %}
+{% block title %}Teslim/İade Detay - {{ teslim.arac.plaka }} - TG Portal
+{% block extra_js %}
+<!-- Lightbox Modal -->
+<div id="lightboxModal" class="fixed inset-0 bg-black/90 z-50 hidden items-center justify-center" onclick="closeLightbox()">
+    <button class="absolute top-4 right-4 text-white text-4xl hover:text-gray-300" onclick="closeLightbox()">&times;</button>
+    <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl hover:text-gray-300 px-4" onclick="event.stopPropagation(); prevImage()">&#10094;</button>
+    <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl hover:text-gray-300 px-4" onclick="event.stopPropagation(); nextImage()">&#10095;</button>
+    <img id="lightboxImage" src="" class="max-h-[90vh] max-w-[90vw] object-contain" onclick="event.stopPropagation()">
+    <a id="lightboxDownload" href="" download class="absolute bottom-4 left-1/2 -translate-x-1/2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg flex items-center gap-2" onclick="event.stopPropagation()">
+        <span class="material-symbols-outlined">download</span> İndir
+    </a>
+</div>
+
+<script>
+let currentImages = [];
+let currentIndex = 0;
+
+// Sayfa yüklendiğinde tüm fotoğrafları topla
+document.addEventListener('DOMContentLoaded', function() {
+    const imgs = document.querySelectorAll('[onclick*="openLightbox"]');
+    currentImages = Array.from(imgs).map(img => img.src);
+});
+
+function openLightbox(src) {
+    currentIndex = currentImages.indexOf(src);
+    if (currentIndex === -1) currentIndex = 0;
+    showImage();
+    document.getElementById('lightboxModal').classList.remove('hidden');
+    document.getElementById('lightboxModal').classList.add('flex');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+    document.getElementById('lightboxModal').classList.add('hidden');
+    document.getElementById('lightboxModal').classList.remove('flex');
+    document.body.style.overflow = '';
+}
+
+function showImage() {
+    const src = currentImages[currentIndex];
+    document.getElementById('lightboxImage').src = src;
+    document.getElementById('lightboxDownload').href = src;
+}
+
+function prevImage() {
+    currentIndex = (currentIndex - 1 + currentImages.length) % currentImages.length;
+    showImage();
+}
+
+function nextImage() {
+    currentIndex = (currentIndex + 1) % currentImages.length;
+    showImage();
+}
+
+// Klavye navigasyonu
+document.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('lightboxModal');
+    if (!modal.classList.contains('hidden')) {
+        if (e.key === 'Escape') closeLightbox();
+        if (e.key === 'ArrowLeft') prevImage();
+        if (e.key === 'ArrowRight') nextImage();
+    }
+});
+</script>
+{% endblock %}
+
+{% endblock %}
 {% block page_title %}{{ 'Araç Teslim' if teslim.islem_tipi == 'teslim' else 'Araç İade' }} Detayı{% endblock %}
 
 {% block content %}
@@ -94,7 +160,10 @@
             <div class="p-4">
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
                     {% for foto in teslim.fotograflar %}
-                    <img src="{{ url_for('static', filename='uploads/' + foto) }}" class="w-full h-24 object-cover rounded-lg" alt="Fotoğraf">
+                    <img src="{{ url_for('static', filename='uploads/' + foto) }}"
+                         class="w-full h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                         alt="Fotoğraf"
+                         onclick="openLightbox('{{ url_for('static', filename='uploads/' + foto) }}')">
                     {% endfor %}
                 </div>
             </div>

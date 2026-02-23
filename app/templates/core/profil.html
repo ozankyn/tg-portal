@@ -4,87 +4,113 @@
 {% block page_title %}Profilim{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-8">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Sol Kolon - Form -->
+    <div class="lg:col-span-2 space-y-6">
         <form method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-person me-2"></i>Kişisel Bilgiler</h6>
+
+            <!-- Kişisel Bilgiler -->
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mb-6">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-xl">person</span>
+                        Kişisel Bilgiler
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Ad</label>
-                            <input type="text" name="ad" class="form-control" value="{{ current_user.ad }}">
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Ad</label>
+                            <input type="text" name="ad" value="{{ current_user.ad }}" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Soyad</label>
-                            <input type="text" name="soyad" class="form-control" value="{{ current_user.soyad }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Soyad</label>
+                            <input type="text" name="soyad" value="{{ current_user.soyad }}" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Email</label>
-                            <input type="email" class="form-control" value="{{ current_user.email }}" disabled>
-                            <small class="text-muted">Email değiştirilemez</small>
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Email</label>
+                            <input type="email" value="{{ current_user.email }}" disabled class="w-full px-3 py-2 border border-border-light dark:border-border-dark bg-gray-100 dark:bg-[#1a1f2e] rounded-lg text-text-muted dark:text-text-muted-dark cursor-not-allowed">
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Email değiştirilemez</p>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Telefon</label>
-                            <input type="tel" name="telefon" class="form-control" value="{{ current_user.telefon or '' }}">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Telefon</label>
+                            <input type="tel" name="telefon" value="{{ current_user.telefon or '' }}" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <div class="card mb-4">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="bi bi-key me-2"></i>Şifre Değiştir</h6>
+
+            <!-- Şifre Değiştir -->
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mb-6">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined text-xl">key</span>
+                        Şifre Değiştir
+                    </h6>
                 </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Mevcut Şifre</label>
-                            <input type="password" name="current_password" class="form-control">
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Mevcut Şifre</label>
+                            <input type="password" name="old_password" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Yeni Şifre</label>
-                            <input type="password" name="new_password" class="form-control">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Yeni Şifre</label>
+                            <input type="password" name="new_password" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Yeni Şifre (Tekrar)</label>
-                            <input type="password" name="new_password_confirm" class="form-control">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Yeni Şifre (Tekrar)</label>
+                            <input type="password" name="new_password_confirm" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
-                    <small class="text-muted">Şifrenizi değiştirmek istemiyorsanız boş bırakın.</small>
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-3">Şifrenizi değiştirmek istemiyorsanız boş bırakın.</p>
                 </div>
             </div>
-            
-            <button type="submit" class="btn btn-primary">
-                <i class="bi bi-check-lg me-1"></i>Kaydet
+
+            <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                <span class="material-symbols-outlined text-xl">check</span>
+                Kaydet
             </button>
         </form>
     </div>
-    
-    <div class="col-lg-4">
-        <div class="card">
-            <div class="card-header bg-white">
-                <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Hesap Bilgileri</h6>
+
+    <!-- Sağ Kolon - Hesap Bilgileri -->
+    <div>
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-xl">info</span>
+                    Hesap Bilgileri
+                </h6>
             </div>
-            <div class="card-body">
-                <p><strong>Roller:</strong></p>
-                <ul class="list-unstyled mb-3">
-                    {% for role in current_user.roles %}
-                    <li><span class="badge bg-primary">{{ role.display_name }}</span></li>
-                    {% else %}
-                    <li class="text-muted">Rol atanmamış</li>
-                    {% endfor %}
-                </ul>
-                
-                <p><strong>Son Giriş:</strong><br>
-                {{ current_user.last_login.strftime('%d.%m.%Y %H:%M') if current_user.last_login else 'Bilinmiyor' }}</p>
-                
-                <p><strong>Kayıt Tarihi:</strong><br>
-                {{ current_user.created_at.strftime('%d.%m.%Y') }}</p>
+            <div class="p-4 space-y-4">
+                <div>
+                    <p class="text-sm font-medium text-text-muted dark:text-text-muted-dark mb-2">Roller</p>
+                    <div class="flex flex-wrap gap-2">
+                        {% for role in current_user.roles %}
+                        <span class="px-2.5 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            {{ role.display_name }}
+                        </span>
+                        {% else %}
+                        <span class="text-sm text-text-muted dark:text-text-muted-dark">Rol atanmamış</span>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <p class="text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Son Giriş</p>
+                    <p class="text-sm text-[#111418] dark:text-white">
+                        {{ current_user.last_login.strftime('%d.%m.%Y %H:%M') if current_user.last_login else 'Bilinmiyor' }}
+                    </p>
+                </div>
+
+                <div>
+                    <p class="text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Kayıt Tarihi</p>
+                    <p class="text-sm text-[#111418] dark:text-white">
+                        {{ current_user.created_at.strftime('%d.%m.%Y') }}
+                    </p>
+                </div>
             </div>
         </div>
     </div>

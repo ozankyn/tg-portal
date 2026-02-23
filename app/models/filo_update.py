@@ -184,6 +184,7 @@ VARSAYILAN_AKSESUARLAR = {
     'sigorta_policesi': 'Sigorta Poliçesi',
     'yedek_anahtar': 'Yedek Anahtar',
     'kullanim_kilavuzu': 'Kullanım Kılavuzu',
+    'lastik_tamir_kiti': 'Lastik Tamir Kiti',
 }
 
 

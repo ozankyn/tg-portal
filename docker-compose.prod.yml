@@ -7,6 +7,7 @@ services:
       - DATABASE_URL=postgresql://tgportal:${DB_PASSWORD}@db:5432/tgportal
       - REDIS_URL=redis://redis:6379/0
       - FLASK_ENV=production
+      - TZ=Europe/Istanbul
       - COMPANY_NAME=${COMPANY_NAME}
       - COMPANY_SUBTITLE=${COMPANY_SUBTITLE}
       - UPLOAD_FOLDER=/app/uploads

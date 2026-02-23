@@ -35,3 +35,17 @@ Thumbs.db
 
 # Docker
 docker-compose.override.yml.env
+*.xlsx
+*.csv
+*.sql
+*.backup
+*.txt
+*.py.backup
+base_backup.html
+import_*.py
+eslesme.py
+kullanici_ekle.py
+yetki_ata.py
+yetki_ekle.py
+arac_personel_esle.py
+migrations/

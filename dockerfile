@@ -21,8 +21,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . .
 
-# Create upload directory
-RUN mkdir -p uploads
+# Create upload directory and symlink for static serving
+RUN mkdir -p uploads && ln -sf /app/uploads /app/app/static/uploads
 
 # Expose port
 EXPOSE 5000

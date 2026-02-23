@@ -3,6 +3,58 @@
 {% block title %}{% if kadro %}Kadro Düzenle{% else %}Yeni Kadro{% endif %} - TG Portal{% endblock %}
 {% block page_title %}{% if kadro %}Kadro Düzenle{% else %}Yeni Kadro - {{ proje.ad }}{% endif %}{% endblock %}
 
+{% block extra_css %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    /* Select2 Dark Mode & Tailwind Uyumu */
+    .select2-container--default .select2-selection--single {
+        height: 42px;
+        padding: 6px 12px;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        background-color: white;
+    }
+    .dark .select2-container--default .select2-selection--single {
+        background-color: #111418;
+        border-color: #374151;
+        color: white;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 28px;
+        padding-left: 0;
+    }
+    .dark .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: white;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px;
+    }
+    .select2-dropdown {
+        border-radius: 0.5rem;
+        border-color: #e5e7eb;
+    }
+    .dark .select2-dropdown {
+        background-color: #1f2937;
+        border-color: #374151;
+    }
+    .dark .select2-search__field {
+        background-color: #111418;
+        color: white;
+        border-color: #374151;
+    }
+    .dark .select2-results__option {
+        color: white;
+    }
+    .dark .select2-results__option--highlighted {
+        background-color: #3b82f6 !important;
+    }
+    .select2-container {
+        width: 100% !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <form method="POST">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -39,6 +91,39 @@
                 </div>
             </div>
             
+            <!-- Organizasyon Yapısı (YENİ) -->
+            <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                    <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                        <span class="material-symbols-outlined">account_tree</span>Organizasyon Yapısı
+                    </h6>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Direktörlük</label>
+                            <select name="direktorluk_id" id="direktorluk_id" class="select2-search w-full">
+                                <option value="">Seçiniz...</option>
+                                {% for d in direktorlukler %}
+                                <option value="{{ d.id }}" {% if kadro and kadro.direktorluk_id == d.id %}selected{% endif %}>{{ d.ad }}</option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Üst organizasyon birimi</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Müdürlük</label>
+                            <select name="mudurluk_id" id="mudurluk_id" class="select2-search w-full">
+                                <option value="">Seçiniz...</option>
+                                {% for m in mudurlukler %}
+                                <option value="{{ m.id }}" data-direktorluk="{{ m.direktorluk_id or '' }}" {% if kadro and kadro.mudurluk_id == m.id %}selected{% endif %}>{{ m.ad }}</option>
+                                {% endfor %}
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Alt organizasyon birimi</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Lokasyon -->
             <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
                 <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
@@ -50,11 +135,21 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">İl</label>
-                            <input type="text" name="il" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ kadro.il if kadro else '' }}">
+                            <select name="il_id" id="il_id" class="select2-search w-full">
+                                <option value="">Seçiniz...</option>
+                                {% for il in iller %}
+                                <option value="{{ il.id }}" {% if kadro and kadro.il_id == il.id %}selected{% endif %}>{{ il.ad }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">İlçe</label>
-                            <input type="text" name="ilce" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ kadro.ilce if kadro else '' }}">
+                            <select name="ilce_id" id="ilce_id" class="select2-search w-full">
+                                <option value="">Önce il seçiniz...</option>
+                                {% if kadro and kadro.ilce_id %}
+                                <option value="{{ kadro.ilce_id }}" selected>{{ kadro.ilce_obj.ad if kadro.ilce_obj else '' }}</option>
+                                {% endif %}
+                            </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Bölge</label>
@@ -158,8 +253,8 @@
                     <div class="flex items-start">
                         <input type="checkbox" class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500 mt-0.5" id="sms_dogrulama_zorunlu" name="sms_dogrulama_zorunlu" {% if kadro and kadro.sms_dogrulama_zorunlu %}checked{% endif %}>
                         <div class="ml-2">
-                            <label class="text-sm text-gray-700 flex items-center gap-1" for="sms_dogrulama_zorunlu">
-                                <span class="material-symbols-outlined">smartphone</span>SMS Doğrulama Zorunlu
+                            <label class="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1" for="sms_dogrulama_zorunlu">
+                                <span class="material-symbols-outlined text-base">smartphone</span>SMS Doğrulama Zorunlu
                             </label>
                             <p class="text-xs text-text-muted dark:text-text-muted-dark">Başvuruda telefon doğrulaması istenir</p>
                         </div>
@@ -170,11 +265,11 @@
                         <textarea name="notlar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="4">{{ kadro.notlar if kadro else '' }}</textarea>
                     </div>
                 </div>
-                <div class="px-4 py-3 border-t border-border-light dark:border-border-dark bg-gray-50 rounded-b-xl space-y-2">
+                <div class="px-4 py-3 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800/50 rounded-b-xl space-y-2">
                     <button type="submit" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
                         <span class="material-symbols-outlined">check</span>{% if kadro %}Güncelle{% else %}Kaydet{% endif %}
                     </button>
-                    <a href="{{ url_for('proje.proje_detay', id=proje.id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-100 transition-colors">
+                    <a href="{{ url_for('proje.proje_detay', id=proje.id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                         <span class="material-symbols-outlined">close</span>İptal
                     </a>
                 </div>
@@ -195,4 +290,72 @@
         </div>
     </div>
 </form>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Select2 başlat - aranabilir dropdown'lar
+    $('.select2-search').select2({
+        placeholder: 'Ara veya seç...',
+        allowClear: true,
+        language: {
+            noResults: function() { return "Sonuç bulunamadı"; },
+            searching: function() { return "Aranıyor..."; }
+        }
+    });
+    
+    // İl değiştiğinde ilçeleri getir
+    $('#il_id').on('change', function() {
+        var ilId = $(this).val();
+        var ilceSelect = $('#ilce_id');
+
+        ilceSelect.empty().append('<option value="">Yükleniyor...</option>');
+
+        if (ilId) {
+            $.ajax({
+                url: '{{ url_for("proje.api_ilceler") }}',
+                data: { il_id: ilId },
+                success: function(data) {
+                    ilceSelect.empty().append('<option value="">Seçiniz...</option>');
+                    $.each(data, function(i, ilce) {
+                        ilceSelect.append('<option value="' + ilce.id + '">' + ilce.ad + '</option>');
+                    });
+                    ilceSelect.trigger('change.select2');
+                },
+                error: function() {
+                    ilceSelect.empty().append('<option value="">Hata oluştu</option>');
+                }
+            });
+        } else {
+            ilceSelect.empty().append('<option value="">Önce il seçiniz...</option>');
+        }
+    });
+
+    // Direktörlük değiştiğinde müdürlükleri getir (AJAX)
+    $('#direktorluk_id').on('change', function() {
+        var direktorlukId = $(this).val();
+        var mudurlukSelect = $('#mudurluk_id');
+
+        mudurlukSelect.empty().append('<option value="">Yükleniyor...</option>');
+
+        $.ajax({
+            url: '{{ url_for("proje.api_mudurlukler") }}',
+            data: { direktorluk_id: direktorlukId },
+            success: function(data) {
+                mudurlukSelect.empty().append('<option value="">Seçiniz...</option>');
+                $.each(data, function(i, m) {
+                    mudurlukSelect.append('<option value="' + m.id + '">' + m.ad + '</option>');
+                });
+                mudurlukSelect.trigger('change.select2');
+            },
+            error: function() {
+                mudurlukSelect.empty().append('<option value="">Hata oluştu</option>');
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

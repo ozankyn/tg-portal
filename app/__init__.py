@@ -5,6 +5,7 @@ Flask Application Factory
 """
 
 from flask import Flask
+from datetime import timedelta
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -39,6 +40,10 @@ def create_app(config_name=None):
     # Upload settings
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, '..', 'uploads')
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+    # Flask-Login Remember Me
+    app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
+    app.config['REMEMBER_COOKIE_SECURE'] = True
+    app.config['REMEMBER_COOKIE_HTTPONLY'] = True
     
     # NetGSM SMS
     app.config['NETGSM_USERCODE'] = os.environ.get('NETGSM_USERCODE', '')

@@ -56,7 +56,7 @@
                     <td class="px-4 py-3">{{ teslim.km }}</td>
                     <td class="px-4 py-3">{{ teslim.yakit_durumu_display }}</td>
                     <td class="px-4 py-3">
-                        {{ teslim.teslim_eden_calisan.full_name if teslim.teslim_eden_calisan else '-' }}
+                        {{ teslim.teslim_eden.ad ~ ' ' ~ teslim.teslim_eden.soyad if teslim.teslim_eden else (teslim.teslim_eden_calisan.ad ~ ' ' ~ teslim.teslim_eden_calisan.soyad if teslim.teslim_eden_calisan else '-') }}
                     </td>
                     <td class="px-4 py-3">
                         {{ teslim.teslim_alan_calisan.full_name if teslim.teslim_alan_calisan else '-' }}
@@ -83,7 +83,7 @@
         {% for p in pagination.iter_pages() %}
         {% if p %}
         <li>
-            <a href="{{ url_for('filo.teslim_liste', page=p, **request.args) }}" class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
+            <a href="{{ url_for('filo.teslim_liste', page=p, arac_id=request.args.get('arac_id', ''), islem_tipi=request.args.get('islem_tipi', '')) }}" class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
         </li>
         {% endif %}
         {% endfor %}

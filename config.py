@@ -10,3 +10,9 @@ UPLOAD_FOLDER = '/app/uploads'
 COMPANY_NAME = os.environ.get('COMPANY_NAME', 'TG PORTAL')
 COMPANY_SUBTITLE = os.environ.get('COMPANY_SUBTITLE', 'ERP Sistemi')
 COMPANY_LOGO = os.environ.get('COMPANY_LOGO', 'logo.png')  # örn: 'logo.png' - static/images/ klasöründe olmalı
+
+# Flask-Login Remember Me Ayarları
+from datetime import timedelta
+REMEMBER_COOKIE_DURATION = timedelta(days=30)
+REMEMBER_COOKIE_SECURE = True
+REMEMBER_COOKIE_HTTPONLY = True
