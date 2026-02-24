@@ -12,9 +12,9 @@
             </h6>
         </div>
         <div class="p-6">
-            <form method="POST">
+            <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Ceza Tarihi/Saati *</label>
@@ -32,7 +32,7 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Ceza Türü *</label>
@@ -54,7 +54,7 @@
                         <input type="number" name="ceza_puani" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" min="0" max="100" value="0">
                     </div>
                 </div>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Ceza Tutarı (₺) *</label>
@@ -70,7 +70,7 @@
                         <input type="text" name="tutanak_no" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Tebliğ Tarihi</label>
@@ -81,17 +81,44 @@
                         <input type="date" name="son_odeme_tarihi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
-                
+
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Konum</label>
                     <input type="text" name="konum" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Cezanın kesildiği yer">
                 </div>
-                
-                <div class="mb-6">
+
+                <div class="mb-4">
                     <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Açıklama</label>
                     <textarea name="aciklama" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="2"></textarea>
                 </div>
-                
+
+                <!-- Belge Yükleme -->
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">
+                        <span class="flex items-center gap-1">
+                            <span class="material-symbols-outlined text-base">attach_file</span>Ceza Belgeleri
+                        </span>
+                    </label>
+                    <input type="file" id="belgeInput" class="hidden" accept="image/*,application/pdf" multiple>
+                    <input type="file" name="belgeler" id="belgeHidden" class="hidden" accept="image/*,application/pdf" multiple>
+                    <div id="belgeDropzone" class="w-full border-2 border-dashed border-border-light dark:border-border-dark rounded-lg p-4 text-center cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
+                        <span class="material-symbols-outlined text-3xl text-text-muted dark:text-text-muted-dark">cloud_upload</span>
+                        <p class="text-sm text-text-muted dark:text-text-muted-dark mt-1">Fotoğraf veya PDF yüklemek için tıklayın (çoklu seçim)</p>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark">Fotoğraflar otomatik sıkıştırılır (maks. 10MB)</p>
+                    </div>
+                    <div id="belgeStatus" class="hidden mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined animate-spin text-blue-600 text-sm">sync</span>
+                            <span id="belgeStatusText" class="text-sm text-blue-600 dark:text-blue-400">Sıkıştırılıyor...</span>
+                        </div>
+                    </div>
+                    <div id="belgePreview" class="hidden mt-2 space-y-2"></div>
+                    <div id="belgeSummary" class="hidden mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <span class="material-symbols-outlined text-green-600 text-sm">check_circle</span>
+                        <span id="belgeSummaryText" class="text-sm text-green-600 dark:text-green-400"></span>
+                    </div>
+                </div>
+
                 <div class="flex items-center gap-3">
                     <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors">
                         <span class="material-symbols-outlined">add</span>Ceza Kaydet
@@ -102,4 +129,146 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function compressImage(file, maxSizeMB, quality) {
+    return new Promise(function(resolve) {
+        quality = quality || 0.8;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = new Image();
+            img.onload = function() {
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+                var width = img.width, height = img.height;
+                var maxWidth = 1920;
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob(function(blob) {
+                    if (blob) {
+                        resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {type: 'image/jpeg'}));
+                    } else { resolve(file); }
+                }, 'image/jpeg', quality);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+var allFiles = [];
+var dropzone = document.getElementById('belgeDropzone');
+var belgeInput = document.getElementById('belgeInput');
+var belgeHidden = document.getElementById('belgeHidden');
+var belgeStatus = document.getElementById('belgeStatus');
+var belgeStatusText = document.getElementById('belgeStatusText');
+var belgePreview = document.getElementById('belgePreview');
+var belgeSummary = document.getElementById('belgeSummary');
+var belgeSummaryText = document.getElementById('belgeSummaryText');
+
+dropzone.addEventListener('click', function() { belgeInput.click(); });
+dropzone.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('border-blue-400'); });
+dropzone.addEventListener('dragleave', function() { this.classList.remove('border-blue-400'); });
+dropzone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    this.classList.remove('border-blue-400');
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+});
+belgeInput.addEventListener('change', function() { if (this.files.length) handleFiles(this.files); });
+
+function removeFile(index) {
+    allFiles.splice(index, 1);
+    renderPreview();
+    syncHiddenInput();
+}
+
+function syncHiddenInput() {
+    var dt = new DataTransfer();
+    allFiles.forEach(function(f) { dt.items.add(f); });
+    belgeHidden.files = dt.files;
+}
+
+function renderPreview() {
+    belgePreview.innerHTML = '';
+    if (allFiles.length === 0) {
+        belgePreview.classList.add('hidden');
+        belgeSummary.classList.add('hidden');
+        return;
+    }
+    belgePreview.classList.remove('hidden');
+    belgeSummary.classList.remove('hidden');
+    belgeSummaryText.textContent = allFiles.length + ' dosya seçildi (' + formatFileSize(allFiles.reduce(function(s,f){return s+f.size},0)) + ')';
+
+    allFiles.forEach(function(file, idx) {
+        var isPDF = file.type === 'application/pdf';
+        var icon = isPDF ? 'picture_as_pdf' : 'image';
+        var iconColor = isPDF ? 'text-red-600' : 'text-green-600';
+
+        var div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-2 bg-gray-50 dark:bg-[#111418] rounded-lg border border-border-light dark:border-border-dark';
+        div.innerHTML = '<div class="flex items-center gap-2 min-w-0">' +
+            '<span class="material-symbols-outlined ' + iconColor + ' text-sm flex-shrink-0">' + icon + '</span>' +
+            '<span class="text-sm text-[#111418] dark:text-white truncate">' + file.name + '</span>' +
+            '<span class="text-xs text-text-muted dark:text-text-muted-dark flex-shrink-0">(' + formatFileSize(file.size) + ')</span>' +
+            '</div>' +
+            '<button type="button" onclick="removeFile(' + idx + ')" class="text-red-500 hover:text-red-700 flex-shrink-0 ml-2">' +
+            '<span class="material-symbols-outlined text-sm">close</span></button>';
+
+        if (!isPDF) {
+            var wrapper = document.createElement('div');
+            wrapper.appendChild(div);
+            var imgDiv = document.createElement('div');
+            imgDiv.className = 'mt-1 ml-7';
+            var img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.className = 'max-h-24 rounded border border-border-light dark:border-border-dark';
+            imgDiv.appendChild(img);
+            wrapper.appendChild(imgDiv);
+            belgePreview.appendChild(wrapper);
+        } else {
+            belgePreview.appendChild(div);
+        }
+    });
+}
+
+async function handleFiles(files) {
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        if (file.size > 10 * 1024 * 1024) {
+            alert(file.name + ' 10MB\'dan büyük, atlanıyor.');
+            continue;
+        }
+        var isPDF = file.type === 'application/pdf';
+        var isImage = file.type.startsWith('image/');
+        if (!isPDF && !isImage) {
+            alert(file.name + ': Sadece fotoğraf veya PDF yükleyebilirsiniz.');
+            continue;
+        }
+        var finalFile = file;
+        if (isImage) {
+            belgeStatus.classList.remove('hidden');
+            belgeStatusText.textContent = (i + 1) + '/' + files.length + ' sıkıştırılıyor...';
+            finalFile = await compressImage(file, 1, 0.8);
+        }
+        allFiles.push(finalFile);
+    }
+    belgeStatus.classList.add('hidden');
+    belgeInput.value = '';
+    renderPreview();
+    syncHiddenInput();
+}
+</script>
 {% endblock %}

@@ -32,6 +32,16 @@
                 </select>
             </div>
             <div>
+                <select name="il" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tüm İller</option>
+                    {% for il in iller %}
+                    <option value="{{ il }}" {% if request.args.get('il') == il %}selected{% endif %}>
+                        {{ il }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
                 <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
                     <span class="material-symbols-outlined">search</span>Ara
                 </button>
@@ -57,8 +67,11 @@
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Araç</th>
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Proje</th>
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Şoför</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">İl</th>
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">KM</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Bakım</th>
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Kira Bitiş</th>
                     <th class="px-4 py-3 text-left font-medium text-[#111418] dark:text-white w-24"></th>
                 </tr>
             </thead>
@@ -93,7 +106,28 @@
                         <span class="text-gray-400 dark:text-gray-500">-</span>
                         {% endif %}
                     </td>
+                    <td class="px-4 py-3">
+                        {% if arac.atanan_calisan and arac.atanan_calisan.il %}
+                        {{ arac.atanan_calisan.il }}
+                        {% else %}
+                        <span class="text-gray-400 dark:text-gray-500">-</span>
+                        {% endif %}
+                    </td>
                     <td class="px-4 py-3">{{ '{:,.0f}'.format(arac.km) if arac.km else '-' }}</td>
+                    <td class="px-4 py-3">
+                        {% set bd = arac.bakim_durumu %}
+                        {% if bd.durum == 'gecikti' %}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" title="{{ bd.detay or bd.mesaj }}">{{ bd.mesaj }}</span>
+                        {% elif bd.durum == 'yaklasti' %}
+                        <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" title="{{ bd.detay or bd.mesaj }}">{{ bd.mesaj }}</span>
+                        {% elif bd.durum == 'dikkat' %}
+                        <span class="text-xs text-blue-600" title="{{ bd.detay or bd.mesaj }}">{{ bd.mesaj }}</span>
+                        {% elif bd.durum == 'belirsiz' %}
+                        <span class="text-xs text-gray-400">-</span>
+                        {% else %}
+                        <span class="text-xs text-emerald-600">Normal</span>
+                        {% endif %}
+                    </td>
                     <td class="px-4 py-3">
                         {% if arac.durum.value == 'aktif' %}
                         <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Aktif</span>
@@ -105,6 +139,24 @@
                         <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Satıldı</span>
                         {% else %}
                         <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">{{ arac.durum.value }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
+                        {% if arac.kira_bitis %}
+                        <div>{{ arac.kira_bitis.strftime("%d.%m.%Y") }}</div>
+                        {% set gun_fark = (arac.kira_bitis - today).days %}
+                        {% set ay_fark = (gun_fark / 30)|int %}
+                        {% if gun_fark < 0 %}
+                        <div class="text-xs font-medium text-red-600">Süresi dolmuş</div>
+                        {% elif gun_fark < 30 %}
+                        <div class="text-xs font-medium text-red-600">{{ gun_fark }} gün kaldı</div>
+                        {% elif ay_fark <= 3 %}
+                        <div class="text-xs font-medium text-amber-600">{{ ay_fark }} ay kaldı</div>
+                        {% else %}
+                        <div class="text-xs text-text-muted dark:text-text-muted-dark">{{ ay_fark }} ay kaldı</div>
+                        {% endif %}
+                        {% else %}
+                        <span class="text-gray-400 dark:text-gray-500">-</span>
                         {% endif %}
                     </td>
                     <td class="px-4 py-3">
@@ -122,7 +174,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Kayıt bulunamadı</td>
+                    <td colspan="10" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Kayıt bulunamadı</td>
                 </tr>
                 {% endfor %}
             </tbody>

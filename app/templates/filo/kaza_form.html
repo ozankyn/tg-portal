@@ -11,7 +11,7 @@
             <strong class="text-[#111418] dark:text-white">Önemli:</strong> En az 1 fotoğraf yüklemeniz zorunludur. Kaza kaydı filo yöneticisi onayına sunulacaktır.
         </div>
     </div>
-    
+
     <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
         <div class="bg-red-600 text-white px-4 py-3 rounded-t-xl">
             <h6 class="font-medium flex items-center gap-2">
@@ -22,7 +22,7 @@
         <div class="p-6">
             <form method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Kaza Tarihi/Saati *</label>
@@ -40,12 +40,12 @@
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Kaza Konumu</label>
                     <input type="text" name="konum" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Adres veya konum bilgisi">
                 </div>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Kusur Oranı (%)</label>
@@ -60,30 +60,47 @@
                         <input type="number" name="sigorta_karsiladi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" step="0.01">
                     </div>
                 </div>
-                
+
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Tutanak No</label>
                     <input type="text" name="tutanak_no" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 </div>
-                
+
                 <div class="flex items-center mb-4">
                     <input type="checkbox" name="yaralanma" class="w-4 h-4 text-rose-600 border-border-light dark:border-border-dark rounded focus:ring-red-500" id="yaralanma">
                     <label class="ml-2 text-rose-600 font-semibold" for="yaralanma">Yaralanma var</label>
                 </div>
-                
+
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Kaza Açıklaması *</label>
                     <textarea name="aciklama" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="4" required placeholder="Kaza nasıl meydana geldi? Detaylı açıklayın..."></textarea>
                 </div>
-                
+
+                <!-- Fotoğraf / Belgeler -->
                 <div class="mb-6">
                     <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">
-                        Fotoğraflar * <span class="text-red-500">(En az 1 fotoğraf zorunlu)</span>
+                        Fotoğraf / Belgeler * <span class="text-red-500">(En az 1 dosya zorunlu)</span>
                     </label>
-                    <input type="file" name="fotograflar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" multiple accept="image/*" required>
-                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Araç hasar fotoğrafları, kaza yeri, tutanak vb.</p>
+                    <input type="file" id="kazaInput" class="hidden" accept="image/*,application/pdf" multiple>
+                    <input type="file" name="fotograflar" id="kazaHidden" class="hidden" accept="image/*,application/pdf" multiple>
+                    <div id="kazaDropzone" class="w-full border-2 border-dashed border-border-light dark:border-border-dark rounded-lg p-4 text-center cursor-pointer hover:border-red-400 dark:hover:border-red-500 transition-colors">
+                        <span class="material-symbols-outlined text-3xl text-text-muted dark:text-text-muted-dark">cloud_upload</span>
+                        <p class="text-sm text-text-muted dark:text-text-muted-dark mt-1">Fotoğraf veya PDF yüklemek için tıklayın (çoklu seçim)</p>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark">Hasar fotoğrafları, kaza yeri, tutanak vb. - Fotoğraflar otomatik sıkıştırılır</p>
+                    </div>
+                    <div id="kazaStatus" class="hidden mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined animate-spin text-blue-600 text-sm">sync</span>
+                            <span id="kazaStatusText" class="text-sm text-blue-600 dark:text-blue-400">Sıkıştırılıyor...</span>
+                        </div>
+                    </div>
+                    <div id="kazaPreview" class="hidden mt-2 space-y-2"></div>
+                    <div id="kazaSummary" class="hidden mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <span class="material-symbols-outlined text-green-600 text-sm">check_circle</span>
+                        <span id="kazaSummaryText" class="text-sm text-green-600 dark:text-green-400"></span>
+                    </div>
                 </div>
-                
+
                 <div class="flex items-center gap-3">
                     <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-colors">
                         <span class="material-symbols-outlined">error</span>Kaza Bildir
@@ -94,4 +111,154 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function compressImage(file, maxSizeMB, quality) {
+    return new Promise(function(resolve) {
+        quality = quality || 0.8;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = new Image();
+            img.onload = function() {
+                var canvas = document.createElement('canvas');
+                var ctx = canvas.getContext('2d');
+                var width = img.width, height = img.height;
+                var maxWidth = 1920;
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob(function(blob) {
+                    if (blob) {
+                        resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {type: 'image/jpeg'}));
+                    } else { resolve(file); }
+                }, 'image/jpeg', quality);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
+var kazaFiles = [];
+var dropzone = document.getElementById('kazaDropzone');
+var kazaInput = document.getElementById('kazaInput');
+var kazaHidden = document.getElementById('kazaHidden');
+var kazaStatus = document.getElementById('kazaStatus');
+var kazaStatusText = document.getElementById('kazaStatusText');
+var kazaPreview = document.getElementById('kazaPreview');
+var kazaSummary = document.getElementById('kazaSummary');
+var kazaSummaryText = document.getElementById('kazaSummaryText');
+
+dropzone.addEventListener('click', function() { kazaInput.click(); });
+dropzone.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('border-red-400'); });
+dropzone.addEventListener('dragleave', function() { this.classList.remove('border-red-400'); });
+dropzone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    this.classList.remove('border-red-400');
+    if (e.dataTransfer.files.length) handleKazaFiles(e.dataTransfer.files);
+});
+kazaInput.addEventListener('change', function() { if (this.files.length) handleKazaFiles(this.files); });
+
+function removeKazaFile(index) {
+    kazaFiles.splice(index, 1);
+    renderKazaPreview();
+    syncKazaHidden();
+}
+
+function syncKazaHidden() {
+    var dt = new DataTransfer();
+    kazaFiles.forEach(function(f) { dt.items.add(f); });
+    kazaHidden.files = dt.files;
+}
+
+function renderKazaPreview() {
+    kazaPreview.innerHTML = '';
+    if (kazaFiles.length === 0) {
+        kazaPreview.classList.add('hidden');
+        kazaSummary.classList.add('hidden');
+        return;
+    }
+    kazaPreview.classList.remove('hidden');
+    kazaSummary.classList.remove('hidden');
+    kazaSummaryText.textContent = kazaFiles.length + ' dosya seçildi (' + formatFileSize(kazaFiles.reduce(function(s,f){return s+f.size},0)) + ')';
+
+    kazaFiles.forEach(function(file, idx) {
+        var isPDF = file.type === 'application/pdf';
+        var icon = isPDF ? 'picture_as_pdf' : 'image';
+        var iconColor = isPDF ? 'text-red-600' : 'text-green-600';
+
+        var div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-2 bg-gray-50 dark:bg-[#111418] rounded-lg border border-border-light dark:border-border-dark';
+        div.innerHTML = '<div class="flex items-center gap-2 min-w-0">' +
+            '<span class="material-symbols-outlined ' + iconColor + ' text-sm flex-shrink-0">' + icon + '</span>' +
+            '<span class="text-sm text-[#111418] dark:text-white truncate">' + file.name + '</span>' +
+            '<span class="text-xs text-text-muted dark:text-text-muted-dark flex-shrink-0">(' + formatFileSize(file.size) + ')</span>' +
+            '</div>' +
+            '<button type="button" onclick="removeKazaFile(' + idx + ')" class="text-red-500 hover:text-red-700 flex-shrink-0 ml-2">' +
+            '<span class="material-symbols-outlined text-sm">close</span></button>';
+
+        if (!isPDF) {
+            var wrapper = document.createElement('div');
+            wrapper.appendChild(div);
+            var imgDiv = document.createElement('div');
+            imgDiv.className = 'mt-1 ml-7';
+            var img = document.createElement('img');
+            img.src = URL.createObjectURL(file);
+            img.className = 'max-h-24 rounded border border-border-light dark:border-border-dark';
+            imgDiv.appendChild(img);
+            wrapper.appendChild(imgDiv);
+            kazaPreview.appendChild(wrapper);
+        } else {
+            kazaPreview.appendChild(div);
+        }
+    });
+}
+
+async function handleKazaFiles(files) {
+    for (var i = 0; i < files.length; i++) {
+        var file = files[i];
+        if (file.size > 10 * 1024 * 1024) {
+            alert(file.name + ' 10MB\'dan büyük, atlanıyor.');
+            continue;
+        }
+        var isPDF = file.type === 'application/pdf';
+        var isImage = file.type.startsWith('image/');
+        if (!isPDF && !isImage) {
+            alert(file.name + ': Sadece fotoğraf veya PDF yükleyebilirsiniz.');
+            continue;
+        }
+        var finalFile = file;
+        if (isImage) {
+            kazaStatus.classList.remove('hidden');
+            kazaStatusText.textContent = (i + 1) + '/' + files.length + ' sıkıştırılıyor...';
+            finalFile = await compressImage(file, 1, 0.8);
+        }
+        kazaFiles.push(finalFile);
+    }
+    kazaStatus.classList.add('hidden');
+    kazaInput.value = '';
+    renderKazaPreview();
+    syncKazaHidden();
+}
+
+document.querySelector('form').addEventListener('submit', function(e) {
+    if (kazaFiles.length === 0) {
+        e.preventDefault();
+        alert('En az 1 fotoğraf veya belge yüklemeniz zorunludur.');
+        return false;
+    }
+});
+</script>
 {% endblock %}

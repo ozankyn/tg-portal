@@ -105,7 +105,9 @@ def liste():
                          araclar=pagination.items,
                          pagination=pagination,
                          projeler=projeler,
-                         durumlar=AracDurumu)
+                         durumlar=AracDurumu,
+                         today=date.today(),
+                         iller=[i[0] for i in db.session.query(Calisan.il).filter(Calisan.il.isnot(None), Calisan.il != '').distinct().order_by(Calisan.il).all()])
 
 
 @filo_bp.route('/ekle', methods=['GET', 'POST'])
@@ -972,7 +974,7 @@ def ceza_liste():
     if durum:
         query = query.filter(TrafikCezasi.durum == durum)
     
-    query = query.order_by(TrafikCezasi.ceza_tarihi.desc())
+    query = query.order_by(TrafikCezasi.created_at.desc())
     pagination = query.paginate(page=page, per_page=20, error_out=False)
     
     # Özet
@@ -997,6 +999,28 @@ def ceza_ekle(id):
     arac = Arac.query.get_or_404(id)
     
     if request.method == 'POST':
+        # Mükerrer tutanak no kontrolü
+        tutanak_no = request.form.get('tutanak_no')
+        if tutanak_no:
+            mevcut = TrafikCezasi.query.filter_by(tutanak_no=tutanak_no).first()
+            if mevcut:
+                flash('Bu tutanak numarası ile zaten bir ceza kaydı mevcut!', 'danger')
+                return redirect(request.url)
+
+        # Belge yükleme (çoklu)
+        belge_yollari = []
+        belgeler_form = request.files.getlist('belgeler')
+        if belgeler_form:
+            import os
+            from werkzeug.utils import secure_filename
+            upload_dir = os.path.join(current_app.config.get('UPLOAD_FOLDER', '/app/uploads'), 'cezalar')
+            os.makedirs(upload_dir, exist_ok=True)
+            for idx, belge in enumerate(belgeler_form):
+                if belge and belge.filename:
+                    filename = secure_filename(f"ceza_{arac.plaka}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{idx}_{belge.filename}")
+                    belge.save(os.path.join(upload_dir, filename))
+                    belge_yollari.append(f"cezalar/{filename}")
+
         ceza = TrafikCezasi(
             arac_id=arac.id,
             surucu_id=request.form.get('surucu_id') or arac.atanan_calisan_id,
@@ -1010,6 +1034,7 @@ def ceza_ekle(id):
             konum=request.form.get('konum'),
             tutanak_no=request.form.get('tutanak_no'),
             aciklama=request.form.get('aciklama'),
+            belge_yolu=','.join(belge_yollari) if belge_yollari else None,
             durum='bekliyor'
         )
         
@@ -1033,6 +1058,39 @@ def ceza_detay(id):
     """Trafik cezası detayı"""
     ceza = TrafikCezasi.query.get_or_404(id)
     return render_template('filo/ceza_detay.html', ceza=ceza)
+
+
+@filo_bp.route('/ceza/<int:id>/belge-ekle', methods=['POST'])
+@login_required
+@permission_required('filo.edit')
+def ceza_belge_ekle(id):
+    """Mevcut cezaya belge ekle"""
+    ceza = TrafikCezasi.query.get_or_404(id)
+
+    belgeler = request.files.getlist('belgeler')
+    if not belgeler or not belgeler[0].filename:
+        flash('Lütfen en az bir dosya seçin.', 'warning')
+        return redirect(url_for('filo.ceza_detay', id=ceza.id))
+
+    import os
+    from werkzeug.utils import secure_filename
+    upload_dir = os.path.join(current_app.config.get('UPLOAD_FOLDER', '/app/uploads'), 'cezalar')
+    os.makedirs(upload_dir, exist_ok=True)
+
+    mevcut_belgeler = ceza.belge_yolu.split(',') if ceza.belge_yolu else []
+
+    for i, belge in enumerate(belgeler):
+        if belge and belge.filename:
+            filename = secure_filename(f"ceza_{ceza.arac.plaka}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{i}_{belge.filename}")
+            belge_path = os.path.join(upload_dir, filename)
+            belge.save(belge_path)
+            mevcut_belgeler.append(f"cezalar/{filename}")
+
+    ceza.belge_yolu = ",".join(mevcut_belgeler)
+    db.session.commit()
+
+    flash(f'{len(belgeler)} belge eklendi.', 'success')
+    return redirect(url_for('filo.ceza_detay', id=ceza.id))
 
 
 @filo_bp.route('/ceza/<int:id>/ode', methods=['POST'])

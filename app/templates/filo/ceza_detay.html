@@ -66,28 +66,46 @@
                                 <span class="{% if ceza.gecikme_durumu == 'gecikti' %}text-rose-600 font-bold{% endif %}">
                                     {{ ceza.son_odeme_tarihi.strftime('%d.%m.%Y') }}
                                 </span>
-                                {% else %}
-                                -
-                                {% endif %}
+                                {% else %}-{% endif %}
                             </td>
                         </tr>
                     </table>
                 </div>
-                
+
                 {% if ceza.aciklama %}
                 <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2 mb-2">
                     <span class="material-symbols-outlined">description</span>Açıklama
                 </h6>
                 <p class="text-text-muted dark:text-text-muted-dark">{{ ceza.aciklama }}</p>
                 {% endif %}
-                
+
+                {% if ceza.belge_yolu %}
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2 mb-2 mt-4">
+                    <span class="material-symbols-outlined">attach_file</span>Belgeler
+                </h6>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {% for belge in ceza.belge_yolu.split(',') %}
+                    {% if belge.strip().endswith('.pdf') %}
+                    <a href="/uploads/{{ belge.strip() }}" target="_blank" class="flex items-center gap-2 p-3 bg-gray-50 dark:bg-[#111418] rounded-lg border border-border-light dark:border-border-dark hover:border-blue-400 transition-colors">
+                        <span class="material-symbols-outlined text-red-600">picture_as_pdf</span>
+                        <span class="text-sm text-blue-600 truncate">{{ belge.strip().split('/')[-1] }}</span>
+                    </a>
+                    {% else %}
+                    <a href="/uploads/{{ belge.strip() }}" target="_blank" class="block rounded-lg overflow-hidden border border-border-light dark:border-border-dark hover:border-blue-400 transition-colors">
+                        <img src="/uploads/{{ belge.strip() }}" class="w-full h-32 object-cover" alt="Ceza belgesi">
+                    </a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
                 {% if ceza.durum == 'odendi' %}
                 <div class="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-900/30 rounded-lg p-4 mt-4">
                     <span class="material-symbols-outlined text-emerald-600 mr-2">check_circle</span>
                     <strong class="text-[#111418] dark:text-white">Ödendi:</strong> {{ ceza.odeme_tarihi.strftime('%d.%m.%Y') if ceza.odeme_tarihi else '' }} - {{ "%.2f"|format(ceza.odenen_tutar) if ceza.odenen_tutar else '' }} ₺
                 </div>
                 {% endif %}
-                
+
                 {% if ceza.surucuye_yansitildi %}
                 <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-lg p-4 mt-4">
                     <span class="material-symbols-outlined text-blue-600 mr-2">person_check</span>
@@ -97,7 +115,7 @@
             </div>
         </div>
     </div>
-    
+
     <div>
         {% if ceza.durum == 'bekliyor' %}
         <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mb-4">
@@ -111,7 +129,7 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="mb-3">
                         <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Ödeme Tarihi *</label>
-                        <input type="date" name="odeme_tarihi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required value="{{ today().strftime('%Y-%m-%d') if today else '' }}">
+                        <input type="date" name="odeme_tarihi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
                     </div>
                     <div class="mb-3">
                         <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Ödenen Tutar (₺)</label>
@@ -124,9 +142,9 @@
             </div>
         </div>
         {% endif %}
-        
+
         {% if ceza.surucu and not ceza.surucuye_yansitildi %}
-        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mb-4">
             <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
                 <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
                     <span class="material-symbols-outlined">person_remove</span>Sürücüye Yansıt
@@ -143,6 +161,34 @@
             </div>
         </div>
         {% endif %}
+
+        <!-- Belge Ekleme -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">add_photo_alternate</span>Belge Ekle
+                </h6>
+            </div>
+            <div class="p-4">
+                <form method="POST" action="{{ url_for('filo.ceza_belge_ekle', id=ceza.id) }}" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="file" id="yeniBelgeInput" class="hidden" accept="image/*,application/pdf" multiple>
+                    <input type="file" name="belgeler" id="yeniBelgeHidden" class="hidden" accept="image/*,application/pdf" multiple>
+                    <div id="yeniDropzone" class="w-full border-2 border-dashed border-border-light dark:border-border-dark rounded-lg p-3 text-center cursor-pointer hover:border-blue-400 transition-colors">
+                        <span class="material-symbols-outlined text-2xl text-text-muted dark:text-text-muted-dark">cloud_upload</span>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Fotoğraf veya PDF ekle</p>
+                    </div>
+                    <div id="yeniStatus" class="hidden mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <span class="material-symbols-outlined animate-spin text-blue-600 text-sm">sync</span>
+                        <span id="yeniStatusText" class="text-sm text-blue-600">Sıkıştırılıyor...</span>
+                    </div>
+                    <div id="yeniPreview" class="hidden mt-2 space-y-1"></div>
+                    <button type="submit" id="yeniBelgeSubmit" class="hidden mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-symbols-outlined">upload</span>Kaydet
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -151,4 +197,82 @@
         <span class="material-symbols-outlined">arrow_back</span>Listeye Dön
     </a>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function compressImage(file, q) {
+    return new Promise(function(resolve) {
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            var img = new Image();
+            img.onload = function() {
+                var c = document.createElement('canvas'), ctx = c.getContext('2d');
+                var w = img.width, h = img.height;
+                if (w > 1920) { h = Math.round((h * 1920) / w); w = 1920; }
+                c.width = w; c.height = h;
+                ctx.drawImage(img, 0, 0, w, h);
+                c.toBlob(function(blob) {
+                    resolve(blob ? new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), {type:'image/jpeg'}) : file);
+                }, 'image/jpeg', q || 0.8);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+function fmtSize(b) { return b < 1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(1)+' MB'; }
+
+var yFiles = [];
+var ydz = document.getElementById('yeniDropzone');
+var yIn = document.getElementById('yeniBelgeInput');
+var yH = document.getElementById('yeniBelgeHidden');
+var yPrev = document.getElementById('yeniPreview');
+var yStat = document.getElementById('yeniStatus');
+var yStatT = document.getElementById('yeniStatusText');
+var yBtn = document.getElementById('yeniBelgeSubmit');
+
+ydz.addEventListener('click', function(){ yIn.click(); });
+ydz.addEventListener('dragover', function(e){ e.preventDefault(); this.classList.add('border-blue-400'); });
+ydz.addEventListener('dragleave', function(){ this.classList.remove('border-blue-400'); });
+ydz.addEventListener('drop', function(e){ e.preventDefault(); this.classList.remove('border-blue-400'); if(e.dataTransfer.files.length) doFiles(e.dataTransfer.files); });
+yIn.addEventListener('change', function(){ if(this.files.length) doFiles(this.files); });
+
+function rmFile(i){ yFiles.splice(i,1); render(); sync(); }
+function sync(){
+    var dt = new DataTransfer();
+    yFiles.forEach(function(f){ dt.items.add(f); });
+    yH.files = dt.files;
+    yBtn.classList.toggle('hidden', yFiles.length===0);
+}
+function render(){
+    yPrev.innerHTML='';
+    if(!yFiles.length){ yPrev.classList.add('hidden'); return; }
+    yPrev.classList.remove('hidden');
+    yFiles.forEach(function(f,i){
+        var d=document.createElement('div');
+        d.className='flex items-center justify-between p-2 bg-gray-50 dark:bg-[#111418] rounded border border-border-light dark:border-border-dark text-sm';
+        var isPDF=f.type==='application/pdf';
+        d.innerHTML='<div class="flex items-center gap-1 min-w-0"><span class="material-symbols-outlined '+(isPDF?'text-red-600':'text-green-600')+' text-sm">'+(isPDF?'picture_as_pdf':'image')+'</span><span class="truncate">'+f.name+'</span><span class="text-xs text-text-muted">('+fmtSize(f.size)+')</span></div><button type="button" onclick="rmFile('+i+')" class="text-red-500 ml-1"><span class="material-symbols-outlined text-sm">close</span></button>';
+        yPrev.appendChild(d);
+    });
+}
+async function doFiles(files){
+    for(var i=0;i<files.length;i++){
+        var f=files[i];
+        if(f.size>10*1024*1024){alert(f.name+' çok büyük');continue;}
+        if(!f.type.startsWith('image/')&&f.type!=='application/pdf'){alert('Sadece fotoğraf/PDF');continue;}
+        var ff=f;
+        if(f.type.startsWith('image/')){
+            yStat.classList.remove('hidden');
+            yStatT.textContent=(i+1)+'/'+files.length+' sıkıştırılıyor...';
+            ff=await compressImage(f,0.8);
+        }
+        yFiles.push(ff);
+    }
+    yStat.classList.add('hidden');
+    yIn.value='';
+    render(); sync();
+}
+</script>
 {% endblock %}

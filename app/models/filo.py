@@ -32,6 +32,64 @@ class Arac(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     # Kilometre
     km = db.Column(db.Integer, default=0)
     son_km_guncelleme = db.Column(db.DateTime)
+    son_bakim_km = db.Column(db.Integer, default=0)
+    son_bakim_tarihi = db.Column(db.Date)
+
+    BAKIM_KM_ARALIK = 15000
+    BAKIM_GUN_ARALIK = 365
+
+    @property
+    def bakim_durumu(self):
+        """Bakım hatırlatma durumu hesapla"""
+        from datetime import date, timedelta
+        result = {'durum': 'normal', 'mesaj': '', 'km_kalan': None, 'gun_kalan': None}
+
+        # KM bazlı kontrol
+        if self.son_bakim_km and self.km:
+            sonraki_bakim_km = self.son_bakim_km + self.BAKIM_KM_ARALIK
+            km_kalan = sonraki_bakim_km - self.km
+            result['km_kalan'] = km_kalan
+            result['sonraki_bakim_km'] = sonraki_bakim_km
+
+            if km_kalan <= 0:
+                result['durum'] = 'gecikti'
+                result['mesaj'] = f'Bakım {abs(km_kalan):,} km geçti!'
+            elif km_kalan <= 2000:
+                result['durum'] = 'yaklasti'
+                result['mesaj'] = f'Bakıma {km_kalan:,} km kaldı'
+            elif km_kalan <= 5000:
+                result['durum'] = 'dikkat'
+                result['mesaj'] = f'Bakıma {km_kalan:,} km kaldı'
+
+        # Tarih bazlı kontrol
+        if self.son_bakim_tarihi:
+            sonraki_bakim_tarih = self.son_bakim_tarihi + timedelta(days=self.BAKIM_GUN_ARALIK)
+            gun_kalan = (sonraki_bakim_tarih - date.today()).days
+            result['gun_kalan'] = gun_kalan
+            result['sonraki_bakim_tarih'] = sonraki_bakim_tarih
+
+            if gun_kalan <= 0 and result['durum'] != 'gecikti':
+                result['durum'] = 'gecikti'
+                result['mesaj'] = f'Bakım süresi {abs(gun_kalan)} gün geçti!'
+            elif gun_kalan <= 30 and result['durum'] not in ('gecikti', 'yaklasti'):
+                result['durum'] = 'yaklasti'
+                result['mesaj'] = f'Bakıma {gun_kalan} gün kaldı'
+            elif gun_kalan <= 90 and result['durum'] == 'normal':
+                result['durum'] = 'dikkat'
+                result['mesaj'] = f'Bakıma {gun_kalan} gün kaldı'
+
+        # Her iki bilgi de varsa kombine mesaj
+        if result['km_kalan'] is not None and result['gun_kalan'] is not None:
+            km_msg = f"{result['km_kalan']:,} km" if result['km_kalan'] > 0 else f"{abs(result['km_kalan']):,} km geçti"
+            gun_msg = f"{result['gun_kalan']} gün" if result['gun_kalan'] > 0 else f"{abs(result['gun_kalan'])} gün geçti"
+            result['detay'] = f"KM: {km_msg} | Süre: {gun_msg}"
+
+        # Hiç bakım kaydı yoksa
+        if not self.son_bakim_km and not self.son_bakim_tarihi:
+            result['durum'] = 'belirsiz'
+            result['mesaj'] = 'Bakım kaydı yok'
+
+        return result
     
     # Sahiplik
     sahiplik_tipi = db.Column(db.String(20))  # sirket, kiralama, leasing
