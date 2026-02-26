@@ -49,3 +49,4 @@ yetki_ata.py
 yetki_ekle.py
 arac_personel_esle.py
 migrations/
+certbot/
