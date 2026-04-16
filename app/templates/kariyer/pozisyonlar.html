@@ -3,163 +3,452 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kariyer Fırsatları - Team Guerilla</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Material Symbols -->
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'tg-primary': '#00a651',
-                        'tg-primary-dark': '#008c44',
-                        'tg-secondary': '#2c3e50',
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
-    
+    <title>Kariyer Fırsatları — Team Guerilla</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+
     <style>
-        .position-card {
-            transition: all 0.3s ease;
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:      #0A0A0A;
+            --surface: #111111;
+            --card:    #161616;
+            --card-h:  #1C1C1C;
+            --border:  #222222;
+            --muted:   #3A3A3A;
+            --text:    #F0F0F0;
+            --sub:     #777777;
+            --acc:     #E63946;
+            --acc-dim: #D62839;
+            --radius:  14px;
+            --font-d:  'Manrope', sans-serif;
+            --font-b:  'DM Sans', sans-serif;
         }
-        .position-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.12);
+
+        html { scroll-behavior: smooth; }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font-b);
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: var(--surface); }
+        ::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 4px; }
+
+        /* ── NAV ── */
+        nav {
+            background: rgba(10,10,10,0.96);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 50;
+            height: 56px;
+            display: flex; align-items: center;
+        }
+        .nav-inner {
+            max-width: 1100px; margin: 0 auto; padding: 0 24px;
+            width: 100%; display: flex; align-items: center; justify-content: space-between;
+        }
+        .nav-logo {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none;
+        }
+        .nav-logo-mark {
+            height: 30px; width: auto;
+            display: flex; align-items: center;
+        }
+        .nav-logo-mark img {
+            height: 30px; width: auto;
+            filter: brightness(0) invert(1);
+        }
+        .nav-logo-name {
+            font-family: var(--font-d);
+            font-weight: 800; font-size: 15px;
+            color: var(--text); letter-spacing: -0.3px;
+        }
+        .nav-link {
+            font-size: 13px; color: var(--sub);
+            text-decoration: none; transition: color 0.2s;
+        }
+        .nav-link:hover { color: var(--text); }
+
+        /* ── HERO ── */
+        .hero {
+            padding: 72px 24px 56px;
+            max-width: 1100px; margin: 0 auto;
+            display: flex; flex-direction: column; align-items: flex-start; gap: 20px;
+        }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(230,57,70,0.1);
+            border: 1px solid rgba(230,57,70,0.25);
+            color: var(--acc);
+            padding: 5px 12px; border-radius: 100px;
+            font-family: var(--font-d); font-weight: 700; font-size: 12px;
+            letter-spacing: 0.05em; text-transform: uppercase;
+        }
+        .hero-badge .material-symbols-outlined { font-size: 14px; }
+        .hero-title {
+            font-family: var(--font-d);
+            font-weight: 900; font-size: clamp(32px, 5vw, 52px);
+            letter-spacing: -2px; line-height: 1.1;
+            color: var(--text);
+        }
+        .hero-title .acc { color: var(--acc); }
+        .hero-sub {
+            font-size: 16px; color: var(--sub);
+            line-height: 1.6; max-width: 540px;
+        }
+        .hero-stats {
+            display: flex; gap: 32px; flex-wrap: wrap;
+            padding-top: 8px;
+        }
+        .hero-stat { display: flex; flex-direction: column; gap: 3px; }
+        .hero-stat-num {
+            font-family: var(--font-d); font-weight: 800;
+            font-size: 22px; color: var(--text); letter-spacing: -0.5px;
+        }
+        .hero-stat-num .acc { color: var(--acc); }
+        .hero-stat-label { font-size: 12px; color: var(--sub); }
+
+        /* ── CONTAINER ── */
+        .container {
+            max-width: 1100px; margin: 0 auto; padding: 0 24px 80px;
+        }
+
+        /* ── FILTER ── */
+        .filter-bar {
+            display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+            margin-bottom: 36px;
+            padding: 14px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+        }
+        .filter-label {
+            font-size: 12px; color: var(--sub); font-weight: 600;
+            display: flex; align-items: center; gap: 5px;
+            letter-spacing: 0.05em; text-transform: uppercase;
+            margin-right: 4px;
+        }
+        .filter-label .material-symbols-outlined { font-size: 15px; }
+        .filter-pill {
+            display: inline-flex; align-items: center;
+            padding: 5px 14px; border-radius: 100px;
+            font-size: 13px; font-weight: 600; font-family: var(--font-d);
+            text-decoration: none;
+            border: 1px solid var(--border);
+            color: var(--sub);
+            background: var(--card);
+            transition: all 0.18s;
+        }
+        .filter-pill:hover {
+            border-color: var(--acc);
+            color: var(--acc);
+        }
+        .filter-pill.active {
+            background: var(--acc);
+            border-color: var(--acc);
+            color: #FFF;
+        }
+
+        /* ── SECTION HEADER ── */
+        .section-header {
+            display: flex; align-items: baseline; justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .section-title {
+            font-family: var(--font-d); font-weight: 800;
+            font-size: 20px; letter-spacing: -0.5px;
+            color: var(--text);
+        }
+        .section-count {
+            font-size: 13px; color: var(--sub);
+        }
+
+        /* ── GRID ── */
+        .positions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        /* ── CARD ── */
+        .pos-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            text-decoration: none;
+            cursor: default;
+        }
+        .pos-card:hover {
+            border-color: var(--muted);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        }
+        .pos-card-body { padding: 20px 20px 16px; flex: 1; }
+        .pos-card-footer { padding: 0 20px 20px; }
+
+        .pos-header {
+            display: flex; align-items: flex-start;
+            justify-content: space-between; gap: 12px;
+            margin-bottom: 10px;
+        }
+        .pos-title {
+            font-family: var(--font-d); font-weight: 700;
+            font-size: 16px; color: var(--text);
+            letter-spacing: -0.3px; line-height: 1.3;
+        }
+        .pos-count-badge {
+            flex-shrink: 0;
+            padding: 3px 10px; border-radius: 100px;
+            background: rgba(230,57,70,0.12);
+            border: 1px solid rgba(230,57,70,0.25);
+            color: var(--acc);
+            font-size: 11px; font-weight: 700; font-family: var(--font-d);
+            white-space: nowrap;
+        }
+
+        .pos-company {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 13px; color: var(--sub); margin-bottom: 14px;
+        }
+        .pos-company .material-symbols-outlined { font-size: 15px; }
+        .pos-company-sep { color: var(--muted); margin: 0 2px; }
+
+        .pos-tags {
+            display: flex; flex-wrap: wrap; gap: 7px;
+            margin-bottom: 14px;
+        }
+        .pos-tag {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px; border-radius: 6px;
+            font-size: 11px; font-weight: 600; font-family: var(--font-d);
+            background: var(--surface); border: 1px solid var(--border);
+            color: var(--sub);
+        }
+        .pos-tag .material-symbols-outlined { font-size: 13px; }
+        .pos-tag.loc { color: #6ee7b7; border-color: rgba(110,231,183,0.2); background: rgba(110,231,183,0.05); }
+        .pos-tag.salary { color: #93c5fd; border-color: rgba(147,197,253,0.2); background: rgba(147,197,253,0.05); }
+
+        .pos-desc {
+            font-size: 13px; color: var(--sub);
+            line-height: 1.6;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .btn-apply {
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            width: 100%; padding: 10px 20px;
+            background: var(--acc); color: #FFF;
+            border: none; border-radius: 9px;
+            font-family: var(--font-d); font-weight: 700; font-size: 14px;
+            text-decoration: none; cursor: pointer;
+            transition: background 0.18s, transform 0.15s;
+        }
+        .btn-apply:hover { background: #FF4D5A; transform: translateY(-1px); }
+        .btn-apply:active { transform: translateY(0); }
+        .btn-apply .material-symbols-outlined { font-size: 17px; }
+
+        /* ── EMPTY STATE ── */
+        .empty {
+            text-align: center; padding: 80px 20px;
+            color: var(--sub);
+        }
+        .empty .material-symbols-outlined { font-size: 56px; color: var(--muted); display: block; margin: 0 auto 16px; }
+        .empty-title { font-family: var(--font-d); font-weight: 700; font-size: 18px; color: var(--text); margin-bottom: 8px; }
+        .empty-sub { font-size: 14px; }
+
+        /* ── FOOTER ── */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 28px 24px;
+        }
+        .footer-inner {
+            max-width: 1100px; margin: 0 auto;
+            display: flex; flex-direction: column;
+            align-items: center; gap: 10px;
+        }
+        @media (min-width: 640px) {
+            .footer-inner { flex-direction: row; justify-content: space-between; }
+        }
+        .footer-copy { font-size: 13px; color: var(--sub); }
+        .footer-links { display: flex; gap: 20px; }
+        .footer-links a {
+            font-size: 12px; color: var(--sub); text-decoration: none; transition: color 0.2s;
+        }
+        .footer-links a:hover { color: var(--text); }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 640px) {
+            .hero { padding: 48px 20px 40px; }
+            .hero-stats { gap: 20px; }
+            .positions-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
-<body class="bg-gray-50 font-sans">
-    <!-- Hero Section -->
-    <div class="bg-gradient-to-br from-slate-800 to-slate-900 text-white py-16">
-        <div class="max-w-6xl mx-auto px-4">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div>
-                    <h1 class="text-3xl font-bold flex items-center gap-3">
-                        <span class="material-symbols-outlined text-4xl">apartment</span>
-                        Team Guerilla
-                    </h1>
-                    <p class="text-lg text-slate-300 mt-2">Kariyer fırsatlarını keşfedin ve ekibimize katılın!</p>
-                </div>
-                <div>
-                    <span class="inline-flex items-center gap-2 px-5 py-2.5 bg-tg-primary text-white text-lg font-semibold rounded-full">
-                        <span class="material-symbols-outlined">work</span>
-                        {{ pozisyonlar|length }} Açık Pozisyon
-                    </span>
-                </div>
+<body>
+
+<!-- Nav -->
+<nav>
+    <div class="nav-inner">
+        <a href="https://teamguerilla.com" class="nav-logo">
+            <div class="nav-logo-mark">
+                <img src="https://www.teamguerilla.com/ozan/logo.png" alt="Team Guerilla Marketing" onerror="this.onerror=null;this.src='';this.alt='Team Guerilla'">
             </div>
+        </a>
+        <a href="https://teamguerilla.com/iletisim" class="nav-link">İletişim ↗</a>
+    </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+    <div class="hero-badge">
+        <span class="material-symbols-outlined">work</span>
+        Kariyer
+    </div>
+    <h1 class="hero-title">
+        Ekibimize<br>
+        <span class="acc">katıl.</span>
+    </h1>
+    <p class="hero-sub">
+        20 yılı aşkın deneyimimizle Türkiye'nin dört bir yanında faaliyet gösteriyoruz.
+        Saha operasyonlarından etkinlik yönetimine, güçlü ekibimizde yer al.
+    </p>
+    <div class="hero-stats">
+        <div class="hero-stat">
+            <span class="hero-stat-num"><span class="acc">{{ pozisyonlar|length }}</span></span>
+            <span class="hero-stat-label">Açık Pozisyon</span>
+        </div>
+        <div class="hero-stat">
+            <span class="hero-stat-num">20<span class="acc">+</span></span>
+            <span class="hero-stat-label">Yıl Deneyim</span>
+        </div>
+        <div class="hero-stat">
+            <span class="hero-stat-num">67<span class="acc">+</span></span>
+            <span class="hero-stat-label">Kişilik Ekip</span>
         </div>
     </div>
-    
-    <div class="max-w-6xl mx-auto px-4 py-10">
-        <!-- Filtreler -->
-        {% if iller %}
-        <div class="bg-white rounded-xl shadow-sm p-4 mb-8">
-            <div class="flex flex-wrap items-center gap-3">
-                <span class="font-semibold text-gray-700 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-lg">filter_alt</span>
-                    Filtrele:
-                </span>
-                <a href="{{ url_for('kariyer.pozisyonlar') }}" 
-                   class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {% if not il_filtre %}bg-tg-primary text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
-                    Tümü
-                </a>
-                {% for il in iller %}
-                <a href="{{ url_for('kariyer.pozisyonlar', il=il) }}" 
-                   class="px-4 py-1.5 rounded-lg text-sm font-medium transition-colors {% if il_filtre == il %}bg-tg-primary text-white{% else %}bg-gray-100 text-gray-700 hover:bg-gray-200{% endif %}">
-                    {{ il }}
-                </a>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-        
-        <!-- Pozisyonlar -->
-        {% if pozisyonlar %}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for kadro in pozisyonlar %}
-            <div class="position-card bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
-                <div class="p-5 flex-1">
-                    <div class="flex justify-between items-start gap-3 mb-3">
-                        <h5 class="text-lg font-semibold text-slate-800">{{ kadro.pozisyon_adi }}</h5>
-                        <span class="flex-shrink-0 px-2.5 py-1 bg-tg-primary text-white text-xs font-semibold rounded-full">
-                            {{ kadro.eksik_sayi }} Kişi
-                        </span>
-                    </div>
-                    
-                    <p class="text-sm text-gray-500 mb-3 flex items-center gap-1">
-                        <span class="material-symbols-outlined text-sm">apartment</span>
-                        {{ kadro.proje.musteri.display_name }}
-                        {% if kadro.proje.ad != kadro.proje.musteri.ad %}
-                        <span class="text-gray-400">/ {{ kadro.proje.ad }}</span>
-                        {% endif %}
-                    </p>
-                    
-                    <div class="flex flex-wrap gap-2 mb-3">
-                        {% if kadro.il %}
-                        <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 text-tg-primary text-xs font-medium rounded-full">
-                            <span class="material-symbols-outlined text-sm">location_on</span>
-                            {{ kadro.il }}{% if kadro.ilce %} / {{ kadro.ilce }}{% endif %}
-                        </span>
-                        {% endif %}
-                        {% if kadro.maas_min or kadro.maas_max %}
-                        <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
-                            <span class="material-symbols-outlined text-sm">payments</span>
-                            {% if kadro.maas_min and kadro.maas_max %}
-                            ₺{{ '{:,.0f}'.format(kadro.maas_min) }} - ₺{{ '{:,.0f}'.format(kadro.maas_max) }}
-                            {% elif kadro.maas_min %}
-                            ₺{{ '{:,.0f}'.format(kadro.maas_min) }}+
-                            {% endif %}
-                        </span>
-                        {% endif %}
-                    </div>
-                    
-                    {% if kadro.aciklama %}
-                    <p class="text-sm text-gray-500 line-clamp-2">
-                        {{ kadro.aciklama[:100] }}{% if kadro.aciklama|length > 100 %}...{% endif %}
-                    </p>
+</section>
+
+<!-- Content -->
+<div class="container">
+
+    <!-- Filtreler -->
+    {% if iller %}
+    <div class="filter-bar">
+        <span class="filter-label">
+            <span class="material-symbols-outlined">filter_alt</span>
+            Şehir
+        </span>
+        <a href="{{ url_for('kariyer.pozisyonlar') }}"
+           class="filter-pill {% if not il_filtre %}active{% endif %}">
+            Tümü
+        </a>
+        {% for il in iller %}
+        <a href="{{ url_for('kariyer.pozisyonlar', il=il) }}"
+           class="filter-pill {% if il_filtre == il %}active{% endif %}">
+            {{ il }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Section Header -->
+    <div class="section-header">
+        <h2 class="section-title">Açık Pozisyonlar</h2>
+        <span class="section-count">{{ pozisyonlar|length }} pozisyon</span>
+    </div>
+
+    <!-- Grid -->
+    {% if pozisyonlar %}
+    <div class="positions-grid">
+        {% for kadro in pozisyonlar %}
+        <div class="pos-card">
+            <div class="pos-card-body">
+                <div class="pos-header">
+                    <h3 class="pos-title">{{ kadro.pozisyon_adi }}</h3>
+                    <span class="pos-count-badge">{{ kadro.eksik_sayi }} Kişi</span>
+                </div>
+
+                <div class="pos-company">
+                    <span class="material-symbols-outlined">apartment</span>
+                    <span>{{ kadro.proje.musteri.display_name }}</span>
+                    {% if kadro.proje.ad != kadro.proje.musteri.ad %}
+                    <span class="pos-company-sep">/</span>
+                    <span>{{ kadro.proje.ad }}</span>
                     {% endif %}
                 </div>
-                <div class="px-5 pb-5">
-                    <a href="{{ url_for('kariyer.basvuru_kvkk', kadro_id=kadro.id) }}" 
-                       class="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-tg-primary text-white font-medium rounded-lg hover:bg-tg-primary-dark transition-colors">
-                        <span class="material-symbols-outlined text-lg">send</span>
-                        Başvur
-                    </a>
+
+                <div class="pos-tags">
+                    {% if kadro.il %}
+                    <span class="pos-tag loc">
+                        <span class="material-symbols-outlined">location_on</span>
+                        {{ kadro.il }}{% if kadro.ilce %} · {{ kadro.ilce }}{% endif %}
+                    </span>
+                    {% endif %}
+                    {% if kadro.maas_min or kadro.maas_max %}
+                    <span class="pos-tag salary">
+                        <span class="material-symbols-outlined">payments</span>
+                        {% if kadro.maas_min and kadro.maas_max %}
+                        ₺{{ '{:,.0f}'.format(kadro.maas_min) }} – ₺{{ '{:,.0f}'.format(kadro.maas_max) }}
+                        {% elif kadro.maas_min %}
+                        ₺{{ '{:,.0f}'.format(kadro.maas_min) }}+
+                        {% endif %}
+                    </span>
+                    {% endif %}
                 </div>
+
+                {% if kadro.aciklama %}
+                <p class="pos-desc">{{ kadro.aciklama }}</p>
+                {% endif %}
             </div>
-            {% endfor %}
+
+            <div class="pos-card-footer">
+                <a href="{{ url_for('kariyer.basvuru_kvkk', kadro_id=kadro.id) }}" class="btn-apply">
+                    <span class="material-symbols-outlined">send</span>
+                    Başvur
+                </a>
+            </div>
         </div>
-        {% else %}
-        <div class="text-center py-16">
-            <span class="material-symbols-outlined text-6xl text-gray-300 mb-4 block">work_off</span>
-            <h4 class="text-xl font-semibold text-gray-700 mb-2">Şu an açık pozisyon bulunmamaktadır</h4>
-            <p class="text-gray-500">Daha sonra tekrar kontrol ediniz.</p>
-        </div>
-        {% endif %}
+        {% endfor %}
     </div>
-    
-    <!-- Footer -->
-    <footer class="bg-slate-800 text-white py-8 mt-12">
-        <div class="max-w-6xl mx-auto px-4">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h5 class="text-lg font-semibold flex items-center gap-2">
-                        <span class="material-symbols-outlined">apartment</span>
-                        Team Guerilla
-                    </h5>
-                    <p class="text-slate-400 text-sm mt-1">Promosyon ve Organizasyon Hizmetleri</p>
-                </div>
-                <div class="text-slate-400 text-sm flex items-center gap-1">
-                    <span class="material-symbols-outlined text-sm">mail</span>
-                    <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="9ef7f5deeafbfff3f9ebfbecf7f2f2ffb0
+
+    {% else %}
+    <div class="empty">
+        <span class="material-symbols-outlined">work_off</span>
+        <p class="empty-title">Şu an açık pozisyon yok</p>
+        <p class="empty-sub">Daha sonra tekrar kontrol edin.</p>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Footer -->
+<footer>
+    <div class="footer-inner">
+        <span class="footer-copy">© 2026 Team Guerilla Marketing. Tüm hakları saklıdır.</span>
+        <div class="footer-links">
+            <a href="https://teamguerilla.com/gizlilik-politikasi">Gizlilik Politikası</a>
+            <a href="https://teamguerilla.com/kvkk">KVKK</a>
+            <a href="https://teamguerilla.com">teamguerilla.com</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
