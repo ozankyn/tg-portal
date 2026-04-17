@@ -252,6 +252,7 @@ def liste():
 | basvuru | 8 | Dış başvuru formu, SMS doğrulama |
 | ayarlar | 8 | Sistem, Kullanıcı, Rol yönetimi |
 | masraf | 6 | Masraf girişi, AI fiş okuma, Onay |
+| rapor | 7 | Dashboard, İK/Masraf/Sözleşme/SatınAlma/Talep raporları, AI Asistan |
 | tedarikci | 3 | Tedarikçi CRUD |
 | kariyer | 4 | Kariyer sayfası |
 | onay | 6 | Generic onay workflow |
@@ -265,6 +266,7 @@ def liste():
 3. **Git auth:** GitHub PAT token gerekli
 4. **CSRF:** Dış erişimli blueprint'ler ve API için `csrf.exempt()` gerekli
 5. **Tailwind:** Tüm 100 template migrate edildi, yeni template'ler de Tailwind kullanmalı
+6. **AI Asistan:** Raporlama modülünde AI asistan var (`/rapor/ai-asistan`). System prompt `app/modules/rapor/routes.py` içinde `AI_SYSTEM_PROMPT` olarak tanımlı. DB şeması değiştiğinde bu prompt'u da güncelle.
 
 ---
 

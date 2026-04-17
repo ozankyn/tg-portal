@@ -154,6 +154,23 @@
       </a>
     </div>
 
+    <!-- AI Asistan -->
+    <div class="rounded-2xl border border-violet-200 dark:border-violet-800 bg-gradient-to-br from-violet-50 to-white dark:from-violet-900/20 dark:to-card-dark shadow-sm p-6 text-center">
+      <div class="mx-auto w-12 h-12 rounded-2xl bg-violet-500/10 flex items-center justify-center">
+        <span class="material-symbols-outlined text-violet-600 dark:text-violet-300">smart_toy</span>
+      </div>
+      <h5 class="mt-3 font-bold text-[#111418] dark:text-white">AI Raporlama Asistanı</h5>
+      <p class="mt-1 text-sm text-text-muted dark:text-text-muted-dark">
+        Doğal dilde soru sorun, anlık raporlar alın
+      </p>
+      <a href="{{ url_for('rapor.ai_asistan') }}"
+         class="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-violet-600 hover:bg-violet-700
+                px-4 py-2.5 text-sm font-semibold text-white transition">
+        <span class="material-symbols-outlined text-[18px]">chat</span>
+        Soru Sor
+      </a>
+    </div>
+
     <!-- Excel Export -->
     <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-6 text-center">
       <div class="mx-auto w-12 h-12 rounded-2xl bg-gray-500/10 flex items-center justify-center">

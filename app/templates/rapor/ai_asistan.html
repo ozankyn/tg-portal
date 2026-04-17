@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+
+{% block title %}AI Raporlama Asistanı - TG Portal{% endblock %}
+{% block page_title %}AI Raporlama Asistanı{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+
+  <!-- Üst bilgi -->
+  <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-5">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
+        <span class="material-symbols-outlined text-violet-600 dark:text-violet-300">smart_toy</span>
+      </div>
+      <div>
+        <h2 class="font-bold text-[#111418] dark:text-white">AI Raporlama Asistanı</h2>
+        <p class="text-sm text-text-muted dark:text-text-muted-dark">
+          Doğal dilde soru sorun, portal veritabanından anlık raporlar alın.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hazır sorular -->
+  <div class="flex flex-wrap gap-2">
+    <button onclick="sorSoru(this.textContent)" class="rounded-lg border border-border-light dark:border-border-dark px-3 py-1.5 text-xs font-medium hover:bg-gray-50 dark:hover:bg-[#252b36] transition">
+      Kaç aktif çalışan var?
+    </button>
+    <button onclick="sorSoru(this.textContent)" class="rounded-lg border border-border-light dark:border-border-dark px-3 py-1.5 text-xs font-medium hover:bg-gray-50 dark:hover:bg-[#252b36] transition">
+      Proje bazlı personel dağılımı
+    </button>
+    <button onclick="sorSoru(this.textContent)" class="rounded-lg border border-border-light dark:border-border-dark px-3 py-1.5 text-xs font-medium hover:bg-gray-50 dark:hover:bg-[#252b36] transition">
+      Bu ay ayrılanlar kimler?
+    </button>
+    <button onclick="sorSoru(this.textContent)" class="rounded-lg border border-border-light dark:border-border-dark px-3 py-1.5 text-xs font-medium hover:bg-gray-50 dark:hover:bg-[#252b36] transition">
+      Departman bazlı personel sayıları
+    </button>
+    <button onclick="sorSoru(this.textContent)" class="rounded-lg border border-border-light dark:border-border-dark px-3 py-1.5 text-xs font-medium hover:bg-gray-50 dark:hover:bg-[#252b36] transition">
+      Araç filosu durumu
+    </button>
+    <button onclick="sorSoru(this.textContent)" class="rounded-lg border border-border-light dark:border-border-dark px-3 py-1.5 text-xs font-medium hover:bg-gray-50 dark:hover:bg-[#252b36] transition">
+      Son 3 ayda işe giren çalışanlar
+    </button>
+  </div>
+
+  <!-- Soru giriş -->
+  <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
+    <form id="soruForm" class="flex gap-3">
+      <input type="text" id="soruInput"
+             placeholder="Sorunuzu yazın... (örn: Hangi projede kaç kişi çalışıyor?)"
+             class="flex-1 rounded-xl border border-border-light dark:border-border-dark bg-white dark:bg-[#1a1f2b]
+                    px-4 py-3 text-sm placeholder:text-text-muted dark:placeholder:text-text-muted-dark
+                    focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+             autocomplete="off">
+      <button type="submit" id="soruBtn"
+              class="rounded-xl bg-violet-600 hover:bg-violet-700 px-6 py-3 text-sm font-semibold text-white
+                     transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+        <span class="material-symbols-outlined text-[18px]">send</span>
+        Sor
+      </button>
+    </form>
+  </div>
+
+  <!-- Sonuçlar -->
+  <div id="sonuclar" class="space-y-4"></div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function sorSoru(soru) {
+  $('#soruInput').val(soru);
+  $('#soruForm').submit();
+}
+
+// Markdown-benzeri basit render
+function renderYanit(text) {
+  // SQL bloklarını kaldır (ayrı gösteriyoruz)
+  let html = text.replace(/```sql[\s\S]*?```/g, '');
+  // Kalan code bloklarını render et
+  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre class="bg-gray-100 dark:bg-[#1a1f2b] rounded-lg p-3 text-xs overflow-x-auto my-2"><code>$2</code></pre>');
+  // Bold
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // Satır sonları
+  html = html.replace(/\n/g, '<br>');
+  return html;
+}
+
+function renderTablo(sonuc) {
+  if (sonuc.hata) {
+    return `<div class="text-red-600 dark:text-red-400 text-sm">SQL Hatası: ${sonuc.hata}</div>`;
+  }
+  if (!sonuc.satirlar || sonuc.satirlar.length === 0) {
+    return '<div class="text-text-muted dark:text-text-muted-dark text-sm">Sonuç bulunamadı.</div>';
+  }
+
+  let html = '<div class="overflow-x-auto"><table class="w-full text-sm">';
+  // Header
+  html += '<thead><tr class="border-b border-border-light dark:border-border-dark">';
+  sonuc.kolonlar.forEach(k => {
+    html += `<th class="px-3 py-2 text-left font-semibold text-text-muted dark:text-text-muted-dark text-xs uppercase">${k}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+  // Rows
+  sonuc.satirlar.forEach((row, i) => {
+    const bg = i % 2 === 0 ? '' : 'bg-gray-50 dark:bg-[#1a1f2b]';
+    html += `<tr class="${bg}">`;
+    sonuc.kolonlar.forEach(k => {
+      let val = row[k];
+      if (val === null) val = '-';
+      else if (typeof val === 'number' && !Number.isInteger(val)) val = val.toLocaleString('tr-TR', {minimumFractionDigits: 2});
+      else if (typeof val === 'number') val = val.toLocaleString('tr-TR');
+      html += `<td class="px-3 py-2 text-[#111418] dark:text-white">${val}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  if (sonuc.toplam > 100) {
+    html += `<div class="text-xs text-text-muted dark:text-text-muted-dark mt-2">Toplam ${sonuc.toplam} kayıttan ilk 100 gösteriliyor.</div>`;
+  }
+  return html;
+}
+
+$('#soruForm').on('submit', function(e) {
+  e.preventDefault();
+  const soru = $('#soruInput').val().trim();
+  if (!soru) return;
+
+  const btn = $('#soruBtn');
+  btn.prop('disabled', true).html('<span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span> Düşünüyor...');
+
+  // Soru kartı
+  $('#sonuclar').prepend(`
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm overflow-hidden soru-kart">
+      <div class="px-5 py-3 bg-violet-50 dark:bg-violet-900/20 border-b border-border-light dark:border-border-dark">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-violet-600 dark:text-violet-300 text-[18px]">person</span>
+          <span class="font-semibold text-sm text-[#111418] dark:text-white">${soru}</span>
+        </div>
+      </div>
+      <div class="p-5 yanit-alani">
+        <div class="flex items-center gap-2 text-text-muted dark:text-text-muted-dark text-sm">
+          <span class="material-symbols-outlined animate-spin text-[16px]">progress_activity</span>
+          Sorgu hazırlanıyor...
+        </div>
+      </div>
+    </div>
+  `);
+
+  $.ajax({
+    url: '{{ url_for("rapor.ai_asistan_sorgula") }}',
+    method: 'POST',
+    contentType: 'application/json',
+    headers: {'X-CSRFToken': '{{ csrf_token() }}'},
+    data: JSON.stringify({soru: soru}),
+    success: function(resp) {
+      const yanitAlani = $('#sonuclar .soru-kart:first .yanit-alani');
+      if (resp.success) {
+        let html = '<div class="space-y-4">';
+        // AI yanıtı
+        html += `<div class="prose prose-sm dark:prose-invert max-w-none">${renderYanit(resp.yanit)}</div>`;
+        // SQL sonuçları
+        if (resp.sonuclar && resp.sonuclar.length > 0) {
+          resp.sonuclar.forEach(s => {
+            html += '<div class="rounded-xl border border-border-light dark:border-border-dark overflow-hidden">';
+            html += `<div class="px-3 py-2 bg-gray-50 dark:bg-[#1a1f2b] border-b border-border-light dark:border-border-dark">
+                       <code class="text-xs text-text-muted dark:text-text-muted-dark">${s.sql}</code>
+                     </div>`;
+            html += `<div class="p-3">${renderTablo(s)}</div>`;
+            html += '</div>';
+          });
+        }
+        html += '</div>';
+        yanitAlani.html(html);
+      } else {
+        yanitAlani.html(`<div class="text-red-600 dark:text-red-400 text-sm">${resp.error}</div>`);
+      }
+    },
+    error: function(xhr) {
+      const yanitAlani = $('#sonuclar .soru-kart:first .yanit-alani');
+      const msg = xhr.responseJSON ? xhr.responseJSON.error : 'Bağlantı hatası';
+      yanitAlani.html(`<div class="text-red-600 dark:text-red-400 text-sm">${msg}</div>`);
+    },
+    complete: function() {
+      btn.prop('disabled', false).html('<span class="material-symbols-outlined text-[18px]">send</span> Sor');
+      $('#soruInput').val('').focus();
+    }
+  });
+});
+</script>
+{% endblock %}
