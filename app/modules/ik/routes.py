@@ -1219,7 +1219,7 @@ def aday_ekle():
             basvuru_tarihi=date.today(),
             kvkk_onay=True,  # Manuel girişte KVKK zaten alınmış kabul edilir
             kvkk_onay_tarihi=datetime.utcnow(),
-            created_by=current_user.id
+            davet_eden_id=current_user.id
         )
         
         db.session.add(aday)
