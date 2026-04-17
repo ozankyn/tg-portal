@@ -11,11 +11,52 @@ KULLANIM:
   cd /app && PYTHONPATH=/app python3 scripts/veri_duzeltme.py --force-apply
 """
 import sys
+import re
 from datetime import datetime
 
 # ============================================================
 # PROJE ISIM GUNCELLEMELERI
 # ============================================================
+# ============================================================
+# KADRO POZISYON_ADI -> GENERIC POZISYON ESLESTIRME
+# ============================================================
+# Oncelik sirasi onemli: spesifik kurallar once, genel kurallar sonda
+POZISYON_RULES = [
+    # (pattern, generic_pozisyon_adi)
+    (r'(?i)part\s*time\s*sse',          'Part Time SSE'),
+    (r'(?i)sse\s*s[uü]perviz[oö]r',    'SSE Süpervizör'),
+    (r'(?i)^sse\b',                     'SSE'),
+    (r'(?i)part\s*time\s*sniper',       'Part Time Sniper'),
+    (r'(?i)marka\s*el[cç]isi',         'Marka Elçisi'),
+    (r'(?i)beylerbeyi',                 'Beylerbeyi Merchandiser'),
+    (r'(?i)bf\b|brown\s*forman',        'BF Merchandiser'),
+    (r'(?i)s[uü]perviz[oö]r',          'Süpervizör'),
+    (r'(?i)yaya',                       'Yaya Merchandiser'),
+    (r'(?i)merch|merchandiser',         'Merchandiser'),
+]
+
+
+def kadro_to_generic_pozisyon(pozisyon_adi):
+    """HedefKadro.pozisyon_adi'ndan location bilgisini atarak generic pozisyon cikar.
+
+    Ornekler:
+      'SSE - İzmir'                -> 'SSE'
+      'BF Araçlı Merch - Ankara'  -> 'BF Merchandiser'
+      'SSE Süpervizör - İstanbul'  -> 'SSE Süpervizör'
+      'Part Time SSE - Bursa'     -> 'Part Time SSE'
+      'Beylerbeyi Araçlı - İzmir' -> 'Beylerbeyi Merchandiser'
+      'Süpervizör - Antalya'      -> 'Süpervizör'
+    """
+    if not pozisyon_adi:
+        return None
+    for pattern, generic in POZISYON_RULES:
+        if re.search(pattern, pozisyon_adi):
+            return generic
+    # Hicbir kurala uymadiysa - tire'den onceki kismi al
+    base = pozisyon_adi.split(' - ')[0].strip()
+    return base if base else pozisyon_adi
+
+
 PROJE_RENAME = {
     1:  'Efes KK Merch',
     2:  'Efes Sniper',
@@ -80,6 +121,21 @@ def run(mode='dry-run'):
         ).all()
         print(f"  Kadrolu calisan: {len(kadrolu)}")
 
+        # Kadro pozisyon_adi -> generic pozisyon mapping'i goster
+        kadro_poz_ornek = {}
+        for c in kadrolu:
+            kadro = HedefKadro.query.get(c.kadro_id)
+            if kadro and kadro.pozisyon_adi:
+                generic = kadro_to_generic_pozisyon(kadro.pozisyon_adi)
+                if kadro.pozisyon_adi not in kadro_poz_ornek:
+                    kadro_poz_ornek[kadro.pozisyon_adi] = generic
+        # Unique generic pozisyonlari listele
+        unique_generics = sorted(set(kadro_poz_ornek.values()))
+        print(f"  {len(kadro_poz_ornek)} farkli kadro pozisyon_adi -> {len(unique_generics)} generic pozisyon:")
+        for g in unique_generics:
+            ornekler = [k for k, v in kadro_poz_ornek.items() if v == g][:3]
+            print(f"    '{g}' <- {ornekler}")
+
         # Mevcut pozisyonlari yukle
         poz_map = {}  # pozisyon_adi -> Pozisyon
         for p in Pozisyon.query.filter_by(is_deleted=False).all():
@@ -92,12 +148,14 @@ def run(mode='dry-run'):
             if not kadro or not kadro.pozisyon_adi:
                 continue
 
-            poz_adi = kadro.pozisyon_adi
+            poz_adi = kadro_to_generic_pozisyon(kadro.pozisyon_adi)
+            if not poz_adi:
+                continue
 
             # Pozisyon var mi?
             poz = poz_map.get(poz_adi)
             if not poz:
-                print(f"  [YENI POZ] '{poz_adi}' -> Retail departmanina olusturulacak")
+                print(f"  [YENI POZ] '{poz_adi}'")
                 poz_created += 1
                 if mode == 'apply':
                     poz = Pozisyon(
