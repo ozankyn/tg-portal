@@ -74,9 +74,9 @@ function sorSoru(soru) {
   $('#soruForm').submit();
 }
 
-// Markdown-benzeri basit render
+// Markdown-benzeri basit render — SQL blokları hariç
 function renderYanit(text) {
-  // SQL bloklarını kaldır (ayrı gösteriyoruz)
+  // SQL bloklarını kaldır (ayrı tablo olarak gösteriyoruz)
   let html = text.replace(/```sql[\s\S]*?```/g, '');
   // Kalan code bloklarını render et
   html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, '<pre class="bg-gray-100 dark:bg-[#1a1f2b] rounded-lg p-3 text-xs overflow-x-auto my-2"><code>$2</code></pre>');
@@ -89,37 +89,88 @@ function renderYanit(text) {
 
 function renderTablo(sonuc) {
   if (sonuc.hata) {
-    return `<div class="text-red-600 dark:text-red-400 text-sm">SQL Hatası: ${sonuc.hata}</div>`;
+    return `<div class="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm p-2">
+              <span class="material-symbols-outlined text-[16px]">error</span>
+              SQL Hatası: ${sonuc.hata}
+            </div>`;
   }
   if (!sonuc.satirlar || sonuc.satirlar.length === 0) {
-    return '<div class="text-text-muted dark:text-text-muted-dark text-sm">Sonuç bulunamadı.</div>';
+    return '<div class="text-text-muted dark:text-text-muted-dark text-sm p-2">Sonuç bulunamadı.</div>';
   }
 
-  let html = '<div class="overflow-x-auto"><table class="w-full text-sm">';
+  let html = '<div class="overflow-x-auto"><table class="w-full text-sm border-collapse">';
   // Header
-  html += '<thead><tr class="border-b border-border-light dark:border-border-dark">';
+  html += '<thead><tr class="border-b-2 border-border-light dark:border-border-dark bg-gray-50 dark:bg-[#1a1f2b]">';
   sonuc.kolonlar.forEach(k => {
-    html += `<th class="px-3 py-2 text-left font-semibold text-text-muted dark:text-text-muted-dark text-xs uppercase">${k}</th>`;
+    html += `<th class="px-3 py-2.5 text-left font-semibold text-text-muted dark:text-text-muted-dark text-xs uppercase tracking-wide">${k}</th>`;
   });
   html += '</tr></thead><tbody>';
   // Rows
   sonuc.satirlar.forEach((row, i) => {
-    const bg = i % 2 === 0 ? '' : 'bg-gray-50 dark:bg-[#1a1f2b]';
-    html += `<tr class="${bg}">`;
+    const bg = i % 2 === 0 ? '' : 'bg-gray-50/50 dark:bg-[#1a1f2b]/50';
+    html += `<tr class="${bg} border-b border-border-light/50 dark:border-border-dark/50 hover:bg-violet-50/30 dark:hover:bg-violet-900/10 transition">`;
     sonuc.kolonlar.forEach(k => {
       let val = row[k];
-      if (val === null) val = '-';
+      if (val === null || val === undefined) val = '-';
       else if (typeof val === 'number' && !Number.isInteger(val)) val = val.toLocaleString('tr-TR', {minimumFractionDigits: 2});
       else if (typeof val === 'number') val = val.toLocaleString('tr-TR');
-      html += `<td class="px-3 py-2 text-[#111418] dark:text-white">${val}</td>`;
+      html += `<td class="px-3 py-2 text-[#111418] dark:text-white whitespace-nowrap">${val}</td>`;
     });
     html += '</tr>';
   });
   html += '</tbody></table></div>';
-  if (sonuc.toplam > 100) {
-    html += `<div class="text-xs text-text-muted dark:text-text-muted-dark mt-2">Toplam ${sonuc.toplam} kayıttan ilk 100 gösteriliyor.</div>`;
-  }
+
+  // Satır sayısı bilgisi
+  let footer = `<div class="flex items-center justify-between mt-2">`;
+  footer += `<span class="text-xs text-text-muted dark:text-text-muted-dark">${sonuc.toplam} kayıt`;
+  if (sonuc.toplam > 100) footer += ' (ilk 100 gösteriliyor)';
+  footer += '</span>';
+  footer += '</div>';
+  html += footer;
+
   return html;
+}
+
+function exportExcel(sql) {
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = '{{ url_for("rapor.ai_asistan_export") }}';
+  form.target = '_blank';
+
+  const csrfInput = document.createElement('input');
+  csrfInput.type = 'hidden';
+  csrfInput.name = 'csrf_token';
+  csrfInput.value = '{{ csrf_token() }}';
+  form.appendChild(csrfInput);
+
+  // JSON body olarak göndermek yerine fetch ile indir
+  form.remove();
+
+  fetch('{{ url_for("rapor.ai_asistan_export") }}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token() }}'
+    },
+    body: JSON.stringify({sql: sql})
+  })
+  .then(resp => {
+    if (!resp.ok) return resp.json().then(d => { throw new Error(d.error || 'Export hatası'); });
+    return resp.blob();
+  })
+  .then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ai_rapor.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  })
+  .catch(err => {
+    alert('Export hatası: ' + err.message);
+  });
 }
 
 $('#soruForm').on('submit', function(e) {
@@ -156,31 +207,62 @@ $('#soruForm').on('submit', function(e) {
     data: JSON.stringify({soru: soru}),
     success: function(resp) {
       const yanitAlani = $('#sonuclar .soru-kart:first .yanit-alani');
+      console.log('[AI Asistan] Response:', resp);
       if (resp.success) {
         let html = '<div class="space-y-4">';
-        // AI yanıtı
+        // AI yanıtı (metin açıklama)
         html += `<div class="prose prose-sm dark:prose-invert max-w-none">${renderYanit(resp.yanit)}</div>`;
-        // SQL sonuçları
+        // SQL sonuçları (tablo + export)
         if (resp.sonuclar && resp.sonuclar.length > 0) {
-          resp.sonuclar.forEach(s => {
+          resp.sonuclar.forEach((s, i) => {
+            console.log(`[AI Asistan] SQL #${i+1}:`, s.sql, s.hata || `${s.toplam} satır`);
             html += '<div class="rounded-xl border border-border-light dark:border-border-dark overflow-hidden">';
-            html += `<div class="px-3 py-2 bg-gray-50 dark:bg-[#1a1f2b] border-b border-border-light dark:border-border-dark">
-                       <code class="text-xs text-text-muted dark:text-text-muted-dark">${s.sql}</code>
-                     </div>`;
+            // SQL header
+            html += `<div class="px-3 py-2 bg-gray-50 dark:bg-[#1a1f2b] border-b border-border-light dark:border-border-dark flex items-center justify-between gap-2">
+                       <div class="flex items-center gap-2 min-w-0">
+                         <span class="material-symbols-outlined text-[14px] shrink-0 ${s.hata ? 'text-red-500' : 'text-green-500'}">${s.hata ? 'error' : 'check_circle'}</span>
+                         <code class="text-xs text-text-muted dark:text-text-muted-dark truncate">${s.sql}</code>
+                       </div>`;
+            // Excel export butonu (sadece basarili sorgularda)
+            if (!s.hata && s.satirlar && s.satirlar.length > 0) {
+              const escapedSql = s.sql.replace(/'/g, "\\'").replace(/\n/g, ' ');
+              html += `<button onclick="exportExcel('${escapedSql}')"
+                         class="shrink-0 inline-flex items-center gap-1 rounded-lg border border-border-light dark:border-border-dark
+                                px-2.5 py-1 text-xs font-medium text-text-muted dark:text-text-muted-dark
+                                hover:bg-white dark:hover:bg-[#252b36] hover:text-green-700 dark:hover:text-green-300 transition"
+                         title="Excel'e aktar">
+                        <span class="material-symbols-outlined text-[14px]">download</span>
+                        Excel
+                      </button>`;
+            }
+            html += '</div>';
+            // Tablo
             html += `<div class="p-3">${renderTablo(s)}</div>`;
             html += '</div>';
           });
+        } else {
+          console.warn('[AI Asistan] SQL sonucu yok. Yanıt:', resp.yanit?.substring(0, 300));
+          html += `<div class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 p-3 text-sm text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                     <span class="material-symbols-outlined text-[16px]">warning</span>
+                     SQL sorgusu bulunamadı veya çalıştırılamadı.
+                   </div>`;
         }
         html += '</div>';
         yanitAlani.html(html);
       } else {
-        yanitAlani.html(`<div class="text-red-600 dark:text-red-400 text-sm">${resp.error}</div>`);
+        yanitAlani.html(`<div class="text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                           <span class="material-symbols-outlined text-[16px]">error</span>
+                           ${resp.error}
+                         </div>`);
       }
     },
     error: function(xhr) {
       const yanitAlani = $('#sonuclar .soru-kart:first .yanit-alani');
       const msg = xhr.responseJSON ? xhr.responseJSON.error : 'Bağlantı hatası';
-      yanitAlani.html(`<div class="text-red-600 dark:text-red-400 text-sm">${msg}</div>`);
+      yanitAlani.html(`<div class="text-red-600 dark:text-red-400 text-sm flex items-center gap-2">
+                         <span class="material-symbols-outlined text-[16px]">error</span>
+                         ${msg}
+                       </div>`);
     },
     complete: function() {
       btn.prop('disabled', false).html('<span class="material-symbols-outlined text-[18px]">send</span> Sor');

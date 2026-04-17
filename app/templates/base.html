@@ -376,9 +376,13 @@
                 {% if has_permission('rapor.view') %}
                 <!-- Raporlar -->
                 <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Raporlar</p>
-                <a href="{{ url_for('rapor.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'rapor' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                <a href="{{ url_for('rapor.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'rapor' and request.endpoint != 'rapor.ai_asistan' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
                     <span class="material-symbols-outlined">bar_chart</span>
                     <span class="font-medium">Raporlar</span>
+                </a>
+                <a href="{{ url_for('rapor.ai_asistan') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.endpoint == 'rapor.ai_asistan' %}bg-violet-500/10 text-violet-700 dark:text-violet-300{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">smart_toy</span>
+                    <span class="font-medium">AI Asistan</span>
                 </a>
                 {% endif %}
                 

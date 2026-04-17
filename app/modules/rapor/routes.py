@@ -665,6 +665,8 @@ def ai_asistan_sorgula():
     """AI Asistan'a soru sor, SQL çalıştır, sonuçla birlikte yanıtla"""
     import anthropic
     import json
+    import re
+    from decimal import Decimal
 
     data = request.get_json()
     soru = data.get('soru', '').strip()
@@ -674,6 +676,27 @@ def ai_asistan_sorgula():
     api_key = current_app.config.get('ANTHROPIC_API_KEY')
     if not api_key:
         return jsonify({'success': False, 'error': 'AI servisi yapılandırılmamış'}), 500
+
+    def serialize_value(val):
+        """DB değerlerini JSON-safe tiplere dönüştür."""
+        if val is None:
+            return None
+        if isinstance(val, Decimal):
+            return float(val)
+        if isinstance(val, datetime):
+            return val.strftime('%d.%m.%Y %H:%M')
+        if isinstance(val, date):
+            return val.strftime('%d.%m.%Y')
+        if isinstance(val, timedelta):
+            return str(val)
+        return val
+
+    def extract_sql_blocks(text):
+        """Claude yanıtından SQL bloklarını çıkar (```sql ... ``` veya ``` ... ```)."""
+        # Önce ```sql ... ``` bloklarını dene
+        pattern = r'```(?:sql)?\s*\n([\s\S]*?)```'
+        blocks = re.findall(pattern, text)
+        return [b.strip() for b in blocks if b.strip()]
 
     try:
         client = anthropic.Anthropic(api_key=api_key)
@@ -688,36 +711,52 @@ def ai_asistan_sorgula():
             ]
         )
         ai_yanit = message.content[0].text
+        print(f"[AI Asistan] Soru: {soru}")
+        print(f"[AI Asistan] Yanıt uzunluk: {len(ai_yanit)} karakter")
 
-        # Adım 2: SQL sorgusunu çıkar ve çalıştır
+        # Adım 2: SQL sorgularını çıkar
+        sql_blocks = extract_sql_blocks(ai_yanit)
+        print(f"[AI Asistan] Bulunan SQL blokları: {len(sql_blocks)}")
+
         sql_sonuclar = []
-        if '```sql' in ai_yanit:
-            sql_bloklari = ai_yanit.split('```sql')
-            for blok in sql_bloklari[1:]:
-                sql = blok.split('```')[0].strip()
-                # Güvenlik: sadece SELECT
-                sql_upper = sql.upper().strip()
-                if not sql_upper.startswith('SELECT') and not sql_upper.startswith('WITH'):
-                    continue
-                # Tehlikeli komutları engelle
-                yasakli = ['INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'TRUNCATE', 'CREATE', 'GRANT', 'REVOKE']
-                if any(k in sql_upper for k in yasakli):
-                    continue
-                try:
-                    result = db.session.execute(text(sql))
-                    kolonlar = list(result.keys())
-                    satirlar = [dict(zip(kolonlar, row)) for row in result.fetchall()]
-                    sql_sonuclar.append({
-                        'sql': sql,
-                        'kolonlar': kolonlar,
-                        'satirlar': satirlar[:100],  # max 100 satır
-                        'toplam': len(satirlar),
-                    })
-                except Exception as e:
-                    sql_sonuclar.append({
-                        'sql': sql,
-                        'hata': str(e),
-                    })
+        for i, sql in enumerate(sql_blocks):
+            print(f"[AI Asistan] SQL #{i+1}: {sql[:200]}...")
+
+            # Güvenlik: sadece SELECT/WITH
+            sql_upper = sql.upper().strip()
+            if not sql_upper.startswith('SELECT') and not sql_upper.startswith('WITH'):
+                print(f"[AI Asistan] SQL #{i+1} atlandı: SELECT/WITH ile başlamıyor")
+                continue
+
+            yasakli = ['INSERT ', 'UPDATE ', 'DELETE ', 'DROP ', 'ALTER ', 'TRUNCATE ', 'CREATE ', 'GRANT ', 'REVOKE ']
+            if any(k in sql_upper for k in yasakli):
+                print(f"[AI Asistan] SQL #{i+1} atlandı: yasaklı komut içeriyor")
+                continue
+
+            try:
+                result = db.session.execute(text(sql))
+                kolonlar = list(result.keys())
+                raw_rows = result.fetchall()
+                satirlar = []
+                for row in raw_rows[:100]:
+                    satirlar.append({k: serialize_value(v) for k, v in zip(kolonlar, row)})
+                sql_sonuclar.append({
+                    'sql': sql,
+                    'kolonlar': kolonlar,
+                    'satirlar': satirlar,
+                    'toplam': len(raw_rows),
+                })
+                print(f"[AI Asistan] SQL #{i+1} başarılı: {len(raw_rows)} satır")
+            except Exception as e:
+                print(f"[AI Asistan] SQL #{i+1} HATA: {e}")
+                db.session.rollback()
+                sql_sonuclar.append({
+                    'sql': sql,
+                    'hata': str(e),
+                })
+
+        if not sql_blocks:
+            print(f"[AI Asistan] SQL bulunamadı. Yanıt ilk 500 kar: {ai_yanit[:500]}")
 
         return jsonify({
             'success': True,
@@ -726,6 +765,64 @@ def ai_asistan_sorgula():
         })
 
     except anthropic.APIError as e:
+        print(f"[AI Asistan] API HATA: {e}")
         return jsonify({'success': False, 'error': f'AI API hatası: {str(e)}'}), 500
     except Exception as e:
+        print(f"[AI Asistan] GENEL HATA: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@rapor_bp.route('/ai-asistan/export', methods=['POST'])
+@login_required
+@permission_required('rapor.view')
+def ai_asistan_export():
+    """AI Asistan sorgu sonucunu Excel'e aktar"""
+    from decimal import Decimal
+
+    data = request.get_json()
+    sql = data.get('sql', '').strip()
+    if not sql:
+        return jsonify({'success': False, 'error': 'SQL boş'}), 400
+
+    sql_upper = sql.upper().strip()
+    if not sql_upper.startswith('SELECT') and not sql_upper.startswith('WITH'):
+        return jsonify({'success': False, 'error': 'Sadece SELECT sorguları export edilebilir'}), 400
+
+    yasakli = ['INSERT ', 'UPDATE ', 'DELETE ', 'DROP ', 'ALTER ', 'TRUNCATE ', 'CREATE ', 'GRANT ', 'REVOKE ']
+    if any(k in sql_upper for k in yasakli):
+        return jsonify({'success': False, 'error': 'Yasaklı SQL komutu'}), 400
+
+    try:
+        import openpyxl
+        from openpyxl.utils import get_column_letter
+
+        result = db.session.execute(text(sql))
+        kolonlar = list(result.keys())
+        rows = result.fetchall()
+
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'AI Rapor'
+        ws.append(kolonlar)
+
+        for row in rows:
+            ws.append([float(v) if isinstance(v, Decimal) else v for v in row])
+
+        for col in range(1, len(kolonlar) + 1):
+            ws.column_dimensions[get_column_letter(col)].width = 18
+
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        return Response(
+            output.getvalue(),
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers={'Content-Disposition': 'attachment; filename=ai_rapor.xlsx'}
+        )
+    except Exception as e:
+        print(f"[AI Asistan Export] HATA: {e}")
+        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
