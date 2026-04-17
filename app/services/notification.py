@@ -10,15 +10,16 @@ from app import mail, db
 
 def send_notification(to, subject, html_body, text_body=None):
     """Genel bildirim gönderme fonksiyonu"""
+    import sys
     recipients = [to] if isinstance(to, str) else to
-    print(f"[Mail] Gönderim başlıyor: to={recipients}, subject={subject}")
+    print(f">>> MAIL GONDERILIYOR: to={recipients}, subject={subject}", flush=True)
     try:
         mail_server = current_app.config.get('MAIL_SERVER')
         if not mail_server:
-            print(f"[Mail] MAIL_SERVER yapılandırılmamış, gönderim iptal")
+            print(f">>> MAIL_SERVER BOŞ — gönderim iptal", flush=True)
             return False
 
-        print(f"[Mail] SMTP: {mail_server}:{current_app.config.get('MAIL_PORT')}, user={current_app.config.get('MAIL_USERNAME')}")
+        print(f">>> SMTP: {mail_server}:{current_app.config.get('MAIL_PORT')}, user={current_app.config.get('MAIL_USERNAME')}", flush=True)
         msg = Message(
             subject=subject,
             recipients=recipients,
@@ -26,12 +27,13 @@ def send_notification(to, subject, html_body, text_body=None):
             body=text_body
         )
         mail.send(msg)
-        print(f"[Mail] Başarıyla gönderildi: {recipients}")
+        print(f">>> MAIL BASARIYLA GONDERILDI: {recipients}", flush=True)
         return True
     except Exception as e:
-        print(f"[Mail] HATA: {e}")
+        print(f">>> MAIL HATA: {e}", flush=True)
         import traceback
         traceback.print_exc()
+        sys.stdout.flush()
         return False
 
 
@@ -339,6 +341,7 @@ BILDIRIM_ALICILARI = [
 
 def notify_ise_giris(calisan):
     """İşe giriş bildirimi — Muhasebe, Filo, Eğitim, İK departmanlarına"""
+    print(f">>> NOTIFY_ISE_GIRIS TETIKLENDI: {calisan.ad} {calisan.soyad} (id={calisan.id})", flush=True)
 
     # Proje bilgisi (kadro üzerinden)
     proje_adi = '-'

@@ -183,33 +183,34 @@ def ekle():
         
         db.session.add(calisan)
         db.session.commit()
-        
+        print(f">>> CALISAN KAYDEDILDI id={calisan.id} {calisan.ad} {calisan.soyad}", flush=True)
+
         # Fotoğraf yükleme
         if 'foto' in request.files:
             foto = request.files['foto']
             if foto and foto.filename:
                 from werkzeug.utils import secure_filename
                 import uuid
-                
+
                 ext = foto.filename.rsplit('.', 1)[-1].lower() if '.' in foto.filename else 'jpg'
                 filename = f"calisan_{calisan.id}_{uuid.uuid4().hex[:8]}.{ext}"
-                
+
                 upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'photos')
                 os.makedirs(upload_folder, exist_ok=True)
-                
+
                 filepath = os.path.join(upload_folder, filename)
                 foto.save(filepath)
                 calisan.foto = f"photos/{filename}"
                 db.session.commit()
-        
+
         # İşe giriş bildirimi gönder
-        print(f"[İşe Giriş] Çalışan: {calisan.ad} {calisan.soyad}, durum={calisan.durum}, ise_baslama={calisan.ise_baslama}")
+        print(f">>> NOTIFY_ISE_GIRIS CAGRILIYOR: {calisan.ad} {calisan.soyad}", flush=True)
         try:
             from app.services.notification import notify_ise_giris
             sonuc = notify_ise_giris(calisan)
-            print(f"[İşe Giriş] Bildirim sonucu: {sonuc}")
+            print(f">>> NOTIFY SONUC: {sonuc}", flush=True)
         except Exception as e:
-            print(f"[İşe Giriş] Bildirim HATA: {e}")
+            print(f">>> NOTIFY HATA: {e}", flush=True)
             import traceback
             traceback.print_exc()
 
