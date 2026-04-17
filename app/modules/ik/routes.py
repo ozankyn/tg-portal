@@ -1453,13 +1453,15 @@ def organizasyon():
     # Kök düğümler (yöneticisi olmayan en üst seviyedekiler)
     tree = build_tree(None)
     
-    # Departman bazlı gruplama
+    # Departman bazlı gruplama (pozisyon seviyesine göre sıralı)
     departman_gruplari = {}
     for calisan in calisanlar:
         dept = calisan.departman.ad if calisan.departman else 'Diğer'
         if dept not in departman_gruplari:
             departman_gruplari[dept] = []
         departman_gruplari[dept].append(calisan)
+    for dept in departman_gruplari:
+        departman_gruplari[dept].sort(key=lambda c: (c.pozisyon.seviye if c.pozisyon and c.pozisyon.seviye else 999))
     
     return render_template('ik/organizasyon.html',
                           calisanlar=calisanlar,
