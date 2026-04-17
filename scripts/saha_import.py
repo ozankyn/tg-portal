@@ -45,12 +45,19 @@ DEPT_PROJE_MAP = {
     'Paylaşımlı Merch (PMI-BF)': ('Paylaşımlı Merch', 'PMI', 'Erdi Aslantaş'),
 }
 
+# Bilinen musteri ID'leri (DB'deki gercek degerler)
+MUSTERI_ID_MAP = {
+    'Efes': 1,
+    'PMI': 4,
+    'Brown Forman': 5,
+}
+
 # Yeni olusturulacak projeler (DB'de yoksa)
 YENI_PROJELER = [
-    # (proje_adi, musteri_kisa_ad, kod)
-    ('Marka Elçisi', 'Efes', 'ME'),
-    ('Modern Kanal Sniper', 'Efes', 'MKS'),
-    ('Paylaşımlı Merch', 'PMI', 'PM'),
+    # (proje_adi, musteri_id, kod)
+    ('Marka Elçisi', 1, 'ME'),          # Efes
+    ('Modern Kanal Sniper', 1, 'MKS'),  # Efes
+    ('Paylaşımlı Merch', 4, 'PM'),      # PMI (PMI+BF ortak pilot, DB'de PMI)
 ]
 
 # Pozisyon eslestirme: Excel dept adi -> HedefKadro pozisyon_adi
@@ -230,23 +237,12 @@ def run(mode='dry-run'):
         # ============================================================
         print(f"\n[1] MUSTERILER")
         print("-" * 40)
-        musteriler = Musteri.query.filter_by(is_deleted=False).all()
-        musteri_map = {}  # kisa_ad -> Musteri
-        for m in musteriler:
-            key = m.kisa_ad or m.ad
-            musteri_map[key] = m
-            print(f"  [VAR] id={m.id} '{m.ad}' (kisa_ad='{m.kisa_ad}')")
-
-        # PMI musterisi yoksa olustur
-        if 'PMI' not in musteri_map:
-            print(f"  [YENI] PMI musterisi")
-            if mode == 'apply':
-                pmi = Musteri(ad='Philip Morris International', kisa_ad='PMI',
-                              aktif=True, is_deleted=False,
-                              created_at=datetime.now(), updated_at=datetime.now())
-                db.session.add(pmi)
-                db.session.flush()
-                musteri_map['PMI'] = pmi
+        for label, mid in MUSTERI_ID_MAP.items():
+            m = Musteri.query.get(mid)
+            if m:
+                print(f"  [OK] {label} -> id={mid} '{m.ad}'")
+            else:
+                print(f"  [!!!] {label} -> id={mid} BULUNAMADI")
 
         # ============================================================
         # ADIM 2: PROJELER
@@ -259,11 +255,9 @@ def run(mode='dry-run'):
             proje_map[p.ad] = p
             print(f"  [VAR] id={p.id} '{p.ad}' (musteri_id={p.musteri_id})")
 
-        for proje_adi, musteri_kisa, kod in YENI_PROJELER:
+        for proje_adi, musteri_id, kod in YENI_PROJELER:
             if proje_adi not in proje_map:
-                musteri = musteri_map.get(musteri_kisa)
-                musteri_id = musteri.id if musteri else None
-                print(f"  [YENI] '{proje_adi}' -> musteri='{musteri_kisa}' (id={musteri_id}), kod={kod}")
+                print(f"  [YENI] '{proje_adi}' -> musteri_id={musteri_id}, kod={kod}")
                 if mode == 'apply':
                     p = Proje(ad=proje_adi, kod=kod, musteri_id=musteri_id,
                               aktif=True, durum='aktif', is_deleted=False,
