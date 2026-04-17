@@ -78,6 +78,14 @@ tg-portal/
 ├── static/                      # CSS, JS, images
 ├── app.py                       # Entry point
 ├── database.py                  # PostgreSQL connection helper (raw SQL)
+├── data/
+│   └── PERSONEL BİLGİLERİ.xlsx  # Tüm personel Excel dosyası (357 satır)
+├── docs/
+│   └── CLAUDE_CODE_BRIEF.md     # Proje-koordinatör eşleştirme, org yapısı, import kuralları
+├── scripts/
+│   ├── rol_kurulum.py           # 15 rol tanımı ve yetki ataması
+│   ├── calisan_import.py        # Ofis çalışanları import (30 kişi)
+│   └── saha_import.py           # Saha çalışanları import (~309 kişi, proje/kadro eşleştirme)
 ├── seed_data.py                 # Seed data scripts
 ├── docker-compose.yml           # Development
 ├── docker-compose.prod.yml      # Production
@@ -94,12 +102,13 @@ tg-portal/
 
 ## 🔐 Yetki Sistemi
 
-### Roller
+### Roller (15 rol — detaylar: `scripts/rol_kurulum.py`)
 - `Admin` - Tüm yetkiler
 - `ik_yonetici` - İK modülü tam yetki
 - `filo_yonetici` - Filo + Tedarikçi tam yetki
 - `muhasebe` - Görüntüleme + Masraf/Tedarikçi
 - `viewer` - Sadece görüntüleme
+- ... ve 10 ek rol (bkz. `scripts/rol_kurulum.py`)
 
 ### Permission Format: `modul.aksiyon`
 ```
@@ -121,6 +130,8 @@ egitim.view, egitim.create, egitim.edit
 - **Migration:** `flask db migrate -m "mesaj"` → `flask db upgrade`
 - **Model import sırası önemli!** `app/models/__init__.py`'de: base → core → ik → tedarikci → proje → filo → egitim (foreign key bağımlılıkları)
 - **RealDictCursor:** `database.py` üzerinden raw SQL sorgular dict döner
+- **CalisanDurumu enum:** `ADAY`, `AKTIF`, `IZINLI`, `ASKIYA_ALINDI`, `AYRILDI` (PostgreSQL enum, büyük harf)
+- **⚠️ Duplicate departmanlar:** dept_id 1-8 boş, 9-16 boş, 17-24 aktif — temizlenmeli
 
 ---
 
@@ -136,6 +147,11 @@ docker-compose logs -f web
 ### Production (Hetzner - Linux)
 ```bash
 docker-compose -f docker-compose.prod.yml up -d
+```
+
+### Production'da Script Çalıştırma
+```bash
+docker compose -f docker-compose.prod.yml exec web bash -c "cd /app && PYTHONPATH=/app python3 script.py"
 ```
 
 ### Container'lar
@@ -252,8 +268,49 @@ def liste():
 
 ---
 
+## 🏗️ Organizasyon & Proje Yapısı
+
+### Proje-Koordinatör Eşleştirmesi
+| Proje | Müşteri | Koordinatör | Excel Dept Adları |
+|-------|---------|-------------|-------------------|
+| Blues | Efes | Yakup Ateş | Blues, Blues Spv |
+| Sniper | Efes | Ufuk Dinç / Hakan Alpan (Spv) | Part Time Sniper, Efes Spv |
+| KK Merch | Efes | Kazım Sifoğlu | KK Merch |
+| SSE | PMI | Erdi Aslantaş | Sse, Part Time Sse, Sse Spv |
+| BF Merchandiser | Brown Forman | Muhammet Aslan | Brown Forman |
+| Beylerbeyi Merch | Beylerbeyi | Havvanur Mahmutoğlu | Beylerbeyi Merch, Beylerbeyi Merch Yaya |
+| Adco Merchandiser | Kemer Gıda | Ufuk Dinç | Adco Merch |
+| Marka Elçisi | Efes | Halil Karaoğlan | Marka Elçisi |
+| Modern Kanal Sniper | Efes | Ufuk Dinç | Modern Kanal Part Time |
+| Paylaşımlı Merch | PMI | Erdi Aslantaş | Paylaşımlı Merch (PMI-BF) |
+
+### Org Şeması (Ofis)
+Fatih Kayan → Ozan Eren Kayan → Hakan Alpan → Saha Koordinatörleri → Saha Ekibi
+Detay: `docs/CLAUDE_CODE_BRIEF.md`
+
+---
+
+## 📊 Mevcut Veri Durumu (2026-04-17)
+
+- **Roller:** 15 rol tanımlı (`scripts/rol_kurulum.py`)
+- **Kullanıcılar:** 31 user oluşturuldu/güncellendi
+- **Departmanlar:** 8 departman (aktif: id 17-24, duplicate'ler temizlenecek)
+- **Pozisyonlar:** 22 pozisyon
+- **Ofis çalışanları:** 30 kayıt, User ↔ Calisan bağlantıları yapıldı (`scripts/calisan_import.py`)
+- **Saha çalışanları:** ~276 mevcut + ~309 Excel'den import bekliyor (`scripts/saha_import.py`)
+- **HedefKadro.pozisyon_adi** alanı kullanılıyor (ad değil!)
+
+---
+
 ## 🗺️ Yol Haritası
 
+### Kısa Vadeli (Sıradaki)
+- [ ] `scripts/saha_import.py --apply` çalıştır (DB temizlik + proje + saha import)
+- [ ] İşe giriş/çıkış bildirim mail akışını kontrol et ve güncelle
+- [ ] Zorunlu evrak türlerini güncelle
+- [ ] Ofis kullanıcıları için rol bazlı eğitim içerikleri oluştur
+
+### Uzun Vadeli
 - [ ] YOLO bazlı raf tanıma (shelf recognition) entegrasyonu
 - [ ] Fotoğraf doğrulama sistemi ticarileştirme
 - [ ] Mobile app (API: /api/v1/)
