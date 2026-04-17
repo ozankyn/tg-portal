@@ -131,20 +131,12 @@ function renderTablo(sonuc) {
   return html;
 }
 
-function exportExcel(sql) {
-  const form = document.createElement('form');
-  form.method = 'POST';
-  form.action = '{{ url_for("rapor.ai_asistan_export") }}';
-  form.target = '_blank';
+// SQL'leri index ile saklayıp butondan referans et
+var _exportSqls = [];
 
-  const csrfInput = document.createElement('input');
-  csrfInput.type = 'hidden';
-  csrfInput.name = 'csrf_token';
-  csrfInput.value = '{{ csrf_token() }}';
-  form.appendChild(csrfInput);
-
-  // JSON body olarak göndermek yerine fetch ile indir
-  form.remove();
+function exportExcel(idx) {
+  const sql = _exportSqls[idx];
+  if (!sql) { alert('SQL bulunamadı'); return; }
 
   fetch('{{ url_for("rapor.ai_asistan_export") }}', {
     method: 'POST',
@@ -225,8 +217,9 @@ $('#soruForm').on('submit', function(e) {
                        </div>`;
             // Excel export butonu (sadece basarili sorgularda)
             if (!s.hata && s.satirlar && s.satirlar.length > 0) {
-              const escapedSql = s.sql.replace(/'/g, "\\'").replace(/\n/g, ' ');
-              html += `<button onclick="exportExcel('${escapedSql}')"
+              const sqlIdx = _exportSqls.length;
+              _exportSqls.push(s.sql);
+              html += `<button onclick="exportExcel(${sqlIdx})"
                          class="shrink-0 inline-flex items-center gap-1 rounded-lg border border-border-light dark:border-border-dark
                                 px-2.5 py-1 text-xs font-medium text-text-muted dark:text-text-muted-dark
                                 hover:bg-white dark:hover:bg-[#252b36] hover:text-green-700 dark:hover:text-green-300 transition"
