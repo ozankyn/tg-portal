@@ -540,11 +540,15 @@ def aday_ise_al(id):
         db.session.commit()
 
         # İşe giriş bildirimi gönder
+        print(f"[İşe Giriş - Proje] Çalışan: {calisan.ad} {calisan.soyad}")
         try:
             from app.services.notification import notify_ise_giris
-            notify_ise_giris(calisan)
+            sonuc = notify_ise_giris(calisan)
+            print(f"[İşe Giriş - Proje] Bildirim sonucu: {sonuc}")
         except Exception as e:
-            current_app.logger.error(f"İşe giriş bildirimi gönderilemedi: {e}")
+            print(f"[İşe Giriş - Proje] Bildirim HATA: {e}")
+            import traceback
+            traceback.print_exc()
 
         flash(f'{calisan.full_name} başarıyla işe alındı.', 'success')
 

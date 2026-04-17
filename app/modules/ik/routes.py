@@ -202,13 +202,16 @@ def ekle():
                 calisan.foto = f"photos/{filename}"
                 db.session.commit()
         
-        # İşe giriş bildirimi gönder (sadece AKTIF durumda eklendiyse)
-        if calisan.durum == CalisanDurumu.AKTIF and calisan.ise_baslama:
-            try:
-                from app.services.notification import notify_ise_giris
-                notify_ise_giris(calisan)
-            except Exception as e:
-                current_app.logger.error(f"İşe giriş bildirimi gönderilemedi: {e}")
+        # İşe giriş bildirimi gönder
+        print(f"[İşe Giriş] Çalışan: {calisan.ad} {calisan.soyad}, durum={calisan.durum}, ise_baslama={calisan.ise_baslama}")
+        try:
+            from app.services.notification import notify_ise_giris
+            sonuc = notify_ise_giris(calisan)
+            print(f"[İşe Giriş] Bildirim sonucu: {sonuc}")
+        except Exception as e:
+            print(f"[İşe Giriş] Bildirim HATA: {e}")
+            import traceback
+            traceback.print_exc()
 
         flash(f'{calisan.full_name} çalışanı oluşturuldu.', 'success')
         return redirect(url_for('ik.detay', id=calisan.id))
@@ -699,11 +702,15 @@ def aday_calisana_donustur(id):
         db.session.commit()
 
         # İşe giriş bildirimi gönder
+        print(f"[İşe Giriş - Aday Dönüşüm] Çalışan: {calisan.ad} {calisan.soyad}")
         try:
             from app.services.notification import notify_ise_giris
-            notify_ise_giris(calisan)
+            sonuc = notify_ise_giris(calisan)
+            print(f"[İşe Giriş - Aday Dönüşüm] Bildirim sonucu: {sonuc}")
         except Exception as e:
-            current_app.logger.error(f"İşe giriş bildirimi gönderilemedi: {e}")
+            print(f"[İşe Giriş - Aday Dönüşüm] Bildirim HATA: {e}")
+            import traceback
+            traceback.print_exc()
 
         flash(f'{calisan.full_name} başarıyla çalışan olarak kaydedildi.', 'success')
         return redirect(url_for('ik.detay', id=calisan.id))
@@ -827,16 +834,20 @@ def isten_cikis_tamamla(id):
     db.session.commit()
 
     # İşten çıkış bildirimi gönder
+    print(f"[İşten Çıkış] Çalışan: {calisan.ad} {calisan.soyad}, tarih={cikis.gerceklesen_cikis_tarihi}")
     try:
         from app.services.notification import notify_isten_cikis
-        notify_isten_cikis(
+        sonuc = notify_isten_cikis(
             calisan=calisan,
             cikis_tarihi=cikis.gerceklesen_cikis_tarihi,
             cikis_nedeni=f"{cikis.cikis_tipi}: {cikis.cikis_sebebi}",
             zimmet_teslim=cikis.zimmet_teslim
         )
+        print(f"[İşten Çıkış] Bildirim sonucu: {sonuc}")
     except Exception as e:
-        current_app.logger.error(f"İşten çıkış bildirimi gönderilemedi: {e}")
+        print(f"[İşten Çıkış] Bildirim HATA: {e}")
+        import traceback
+        traceback.print_exc()
 
     flash('İşten çıkış tamamlandı.', 'success')
     return redirect(url_for('ik.isten_cikis_detay', id=id))

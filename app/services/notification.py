@@ -10,22 +10,28 @@ from app import mail, db
 
 def send_notification(to, subject, html_body, text_body=None):
     """Genel bildirim gönderme fonksiyonu"""
+    recipients = [to] if isinstance(to, str) else to
+    print(f"[Mail] Gönderim başlıyor: to={recipients}, subject={subject}")
     try:
-        if not current_app.config.get('MAIL_SERVER'):
-            current_app.logger.warning("Mail sunucusu yapılandırılmamış")
+        mail_server = current_app.config.get('MAIL_SERVER')
+        if not mail_server:
+            print(f"[Mail] MAIL_SERVER yapılandırılmamış, gönderim iptal")
             return False
-        
+
+        print(f"[Mail] SMTP: {mail_server}:{current_app.config.get('MAIL_PORT')}, user={current_app.config.get('MAIL_USERNAME')}")
         msg = Message(
             subject=subject,
-            recipients=[to] if isinstance(to, str) else to,
+            recipients=recipients,
             html=html_body,
             body=text_body
         )
         mail.send(msg)
-        current_app.logger.info(f"Bildirim gönderildi: {to} - {subject}")
+        print(f"[Mail] Başarıyla gönderildi: {recipients}")
         return True
     except Exception as e:
-        current_app.logger.error(f"Bildirim hatası: {str(e)}")
+        print(f"[Mail] HATA: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
