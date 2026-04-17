@@ -17,8 +17,8 @@ import sys
 import os
 from datetime import datetime, date
 
-# Excel dosya yolu
-EXCEL_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'PERSONEL BİLGİLERİ.xlsx')
+# Excel dosya yolu (Docker container icinde /app altinda)
+EXCEL_PATH = '/app/data/PERSONEL_BILGILERI.xlsx'
 
 # Atlanacak departmanlar (brief'e gore)
 ATLA_DEPT = {'Vena', 'Triodor', 'Event', 'Ofis'}
@@ -97,16 +97,32 @@ def parse_ad_soyad(full_name):
     return ' '.join(parts[:-1]), parts[-1]
 
 
-def find_koordinator(calisan_map, ad_soyad):
-    """Koordinator calisanini ad soyad ile bul."""
+# Ad ile bulunamayan koordinatorler icin email fallback
+KOORDINATOR_EMAIL_MAP = {
+    'Erdi Aslantaş':      'erdiaslantas@teamguerilla.com',
+    'Halil Karaoğlan':    'halilkaraoglan@teamguerilla.com',
+    'Kazım Sifoğlu':      'abidinkazimsifoglu@teamguerilla.com',
+    'Ufuk Dinç':          'ufukdinc@teamguerilla.com',
+}
+
+
+def find_koordinator(calisan_map, ad_soyad, Calisan=None):
+    """Koordinator calisanini ad soyad ile bul, bulunamazsa email ile dene."""
     if not ad_soyad:
         return None
+    # 1. Ad-soyad ile ara
     parts = ad_soyad.upper().split()
     for c in calisan_map.values():
         if c and c.ad and c.soyad:
             full = f"{c.ad} {c.soyad}".upper()
             if all(p in full for p in parts):
                 return c
+    # 2. Email fallback
+    email = KOORDINATOR_EMAIL_MAP.get(ad_soyad)
+    if email and Calisan:
+        c = Calisan.query.filter_by(email=email, is_deleted=False).first()
+        if c:
+            return c
     return None
 
 
@@ -311,7 +327,7 @@ def run(mode='dry-run'):
         koordinator_ids = {}  # koordinator_ad -> calisan_id
         all_koord_names = set(v[2] for v in DEPT_PROJE_MAP.values())
         for name in sorted(all_koord_names):
-            c = find_koordinator(koordinator_map, name)
+            c = find_koordinator(koordinator_map, name, Calisan=Calisan)
             if c:
                 koordinator_ids[name] = c.id
                 print(f"  [OK] {name} -> calisan_id={c.id}")
