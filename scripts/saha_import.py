@@ -28,20 +28,20 @@ ATLA_DEPT = {'Vena', 'Triodor', 'Event', 'Ofis'}
 # ============================================================
 # Excel dept adi -> (proje_adi, musteri_kisa_ad, koordinator_ad_soyad)
 DEPT_PROJE_MAP = {
-    'Blues':                       ('Blues', 'Efes', 'Yakup Ateş'),
-    'Blues Spv':                   ('Blues', 'Efes', 'Yakup Ateş'),
-    'KK Merch':                   ('KK Merch', 'Efes', 'Kazım Sifoğlu'),
-    'Sse':                        ('SSE', 'PMI', 'Erdi Aslantaş'),
-    'Sse Spv':                    ('SSE', 'PMI', 'Erdi Aslantaş'),
-    'Part Time Sse':              ('SSE', 'PMI', 'Erdi Aslantaş'),
+    'Blues':                       ('Efes Blues', 'Efes', 'Yakup Ateş'),
+    'Blues Spv':                   ('Efes Blues', 'Efes', 'Yakup Ateş'),
+    'KK Merch':                   ('Efes KK Merch', 'Efes', 'Kazım Sifoğlu'),
+    'Sse':                        ('PMI SSE', 'PMI', 'Erdi Aslantaş'),
+    'Sse Spv':                    ('PMI SSE', 'PMI', 'Erdi Aslantaş'),
+    'Part Time Sse':              ('PMI SSE', 'PMI', 'Erdi Aslantaş'),
     'Brown Forman':               ('BF Merchandiser', 'Brown Forman', 'Muhammet Aslan'),
     'Beylerbeyi Merch':           ('Beylerbeyi Merch', 'Beylerbeyi', 'Havvanur Mahmutoğlu'),
     'Beylerbeyi Merch Yaya':      ('Beylerbeyi Merch', 'Beylerbeyi', 'Havvanur Mahmutoğlu'),
     'Adco Merch':                 ('Adco Merchandiser', 'Kemer Gıda', 'Ufuk Dinç'),
-    'Marka Elçisi':               ('Marka Elçisi', 'Efes', 'Halil Karaoğlan'),
-    'Modern Kanal Part Time':     ('Modern Kanal Sniper', 'Efes', 'Ufuk Dinç'),
-    'Efes Spv':                   ('Sniper', 'Efes', 'Hakan Alpan'),
-    'Part Time Sniper':           ('Sniper', 'Efes', 'Ufuk Dinç'),
+    'Marka Elçisi':               ('Efes Marka Elçisi', 'Efes', 'Halil Karaoğlan'),
+    'Modern Kanal Part Time':     ('Efes Modern Kanal', 'Efes', 'Ufuk Dinç'),
+    'Efes Spv':                   ('Efes Sniper', 'Efes', 'Hakan Alpan'),
+    'Part Time Sniper':           ('Efes Sniper', 'Efes', 'Ufuk Dinç'),
     'Paylaşımlı Merch (PMI-BF)': ('Paylaşımlı Merch', 'PMI', 'Erdi Aslantaş'),
 }
 
@@ -55,9 +55,9 @@ MUSTERI_ID_MAP = {
 # Yeni olusturulacak projeler (DB'de yoksa)
 YENI_PROJELER = [
     # (proje_adi, musteri_id, kod)
-    ('Marka Elçisi', 1, 'ME'),          # Efes
-    ('Modern Kanal Sniper', 1, 'MKS'),  # Efes
-    ('Paylaşımlı Merch', 4, 'PM'),      # PMI (PMI+BF ortak pilot, DB'de PMI)
+    ('Efes Marka Elçisi', 1, 'ME'),   # Efes
+    ('Efes Modern Kanal', 1, 'MKS'),  # Efes
+    ('Paylaşımlı Merch', 4, 'PM'),    # PMI (PMI+BF ortak pilot, DB'de PMI)
 ]
 
 # Pozisyon eslestirme: Excel dept adi -> HedefKadro pozisyon_adi
