@@ -336,6 +336,8 @@ BILDIRIM_ALICILARI = [
     'filo@teamguerilla.com',
     'egitim@teamguerilla.com',
     'ik@teamguerilla.com',
+    'ozankayan@teamguerilla.com',
+    'ozanerenkayan@gmail.com',
 ]
 
 
