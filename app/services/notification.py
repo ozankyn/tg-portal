@@ -314,5 +314,205 @@ def notify_masraf_raporu_sonuc(rapor, onaylandi=True, aciklama=None):
         </div>
     </div>
     """
-    
+
     return send_notification(calisan.email, subject, html_body)
+
+
+# ============================================================
+# İŞE GİRİŞ / ÇIKIŞ BİLDİRİMLERİ
+# ============================================================
+
+# Departman bildirim adresleri
+BILDIRIM_ALICILARI = [
+    'muhasebe@teamguerilla.com',
+    'filo@teamguerilla.com',
+    'egitim@teamguerilla.com',
+    'ik@teamguerilla.com',
+]
+
+
+def notify_ise_giris(calisan):
+    """İşe giriş bildirimi — Muhasebe, Filo, Eğitim, İK departmanlarına"""
+
+    # Proje bilgisi (kadro üzerinden)
+    proje_adi = '-'
+    pozisyon_adi = '-'
+    lokasyon = '-'
+    if calisan.kadro_id:
+        from app.models.proje import HedefKadro
+        kadro = HedefKadro.query.get(calisan.kadro_id)
+        if kadro:
+            pozisyon_adi = kadro.pozisyon_adi or '-'
+            if kadro.proje:
+                proje_adi = kadro.proje.ad
+            if kadro.il:
+                lokasyon = kadro.il
+            elif hasattr(kadro, 'il_obj') and kadro.il_obj:
+                lokasyon = kadro.il_obj.ad
+
+    if calisan.pozisyon and pozisyon_adi == '-':
+        pozisyon_adi = calisan.pozisyon.ad
+
+    if calisan.il and lokasyon == '-':
+        lokasyon = calisan.il
+
+    # SGK bilgisi
+    sgk_sube = '-'
+    sgk_no = '-'
+    if calisan.sgk_dosya_id:
+        from app.models.sirket import SgkDosya
+        sgk = SgkDosya.query.get(calisan.sgk_dosya_id)
+        if sgk:
+            sgk_sube = sgk.ad or sgk.dosya_no
+            sgk_no = sgk.dosya_no
+
+    # Yönetici
+    yonetici_adi = '-'
+    if calisan.yonetici_id:
+        from app.models.ik import Calisan as CalisanModel
+        yon = CalisanModel.query.get(calisan.yonetici_id)
+        if yon:
+            yonetici_adi = f"{yon.ad} {yon.soyad}"
+
+    ise_baslama = calisan.ise_baslama.strftime('%d.%m.%Y') if calisan.ise_baslama else '-'
+
+    subject = f"İşe Giriş Bildirimi - {calisan.ad} {calisan.soyad} - {ise_baslama}"
+
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #059669, #10b981); padding: 20px; text-align: center;">
+            <h2 style="color: white; margin: 0;">İşe Giriş Bildirimi</h2>
+        </div>
+        <div style="padding: 25px; background: #f9fafb;">
+            <p style="margin: 0 0 15px 0; color: #374151;">Aşağıdaki personelin işe giriş kaydı oluşturulmuştur:</p>
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px 15px; color: #6b7280; width: 200px;">Ad Soyad</td>
+                    <td style="padding: 10px 15px;"><strong>{calisan.ad} {calisan.soyad}</strong></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">TC Kimlik No</td>
+                    <td style="padding: 10px 15px;"><strong>{calisan.tc_kimlik or '-'}</strong></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">İş Başı Tarihi</td>
+                    <td style="padding: 10px 15px;"><strong style="color: #059669;">{ise_baslama}</strong></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">Proje</td>
+                    <td style="padding: 10px 15px;">{proje_adi}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">Pozisyon</td>
+                    <td style="padding: 10px 15px;">{pozisyon_adi}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">Lokasyon</td>
+                    <td style="padding: 10px 15px;">{lokasyon}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">SGK İşyeri Şubesi</td>
+                    <td style="padding: 10px 15px;">{sgk_sube}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">SGK No</td>
+                    <td style="padding: 10px 15px;">{sgk_no}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">Yönetici</td>
+                    <td style="padding: 10px 15px;">{yonetici_adi}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">Telefon</td>
+                    <td style="padding: 10px 15px;">{calisan.telefon or '-'}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px 15px; color: #6b7280;">E-posta</td>
+                    <td style="padding: 10px 15px;">{calisan.email or '-'}</td>
+                </tr>
+            </table>
+        </div>
+        <div style="padding: 15px; background: #e5e7eb; text-align: center;">
+            <p style="margin: 0; color: #6b7280; font-size: 12px;">TG Portal - Team Guerilla ERP Sistemi (Otomatik bildirim)</p>
+        </div>
+    </div>
+    """
+
+    return send_notification(BILDIRIM_ALICILARI, subject, html_body)
+
+
+def notify_isten_cikis(calisan, cikis_tarihi, cikis_nedeni, zimmet_teslim=None):
+    """İşten çıkış bildirimi — Muhasebe, Filo, Eğitim, İK departmanlarına"""
+
+    # Proje bilgisi
+    proje_adi = '-'
+    pozisyon_adi = '-'
+    if calisan.kadro_id:
+        from app.models.proje import HedefKadro
+        kadro = HedefKadro.query.get(calisan.kadro_id)
+        if kadro:
+            pozisyon_adi = kadro.pozisyon_adi or '-'
+            if kadro.proje:
+                proje_adi = kadro.proje.ad
+
+    if calisan.pozisyon and pozisyon_adi == '-':
+        pozisyon_adi = calisan.pozisyon.ad
+
+    cikis_str = cikis_tarihi.strftime('%d.%m.%Y') if cikis_tarihi else '-'
+
+    # Zimmet durumu
+    zimmet_html = '-'
+    if zimmet_teslim is not None:
+        zimmet_html = '<span style="color: #059669;">Teslim edildi</span>' if zimmet_teslim else '<span style="color: #dc2626;">Teslim edilmedi</span>'
+
+    subject = f"İşten Çıkış Bildirimi - {calisan.ad} {calisan.soyad} - {cikis_str}"
+
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #dc2626, #ef4444); padding: 20px; text-align: center;">
+            <h2 style="color: white; margin: 0;">İşten Çıkış Bildirimi</h2>
+        </div>
+        <div style="padding: 25px; background: #f9fafb;">
+            <p style="margin: 0 0 15px 0; color: #374151;">Aşağıdaki personelin işten çıkış kaydı tamamlanmıştır:</p>
+            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px 15px; color: #6b7280; width: 200px;">Ad Soyad</td>
+                    <td style="padding: 10px 15px;"><strong>{calisan.ad} {calisan.soyad}</strong></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">TC Kimlik No</td>
+                    <td style="padding: 10px 15px;"><strong>{calisan.tc_kimlik or '-'}</strong></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">Çıkış Tarihi</td>
+                    <td style="padding: 10px 15px;"><strong style="color: #dc2626;">{cikis_str}</strong></td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">Çıkış Nedeni</td>
+                    <td style="padding: 10px 15px;">{cikis_nedeni or '-'}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">Proje</td>
+                    <td style="padding: 10px 15px;">{proje_adi}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">Pozisyon</td>
+                    <td style="padding: 10px 15px;">{pozisyon_adi}</td>
+                </tr>
+                <tr style="border-bottom: 1px solid #e5e7eb;">
+                    <td style="padding: 10px 15px; color: #6b7280;">Telefon</td>
+                    <td style="padding: 10px 15px;">{calisan.telefon or '-'}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 10px 15px; color: #6b7280;">Zimmet Durumu</td>
+                    <td style="padding: 10px 15px;">{zimmet_html}</td>
+                </tr>
+            </table>
+        </div>
+        <div style="padding: 15px; background: #e5e7eb; text-align: center;">
+            <p style="margin: 0; color: #6b7280; font-size: 12px;">TG Portal - Team Guerilla ERP Sistemi (Otomatik bildirim)</p>
+        </div>
+    </div>
+    """
+
+    return send_notification(BILDIRIM_ALICILARI, subject, html_body)

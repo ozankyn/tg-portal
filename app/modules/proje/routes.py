@@ -4,7 +4,7 @@ TG Portal - Proje Routes
 Müşteri, Proje, Hedef Kadro yönetimi
 """
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import login_required, current_user
 from datetime import datetime, date
 from app import db
@@ -538,9 +538,16 @@ def aday_ise_al(id):
         
         db.session.add(calisan)
         db.session.commit()
-        
+
+        # İşe giriş bildirimi gönder
+        try:
+            from app.services.notification import notify_ise_giris
+            notify_ise_giris(calisan)
+        except Exception as e:
+            current_app.logger.error(f"İşe giriş bildirimi gönderilemedi: {e}")
+
         flash(f'{calisan.full_name} başarıyla işe alındı.', 'success')
-        
+
         # Kadro detayına dön
         if aday.kadro_id:
             return redirect(url_for('proje.kadro_detay', id=aday.kadro_id))

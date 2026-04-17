@@ -202,9 +202,17 @@ def ekle():
                 calisan.foto = f"photos/{filename}"
                 db.session.commit()
         
+        # İşe giriş bildirimi gönder (sadece AKTIF durumda eklendiyse)
+        if calisan.durum == CalisanDurumu.AKTIF and calisan.ise_baslama:
+            try:
+                from app.services.notification import notify_ise_giris
+                notify_ise_giris(calisan)
+            except Exception as e:
+                current_app.logger.error(f"İşe giriş bildirimi gönderilemedi: {e}")
+
         flash(f'{calisan.full_name} çalışanı oluşturuldu.', 'success')
         return redirect(url_for('ik.detay', id=calisan.id))
-    
+
     departmanlar = Departman.query.filter_by(aktif=True).order_by(Departman.ad).all()
     pozisyonlar = Pozisyon.query.filter_by(aktif=True).order_by(Pozisyon.ad).all()
     yoneticiler = Calisan.query.filter_by(is_deleted=False, durum=CalisanDurumu.AKTIF).order_by(Calisan.ad).all()
@@ -689,13 +697,20 @@ def aday_calisana_donustur(id):
             db.session.add(calisan_evrak)
         
         db.session.commit()
-        
+
+        # İşe giriş bildirimi gönder
+        try:
+            from app.services.notification import notify_ise_giris
+            notify_ise_giris(calisan)
+        except Exception as e:
+            current_app.logger.error(f"İşe giriş bildirimi gönderilemedi: {e}")
+
         flash(f'{calisan.full_name} başarıyla çalışan olarak kaydedildi.', 'success')
         return redirect(url_for('ik.detay', id=calisan.id))
-    
+
     departmanlar = Departman.query.filter_by(aktif=True).order_by(Departman.ad).all()
     pozisyonlar = Pozisyon.query.filter_by(aktif=True).order_by(Pozisyon.ad).all()
-    
+
     return render_template('ik/aday_calisana_donustur.html',
                           aday=aday,
                           departmanlar=departmanlar,
@@ -802,15 +817,27 @@ def isten_cikis_tamamla(id):
     
     cikis.durum = 'tamamlandi'
     cikis.gerceklesen_cikis_tarihi = date.today()
-    
+
     # Çalışan durumunu güncelle
     calisan = cikis.calisan
     calisan.durum = CalisanDurumu.AYRILDI
     calisan.isten_ayrilma = cikis.gerceklesen_cikis_tarihi
     calisan.ayrilma_nedeni = f"{cikis.cikis_tipi}: {cikis.cikis_sebebi}"
-    
+
     db.session.commit()
-    
+
+    # İşten çıkış bildirimi gönder
+    try:
+        from app.services.notification import notify_isten_cikis
+        notify_isten_cikis(
+            calisan=calisan,
+            cikis_tarihi=cikis.gerceklesen_cikis_tarihi,
+            cikis_nedeni=f"{cikis.cikis_tipi}: {cikis.cikis_sebebi}",
+            zimmet_teslim=cikis.zimmet_teslim
+        )
+    except Exception as e:
+        current_app.logger.error(f"İşten çıkış bildirimi gönderilemedi: {e}")
+
     flash('İşten çıkış tamamlandı.', 'success')
     return redirect(url_for('ik.isten_cikis_detay', id=id))
 
