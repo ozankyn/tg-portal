@@ -178,9 +178,76 @@
             </div>
         </div>
         {% endif %}
-        
+
+        <!-- Sözleşme Bilgileri -->
+        {% if calisan.sozlesme_sablon or calisan.sozlesme_baslangic or calisan.sozlesme_bitis %}
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark mb-4 tracking-widest">Sözleşme Bilgileri</h3>
+            <div class="space-y-4">
+                {% if calisan.sozlesme_sablon %}
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Şablon</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ calisan.sozlesme_sablon.ad }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Tip</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
+                        {% if calisan.sozlesme_sablon.tip == 'belirsiz_sureli' %}bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300
+                        {% elif calisan.sozlesme_sablon.tip == 'belirli_sureli' %}bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300
+                        {% else %}bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300{% endif %}">
+                        {{ calisan.sozlesme_sablon.tip_text }}
+                    </span>
+                </div>
+                {% endif %}
+                {% if calisan.sozlesme_baslangic %}
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Başlangıç</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ calisan.sozlesme_baslangic.strftime('%d.%m.%Y') }}</span>
+                </div>
+                {% endif %}
+                {% if calisan.sozlesme_bitis %}
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Bitiş</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ calisan.sozlesme_bitis.strftime('%d.%m.%Y') }}</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Kalan</span>
+                    {% set kalan = calisan.sozlesme_kalan_gun %}
+                    {% if kalan is not none %}
+                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold
+                        {% if kalan < 0 %}bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400
+                        {% elif kalan <= 7 %}bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400
+                        {% elif kalan <= 30 %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+                        {% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% endif %}">
+                        {% if kalan < 0 %}{{ kalan|abs }} gün geçti{% else %}{{ kalan }} gün{% endif %}
+                    </span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% if calisan.sozlesme_pdf %}
+                <div class="pt-2 border-t border-border-light dark:border-border-dark">
+                    <a href="{{ url_for('uploaded_file', filename=calisan.sozlesme_pdf) }}" target="_blank"
+                       class="flex items-center gap-2 text-sm text-primary hover:underline">
+                        <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+                        İmzalı Sözleşme PDF
+                    </a>
+                </div>
+                {% endif %}
+                {% if calisan.sozlesme_sablon and calisan.sozlesme_sablon.sablon_dosya %}
+                <div class="{% if not calisan.sozlesme_pdf %}pt-2 border-t border-border-light dark:border-border-dark{% endif %}">
+                    <a href="{{ url_for('uploaded_file', filename=calisan.sozlesme_sablon.sablon_dosya) }}" target="_blank"
+                       class="flex items-center gap-2 text-sm text-text-muted dark:text-text-muted-dark hover:text-primary">
+                        <span class="material-symbols-outlined text-lg">file_copy</span>
+                        Şablon PDF
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
     </aside>
-    
+
     <!-- Right Column: Details -->
     <div class="lg:col-span-8 space-y-6">
         

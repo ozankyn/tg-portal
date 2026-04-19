@@ -3,7 +3,7 @@
 TG Portal - Core Routes (Auth, Admin, Dashboard)
 """
 
-from datetime import datetime
+from datetime import datetime, date
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
@@ -130,12 +130,29 @@ def dashboard():
         'projesiz': Arac.query.filter(Arac.is_deleted==False, Arac.proje_id.is_(None)).count()
     }
     
+    # Sözleşmesi dolacak personel (30 gün içinde)
+    from datetime import timedelta
+    otuz_gun_sonra = date.today() + timedelta(days=30)
+    sozlesme_dolacak = Calisan.query.filter(
+        Calisan.is_deleted == False,
+        Calisan.durum == CalisanDurumu.AKTIF,
+        Calisan.sozlesme_bitis.isnot(None),
+        Calisan.sozlesme_bitis <= otuz_gun_sonra,
+        Calisan.sozlesme_bitis >= date.today()
+    ).order_by(Calisan.sozlesme_bitis).limit(10).all()
+
+    # Süresi dolacak ticari sözleşmeler (30 gün içinde)
+    from app.models.sozlesme import get_yaklasan_sozlesmeler
+    ticari_sozlesme_dolacak = get_yaklasan_sozlesmeler(gun=30)
+
     return render_template('core/dashboard.html',
                          stats=stats,
                          projeler=projeler,
                          acil_kadrolar=acil_kadrolar,
                          son_calisanlar=son_calisanlar,
-                         arac_durum=arac_durum)
+                         arac_durum=arac_durum,
+                         sozlesme_dolacak=sozlesme_dolacak,
+                         ticari_sozlesme_dolacak=ticari_sozlesme_dolacak)
 
 
 # ==================== PROFIL ====================

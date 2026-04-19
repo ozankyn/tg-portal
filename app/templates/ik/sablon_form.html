@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}{% if sablon %}Şablon Düzenle{% else %}Yeni Sözleşme Şablonu{% endif %} - TG Portal{% endblock %}
+{% block page_title %}{% if sablon %}Şablon Düzenle{% else %}Yeni Sözleşme Şablonu{% endif %}{% endblock %}
+
+{% block content %}
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <div class="flex items-center gap-2 text-sm text-text-muted dark:text-text-muted-dark">
+        <a class="hover:text-primary transition-colors" href="{{ url_for('core.dashboard') }}">Ana Sayfa</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <a class="hover:text-primary transition-colors" href="{{ url_for('ik.sablon_liste') }}">Sözleşme Şablonları</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <span class="text-[#111418] dark:text-white font-medium">{% if sablon %}Düzenle{% else %}Yeni Şablon{% endif %}</span>
+    </div>
+    <div class="flex items-center gap-3">
+        <a href="{{ url_for('ik.sablon_liste') }}" class="px-4 py-2 text-sm font-bold text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-all">İptal</a>
+        <button type="submit" form="sablonForm" class="px-6 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20">Kaydet</button>
+    </div>
+</div>
+
+<form id="sablonForm" method="POST" enctype="multipart/form-data" class="max-w-3xl mx-auto space-y-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <!-- Temel Bilgiler -->
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+            <span class="material-symbols-outlined text-primary">description</span>
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white">Şablon Bilgileri</h3>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="md:col-span-2">
+                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                    Şablon Adı <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="ad" value="{{ sablon.ad if sablon else '' }}" required placeholder="Örn: Efes Belirsiz Süreli"
+                       class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+            </div>
+            <div>
+                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                    Sözleşme Tipi <span class="text-red-500">*</span>
+                </label>
+                <select name="tip" required class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                    <option value="">Seçiniz</option>
+                    {% for val, label in tipler %}
+                    <option value="{{ val }}" {% if sablon and sablon.tip == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Durum</label>
+                <label class="relative inline-flex items-center cursor-pointer mt-2">
+                    <input type="checkbox" name="aktif" class="sr-only peer" {% if not sablon or sablon.aktif %}checked{% endif %}>
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                    <span class="ml-3 text-sm font-medium text-[#111418] dark:text-white">Aktif</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kapsam -->
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+            <span class="material-symbols-outlined text-primary">filter_alt</span>
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white">Kapsam (Opsiyonel)</h3>
+        </div>
+        <p class="text-sm text-text-muted dark:text-text-muted-dark mb-6">Bu alanlar boş bırakılırsa şablon genel olarak kullanılır. Doldurulursa sadece eşleşen çalışanlar için önerilir.</p>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Müşteri</label>
+                <select name="musteri_id" id="musteri_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                    <option value="">Tüm Müşteriler</option>
+                    {% for m in musteriler %}
+                    <option value="{{ m.id }}" {% if sablon and sablon.musteri_id == m.id %}selected{% endif %}>{{ m.display_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Proje</label>
+                <select name="proje_id" id="proje_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                    <option value="">Tüm Projeler</option>
+                    {% for p in projeler %}
+                    <option value="{{ p.id }}" data-musteri-id="{{ p.musteri_id }}" {% if sablon and sablon.proje_id == p.id %}selected{% endif %}>{{ p.ad }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Pozisyon</label>
+                <select name="pozisyon_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                    <option value="">Tüm Pozisyonlar</option>
+                    {% for poz in pozisyonlar %}
+                    <option value="{{ poz.id }}" {% if sablon and sablon.pozisyon_id == poz.id %}selected{% endif %}>{{ poz.ad }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Departman</label>
+                <select name="departman_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                    <option value="">Tüm Departmanlar</option>
+                    {% for d in departmanlar %}
+                    <option value="{{ d.id }}" {% if sablon and sablon.departman_id == d.id %}selected{% endif %}>{{ d.ad }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dosya & Açıklama -->
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+        <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+            <span class="material-symbols-outlined text-primary">upload_file</span>
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white">Dosya & Açıklama</h3>
+        </div>
+        <div class="space-y-6">
+            <div>
+                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Şablon PDF</label>
+                {% if sablon and sablon.sablon_dosya %}
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-2">
+                    Mevcut dosya: <a href="{{ url_for('uploaded_file', filename=sablon.sablon_dosya) }}" target="_blank" class="text-primary hover:underline">PDF İndir</a>
+                </p>
+                {% endif %}
+                <input type="file" name="sablon_dosya" accept=".pdf,.doc,.docx"
+                       class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+            </div>
+            <div>
+                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Açıklama</label>
+                <textarea name="aciklama" rows="3" placeholder="Şablon hakkında notlar..."
+                          class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">{{ sablon.aciklama if sablon else '' }}</textarea>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Müşteri seçildiğinde projeleri filtrele
+document.getElementById('musteri_id').addEventListener('change', function() {
+    const musteriId = this.value;
+    const projeSelect = document.getElementById('proje_id');
+    const options = projeSelect.querySelectorAll('option[data-musteri-id]');
+
+    options.forEach(opt => {
+        if (!musteriId || opt.dataset.musteriId === musteriId) {
+            opt.style.display = '';
+        } else {
+            opt.style.display = 'none';
+            if (opt.selected) opt.selected = false;
+        }
+    });
+});
+</script>
+{% endblock %}

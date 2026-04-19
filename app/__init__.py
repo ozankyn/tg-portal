@@ -155,6 +155,13 @@ def create_app(config_name=None):
         from seed_data import seed_all
         seed_all()
         print('Örnek veriler yüklendi.')
+
+    @app.cli.command('sozlesme-uyari')
+    def sozlesme_uyari_cmd():
+        """Sözleşmesi dolacak personel için uyarı maili gönder"""
+        from app.services.notification import notify_sozlesme_dolacak
+        count = notify_sozlesme_dolacak()
+        print(f'{count} sözleşme uyarısı gönderildi.')
     
 
     # CLI komutlarını register et

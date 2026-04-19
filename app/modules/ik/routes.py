@@ -18,7 +18,8 @@ import os
 from app import db
 from app.models.ik import (
     Departman, Pozisyon, Calisan, Izin, Aday,
-    EvrakTipi, AdayEvrak, CalisanEvrak, IstenCikis
+    EvrakTipi, AdayEvrak, CalisanEvrak, IstenCikis,
+    SozlesmeSablonu
 )
 from app.models.base import CalisanDurumu
 from app.utils import permission_required, paginate_query
@@ -181,9 +182,27 @@ def ekle():
             created_by=current_user.id
         )
         
+        # Sözleşme bilgileri
+        calisan.sozlesme_sablon_id = int(request.form.get('sozlesme_sablon_id')) if request.form.get('sozlesme_sablon_id') else None
+        calisan.sozlesme_baslangic = datetime.strptime(request.form.get('sozlesme_baslangic'), '%Y-%m-%d').date() if request.form.get('sozlesme_baslangic') else None
+        calisan.sozlesme_bitis = datetime.strptime(request.form.get('sozlesme_bitis'), '%Y-%m-%d').date() if request.form.get('sozlesme_bitis') else None
+
         db.session.add(calisan)
         db.session.commit()
         print(f">>> CALISAN KAYDEDILDI id={calisan.id} {calisan.ad} {calisan.soyad}", flush=True)
+
+        # Sözleşme PDF yükleme
+        if 'sozlesme_pdf' in request.files:
+            spdf = request.files['sozlesme_pdf']
+            if spdf and spdf.filename:
+                import uuid
+                ext = spdf.filename.rsplit('.', 1)[-1].lower() if '.' in spdf.filename else 'pdf'
+                filename = f"sozlesme_{calisan.id}_{uuid.uuid4().hex[:8]}.{ext}"
+                upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'sozlesmeler')
+                os.makedirs(upload_folder, exist_ok=True)
+                spdf.save(os.path.join(upload_folder, filename))
+                calisan.sozlesme_pdf = f"sozlesmeler/{filename}"
+                db.session.commit()
 
         # Fotoğraf yükleme
         if 'foto' in request.files:
@@ -223,6 +242,7 @@ def ekle():
     
     sgk_dosyalari = SgkDosya.query.filter_by(is_deleted=False, aktif=True).all()
     kadrolar = HedefKadro.query.filter_by(is_deleted=False, aktif=True).all()
+    sablonlar = SozlesmeSablonu.query.filter_by(aktif=True, is_deleted=False).order_by(SozlesmeSablonu.ad).all()
     return render_template('ik/form.html',
                           calisan=None,
                           departmanlar=departmanlar,
@@ -230,6 +250,7 @@ def ekle():
                           yoneticiler=yoneticiler,
                           sgk_dosyalari=sgk_dosyalari,
                           kadrolar=kadrolar,
+                          sablonlar=sablonlar,
                           durumlar=CalisanDurumu)
 
 
@@ -273,7 +294,24 @@ def duzenle(id):
         calisan.durum = CalisanDurumu(request.form.get('durum')) if request.form.get('durum') else CalisanDurumu.AKTIF
         calisan.notlar = request.form.get('notlar', '').strip() or None
         calisan.updated_by = current_user.id
-        
+
+        # Sözleşme bilgileri
+        calisan.sozlesme_sablon_id = int(request.form.get('sozlesme_sablon_id')) if request.form.get('sozlesme_sablon_id') else None
+        calisan.sozlesme_baslangic = datetime.strptime(request.form.get('sozlesme_baslangic'), '%Y-%m-%d').date() if request.form.get('sozlesme_baslangic') else None
+        calisan.sozlesme_bitis = datetime.strptime(request.form.get('sozlesme_bitis'), '%Y-%m-%d').date() if request.form.get('sozlesme_bitis') else None
+
+        # Sözleşme PDF yükleme
+        if 'sozlesme_pdf' in request.files:
+            spdf = request.files['sozlesme_pdf']
+            if spdf and spdf.filename:
+                import uuid
+                ext = spdf.filename.rsplit('.', 1)[-1].lower() if '.' in spdf.filename else 'pdf'
+                filename = f"sozlesme_{calisan.id}_{uuid.uuid4().hex[:8]}.{ext}"
+                upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'sozlesmeler')
+                os.makedirs(upload_folder, exist_ok=True)
+                spdf.save(os.path.join(upload_folder, filename))
+                calisan.sozlesme_pdf = f"sozlesmeler/{filename}"
+
         # Fotoğraf yükleme
         if 'foto' in request.files:
             foto = request.files['foto']
@@ -315,12 +353,14 @@ def duzenle(id):
     
     sgk_dosyalari = SgkDosya.query.filter_by(is_deleted=False, aktif=True).all()
     kadrolar = HedefKadro.query.filter_by(is_deleted=False, aktif=True).all()
+    sablonlar = SozlesmeSablonu.query.filter_by(aktif=True, is_deleted=False).order_by(SozlesmeSablonu.ad).all()
     return render_template('ik/form.html',
                           calisan=calisan,
                           departmanlar=departmanlar,
                           pozisyonlar=pozisyonlar,
                           sgk_dosyalari=sgk_dosyalari,
                           kadrolar=kadrolar,
+                          sablonlar=sablonlar,
                           yoneticiler=yoneticiler,
                           durumlar=CalisanDurumu)
 
@@ -1885,3 +1925,138 @@ def icra_sil(id):
     
     flash('İcra dosyası silindi.', 'success')
     return redirect(url_for('ik.icra_liste'))
+
+
+# ============================================================
+# SÖZLEŞME ŞABLONLARI
+# ============================================================
+
+@ik_bp.route('/sozlesme-sablonlari')
+@login_required
+@permission_required('ik.view')
+def sablon_liste():
+    """Sözleşme şablonları listesi"""
+    sablonlar = SozlesmeSablonu.query.filter_by(is_deleted=False).order_by(SozlesmeSablonu.sira, SozlesmeSablonu.ad).all()
+    return render_template('ik/sablon_liste.html', sablonlar=sablonlar, active='ik-sablonlar')
+
+
+@ik_bp.route('/sozlesme-sablonlari/ekle', methods=['GET', 'POST'])
+@login_required
+@permission_required('ik.edit')
+def sablon_ekle():
+    """Yeni sözleşme şablonu ekle"""
+    if request.method == 'POST':
+        sablon = SozlesmeSablonu(
+            ad=request.form.get('ad', '').strip(),
+            tip=request.form.get('tip'),
+            musteri_id=int(request.form.get('musteri_id')) if request.form.get('musteri_id') else None,
+            proje_id=int(request.form.get('proje_id')) if request.form.get('proje_id') else None,
+            pozisyon_id=int(request.form.get('pozisyon_id')) if request.form.get('pozisyon_id') else None,
+            departman_id=int(request.form.get('departman_id')) if request.form.get('departman_id') else None,
+            aciklama=request.form.get('aciklama', '').strip() or None,
+            aktif='aktif' in request.form
+        )
+
+        # Şablon PDF yükleme
+        if 'sablon_dosya' in request.files:
+            dosya = request.files['sablon_dosya']
+            if dosya and dosya.filename and allowed_file(dosya.filename):
+                import uuid
+                ext = dosya.filename.rsplit('.', 1)[-1].lower()
+                filename = f"sablon_{uuid.uuid4().hex[:8]}.{ext}"
+                upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'sozlesme_sablonlari')
+                os.makedirs(upload_folder, exist_ok=True)
+                dosya.save(os.path.join(upload_folder, filename))
+                sablon.sablon_dosya = f"sozlesme_sablonlari/{filename}"
+
+        db.session.add(sablon)
+        db.session.commit()
+        flash(f'"{sablon.ad}" şablonu oluşturuldu.', 'success')
+        return redirect(url_for('ik.sablon_liste'))
+
+    from app.models.proje import Musteri, Proje
+    return render_template('ik/sablon_form.html',
+                          sablon=None,
+                          tipler=SozlesmeSablonu.TIPLER,
+                          musteriler=Musteri.query.filter_by(is_deleted=False, aktif=True).order_by(Musteri.ad).all(),
+                          projeler=Proje.query.filter_by(is_deleted=False, aktif=True).order_by(Proje.ad).all(),
+                          pozisyonlar=Pozisyon.query.filter_by(aktif=True).order_by(Pozisyon.ad).all(),
+                          departmanlar=Departman.query.filter_by(aktif=True).order_by(Departman.ad).all())
+
+
+@ik_bp.route('/sozlesme-sablonlari/<int:id>/duzenle', methods=['GET', 'POST'])
+@login_required
+@permission_required('ik.edit')
+def sablon_duzenle(id):
+    """Sözleşme şablonu düzenle"""
+    sablon = SozlesmeSablonu.query.get_or_404(id)
+
+    if request.method == 'POST':
+        sablon.ad = request.form.get('ad', '').strip()
+        sablon.tip = request.form.get('tip')
+        sablon.musteri_id = int(request.form.get('musteri_id')) if request.form.get('musteri_id') else None
+        sablon.proje_id = int(request.form.get('proje_id')) if request.form.get('proje_id') else None
+        sablon.pozisyon_id = int(request.form.get('pozisyon_id')) if request.form.get('pozisyon_id') else None
+        sablon.departman_id = int(request.form.get('departman_id')) if request.form.get('departman_id') else None
+        sablon.aciklama = request.form.get('aciklama', '').strip() or None
+        sablon.aktif = 'aktif' in request.form
+
+        if 'sablon_dosya' in request.files:
+            dosya = request.files['sablon_dosya']
+            if dosya and dosya.filename and allowed_file(dosya.filename):
+                import uuid
+                ext = dosya.filename.rsplit('.', 1)[-1].lower()
+                filename = f"sablon_{uuid.uuid4().hex[:8]}.{ext}"
+                upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'sozlesme_sablonlari')
+                os.makedirs(upload_folder, exist_ok=True)
+                dosya.save(os.path.join(upload_folder, filename))
+                sablon.sablon_dosya = f"sozlesme_sablonlari/{filename}"
+
+        db.session.commit()
+        flash(f'"{sablon.ad}" şablonu güncellendi.', 'success')
+        return redirect(url_for('ik.sablon_liste'))
+
+    from app.models.proje import Musteri, Proje
+    return render_template('ik/sablon_form.html',
+                          sablon=sablon,
+                          tipler=SozlesmeSablonu.TIPLER,
+                          musteriler=Musteri.query.filter_by(is_deleted=False, aktif=True).order_by(Musteri.ad).all(),
+                          projeler=Proje.query.filter_by(is_deleted=False, aktif=True).order_by(Proje.ad).all(),
+                          pozisyonlar=Pozisyon.query.filter_by(aktif=True).order_by(Pozisyon.ad).all(),
+                          departmanlar=Departman.query.filter_by(aktif=True).order_by(Departman.ad).all())
+
+
+@ik_bp.route('/sozlesme-sablonlari/<int:id>/sil', methods=['POST'])
+@login_required
+@permission_required('ik.delete')
+def sablon_sil(id):
+    """Sözleşme şablonu soft-delete"""
+    sablon = SozlesmeSablonu.query.get_or_404(id)
+    sablon.is_deleted = True
+    db.session.commit()
+    flash(f'"{sablon.ad}" şablonu silindi.', 'success')
+    return redirect(url_for('ik.sablon_liste'))
+
+
+@ik_bp.route('/api/sozlesme-sablonlari')
+@login_required
+@permission_required('ik.view')
+def api_sozlesme_sablonlari():
+    """Sözleşme şablonlarını filtrele (AJAX)"""
+    musteri_id = request.args.get('musteri_id', type=int)
+    proje_id = request.args.get('proje_id', type=int)
+    pozisyon_id = request.args.get('pozisyon_id', type=int)
+    departman_id = request.args.get('departman_id', type=int)
+
+    sablonlar = SozlesmeSablonu.sablonlari_filtrele(
+        musteri_id=musteri_id, proje_id=proje_id,
+        pozisyon_id=pozisyon_id, departman_id=departman_id
+    )
+
+    return jsonify([{
+        'id': s.id,
+        'ad': s.ad,
+        'tip': s.tip,
+        'tip_text': s.tip_text,
+        'kapsam': s.kapsam_text
+    } for s in sablonlar])

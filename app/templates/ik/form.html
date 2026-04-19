@@ -235,7 +235,7 @@
                     <select name="kadro_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
                         <option value="">Seçiniz</option>
                         {% for kadro in kadrolar or [] %}
-                        <option value="{{ kadro.id }}" {% if calisan and calisan.kadro_id == kadro.id %}selected{% endif %}>
+                        <option value="{{ kadro.id }}" data-musteri-id="{{ kadro.proje.musteri_id }}" data-proje-id="{{ kadro.proje_id }}" {% if calisan and calisan.kadro_id == kadro.id %}selected{% endif %}>
                             {{ kadro.proje.musteri.kisa_ad or kadro.proje.musteri.ad }} / {{ kadro.proje.ad }} - {{ kadro.pozisyon_adi }}
                         </option>
                         {% endfor %}
@@ -292,6 +292,56 @@
             </div>
         </div>
         
+        <!-- Sözleşme Bilgileri -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">
+                <span class="material-symbols-outlined text-primary">description</span>
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Sözleşme Bilgileri</h3>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="md:col-span-2">
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Sözleşme Şablonu
+                    </label>
+                    <select name="sozlesme_sablon_id" id="sozlesme_sablon_id" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="">Seçiniz</option>
+                        {% for s in sablonlar or [] %}
+                        <option value="{{ s.id }}" {% if calisan and calisan.sozlesme_sablon_id == s.id %}selected{% endif %}>
+                            {{ s.ad }} ({{ s.tip_text }}) — {{ s.kapsam_text }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Kadro veya departman seçimine göre uygun şablonlar filtrelenir.</p>
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Sözleşme Başlangıç
+                    </label>
+                    <input type="date" name="sozlesme_baslangic" value="{{ calisan.sozlesme_baslangic.strftime('%Y-%m-%d') if calisan and calisan.sozlesme_baslangic else '' }}"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Sözleşme Bitiş
+                    </label>
+                    <input type="date" name="sozlesme_bitis" value="{{ calisan.sozlesme_bitis.strftime('%Y-%m-%d') if calisan and calisan.sozlesme_bitis else '' }}"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        İmzalı Sözleşme PDF
+                    </label>
+                    {% if calisan and calisan.sozlesme_pdf %}
+                    <p class="text-sm text-text-muted dark:text-text-muted-dark mb-2">
+                        Mevcut: <a href="{{ url_for('uploaded_file', filename=calisan.sozlesme_pdf) }}" target="_blank" class="text-primary hover:underline">PDF İndir</a>
+                    </p>
+                    {% endif %}
+                    <input type="file" name="sozlesme_pdf" accept=".pdf"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                </div>
+            </div>
+        </div>
+
         <!-- Submit Buttons (Mobile) -->
         <div class="flex items-center justify-end gap-4 pt-4 lg:hidden">
             <a href="{{ url_for('ik.liste') }}" class="px-6 py-2.5 text-sm font-bold text-text-muted dark:text-text-muted-dark hover:text-[#111418] dark:hover:text-white transition-colors">İptal</a>
@@ -389,7 +439,7 @@
 function previewImage(input) {
     const preview = document.getElementById('previewImg');
     const icon = document.getElementById('previewIcon');
-    
+
     if (input.files && input.files[0]) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -400,5 +450,44 @@ function previewImage(input) {
         reader.readAsDataURL(input.files[0]);
     }
 }
+
+// Sözleşme şablonu filtreleme
+function filtreleSablonlar() {
+    const kadroSelect = document.querySelector('select[name="kadro_id"]');
+    const deptSelect = document.querySelector('select[name="departman_id"]');
+    const pozSelect = document.querySelector('select[name="pozisyon_id"]');
+    const sablonSelect = document.getElementById('sozlesme_sablon_id');
+    if (!sablonSelect) return;
+
+    let params = new URLSearchParams();
+    if (kadroSelect && kadroSelect.value) {
+        const opt = kadroSelect.options[kadroSelect.selectedIndex];
+        if (opt.dataset.musteriId) params.set('musteri_id', opt.dataset.musteriId);
+        if (opt.dataset.projeId) params.set('proje_id', opt.dataset.projeId);
+    }
+    if (deptSelect && deptSelect.value) params.set('departman_id', deptSelect.value);
+    if (pozSelect && pozSelect.value) params.set('pozisyon_id', pozSelect.value);
+
+    fetch('/ik/api/sozlesme-sablonlari?' + params.toString())
+        .then(r => r.json())
+        .then(data => {
+            const current = sablonSelect.value;
+            sablonSelect.innerHTML = '<option value="">Seçiniz</option>';
+            data.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.ad + ' (' + s.tip_text + ') — ' + s.kapsam;
+                if (String(s.id) === current) opt.selected = true;
+                sablonSelect.appendChild(opt);
+            });
+        })
+        .catch(() => {});
+}
+
+// Kadro/departman/pozisyon değiştiğinde şablonları filtrele
+['kadro_id', 'departman_id', 'pozisyon_id'].forEach(name => {
+    const el = document.querySelector('select[name="' + name + '"]');
+    if (el) el.addEventListener('change', filtreleSablonlar);
+});
 </script>
 {% endblock %}

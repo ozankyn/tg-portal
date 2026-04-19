@@ -197,6 +197,92 @@
     </div>
 </div>
 
+<!-- Sözleşme Uyarıları -->
+{% if sozlesme_dolacak or ticari_sozlesme_dolacak %}
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
+    <!-- İş Sözleşmeleri -->
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden flex flex-col">
+        <div class="p-4 sm:p-6 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+            <h2 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-amber-500">assignment_late</span>
+                Sözleşmesi Dolacak Personel
+            </h2>
+            {% if sozlesme_dolacak %}
+            <span class="bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300 text-xs font-bold px-2 py-0.5 rounded-full">{{ sozlesme_dolacak|length }} kişi</span>
+            {% endif %}
+        </div>
+        <div class="flex-1 overflow-y-auto p-0">
+            <div class="divide-y divide-border-light dark:divide-border-dark">
+                {% for c in sozlesme_dolacak %}
+                {% set kalan = c.sozlesme_kalan_gun %}
+                <a href="{{ url_for('ik.detay', id=c.id) }}" class="p-4 hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors flex items-center gap-3 block">
+                    <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden shrink-0">
+                        <span class="text-xs font-bold text-gray-500 dark:text-gray-400">{{ c.ad[0] }}{{ c.soyad[0] }}</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-bold text-[#111418] dark:text-white truncate">{{ c.full_name }}</h4>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark">{{ c.sozlesme_sablon.tip_text if c.sozlesme_sablon else '' }} {{ '• ' ~ c.sozlesme_bitis.strftime('%d.%m.%Y') }}</p>
+                    </div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border whitespace-nowrap
+                        {% if kalan <= 7 %}text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800
+                        {% elif kalan <= 15 %}text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800
+                        {% else %}text-blue-600 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800{% endif %}">
+                        {{ kalan }} gün
+                    </span>
+                </a>
+                {% else %}
+                <div class="p-8 text-center text-text-muted dark:text-text-muted-dark">
+                    <span class="material-symbols-outlined text-4xl mb-2 opacity-50">check_circle</span>
+                    <p>30 gün içinde dolacak sözleşme yok</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticari Sözleşmeler -->
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden flex flex-col">
+        <div class="p-4 sm:p-6 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+            <h2 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-orange-500">gavel</span>
+                Süresi Dolacak Ticari Sözleşmeler
+            </h2>
+            {% if ticari_sozlesme_dolacak %}
+            <span class="bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300 text-xs font-bold px-2 py-0.5 rounded-full">{{ ticari_sozlesme_dolacak|length }}</span>
+            {% endif %}
+        </div>
+        <div class="flex-1 overflow-y-auto p-0">
+            <div class="divide-y divide-border-light dark:divide-border-dark">
+                {% for s in ticari_sozlesme_dolacak %}
+                <a href="{{ url_for('sozlesme.detay', id=s.id) }}" class="p-4 hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors flex items-center gap-3 block">
+                    <div class="w-10 h-10 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-600 dark:text-orange-400 shrink-0">
+                        <span class="material-symbols-outlined text-xl">description</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="text-sm font-bold text-[#111418] dark:text-white truncate">{{ s.baslik }}</h4>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark">{{ s.taraf_adi }} • {{ s.bitis_tarihi.strftime('%d.%m.%Y') if s.bitis_tarihi else '-' }}</p>
+                    </div>
+                    {% if s.kalan_gun is not none %}
+                    <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border whitespace-nowrap
+                        {% if s.kalan_gun <= 7 %}text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800
+                        {% elif s.kalan_gun <= 15 %}text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800
+                        {% else %}text-blue-600 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800{% endif %}">
+                        {{ s.kalan_gun }} gün
+                    </span>
+                    {% endif %}
+                </a>
+                {% else %}
+                <div class="p-8 text-center text-text-muted dark:text-text-muted-dark">
+                    <span class="material-symbols-outlined text-4xl mb-2 opacity-50">check_circle</span>
+                    <p>30 gün içinde dolacak ticari sözleşme yok</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Bottom Grid -->
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
     <!-- Son Eklenen Çalışanlar -->

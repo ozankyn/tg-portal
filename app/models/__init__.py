@@ -21,7 +21,8 @@ from app.models.ik import (
     Pozisyon,
     Calisan,
     Aday,
-    Izin
+    Izin,
+    SozlesmeSablonu
 )
 # Tedarikçi
 from app.models.tedarikci import Tedarikci
@@ -116,6 +117,7 @@ __all__ = [
     'Calisan',
     'Aday',
     'Izin',
+    'SozlesmeSablonu',
     # Tedarikçi
     'Tedarikci',
     # Proje

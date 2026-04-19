@@ -527,3 +527,80 @@ def notify_isten_cikis(calisan, cikis_tarihi, cikis_nedeni, zimmet_teslim=None):
     """
 
     return send_notification(BILDIRIM_ALICILARI, subject, html_body)
+
+
+# ============================================================
+# SÖZLEŞME BİTİŞ UYARISI
+# ============================================================
+
+def notify_sozlesme_dolacak():
+    """30 gün içinde sözleşmesi dolacak personeli İK'ya bildir"""
+    from app.models.ik import Calisan
+    from app.models.base import CalisanDurumu
+    from datetime import date, timedelta
+
+    bugun = date.today()
+    otuz_gun = bugun + timedelta(days=30)
+
+    dolacaklar = Calisan.query.filter(
+        Calisan.is_deleted == False,
+        Calisan.durum == CalisanDurumu.AKTIF,
+        Calisan.sozlesme_bitis.isnot(None),
+        Calisan.sozlesme_bitis <= otuz_gun,
+        Calisan.sozlesme_bitis >= bugun
+    ).order_by(Calisan.sozlesme_bitis).all()
+
+    if not dolacaklar:
+        return 0
+
+    from app.models.core import User
+    ik_users = User.query.filter(User.is_active == True, User.email.isnot(None)).all()
+    ik_emails = [u.email for u in ik_users if u.has_permission('ik.view')]
+    alicilar = list(set(ik_emails + BILDIRIM_ALICILARI))
+    if not alicilar:
+        return 0
+
+    rows = ''
+    for c in dolacaklar:
+        kalan = (c.sozlesme_bitis - bugun).days
+        renk = '#dc2626' if kalan <= 7 else '#d97706' if kalan <= 15 else '#2563eb'
+        sablon_adi = c.sozlesme_sablon.ad if c.sozlesme_sablon else '-'
+        tip = c.sozlesme_sablon.tip_text if c.sozlesme_sablon else '-'
+        rows += f"""
+        <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{c.full_name}</td>
+            <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{sablon_adi}</td>
+            <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{tip}</td>
+            <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{c.sozlesme_bitis.strftime('%d.%m.%Y')}</td>
+            <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; color: {renk}; font-weight: bold;">{kalan} gün</td>
+        </tr>"""
+
+    subject = f'[TG Portal] {len(dolacaklar)} Personelin Sözleşmesi Dolmak Üzere'
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+        <div style="background: #d97706; color: white; padding: 20px; text-align: center;">
+            <h2 style="margin: 0;">Sözleşme Bitiş Uyarısı</h2>
+            <p style="margin: 5px 0 0 0; opacity: 0.9;">30 gün içinde sözleşmesi dolacak personel</p>
+        </div>
+        <div style="padding: 20px; background: white;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <thead>
+                    <tr style="background: #f3f4f6;">
+                        <th style="padding: 10px; text-align: left;">Ad Soyad</th>
+                        <th style="padding: 10px; text-align: left;">Şablon</th>
+                        <th style="padding: 10px; text-align: left;">Tip</th>
+                        <th style="padding: 10px; text-align: left;">Bitiş Tarihi</th>
+                        <th style="padding: 10px; text-align: left;">Kalan</th>
+                    </tr>
+                </thead>
+                <tbody>{rows}</tbody>
+            </table>
+        </div>
+        <div style="padding: 15px; background: #e5e7eb; text-align: center;">
+            <p style="margin: 0; color: #6b7280; font-size: 12px;">TG Portal - Team Guerilla ERP Sistemi</p>
+        </div>
+    </div>
+    """
+
+    send_notification(alicilar, subject, html_body)
+    return len(dolacaklar)

@@ -103,13 +103,20 @@ class Calisan(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     
     # Fotoğraf
     foto = db.Column(db.String(500))
-    
+
+    # Sözleşme Bilgileri
+    sozlesme_sablon_id = db.Column(db.Integer, db.ForeignKey('sozlesme_sablonlari.id'))
+    sozlesme_baslangic = db.Column(db.Date)
+    sozlesme_bitis = db.Column(db.Date)
+    sozlesme_pdf = db.Column(db.String(500))  # İmzalı sözleşme PDF yolu
+
     # İlişkiler
     departman = db.relationship('Departman', foreign_keys=[departman_id], backref='calisanlar')
     pozisyon = db.relationship('Pozisyon', backref='calisanlar')
     yonetici = db.relationship('Calisan', remote_side=[id], backref='astlar')
+    sozlesme_sablon = db.relationship('SozlesmeSablonu', backref=db.backref('calisanlar', lazy='dynamic'))
     izinler = db.relationship('Izin', backref='calisan', lazy='dynamic')
-    
+
     def __repr__(self):
         return f'<Calisan {self.full_name}>'
     
@@ -123,6 +130,12 @@ class Calisan(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
             return 0
         end_date = self.isten_ayrilma or date.today()
         return (end_date - self.ise_baslama).days // 365
+
+    @property
+    def sozlesme_kalan_gun(self):
+        if not self.sozlesme_bitis:
+            return None
+        return (self.sozlesme_bitis - date.today()).days
     
     def to_dict(self):
         return {
@@ -995,6 +1008,100 @@ class IcraDosyasi(db.Model, TimestampMixin, SoftDeleteMixin):
         if not self.toplam_borc or self.toplam_borc == 0:
             return 0
         return min(100, int((self.toplam_kesilen / float(self.toplam_borc)) * 100))
+
+
+# ============================================================
+# SÖZLEŞME ŞABLONLARI
+# ============================================================
+
+class SozlesmeSablonu(db.Model, TimestampMixin, SoftDeleteMixin):
+    """Personel sözleşme şablonları"""
+    __tablename__ = 'sozlesme_sablonlari'
+
+    id = db.Column(db.Integer, primary_key=True)
+    ad = db.Column(db.String(200), nullable=False)
+    tip = db.Column(db.String(50), nullable=False)  # belirsiz_sureli, belirli_sureli, part_time
+
+    # Filtreleme kriterleri (hepsi nullable - genel sablon icin hepsi bos)
+    musteri_id = db.Column(db.Integer, db.ForeignKey('musteriler.id'))
+    proje_id = db.Column(db.Integer, db.ForeignKey('projeler.id'))
+    pozisyon_id = db.Column(db.Integer, db.ForeignKey('pozisyonlar.id'))
+    departman_id = db.Column(db.Integer, db.ForeignKey('departmanlar.id'))
+
+    sablon_dosya = db.Column(db.String(500))  # PDF şablon yolu
+    aciklama = db.Column(db.Text)
+    aktif = db.Column(db.Boolean, default=True)
+    sira = db.Column(db.Integer, default=0)
+
+    # İlişkiler
+    musteri = db.relationship('Musteri', backref=db.backref('sozlesme_sablonlari', lazy='dynamic'))
+    proje = db.relationship('Proje', backref=db.backref('sozlesme_sablonlari', lazy='dynamic'))
+    pozisyon = db.relationship('Pozisyon', backref=db.backref('sozlesme_sablonlari', lazy='dynamic'))
+    departman_rel = db.relationship('Departman', backref=db.backref('sozlesme_sablonlari', lazy='dynamic'))
+
+    TIPLER = [
+        ('belirsiz_sureli', 'Belirsiz Süreli'),
+        ('belirli_sureli', 'Belirli Süreli'),
+        ('part_time', 'Part Time'),
+    ]
+
+    @property
+    def tip_text(self):
+        return dict(self.TIPLER).get(self.tip, self.tip)
+
+    @property
+    def kapsam_text(self):
+        parts = []
+        if self.musteri:
+            parts.append(self.musteri.display_name)
+        if self.proje:
+            parts.append(self.proje.ad)
+        if self.pozisyon:
+            parts.append(self.pozisyon.ad)
+        if self.departman_rel:
+            parts.append(self.departman_rel.ad)
+        return ' / '.join(parts) if parts else 'Genel'
+
+    @classmethod
+    def sablonlari_filtrele(cls, musteri_id=None, proje_id=None, pozisyon_id=None, departman_id=None):
+        """Spesifikten genele dogru sablon ara"""
+        base = cls.query.filter_by(aktif=True, is_deleted=False)
+
+        # 1. musteri + proje + pozisyon
+        if musteri_id and proje_id and pozisyon_id:
+            sonuc = base.filter_by(musteri_id=musteri_id, proje_id=proje_id, pozisyon_id=pozisyon_id).all()
+            if sonuc:
+                return sonuc
+
+        # 2. musteri + proje
+        if musteri_id and proje_id:
+            sonuc = base.filter_by(musteri_id=musteri_id, proje_id=proje_id, pozisyon_id=None).all()
+            if sonuc:
+                return sonuc
+
+        # 3. musteri + pozisyon
+        if musteri_id and pozisyon_id:
+            sonuc = base.filter_by(musteri_id=musteri_id, pozisyon_id=pozisyon_id, proje_id=None).all()
+            if sonuc:
+                return sonuc
+
+        # 4. departman + pozisyon
+        if departman_id and pozisyon_id:
+            sonuc = base.filter_by(departman_id=departman_id, pozisyon_id=pozisyon_id).all()
+            if sonuc:
+                return sonuc
+
+        # 5. sadece departman
+        if departman_id:
+            sonuc = base.filter_by(departman_id=departman_id, pozisyon_id=None, musteri_id=None).all()
+            if sonuc:
+                return sonuc
+
+        # 6. Fallback: genel sablonlar
+        return base.filter_by(musteri_id=None, proje_id=None, pozisyon_id=None, departman_id=None).all()
+
+    def __repr__(self):
+        return f'<SozlesmeSablonu {self.ad}>'
 
 
 class IcraKesinti(db.Model, TimestampMixin, SoftDeleteMixin):
