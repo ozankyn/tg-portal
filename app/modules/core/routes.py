@@ -133,17 +133,23 @@ def dashboard():
     # Sözleşmesi dolacak personel (30 gün içinde)
     from datetime import timedelta
     otuz_gun_sonra = date.today() + timedelta(days=30)
-    sozlesme_dolacak = Calisan.query.filter(
-        Calisan.is_deleted == False,
-        Calisan.durum == CalisanDurumu.AKTIF,
-        Calisan.sozlesme_bitis.isnot(None),
-        Calisan.sozlesme_bitis <= otuz_gun_sonra,
-        Calisan.sozlesme_bitis >= date.today()
-    ).order_by(Calisan.sozlesme_bitis).limit(10).all()
+    try:
+        sozlesme_dolacak = Calisan.query.filter(
+            Calisan.is_deleted == False,
+            Calisan.durum == CalisanDurumu.AKTIF,
+            Calisan.sozlesme_bitis.isnot(None),
+            Calisan.sozlesme_bitis <= otuz_gun_sonra,
+            Calisan.sozlesme_bitis >= date.today()
+        ).order_by(Calisan.sozlesme_bitis).limit(10).all()
+    except Exception:
+        sozlesme_dolacak = []
 
     # Süresi dolacak ticari sözleşmeler (30 gün içinde)
     from app.models.sozlesme import get_yaklasan_sozlesmeler
-    ticari_sozlesme_dolacak = get_yaklasan_sozlesmeler(gun=30)
+    try:
+        ticari_sozlesme_dolacak = get_yaklasan_sozlesmeler(gun=30)
+    except Exception:
+        ticari_sozlesme_dolacak = []
 
     return render_template('core/dashboard.html',
                          stats=stats,

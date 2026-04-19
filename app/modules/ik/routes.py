@@ -242,7 +242,10 @@ def ekle():
     
     sgk_dosyalari = SgkDosya.query.filter_by(is_deleted=False, aktif=True).all()
     kadrolar = HedefKadro.query.filter_by(is_deleted=False, aktif=True).all()
-    sablonlar = SozlesmeSablonu.query.filter_by(aktif=True, is_deleted=False).order_by(SozlesmeSablonu.ad).all()
+    try:
+        sablonlar = SozlesmeSablonu.query.filter_by(aktif=True, is_deleted=False).order_by(SozlesmeSablonu.ad).all()
+    except Exception:
+        sablonlar = []
     return render_template('ik/form.html',
                           calisan=None,
                           departmanlar=departmanlar,
@@ -353,7 +356,10 @@ def duzenle(id):
     
     sgk_dosyalari = SgkDosya.query.filter_by(is_deleted=False, aktif=True).all()
     kadrolar = HedefKadro.query.filter_by(is_deleted=False, aktif=True).all()
-    sablonlar = SozlesmeSablonu.query.filter_by(aktif=True, is_deleted=False).order_by(SozlesmeSablonu.ad).all()
+    try:
+        sablonlar = SozlesmeSablonu.query.filter_by(aktif=True, is_deleted=False).order_by(SozlesmeSablonu.ad).all()
+    except Exception:
+        sablonlar = []
     return render_template('ik/form.html',
                           calisan=calisan,
                           departmanlar=departmanlar,
