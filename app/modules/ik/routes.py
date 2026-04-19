@@ -183,9 +183,9 @@ def ekle():
         )
         
         # Sözleşme bilgileri
-        calisan.sozlesme_sablon_id = int(request.form.get('sozlesme_sablon_id')) if request.form.get('sozlesme_sablon_id') else None
-        calisan.sozlesme_baslangic = datetime.strptime(request.form.get('sozlesme_baslangic'), '%Y-%m-%d').date() if request.form.get('sozlesme_baslangic') else None
-        calisan.sozlesme_bitis = datetime.strptime(request.form.get('sozlesme_bitis'), '%Y-%m-%d').date() if request.form.get('sozlesme_bitis') else None
+        calisan.sozlesme_sablon_id = int(request.form.get('sozlesme_sablon_id')) if request.form.get('sozlesme_sablon_id', '').strip() else None
+        calisan.sozlesme_baslangic = datetime.strptime(request.form.get('sozlesme_baslangic'), '%Y-%m-%d').date() if request.form.get('sozlesme_baslangic', '').strip() else None
+        calisan.sozlesme_bitis = datetime.strptime(request.form.get('sozlesme_bitis'), '%Y-%m-%d').date() if request.form.get('sozlesme_bitis', '').strip() else None
 
         db.session.add(calisan)
         db.session.commit()
@@ -300,9 +300,9 @@ def duzenle(id):
         calisan.updated_by = current_user.id
 
         # Sözleşme bilgileri
-        calisan.sozlesme_sablon_id = int(request.form.get('sozlesme_sablon_id')) if request.form.get('sozlesme_sablon_id') else None
-        calisan.sozlesme_baslangic = datetime.strptime(request.form.get('sozlesme_baslangic'), '%Y-%m-%d').date() if request.form.get('sozlesme_baslangic') else None
-        calisan.sozlesme_bitis = datetime.strptime(request.form.get('sozlesme_bitis'), '%Y-%m-%d').date() if request.form.get('sozlesme_bitis') else None
+        calisan.sozlesme_sablon_id = int(request.form.get('sozlesme_sablon_id')) if request.form.get('sozlesme_sablon_id', '').strip() else None
+        calisan.sozlesme_baslangic = datetime.strptime(request.form.get('sozlesme_baslangic'), '%Y-%m-%d').date() if request.form.get('sozlesme_baslangic', '').strip() else None
+        calisan.sozlesme_bitis = datetime.strptime(request.form.get('sozlesme_bitis'), '%Y-%m-%d').date() if request.form.get('sozlesme_bitis', '').strip() else None
 
         # Sözleşme PDF yükleme
         if 'sozlesme_pdf' in request.files:
