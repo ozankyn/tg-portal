@@ -142,6 +142,7 @@ def dashboard():
             Calisan.sozlesme_bitis >= date.today()
         ).order_by(Calisan.sozlesme_bitis).limit(10).all()
     except Exception:
+        db.session.rollback()
         sozlesme_dolacak = []
 
     # Süresi dolacak ticari sözleşmeler (30 gün içinde)
@@ -149,6 +150,7 @@ def dashboard():
     try:
         ticari_sozlesme_dolacak = get_yaklasan_sozlesmeler(gun=30)
     except Exception:
+        db.session.rollback()
         ticari_sozlesme_dolacak = []
 
     return render_template('core/dashboard.html',

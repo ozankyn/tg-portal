@@ -245,6 +245,7 @@ def ekle():
     try:
         sablonlar = SozlesmeSablonu.query.filter_by(aktif=True, is_deleted=False).order_by(SozlesmeSablonu.ad).all()
     except Exception:
+        db.session.rollback()
         sablonlar = []
     return render_template('ik/form.html',
                           calisan=None,
@@ -359,6 +360,7 @@ def duzenle(id):
     try:
         sablonlar = SozlesmeSablonu.query.filter_by(aktif=True, is_deleted=False).order_by(SozlesmeSablonu.ad).all()
     except Exception:
+        db.session.rollback()
         sablonlar = []
     return render_template('ik/form.html',
                           calisan=calisan,
