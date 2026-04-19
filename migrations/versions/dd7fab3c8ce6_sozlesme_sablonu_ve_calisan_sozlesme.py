@@ -1,7 +1,7 @@
 """SozlesmeSablonu ve Calisan sozlesme alanlari
 
 Revision ID: dd7fab3c8ce6
-Revises: e9086209810d
+Revises: 794309d06a02
 Create Date: 2026-04-19 18:00:00.000000
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'dd7fab3c8ce6'
-down_revision = 'e9086209810d'
+down_revision = '794309d06a02'
 branch_labels = None
 depends_on = None
 
