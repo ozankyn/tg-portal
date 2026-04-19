@@ -14,6 +14,11 @@ import os
 
 SILINECEK_IDS = [184, 185, 186, 187, 195, 192, 193]
 
+# Pozisyon adi ile bulunacak kadrolar (ID bilinmiyorsa)
+SILINECEK_POZISYON = [
+    ('Efes KK Merch', 'KK Merch - G.Doğu Bayiler Md. - Diyarbakır'),
+]
+
 
 def main():
     apply = '--apply' in sys.argv
@@ -32,7 +37,26 @@ def main():
         silinen = 0
         atlanan = 0
 
-        for kadro_id in SILINECEK_IDS:
+        # Pozisyon adi ile ID'leri bul ve listeye ekle
+        silinecek_ids = list(SILINECEK_IDS)
+        for proje_adi, pozisyon_adi in SILINECEK_POZISYON:
+            from app.models.proje import Proje
+            proje = Proje.query.filter_by(ad=proje_adi, is_deleted=False).first()
+            if not proje:
+                print(f'  [YOK] Proje bulunamadi: {proje_adi}')
+                atlanan += 1
+                continue
+            kadro = HedefKadro.query.filter_by(
+                proje_id=proje.id, pozisyon_adi=pozisyon_adi, is_deleted=False
+            ).first()
+            if not kadro:
+                print(f'  [YOK] Kadro bulunamadi: {proje_adi} / {pozisyon_adi}')
+                atlanan += 1
+                continue
+            print(f'  [BULUNDU] {proje_adi} / {pozisyon_adi} -> ID {kadro.id}')
+            silinecek_ids.append(kadro.id)
+
+        for kadro_id in silinecek_ids:
             kadro = HedefKadro.query.get(kadro_id)
             if not kadro:
                 print(f'  [YOK] Kadro ID {kadro_id} bulunamadi')
