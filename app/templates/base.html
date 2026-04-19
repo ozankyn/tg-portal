@@ -319,6 +319,13 @@
                     <span class="material-symbols-outlined">event_available</span>
                     <span class="font-medium">İzin Talepleri</span>
                 </a>
+
+                {% if has_permission('ik.edit') %}
+                <a href="{{ url_for('ik.sablon_liste') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.endpoint and 'sablon' in request.endpoint %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">contract</span>
+                    <span class="font-medium">Sözleşme Şablonları</span>
+                </a>
+                {% endif %}
                 {% endif %}
                 
                 <!-- Masraf -->
@@ -343,8 +350,14 @@
                 <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Sözleşmeler</p>
                 <a href="{{ url_for('sozlesme.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'sozlesme' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
                     <span class="material-symbols-outlined">description</span>
-                    <span class="font-medium">Sözleşmeler</span>
+                    <span class="font-medium">Ticari Sözleşmeler</span>
                 </a>
+                {% if has_permission('ik.edit') %}
+                <a href="{{ url_for('ik.sablon_liste') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.endpoint and 'sablon' in request.endpoint %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">contract</span>
+                    <span class="font-medium">İş Sözleşme Şablonları</span>
+                </a>
+                {% endif %}
                 {% endif %}
                 
                 {% if has_permission('depo.view') %}
