@@ -14,9 +14,21 @@ KULLANIM:
 """
 import sys
 import os
+import unicodedata
 
 EXCEL_PATH = '/app/data/Kadro_Eslestirme_Formu.xlsx'
 SKIP_SHEETS = {'KADRO LİSTESİ'}
+
+
+def normalize_tr(text):
+    """Turkce karakter normalize: kucuk harf + unicode NFKC"""
+    if not text:
+        return ''
+    # Turkce buyuk harfleri kucult (İ->i, I->ı ozel durumlari)
+    text = text.replace('İ', 'i').replace('I', 'ı')
+    text = text.lower()
+    text = unicodedata.normalize('NFKC', text)
+    return text.strip()
 
 
 def main():
@@ -45,7 +57,11 @@ def main():
     with app.app_context():
         # Mevcut kadro_id'leri dogrula
         mevcut_kadro_ids = set(k.id for k in HedefKadro.query.all())
-        print(f'Veritabaninda {len(mevcut_kadro_ids)} hedef kadro mevcut.\n')
+        print(f'Veritabaninda {len(mevcut_kadro_ids)} hedef kadro mevcut.')
+
+        # Ad+soyad fallback icin tum calisanlari once yukle
+        tum_calisanlar = Calisan.query.all()
+        print(f'Veritabaninda {len(tum_calisanlar)} calisan mevcut.\n')
 
         for sheet_name in wb.sheetnames:
             if sheet_name in SKIP_SHEETS:
@@ -85,8 +101,32 @@ def main():
                     atlanan += 1
                     continue
 
-                # Calisani bul
+                # Calisani bul: once sicil_no, sonra ad+soyad fallback
                 calisan = Calisan.query.filter_by(sicil_no=sicil_no).first()
+                if not calisan and ad_soyad and ad_soyad != '?':
+                    # Ad soyad ile fallback ara
+                    parcalar = str(ad_soyad).strip().split(None, 1)
+                    if len(parcalar) == 2:
+                        aranan_ad, aranan_soyad = parcalar
+                    else:
+                        aranan_ad, aranan_soyad = parcalar[0], ''
+
+                    # Case-insensitive + Turkce normalize arama
+                    eslesenler = [
+                        c for c in tum_calisanlar
+                        if normalize_tr(c.ad) == normalize_tr(aranan_ad)
+                        and normalize_tr(c.soyad) == normalize_tr(aranan_soyad)
+                    ]
+
+                    if len(eslesenler) == 1:
+                        calisan = eslesenler[0]
+                        print(f'  [FALLBACK] {sicil_no} -> ad/soyad ile bulundu: {calisan.ad} {calisan.soyad} (id={calisan.id})')
+                    elif len(eslesenler) > 1:
+                        ids = [str(c.id) for c in eslesenler]
+                        print(f'  [COKLU] {sicil_no} - {ad_soyad}: {len(eslesenler)} eslesme (id: {", ".join(ids)}) - ATLANDI')
+                        atlanan += 1
+                        continue
+
                 if not calisan:
                     bulunamayan.append(f'  [YOK] {sicil_no} - {ad_soyad}')
                     atlanan += 1
