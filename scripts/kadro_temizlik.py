@@ -7,6 +7,7 @@ Atanmis calisan varsa silmez, loglar.
 KULLANIM:
   cd /app && PYTHONPATH=/app python3 scripts/kadro_temizlik.py --dry-run
   cd /app && PYTHONPATH=/app python3 scripts/kadro_temizlik.py --apply
+  cd /app && PYTHONPATH=/app python3 scripts/kadro_temizlik.py --apply --force  (atanmis calisanlarin kadro_id'sini NULL yapar)
 """
 import sys
 import os
@@ -16,7 +17,8 @@ SILINECEK_IDS = [184, 185, 186, 187, 195, 192, 193]
 
 def main():
     apply = '--apply' in sys.argv
-    mode = 'APPLY' if apply else 'DRY-RUN'
+    force = '--force' in sys.argv
+    mode = 'APPLY' + (' + FORCE' if force else '') if apply else 'DRY-RUN' + (' + FORCE' if force else '')
     print(f'=== Kadro Temizlik ({mode}) ===\n')
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -45,9 +47,15 @@ def main():
             atananlar = Calisan.query.filter_by(kadro_id=kadro_id, is_deleted=False).all()
             if atananlar:
                 isimler = ', '.join(f'{c.ad} {c.soyad}' for c in atananlar)
-                print(f'  [ATLI] ID {kadro_id} ({kadro.pozisyon_adi}) - {len(atananlar)} calisan atanmis: {isimler} - ATLANDI')
-                atlanan += 1
-                continue
+                if not force:
+                    print(f'  [ATLI] ID {kadro_id} ({kadro.pozisyon_adi}) - {len(atananlar)} calisan atanmis: {isimler} - ATLANDI')
+                    atlanan += 1
+                    continue
+                # Force: calisanlarin kadro_id'sini NULL yap
+                print(f'  [FORCE] ID {kadro_id} ({kadro.pozisyon_adi}) - {len(atananlar)} calisanin kadro_id NULL yapiliyor: {isimler}')
+                if apply:
+                    for c in atananlar:
+                        c.kadro_id = None
 
             proje_adi = kadro.proje.ad if kadro.proje else '?'
             print(f'  [SIL]  ID {kadro_id} - {proje_adi} / {kadro.pozisyon_adi}')
