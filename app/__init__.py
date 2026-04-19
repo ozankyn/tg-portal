@@ -134,6 +134,14 @@ def create_app(config_name=None):
     from app.modules.onay.routes import onay_bp
     app.register_blueprint(onay_bp, url_prefix="/onay")
     
+    # Bozuk transaction temizleme
+    @app.before_request
+    def cleanup_db_session():
+        try:
+            db.session.execute(db.text('SELECT 1'))
+        except Exception:
+            db.session.rollback()
+
     # Context processors
     @app.context_processor
     def inject_permissions():
