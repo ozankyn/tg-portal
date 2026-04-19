@@ -120,10 +120,10 @@ def ekle():
             plaka=request.form.get('plaka', '').upper().replace(' ', ''),
             marka=request.form.get('marka'),
             model=request.form.get('model'),
-            model_yili=request.form.get('model_yili') or None,
+            model_yili=int(request.form.get('model_yili')) if request.form.get('model_yili', '').strip().isdigit() else None,
             renk=request.form.get('renk'),
-            sasi_no=request.form.get('sasi_no'),
-            motor_no=request.form.get('motor_no'),
+            sasi_no=None if request.form.get('sasi_no', '') in ('', 'None', 'none') else request.form.get('sasi_no'),
+            motor_no=None if request.form.get('motor_no', '') in ('', 'None', 'none') else request.form.get('motor_no'),
             yakit_tipi=YakitTipi(request.form.get('yakit_tipi')) if request.form.get('yakit_tipi') else None,
             motor_hacmi=request.form.get('motor_hacmi') or None,
             vites_tipi=request.form.get('vites_tipi'),
@@ -185,10 +185,10 @@ def duzenle(id):
         arac.plaka = request.form.get('plaka', '').upper().replace(' ', '')
         arac.marka = request.form.get('marka')
         arac.model = request.form.get('model')
-        arac.model_yili = request.form.get('model_yili') or None
+        arac.model_yili = int(request.form.get('model_yili')) if request.form.get('model_yili', '').strip().isdigit() else None
         arac.renk = request.form.get('renk')
-        arac.sasi_no = request.form.get('sasi_no')
-        arac.motor_no = request.form.get('motor_no')
+        arac.sasi_no = None if request.form.get('sasi_no', '') in ('', 'None', 'none') else request.form.get('sasi_no')
+        arac.motor_no = None if request.form.get('motor_no', '') in ('', 'None', 'none') else request.form.get('motor_no')
         arac.yakit_tipi = YakitTipi(request.form.get('yakit_tipi')) if request.form.get('yakit_tipi') else None
         arac.motor_hacmi = request.form.get('motor_hacmi') or None
         arac.vites_tipi = request.form.get('vites_tipi')
