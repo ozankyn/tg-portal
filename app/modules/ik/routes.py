@@ -159,7 +159,7 @@ def ekle():
             return redirect(url_for('ik.ekle'))
         
         calisan = Calisan(
-            sicil_no=request.form.get('sicil_no', '').strip() or None,
+            sicil_no=None if request.form.get('sicil_no', '').strip() in ('', 'None', 'none') else request.form.get('sicil_no', '').strip(),
             ad=request.form.get('ad', '').strip(),
             soyad=request.form.get('soyad', '').strip(),
             tc_kimlik=tc or None,
@@ -277,7 +277,7 @@ def duzenle(id):
                 flash('Bu TC Kimlik numarası başka bir çalışanda kayıtlı.', 'danger')
                 return redirect(url_for('ik.duzenle', id=id))
         
-        calisan.sicil_no = request.form.get('sicil_no', '').strip() or None
+        calisan.sicil_no = None if request.form.get('sicil_no', '').strip() in ('', 'None', 'none') else request.form.get('sicil_no', '').strip()
         calisan.ad = request.form.get('ad', '').strip()
         calisan.soyad = request.form.get('soyad', '').strip()
         calisan.tc_kimlik = tc or None
@@ -723,7 +723,7 @@ def aday_calisana_donustur(id):
             il=aday.il,
             ilce=aday.ilce,
             pozisyon_id=aday.pozisyon_id,
-            sicil_no=request.form.get('sicil_no'),
+            sicil_no=None if request.form.get('sicil_no', '').strip() in ('', 'None', 'none') else request.form.get('sicil_no', '').strip(),
             ise_baslama=datetime.strptime(request.form['ise_baslama'], '%Y-%m-%d').date(),
             calisma_tipi=request.form.get('calisma_tipi', 'tam_zamanli'),
             durum=CalisanDurumu.AKTIF,
