@@ -119,7 +119,7 @@ def _user_role_names(user):
 def apply_calisan_scope(query, user=None):
     """Calisan query'sine current user'in scope filtresini uygular.
     - Admin / Full-access roller: filtre yok (hepsini gorur)
-    - Koordinator (Proje/Saha): yonetici_id == user.calisan_id olanlar + kendisi
+    - Koordinator (Proje/Saha): yonetici_id == user.calisan_id + atanan proje kadrolari + kendisi
     - Takim Lideri: kendi departmanindaki calisanlar
     - Diger roller: sadece kendisi
     - Auth yok / calisan kaydi yok: bos liste
@@ -129,13 +129,18 @@ def apply_calisan_scope(query, user=None):
 
     user = user or current_user
     if not user or not user.is_authenticated:
+        print(f">>> SCOPE: auth yok, bos liste", flush=True)
         return query.filter(Calisan.id == -1)
 
     if user.is_admin:
+        print(f">>> SCOPE: user={user.email} is_admin=True, filtre yok", flush=True)
         return query
 
     roles = _user_role_names(user)
+    print(f">>> SCOPE: user={user.email}, calisan_id={user.calisan_id}, roles={roles}", flush=True)
+
     if roles & _FULL_ACCESS_ROLES:
+        print(f">>> SCOPE: FULL_ACCESS branch, filtre yok", flush=True)
         return query
 
     calisan_id = user.calisan_id
@@ -144,7 +149,9 @@ def apply_calisan_scope(query, user=None):
         c = Calisan.query.filter_by(email=user.email, is_deleted=False).first()
         if c:
             calisan_id = c.id
+            print(f">>> SCOPE: calisan_id fallback (email match) -> {calisan_id}", flush=True)
     if not calisan_id:
+        print(f">>> SCOPE: calisan_id yok, bos liste", flush=True)
         return query.filter(Calisan.id == -1)
 
     if roles & _COORDINATOR_ROLES:
@@ -155,6 +162,8 @@ def apply_calisan_scope(query, user=None):
         atanan_kadro_ids = db.session.query(HedefKadro.id).filter(
             HedefKadro.proje_id.in_(atanan_proje_ids)
         )
+        proje_ids_list = [r[0] for r in atanan_proje_ids.all()]
+        print(f">>> SCOPE: COORDINATOR branch, calisan_id={calisan_id}, atanan_proje_ids={proje_ids_list}", flush=True)
         return query.filter(
             db.or_(
                 Calisan.yonetici_id == calisan_id,
@@ -164,12 +173,14 @@ def apply_calisan_scope(query, user=None):
         )
 
     if roles & _TEAM_LEAD_ROLES:
+        print(f">>> SCOPE: TEAM_LEAD branch, calisan_id={calisan_id}", flush=True)
         me = Calisan.query.get(calisan_id)
         if not me or not me.departman_id:
             return query.filter(Calisan.id == calisan_id)
         return query.filter(Calisan.departman_id == me.departman_id)
 
     # Diger roller: sadece kendisi
+    print(f">>> SCOPE: DIGER branch (sadece kendisi), calisan_id={calisan_id}", flush=True)
     return query.filter(Calisan.id == calisan_id)
 
 
