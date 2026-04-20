@@ -318,11 +318,17 @@ def kadro_ekle(proje_id):
 @permission_required('proje.view')
 def kadro_detay(id):
     """Kadro detayı - adaylar ve çalışanlar"""
+    from app.models.ik import Calisan
+    from app.models.base import CalisanDurumu
+
     kadro = HedefKadro.query.get_or_404(id)
-    
+
     adaylar = kadro.adaylar.filter_by(is_deleted=False).order_by(Aday.created_at.desc()).all()
-    calisanlar = kadro.calisanlar.filter_by(is_deleted=False).all()
-    
+    calisanlar = kadro.calisanlar.filter(
+        Calisan.is_deleted == False,
+        Calisan.durum != CalisanDurumu.AYRILDI,
+    ).all()
+
     return render_template('proje/kadro_detay.html',
                          kadro=kadro,
                          adaylar=adaylar,
