@@ -22,7 +22,7 @@ from app.models.ik import (
     SozlesmeSablonu
 )
 from app.models.base import CalisanDurumu
-from app.utils import permission_required, paginate_query
+from app.utils import permission_required, paginate_query, apply_calisan_scope, calisan_in_scope
 
 ik_bp = Blueprint('ik', __name__)
 
@@ -99,6 +99,7 @@ def _calisan_liste_query():
     search = request.args.get('search', '').strip()
 
     query = Calisan.query.filter_by(is_deleted=False)
+    query = apply_calisan_scope(query)
 
     if departman_id:
         query = query.filter(Calisan.departman_id == departman_id)
@@ -208,6 +209,11 @@ def calisanlar_export():
 def detay(id):
     """Çalışan detay sayfası"""
     calisan = Calisan.query.get_or_404(id)
+
+    if not calisan_in_scope(calisan):
+        flash('Bu çalışanı görüntüleme yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.liste'))
+
     izinler = calisan.izinler.order_by(Izin.baslangic.desc()).limit(10).all()
     evraklar = calisan.evraklar.all() if hasattr(calisan, 'evraklar') else []
     
@@ -334,7 +340,11 @@ def ekle():
 def duzenle(id):
     """Çalışan düzenle"""
     calisan = Calisan.query.get_or_404(id)
-    
+
+    if not calisan_in_scope(calisan):
+        flash('Bu çalışanı düzenleme yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.liste'))
+
     if request.method == 'POST':
         tc = request.form.get('tc_kimlik', '').strip()
         if tc:

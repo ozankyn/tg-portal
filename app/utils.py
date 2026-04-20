@@ -98,3 +98,71 @@ def format_currency(amount, currency='TRY'):
 def enum_choices(enum_class):
     """Enum sınıfını form choices listesine çevirir"""
     return [(e.value, e.name.replace('_', ' ').title()) for e in enum_class]
+
+
+# ============================================================
+# CALISAN SCOPE - Rol bazli liste/detay erisim filtresi
+# ============================================================
+
+_FULL_ACCESS_ROLES = {
+    'Sistem Yoneticisi', 'Ajans Baskani', 'Direktor',
+    'Direktor Yardimcisi', 'Departman Muduru',
+}
+_COORDINATOR_ROLES = {'Proje Koordinatoru', 'Saha Koordinatoru'}
+_TEAM_LEAD_ROLES = {'Takim Lideri'}
+
+
+def _user_role_names(user):
+    return {r.name for r in (user.roles or [])}
+
+
+def apply_calisan_scope(query, user=None):
+    """Calisan query'sine current user'in scope filtresini uygular.
+    - Admin / Full-access roller: filtre yok (hepsini gorur)
+    - Koordinator (Proje/Saha): yonetici_id == user.calisan_id olanlar + kendisi
+    - Takim Lideri: kendi departmanindaki calisanlar
+    - Diger roller: sadece kendisi
+    - Auth yok / calisan kaydi yok: bos liste
+    """
+    from app import db
+    from app.models.ik import Calisan
+
+    user = user or current_user
+    if not user or not user.is_authenticated:
+        return query.filter(Calisan.id == -1)
+
+    if user.is_admin:
+        return query
+
+    roles = _user_role_names(user)
+    if roles & _FULL_ACCESS_ROLES:
+        return query
+
+    calisan_id = user.calisan_id
+    if not calisan_id:
+        return query.filter(Calisan.id == -1)
+
+    if roles & _COORDINATOR_ROLES:
+        return query.filter(
+            db.or_(
+                Calisan.yonetici_id == calisan_id,
+                Calisan.id == calisan_id,
+            )
+        )
+
+    if roles & _TEAM_LEAD_ROLES:
+        if not user.calisan or not user.calisan.departman_id:
+            return query.filter(Calisan.id == calisan_id)
+        return query.filter(Calisan.departman_id == user.calisan.departman_id)
+
+    # Diger roller: sadece kendisi
+    return query.filter(Calisan.id == calisan_id)
+
+
+def calisan_in_scope(calisan, user=None):
+    """Detay erisim kontrolu - bool dondurur"""
+    from app.models.ik import Calisan
+    if calisan is None:
+        return False
+    q = apply_calisan_scope(Calisan.query.filter(Calisan.id == calisan.id), user)
+    return q.first() is not None
