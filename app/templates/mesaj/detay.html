@@ -20,7 +20,7 @@
                         <span class="text-primary font-bold text-lg">{{ mesaj.gonderen.ad[0] }}{{ mesaj.gonderen.soyad[0] if mesaj.gonderen.soyad else '' }}</span>
                     </div>
                     <div>
-                        <p class="font-bold text-gray-900 dark:text-white">{{ mesaj.gonderen.ad_soyad }}</p>
+                        <p class="font-bold text-gray-900 dark:text-white">{{ mesaj.gonderen.full_name }}</p>
                         <p class="text-sm text-gray-500">{{ mesaj.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
                     </div>
                 </div>
@@ -31,7 +31,7 @@
                 </form>
             </div>
             <h1 class="text-xl font-bold text-gray-900 dark:text-white mt-4">{{ mesaj.konu }}</h1>
-            <p class="text-sm text-gray-500 mt-1">Kime: {{ mesaj.alici.ad_soyad }}</p>
+            <p class="text-sm text-gray-500 mt-1">Kime: {{ mesaj.alici.full_name }}</p>
         </div>
 
         <div class="p-6">
@@ -42,7 +42,7 @@
             {% if mesaj.dosya_adi %}
             <div class="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-center gap-3">
                 <span class="material-symbols-outlined text-gray-400">attach_file</span>
-                <a href="{{ url_for('static', filename='uploads/' + mesaj.dosya_yolu) }}" target="_blank" class="text-primary hover:underline">
+                <a href="{{ url_for('uploaded_file', filename=mesaj.dosya_yolu) }}" target="_blank" class="text-primary hover:underline">
                     {{ mesaj.dosya_adi }}
                 </a>
             </div>
@@ -61,7 +61,7 @@
                         <span class="text-primary font-bold text-sm">{{ yanit.gonderen.ad[0] }}{{ yanit.gonderen.soyad[0] if yanit.gonderen.soyad else '' }}</span>
                     </div>
                     <div>
-                        <p class="font-medium text-gray-900 dark:text-white text-sm">{{ yanit.gonderen.ad_soyad }}</p>
+                        <p class="font-medium text-gray-900 dark:text-white text-sm">{{ yanit.gonderen.full_name }}</p>
                         <p class="text-xs text-gray-500">{{ yanit.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
                     </div>
                 </div>

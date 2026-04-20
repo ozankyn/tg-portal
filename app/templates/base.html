@@ -167,7 +167,7 @@
                           {% if request.blueprint == 'mesaj' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
                     <span class="material-symbols-outlined">mail</span>
                     <span class="font-medium">Mesajlar</span>
-                    {% set okunmamis = current_user.alinan_mesajlar|selectattr('okundu', 'false')|selectattr('is_deleted', 'false')|list|length %}
+                    {% set okunmamis = unread_mesaj_count() %}
                     {% if okunmamis > 0 %}
                     <span class="ml-auto px-2 py-0.5 bg-red-500 text-white text-xs rounded-full">{{ okunmamis }}</span>
                     {% endif %}

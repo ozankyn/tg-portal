@@ -21,15 +21,37 @@
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Alici *</label>
-                <select name="alici_id" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white">
-                    <option value="">Kisi secin...</option>
+                <div class="relative mb-2">
+                    <input type="text" id="alici_arama" placeholder="Isim veya e-posta ile ara..."
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white">
+                </div>
+                <select name="alici_id" id="alici_id" required size="8"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-800 dark:border-gray-600 dark:text-white">
                     {% for user in kullanicilar %}
-                    <option value="{{ user.id }}" {% if secili_alici and secili_alici|string == user.id|string %}selected{% endif %}>
-                        {{ user.ad_soyad }} {% if user.departman %}({{ user.departman }}){% endif %}
+                    <option value="{{ user.id }}"
+                            data-search="{{ (user.full_name ~ ' ' ~ user.email)|lower }}"
+                            {% if secili_alici and secili_alici|string == user.id|string %}selected{% endif %}>
+                        {{ user.full_name }}{% if user.email %} — {{ user.email }}{% endif %}
                     </option>
                     {% endfor %}
                 </select>
+                <p class="text-xs text-gray-500 mt-1">Listeden seçin veya aramayla filtreleyin.</p>
             </div>
+
+            <script>
+                (function() {
+                    const arama = document.getElementById('alici_arama');
+                    const select = document.getElementById('alici_id');
+                    if (!arama || !select) return;
+                    arama.addEventListener('input', function() {
+                        const q = this.value.trim().toLowerCase();
+                        for (const opt of select.options) {
+                            const hay = opt.dataset.search || opt.textContent.toLowerCase();
+                            opt.hidden = q && !hay.includes(q);
+                        }
+                    });
+                })();
+            </script>
 
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Konu</label>

@@ -3,7 +3,7 @@
 TG Portal - Mesajlasma Routes
 """
 from datetime import datetime
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import os
@@ -13,6 +13,24 @@ from app.models.mesaj import Mesaj, MesajBildirimi
 from app.models.core import User
 
 mesaj_bp = Blueprint('mesaj', __name__)
+
+
+@mesaj_bp.app_context_processor
+def inject_unread_mesaj_count():
+    """Sidebar rozet icin okunmamis mesaj sayisi - SQL count, her istekte tekrar calisir."""
+    def unread_mesaj_count():
+        if not current_user.is_authenticated:
+            return 0
+        try:
+            return Mesaj.query.filter(
+                Mesaj.alici_id == current_user.id,
+                Mesaj.is_deleted == False,
+                Mesaj.okundu == False
+            ).count()
+        except Exception:
+            db.session.rollback()
+            return 0
+    return dict(unread_mesaj_count=unread_mesaj_count)
 
 ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'xls', 'xlsx', 'png', 'jpg', 'jpeg', 'gif', 'zip'}
 
@@ -89,9 +107,10 @@ def yeni():
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S_')
                 filename = timestamp + filename
 
-                upload_path = os.path.join('/app/uploads/mesajlar', filename)
-                os.makedirs(os.path.dirname(upload_path), exist_ok=True)
-                dosya.save(upload_path)
+                upload_root = current_app.config.get('UPLOAD_FOLDER', '/app/uploads')
+                upload_dir = os.path.join(upload_root, 'mesajlar')
+                os.makedirs(upload_dir, exist_ok=True)
+                dosya.save(os.path.join(upload_dir, filename))
 
                 mesaj.dosya_adi = dosya.filename
                 mesaj.dosya_yolu = f'mesajlar/{filename}'
@@ -231,7 +250,7 @@ def api_bildirimler():
         sonuc.append({
             'id': b.id,
             'mesaj_id': b.mesaj_id,
-            'gonderen': b.mesaj.gonderen.ad_soyad,
+            'gonderen': b.mesaj.gonderen.full_name,
             'konu': b.mesaj.konu,
             'ozet': b.mesaj.ozet,
             'tarih': b.created_at.strftime('%d.%m.%Y %H:%M')

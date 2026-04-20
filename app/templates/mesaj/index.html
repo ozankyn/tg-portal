@@ -46,9 +46,9 @@
                         <div class="flex items-center justify-between mb-1">
                             <p class="font-medium text-gray-900 dark:text-white {% if not mesaj.okundu and aktif_sekme == 'gelen' %}font-bold{% endif %}">
                                 {% if aktif_sekme == 'gelen' %}
-                                {{ mesaj.gonderen.ad_soyad }}
+                                {{ mesaj.gonderen.full_name }}
                                 {% else %}
-                                Kime: {{ mesaj.alici.ad_soyad }}
+                                Kime: {{ mesaj.alici.full_name }}
                                 {% endif %}
                             </p>
                             <span class="text-xs text-gray-500">{{ mesaj.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
