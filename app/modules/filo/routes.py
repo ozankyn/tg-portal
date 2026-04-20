@@ -248,11 +248,11 @@ def yakit_ekle(id):
         kayit = YakitKayit(
             arac_id=id,
             tarih=datetime.strptime(request.form.get('tarih'), '%Y-%m-%dT%H:%M') if request.form.get('tarih') else datetime.now(),
-            km=request.form.get('km'),
+            km=request.form.get('km') or 0,
             yakit_tipi=arac.yakit_tipi,
-            litre=request.form.get('litre'),
-            birim_fiyat=request.form.get('birim_fiyat'),
-            tutar=request.form.get('tutar'),
+            litre=request.form.get('litre') or None,
+            birim_fiyat=request.form.get('birim_fiyat') or None,
+            tutar=request.form.get('tutar') or None,
             istasyon_adi=request.form.get('istasyon_adi'),
             full_depo=request.form.get('full_depo') == 'on'
         )
@@ -284,14 +284,14 @@ def islem_ekle(id):
             arac_id=id,
             islem_tipi=IslemTipi(request.form.get('islem_tipi')),
             tarih=datetime.strptime(request.form.get('tarih'), '%Y-%m-%d').date() if request.form.get('tarih') else date.today(),
-            km=request.form.get('km'),
-            tutar=request.form.get('tutar'),
-            kdv=request.form.get('kdv'),
-            toplam=request.form.get('toplam'),
+            km=request.form.get('km') or 0,
+            tutar=request.form.get('tutar') or None,
+            kdv=request.form.get('kdv') or None,
+            toplam=request.form.get('toplam') or None,
             aciklama=request.form.get('aciklama'),
-            fatura_no=request.form.get('fatura_no'),
+            fatura_no=request.form.get('fatura_no') or None,
             sonraki_tarih=datetime.strptime(request.form.get('sonraki_tarih'), '%Y-%m-%d').date() if request.form.get('sonraki_tarih') else None,
-            sonraki_km=request.form.get('sonraki_km')
+            sonraki_km=request.form.get('sonraki_km') or None
         )
         
         # Araç km güncelle
@@ -1027,7 +1027,7 @@ def ceza_ekle(id):
             ceza_tarihi=datetime.strptime(request.form['ceza_tarihi'], '%Y-%m-%dT%H:%M'),
             teblig_tarihi=datetime.strptime(request.form['teblig_tarihi'], '%Y-%m-%d').date() if request.form.get('teblig_tarihi') else None,
             son_odeme_tarihi=datetime.strptime(request.form['son_odeme_tarihi'], '%Y-%m-%d').date() if request.form.get('son_odeme_tarihi') else None,
-            ceza_tutari=request.form.get('ceza_tutari'),
+            ceza_tutari=request.form.get('ceza_tutari') or None,
             indirimli_tutar=request.form.get('indirimli_tutar') or None,
             ceza_turu=request.form.get('ceza_turu'),
             ceza_puani=request.form.get('ceza_puani') or 0,
