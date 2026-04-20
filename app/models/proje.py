@@ -60,6 +60,7 @@ class Musteri(db.Model, TimestampMixin, SoftDeleteMixin):
     id = db.Column(db.Integer, primary_key=True)
     ad = db.Column(db.String(200), nullable=False)
     kisa_ad = db.Column(db.String(50))  # Migros, Efes vb.
+    kariyer_gorunum_adi = db.Column(db.String(200))  # Kariyer sayfasında gösterilecek anonim ad
     vergi_no = db.Column(db.String(11))
     vergi_dairesi = db.Column(db.String(100))
     

@@ -46,7 +46,7 @@
                 {% if aday.kadro %}
                 <div class="bg-gray-50 rounded-lg p-4 mb-6">
                     <p class="text-sm text-gray-500 mb-1">Başvurduğunuz Pozisyon:</p>
-                    <p class="font-semibold text-gray-900">{{ aday.kadro.proje.musteri.display_name }} - {{ aday.kadro.pozisyon_adi }}</p>
+                    <p class="font-semibold text-gray-900">{% if aday.kadro.proje.musteri.kariyer_gorunum_adi %}{{ aday.kadro.proje.musteri.kariyer_gorunum_adi }} - {% endif %}{{ aday.kadro.pozisyon_adi }}</p>
                     {% if aday.kadro.il %}
                     <p class="text-sm text-gray-500 mt-1 flex items-center justify-center gap-1">
                         <span class="material-symbols-outlined text-sm">location_on</span>

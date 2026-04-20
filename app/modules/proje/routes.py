@@ -56,6 +56,7 @@ def musteri_ekle():
         musteri = Musteri(
             ad=request.form.get('ad'),
             kisa_ad=request.form.get('kisa_ad'),
+            kariyer_gorunum_adi=request.form.get('kariyer_gorunum_adi') or None,
             vergi_no=request.form.get('vergi_no'),
             vergi_dairesi=request.form.get('vergi_dairesi'),
             adres=request.form.get('adres'),
@@ -101,6 +102,7 @@ def musteri_duzenle(id):
     if request.method == 'POST':
         musteri.ad = request.form.get('ad')
         musteri.kisa_ad = request.form.get('kisa_ad')
+        musteri.kariyer_gorunum_adi = request.form.get('kariyer_gorunum_adi') or None
         musteri.vergi_no = request.form.get('vergi_no')
         musteri.vergi_dairesi = request.form.get('vergi_dairesi')
         musteri.adres = request.form.get('adres')

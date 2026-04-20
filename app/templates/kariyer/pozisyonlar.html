@@ -385,14 +385,12 @@
                     <span class="pos-count-badge">{{ kadro.eksik_sayi }} Kişi</span>
                 </div>
 
+                {% if kadro.proje.musteri.kariyer_gorunum_adi %}
                 <div class="pos-company">
                     <span class="material-symbols-outlined">apartment</span>
-                    <span>{{ kadro.proje.musteri.display_name }}</span>
-                    {% if kadro.proje.ad != kadro.proje.musteri.ad %}
-                    <span class="pos-company-sep">/</span>
-                    <span>{{ kadro.proje.ad }}</span>
-                    {% endif %}
+                    <span>{{ kadro.proje.musteri.kariyer_gorunum_adi }}</span>
                 </div>
+                {% endif %}
 
                 <div class="pos-tags">
                     {% if kadro.il %}

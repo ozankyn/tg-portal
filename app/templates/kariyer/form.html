@@ -41,7 +41,7 @@
                     <span class="material-symbols-outlined">badge</span>
                     İş Başvuru Formu
                 </h4>
-                <p class="text-sm text-slate-300 mt-1">{{ kadro.proje.musteri.display_name }} - {{ kadro.pozisyon_adi }}</p>
+                <p class="text-sm text-slate-300 mt-1">{% if kadro.proje.musteri.kariyer_gorunum_adi %}{{ kadro.proje.musteri.kariyer_gorunum_adi }} - {% endif %}{{ kadro.pozisyon_adi }}{% if kadro.il %} · {{ kadro.il }}{% endif %}</p>
             </div>
             <div class="p-6">
                 <form method="POST" enctype="multipart/form-data">

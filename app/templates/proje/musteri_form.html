@@ -34,10 +34,15 @@
                             <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Vergi Dairesi</label>
                             <input type="text" name="vergi_dairesi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ musteri.vergi_dairesi if musteri else '' }}">
                         </div>
+                        <div class="md:col-span-12">
+                            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Kariyer Sayfası Görünüm Adı</label>
+                            <input type="text" name="kariyer_gorunum_adi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ musteri.kariyer_gorunum_adi if musteri else '' }}" placeholder="Örn: Lider İçecek Firması">
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Kariyer sayfasında müşteri adı yerine bu görünür. Boş bırakılırsa müşteri adı kariyer sayfasında hiç gösterilmez.</p>
+                        </div>
                     </div>
                 </div>
             </div>
-            
+
             <!-- İletişim -->
             <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
                 <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">

@@ -36,7 +36,9 @@
                     <div class="flex items-start gap-2">
                         <span class="material-symbols-outlined text-blue-600 mt-0.5">work</span>
                         <div>
-                            <p class="font-semibold text-blue-900">{{ kadro.proje.musteri.display_name }}</p>
+                            {% if kadro.proje.musteri.kariyer_gorunum_adi %}
+                            <p class="font-semibold text-blue-900">{{ kadro.proje.musteri.kariyer_gorunum_adi }}</p>
+                            {% endif %}
                             <p class="text-blue-800">{{ kadro.pozisyon_adi }} pozisyonuna başvuruyorsunuz.</p>
                             {% if kadro.il %}
                             <p class="text-sm text-blue-700 mt-1 flex items-center gap-1">
