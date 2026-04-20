@@ -448,9 +448,13 @@
                 
                 <!-- Yönetim -->
                 <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Yönetim</p>
-                <a href="{{ url_for('ayarlar.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'ayarlar' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                <a href="{{ url_for('ayarlar.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.endpoint == 'ayarlar.dashboard' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
                     <span class="material-symbols-outlined">settings</span>
                     <span class="font-medium">Ayarlar</span>
+                </a>
+                <a href="{{ url_for('ayarlar.bildirim_sablon_liste') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.endpoint and request.endpoint.startswith('ayarlar.bildirim_sablon') %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">mail</span>
+                    <span class="font-medium">Bildirim Şablonları</span>
                 </a>
                 {% endif %}
                 
