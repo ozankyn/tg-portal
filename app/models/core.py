@@ -46,6 +46,7 @@ class User(db.Model, UserMixin, TimestampMixin, SoftDeleteMixin):
     # Durum
     is_active = db.Column(db.Boolean, default=True)
     is_admin = db.Column(db.Boolean, default=False)
+    sifre_degistirildi = db.Column(db.Boolean, default=False, nullable=False)
     last_login = db.Column(db.DateTime)
     
     # İlişkiler

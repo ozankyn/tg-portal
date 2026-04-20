@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html class="dark" lang="tr">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Şifre Değiştir - TG Portal</title>
+
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#137fec",
+                        "primary-dark": "#0f67be",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#101922",
+                    },
+                    fontFamily: { "display": ["Manrope", "sans-serif"] },
+                },
+            },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined { font-size: 20px; line-height: 1; }
+    </style>
+</head>
+<body class="font-display antialiased bg-background-light dark:bg-background-dark text-[#111418] dark:text-white min-h-screen flex flex-col justify-center items-center overflow-x-hidden">
+
+    <div class="fixed inset-0 z-0 opacity-10 dark:opacity-20 pointer-events-none" style="background-image: radial-gradient(circle at center, #137fec 0%, transparent 70%);"></div>
+
+    <div class="relative z-10 w-full max-w-[480px] p-4">
+        <div class="bg-white dark:bg-[#1c2127] rounded-xl shadow-xl overflow-hidden border border-[#e5e7eb] dark:border-[#3b4754]">
+
+            <div class="w-full h-28 bg-primary/10 flex items-center justify-center">
+                <span class="material-symbols-outlined text-primary" style="font-size: 56px;">lock_reset</span>
+            </div>
+
+            <div class="p-8">
+                <h1 class="text-2xl font-bold text-center mb-2">Şifrenizi Değiştirin</h1>
+                <p class="text-sm text-center text-[#6b7280] dark:text-[#9ca3af] mb-6">
+                    {% if not current_user.sifre_degistirildi %}
+                    Güvenliğiniz için ilk girişte şifrenizi değiştirmeniz gerekmektedir.
+                    {% else %}
+                    Mevcut şifrenizi doğrulayarak yeni bir şifre belirleyebilirsiniz.
+                    {% endif %}
+                </p>
+
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% for category, message in messages %}
+                    <div class="mb-4 px-4 py-3 rounded-lg text-sm
+                        {% if category == 'danger' %}bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300
+                        {% elif category == 'success' %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300
+                        {% else %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                {% endwith %}
+
+                <form method="POST" class="space-y-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div>
+                        <label for="mevcut_sifre" class="block text-sm font-medium mb-1">Mevcut Şifre</label>
+                        <input type="password" id="mevcut_sifre" name="mevcut_sifre" required autofocus
+                               class="w-full px-4 py-2.5 border border-[#e5e7eb] dark:border-[#3b4754] dark:bg-[#101922] rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+
+                    <div>
+                        <label for="yeni_sifre" class="block text-sm font-medium mb-1">Yeni Şifre</label>
+                        <input type="password" id="yeni_sifre" name="yeni_sifre" required minlength="8"
+                               class="w-full px-4 py-2.5 border border-[#e5e7eb] dark:border-[#3b4754] dark:bg-[#101922] rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                        <p class="text-xs text-[#6b7280] dark:text-[#9ca3af] mt-1">En az 8 karakter.</p>
+                    </div>
+
+                    <div>
+                        <label for="yeni_sifre_tekrar" class="block text-sm font-medium mb-1">Yeni Şifre (Tekrar)</label>
+                        <input type="password" id="yeni_sifre_tekrar" name="yeni_sifre_tekrar" required minlength="8"
+                               class="w-full px-4 py-2.5 border border-[#e5e7eb] dark:border-[#3b4754] dark:bg-[#101922] rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+
+                    <button type="submit"
+                            class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-2.5 rounded-lg transition-colors flex items-center justify-center gap-2 mt-6">
+                        <span class="material-symbols-outlined">check</span>
+                        Şifreyi Güncelle
+                    </button>
+                </form>
+
+                {% if current_user.sifre_degistirildi %}
+                <div class="mt-4 text-center">
+                    <a href="{{ url_for('core.dashboard') }}" class="text-sm text-[#6b7280] dark:text-[#9ca3af] hover:text-primary">← Dashboard'a dön</a>
+                </div>
+                {% else %}
+                <div class="mt-4 text-center">
+                    <a href="{{ url_for('core.logout') }}" class="text-sm text-[#6b7280] dark:text-[#9ca3af] hover:text-primary">Çıkış yap</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

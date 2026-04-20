@@ -223,6 +223,7 @@ def kullanici_duzenle(id):
         yeni_sifre = request.form.get('password', '').strip()
         if yeni_sifre:
             user.password_hash = generate_password_hash(yeni_sifre)
+            user.sifre_degistirildi = False
         
         # Rol güncelle
         user.roles.clear()

@@ -44,7 +44,7 @@ def login():
             login_user(user, remember=remember)
             user.last_login = datetime.utcnow()
             db.session.commit()
-            
+
             # Audit log
             log = AuditLog(
                 user_id=user.id,
@@ -54,7 +54,10 @@ def login():
             )
             db.session.add(log)
             db.session.commit()
-            
+
+            if not user.sifre_degistirildi:
+                return redirect(url_for('core.sifre_degistir'))
+
             next_page = request.args.get('next')
             if next_page:
                 return redirect(next_page)
@@ -63,6 +66,41 @@ def login():
         flash('Geçersiz email veya şifre.', 'danger')
     
     return render_template('core/login.html')
+
+
+@core_bp.route('/sifre-degistir', methods=['GET', 'POST'])
+@login_required
+def sifre_degistir():
+    """Zorunlu / isteğe bağlı şifre değiştirme"""
+    if request.method == 'POST':
+        mevcut = request.form.get('mevcut_sifre', '')
+        yeni = request.form.get('yeni_sifre', '')
+        tekrar = request.form.get('yeni_sifre_tekrar', '')
+
+        if not current_user.check_password(mevcut):
+            flash('Mevcut şifreniz hatalı.', 'danger')
+            return render_template('core/sifre_degistir.html')
+
+        if len(yeni) < 8:
+            flash('Yeni şifre en az 8 karakter olmalıdır.', 'danger')
+            return render_template('core/sifre_degistir.html')
+
+        if yeni != tekrar:
+            flash('Yeni şifre ile tekrarı eşleşmiyor.', 'danger')
+            return render_template('core/sifre_degistir.html')
+
+        if yeni == mevcut:
+            flash('Yeni şifre mevcut şifre ile aynı olamaz.', 'danger')
+            return render_template('core/sifre_degistir.html')
+
+        current_user.set_password(yeni)
+        current_user.sifre_degistirildi = True
+        db.session.commit()
+
+        flash('Şifreniz başarıyla güncellendi.', 'success')
+        return redirect(url_for('core.dashboard'))
+
+    return render_template('core/sifre_degistir.html')
 
 
 @core_bp.route('/logout')
@@ -261,7 +299,8 @@ def admin_kullanici_duzenle(id):
         new_password = request.form.get('password')
         if new_password:
             user.set_password(new_password)
-        
+            user.sifre_degistirildi = False
+
         # Roller güncelle
         user.roles = []
         role_ids = request.form.getlist('roles')

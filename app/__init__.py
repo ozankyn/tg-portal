@@ -142,6 +142,22 @@ def create_app(config_name=None):
         except Exception:
             db.session.rollback()
 
+    @app.before_request
+    def zorunlu_sifre_degistir():
+        from flask import request, redirect, url_for
+        from flask_login import current_user
+        if not current_user.is_authenticated or current_user.sifre_degistirildi:
+            return None
+        if request.endpoint in (
+            'core.sifre_degistir',
+            'core.logout',
+            'core.login',
+            'static',
+            'uploaded_file',
+        ):
+            return None
+        return redirect(url_for('core.sifre_degistir'))
+
     # Context processors
     @app.context_processor
     def inject_permissions():
