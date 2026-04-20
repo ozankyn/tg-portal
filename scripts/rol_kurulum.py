@@ -99,7 +99,7 @@ ROL_PERMISSION_MATRIX = {
         'aciklama': 'Proje yonetimi, calisan atama, kadro planlama - kendi ekibi scope',
         'permissions': {
             'calisan': ['view', 'create', 'edit'], 'egitim': ['view'], 'filo': ['view'],
-            'ik': ['view'],
+            'ik': ['view', 'edit'],
             'masraf': ['view', 'create'], 'onay': ['view'],
             'proje': ['view', 'create', 'edit', 'kadro'], 'rapor': ['view'],
             'satinalma': ['view', 'create'], 'talep': ['view', 'create'], 'tedarikci': ['view'],
@@ -109,7 +109,7 @@ ROL_PERMISSION_MATRIX = {
         'aciklama': 'Saha operasyonlari, kendi proje ekibi scope',
         'permissions': {
             'calisan': ['view', 'edit'], 'egitim': ['view', 'katilim'], 'filo': ['view'],
-            'ik': ['view'],
+            'ik': ['view', 'edit'],
             'masraf': ['view', 'create'], 'onay': ['view'], 'proje': ['view'],
             'talep': ['view', 'create'],
         },
