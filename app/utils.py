@@ -139,6 +139,11 @@ def apply_calisan_scope(query, user=None):
         return query
 
     calisan_id = user.calisan_id
+    # Fallback: calisan_id bagli degilse user.email ile Calisan'i bul
+    if not calisan_id and user.email:
+        c = Calisan.query.filter_by(email=user.email, is_deleted=False).first()
+        if c:
+            calisan_id = c.id
     if not calisan_id:
         return query.filter(Calisan.id == -1)
 
@@ -151,9 +156,10 @@ def apply_calisan_scope(query, user=None):
         )
 
     if roles & _TEAM_LEAD_ROLES:
-        if not user.calisan or not user.calisan.departman_id:
+        me = Calisan.query.get(calisan_id)
+        if not me or not me.departman_id:
             return query.filter(Calisan.id == calisan_id)
-        return query.filter(Calisan.departman_id == user.calisan.departman_id)
+        return query.filter(Calisan.departman_id == me.departman_id)
 
     # Diger roller: sadece kendisi
     return query.filter(Calisan.id == calisan_id)
