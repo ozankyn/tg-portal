@@ -158,6 +158,15 @@ def create_app(config_name=None):
             return None
         return redirect(url_for('core.sifre_degistir'))
 
+    # Jinja filters
+    from markupsafe import Markup, escape
+
+    @app.template_filter('nl2br')
+    def nl2br_filter(s):
+        if not s:
+            return ''
+        return Markup('<br>'.join(escape(s).split('\n')))
+
     # Context processors
     @app.context_processor
     def inject_permissions():
