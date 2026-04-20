@@ -152,3 +152,4 @@ __all__ = [
 ]
 
 from app.models.depo import Depo, UrunKategori, Urun, StokKarti, StokHareketi, StokHareketiKalem
+from app.models.bildirim import BildirimSablonu

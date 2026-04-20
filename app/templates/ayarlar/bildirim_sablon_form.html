@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ sablon.ad }} - Bildirim Şablonu{% endblock %}
+{% block page_title %}Bildirim Şablonu Düzenle{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('ayarlar.bildirim_sablon_liste') }}" class="text-primary hover:underline text-sm inline-flex items-center gap-1">
+        <span class="material-symbols-outlined text-sm">arrow_back</span>
+        Listeye dön
+    </a>
+</div>
+
+<form method="POST" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="lg:col-span-2 space-y-4">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex items-center gap-3">
+                <span class="material-symbols-outlined text-primary">mail</span>
+                <div>
+                    <h6 class="font-medium text-[#111418] dark:text-white">{{ sablon.ad }}</h6>
+                    <code class="text-xs text-text-muted dark:text-text-muted-dark">{{ sablon.kod }}</code>
+                </div>
+            </div>
+            <div class="p-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Ad</label>
+                    <input type="text" name="ad" value="{{ sablon.ad }}" required
+                           class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-primary">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Açıklama</label>
+                    <textarea name="aciklama" rows="2"
+                              class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-primary">{{ sablon.aciklama or '' }}</textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Konu Şablonu</label>
+                    <input type="text" name="konu_sablonu" value="{{ sablon.konu_sablonu }}" required
+                           class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-primary font-mono text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">HTML İçerik</label>
+                    <textarea name="icerik_sablonu" rows="20" required
+                              class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-primary font-mono text-xs">{{ sablon.icerik_sablonu }}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="space-y-4">
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">group</span>Alıcılar
+                </h6>
+            </div>
+            <div class="p-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Sabit alıcılar</label>
+                    <textarea name="alicilar" rows="5" placeholder="her satıra bir e-posta"
+                              class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-primary text-sm">{{ (sablon.alicilar or [])|join('\n') }}</textarea>
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Her satıra bir e-posta, veya virgülle ayırın.</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Dinamik rol (opsiyonel)</label>
+                    <input type="text" name="dinamik_alici_rolu" value="{{ sablon.dinamik_alici_rolu or '' }}"
+                           placeholder="ör. ik.view"
+                           class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-primary text-sm">
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Bu yetkiye sahip tüm aktif kullanıcılara da gönderilir.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="proje_yoneticisine_gonder" name="proje_yoneticisine_gonder"
+                           {% if sablon.proje_yoneticisine_gonder %}checked{% endif %}
+                           class="w-4 h-4 text-primary rounded">
+                    <label for="proje_yoneticisine_gonder" class="text-sm">Proje koordinatörüne de gönder</label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" id="aktif" name="aktif"
+                           {% if sablon.aktif %}checked{% endif %}
+                           class="w-4 h-4 text-primary rounded">
+                    <label for="aktif" class="text-sm">Aktif (kapatınca bu bildirim gönderilmez)</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">code</span>Kullanılabilir değişkenler
+                </h6>
+            </div>
+            <div class="p-4">
+                {% if sablon.degiskenler %}
+                <p class="text-xs text-text-muted dark:text-text-muted-dark mb-2">Konu veya içerikte <code class="bg-gray-100 dark:bg-[#111418] px-1 rounded">{anahtar}</code> olarak kullan:</p>
+                <div class="flex flex-wrap gap-1.5">
+                    {% for v in sablon.degiskenler %}
+                    <code class="px-2 py-1 bg-gray-100 dark:bg-[#111418] text-primary text-xs rounded">{ {{- v -}} }</code>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-xs text-text-muted dark:text-text-muted-dark">Bu kod için değişken tanımı yok.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex gap-2">
+            <button type="submit" class="flex-1 px-4 py-2 bg-primary text-white font-medium rounded-lg hover:bg-primary-dark">Kaydet</button>
+            <a href="{{ url_for('ayarlar.bildirim_sablon_liste') }}" class="px-4 py-2 border border-border-light dark:border-border-dark rounded-lg text-text-muted dark:text-text-muted-dark hover:bg-gray-50 dark:hover:bg-[#252b36]">İptal</a>
+        </div>
+    </div>
+</form>
+{% endblock %}

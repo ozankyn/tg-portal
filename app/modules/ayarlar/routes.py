@@ -838,10 +838,105 @@ def pozisyon_duzenle(id):
         
         flash('Pozisyon güncellendi.', 'success')
         return redirect(url_for('ayarlar.pozisyon_liste'))
-    
+
     departmanlar = Departman.query.filter_by(is_deleted=False, aktif=True).order_by(Departman.ad).all()
-    
+
     return render_template('ayarlar/pozisyon_form.html',
                           pozisyon=pozisyon,
                           departmanlar=departmanlar)
+
+
+# ============================================================
+# BILDIRIM SABLONLARI
+# ============================================================
+
+@ayarlar_bp.route('/bildirim-sablonlari')
+@login_required
+def bildirim_sablon_liste():
+    """Bildirim sablonlari - liste"""
+    if not current_user.is_admin:
+        flash('Bu sayfaya erisim yetkiniz yok.', 'danger')
+        return redirect(url_for('core.dashboard'))
+
+    from app.models.bildirim import BildirimSablonu
+    sablonlar = BildirimSablonu.query.order_by(BildirimSablonu.kod).all()
+    return render_template('ayarlar/bildirim_sablon_liste.html', sablonlar=sablonlar)
+
+
+@ayarlar_bp.route('/bildirim-sablonlari/<int:id>', methods=['GET', 'POST'])
+@login_required
+def bildirim_sablon_duzenle(id):
+    """Bildirim sablonu duzenle"""
+    if not current_user.is_admin:
+        flash('Bu sayfaya erisim yetkiniz yok.', 'danger')
+        return redirect(url_for('core.dashboard'))
+
+    from app.models.bildirim import BildirimSablonu
+    sablon = BildirimSablonu.query.get_or_404(id)
+
+    if request.method == 'POST':
+        sablon.ad = request.form.get('ad', '').strip()
+        sablon.aciklama = request.form.get('aciklama', '').strip() or None
+        sablon.konu_sablonu = request.form.get('konu_sablonu', '').strip()
+        sablon.icerik_sablonu = request.form.get('icerik_sablonu', '').strip()
+
+        alicilar_raw = request.form.get('alicilar', '').strip()
+        alicilar = [e.strip() for e in alicilar_raw.replace('\n', ',').split(',') if e.strip()]
+        sablon.alicilar = alicilar
+
+        sablon.dinamik_alici_rolu = request.form.get('dinamik_alici_rolu', '').strip() or None
+        sablon.proje_yoneticisine_gonder = request.form.get('proje_yoneticisine_gonder') == 'on'
+        sablon.aktif = request.form.get('aktif') == 'on'
+
+        db.session.commit()
+        flash('Sablon guncellendi.', 'success')
+        return redirect(url_for('ayarlar.bildirim_sablon_liste'))
+
+    return render_template('ayarlar/bildirim_sablon_form.html', sablon=sablon)
+
+
+@ayarlar_bp.route('/bildirim-sablonlari/<int:id>/test', methods=['POST'])
+@login_required
+def bildirim_sablon_test(id):
+    """Giris yapmis admin'e ornek degiskenlerle test maili gonder"""
+    if not current_user.is_admin:
+        flash('Bu sayfaya erisim yetkiniz yok.', 'danger')
+        return redirect(url_for('core.dashboard'))
+
+    from app.models.bildirim import BildirimSablonu
+    from app.services.notification import render_sablon, send_notification
+
+    sablon = BildirimSablonu.query.get_or_404(id)
+
+    if not current_user.email:
+        flash('Test maili icin hesabinizda email tanimli olmali.', 'warning')
+        return redirect(url_for('ayarlar.bildirim_sablon_liste'))
+
+    # Ornek degiskenler
+    ornek = {k: f'[{k}]' for k in sablon.degiskenler}
+    konu = f"[TEST] " + render_sablon(sablon.konu_sablonu, ornek)
+    icerik = render_sablon(sablon.icerik_sablonu, ornek)
+
+    ok = send_notification(current_user.email, konu, icerik)
+    if ok:
+        flash(f'Test maili gonderildi: {current_user.email}', 'success')
+    else:
+        flash('Test maili gonderilemedi. MAIL_SERVER ayarini kontrol edin.', 'danger')
+    return redirect(url_for('ayarlar.bildirim_sablon_liste'))
+
+
+@ayarlar_bp.route('/bildirim-sablonlari/<int:id>/toggle', methods=['POST'])
+@login_required
+def bildirim_sablon_toggle(id):
+    """Sablon aktif/pasif"""
+    if not current_user.is_admin:
+        flash('Bu sayfaya erisim yetkiniz yok.', 'danger')
+        return redirect(url_for('core.dashboard'))
+
+    from app.models.bildirim import BildirimSablonu
+    sablon = BildirimSablonu.query.get_or_404(id)
+    sablon.aktif = not sablon.aktif
+    db.session.commit()
+    flash(f"Sablon {'aktiflestirildi' if sablon.aktif else 'pasiflestirildi'}.", 'success')
+    return redirect(url_for('ayarlar.bildirim_sablon_liste'))
 

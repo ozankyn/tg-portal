@@ -3,9 +3,79 @@
 Bildirim Servisi - Email bildirimleri
 """
 
+import re
+from collections import defaultdict
 from flask import current_app, url_for
 from flask_mail import Message
 from app import mail, db
+
+
+# -------------------------------------------------------------------
+# Sablon render + sablon bazli bildirim gonderimi
+# -------------------------------------------------------------------
+
+_VAR_RE = re.compile(r'\{(\w+)\}')
+
+
+class _DefaultDict(dict):
+    """Eksik anahtarlari '-' olarak dondurur"""
+    def __missing__(self, key):
+        return '-'
+
+
+def render_sablon(tpl, degiskenler):
+    """Sablondaki {anahtar} placeholder'larini doldurur.
+    CSS/HTML'deki { } karakterlerine dokunmaz - sadece {kelime} pattern'ini yakalar.
+    Bilinmeyen anahtarlar '-' olur.
+    """
+    if not tpl:
+        return ''
+    vars_dict = _DefaultDict(degiskenler or {})
+    return _VAR_RE.sub(lambda m: str(vars_dict[m.group(1)]), tpl)
+
+
+def send_bildirim(kod, degiskenler=None, proje_id=None):
+    """DB'deki bildirim sablonunu render edip mail gonderir.
+
+    kod: BildirimSablonu.kod (ISE_GIRIS, ISTEN_CIKIS, YENI_BASVURU, SOZLESME_UYARI)
+    degiskenler: dict - sablondaki {anahtar}'lari doldurmak icin
+    proje_id: opsiyonel - proje_yoneticisine_gonder=True ise ilgili koordinatore de gonderir
+    """
+    from app.models.bildirim import BildirimSablonu
+    from app.models.core import User
+
+    degiskenler = degiskenler or {}
+    sablon = BildirimSablonu.query.filter_by(kod=kod, aktif=True).first()
+    if not sablon:
+        print(f">>> BILDIRIM: sablon bulunamadi veya pasif: {kod}", flush=True)
+        return False
+
+    konu = render_sablon(sablon.konu_sablonu, degiskenler)
+    icerik = render_sablon(sablon.icerik_sablonu, degiskenler)
+
+    alicilar = set(sablon.alicilar or [])
+
+    if sablon.dinamik_alici_rolu:
+        rol = sablon.dinamik_alici_rolu
+        users = User.query.filter(User.is_active == True, User.email.isnot(None)).all()
+        for u in users:
+            if u.has_permission(rol):
+                alicilar.add(u.email)
+
+    if sablon.proje_yoneticisine_gonder and proje_id:
+        # Proje'de koordinator_id alani yok - ileride eklenince aktif olur
+        from app.models.proje import Proje
+        proje = Proje.query.get(proje_id)
+        if proje and hasattr(proje, 'koordinator') and proje.koordinator and proje.koordinator.email:
+            alicilar.add(proje.koordinator.email)
+        elif proje:
+            current_app.logger.info(f"[{kod}] proje_yoneticisine_gonder=True ama Proje.koordinator yok (proje_id={proje_id})")
+
+    if not alicilar:
+        print(f">>> BILDIRIM: alici bulunamadi: {kod}", flush=True)
+        return False
+
+    return send_notification(sorted(alicilar), konu, icerik)
 
 
 def send_notification(to, subject, html_body, text_body=None):
@@ -38,72 +108,38 @@ def send_notification(to, subject, html_body, text_body=None):
 
 
 def notify_yeni_basvuru(aday):
-    """Yeni aday başvurusu - İK'ya bildirim"""
-    from app.models.core import User
-    
-    # İK yetkisi olan kullanıcıları bul
-    ik_users = User.query.filter(
-        User.is_active == True,
-        User.email.isnot(None)
-    ).all()
-    
-    ik_emails = [u.email for u in ik_users if u.has_permission('ik.view')]
-    
-    if not ik_emails:
-        current_app.logger.warning("İK yetkili kullanıcı bulunamadı")
-        return False
-    
-    kadro_bilgi = ""
+    """Yeni aday basvurusu - sablonu YENI_BASVURU"""
+    proje_adi = '-'
+    pozisyon_adi = '-'
+    lokasyon = '-'
+    proje_id = None
     if aday.kadro:
-        musteri = aday.kadro.proje.musteri.kisa_ad or aday.kadro.proje.musteri.ad
-        kadro_bilgi = f"{musteri} - {aday.kadro.pozisyon_adi}"
-    
-    subject = f"Yeni Başvuru: {aday.full_name}"
-    if kadro_bilgi:
-        subject += f" ({kadro_bilgi})"
-    
-    html_body = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #059669, #10b981); padding: 20px; text-align: center;">
-            <h2 style="color: white; margin: 0;">Yeni Aday Başvurusu</h2>
-        </div>
-        <div style="padding: 25px; background: #f9fafb;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                    <td style="padding: 8px 0; color: #6b7280;">Ad Soyad:</td>
-                    <td style="padding: 8px 0;"><strong>{aday.full_name}</strong></td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #6b7280;">Telefon:</td>
-                    <td style="padding: 8px 0;">{aday.telefon or '-'}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #6b7280;">E-posta:</td>
-                    <td style="padding: 8px 0;">{aday.email or '-'}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #6b7280;">Pozisyon:</td>
-                    <td style="padding: 8px 0;">{kadro_bilgi or '-'}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; color: #6b7280;">Kaynak:</td>
-                    <td style="padding: 8px 0;">{aday.kaynak or 'Belirtilmemiş'}</td>
-                </tr>
-            </table>
-            <div style="text-align: center; margin-top: 25px;">
-                <a href="{url_for('proje.kadro_detay', id=aday.kadro_id, _external=True) if aday.kadro_id else '#'}" 
-                   style="background: #2563eb; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                    Başvuruyu İncele
-                </a>
-            </div>
-        </div>
-        <div style="padding: 15px; background: #e5e7eb; text-align: center;">
-            <p style="margin: 0; color: #6b7280; font-size: 12px;">TG Portal - Team Guerilla ERP Sistemi</p>
-        </div>
-    </div>
-    """
-    
-    return send_notification(ik_emails, subject, html_body)
+        pozisyon_adi = aday.kadro.pozisyon_adi or '-'
+        if aday.kadro.proje:
+            proje_adi = aday.kadro.proje.ad
+            proje_id = aday.kadro.proje.id
+        if aday.kadro.il:
+            lokasyon = aday.kadro.il
+
+    try:
+        basvuru_url = url_for('proje.kadro_detay', id=aday.kadro_id, _external=True) if aday.kadro_id else '#'
+    except Exception:
+        basvuru_url = '#'
+
+    degiskenler = {
+        'ad_soyad': aday.full_name,
+        'telefon': aday.telefon or '-',
+        'email': aday.email or '-',
+        'pozisyon': pozisyon_adi,
+        'proje': proje_adi,
+        'lokasyon': lokasyon,
+        'kaynak': aday.kaynak or 'Belirtilmemiş',
+        'tecrube_yil': getattr(aday, 'toplam_tecrube_yil', 0) or 0,
+        'son_is_yeri': getattr(aday, 'son_is_yeri', None) or '-',
+        'son_pozisyon': getattr(aday, 'son_pozisyon', None) or '-',
+        'basvuru_url': basvuru_url,
+    }
+    return send_bildirim('YENI_BASVURU', degiskenler, proje_id=proje_id)
 
 
 def notify_onay_bekliyor(talep, onaylayan):
@@ -327,28 +363,20 @@ def notify_masraf_raporu_sonuc(rapor, onaylandi=True, aciklama=None):
 
 
 # ============================================================
-# İŞE GİRİŞ / ÇIKIŞ BİLDİRİMLERİ
+# İŞE GİRİŞ / ÇIKIŞ / BAŞVURU / SÖZLEŞME - BildirimSablonu tabanli
+# Alici listeleri ve icerikler artik DB'de (bildirim_sablonlari) tutulur.
+# Yonetim: /ayarlar/bildirim-sablonlari
 # ============================================================
-
-# Departman bildirim adresleri
-BILDIRIM_ALICILARI = [
-    'muhasebe@teamguerilla.com',
-    'filo@teamguerilla.com',
-    'egitim@teamguerilla.com',
-    'ik@teamguerilla.com',
-    'ozankayan@teamguerilla.com',
-    'ozanerenkayan@gmail.com',
-]
 
 
 def notify_ise_giris(calisan):
-    """İşe giriş bildirimi — Muhasebe, Filo, Eğitim, İK departmanlarına"""
+    """Ise giris bildirimi - sablonu ISE_GIRIS"""
     print(f">>> NOTIFY_ISE_GIRIS TETIKLENDI: {calisan.ad} {calisan.soyad} (id={calisan.id})", flush=True)
 
-    # Proje bilgisi (kadro üzerinden)
     proje_adi = '-'
     pozisyon_adi = '-'
     lokasyon = '-'
+    proje_id = None
     if calisan.kadro_id:
         from app.models.proje import HedefKadro
         kadro = HedefKadro.query.get(calisan.kadro_id)
@@ -356,6 +384,7 @@ def notify_ise_giris(calisan):
             pozisyon_adi = kadro.pozisyon_adi or '-'
             if kadro.proje:
                 proje_adi = kadro.proje.ad
+                proje_id = kadro.proje.id
             if kadro.il:
                 lokasyon = kadro.il
             elif hasattr(kadro, 'il_obj') and kadro.il_obj:
@@ -363,11 +392,9 @@ def notify_ise_giris(calisan):
 
     if calisan.pozisyon and pozisyon_adi == '-':
         pozisyon_adi = calisan.pozisyon.ad
-
     if calisan.il and lokasyon == '-':
         lokasyon = calisan.il
 
-    # SGK bilgisi
     sgk_sube = '-'
     sgk_no = '-'
     if calisan.sgk_dosya_id:
@@ -377,7 +404,6 @@ def notify_ise_giris(calisan):
             sgk_sube = sgk.ad or sgk.dosya_no
             sgk_no = sgk.dosya_no
 
-    # Yönetici
     yonetici_adi = '-'
     if calisan.yonetici_id:
         from app.models.ik import Calisan as CalisanModel
@@ -385,79 +411,27 @@ def notify_ise_giris(calisan):
         if yon:
             yonetici_adi = f"{yon.ad} {yon.soyad}"
 
-    ise_baslama = calisan.ise_baslama.strftime('%d.%m.%Y') if calisan.ise_baslama else '-'
-
-    subject = f"İşe Giriş Bildirimi - {calisan.ad} {calisan.soyad} - {ise_baslama}"
-
-    html_body = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #059669, #10b981); padding: 20px; text-align: center;">
-            <h2 style="color: white; margin: 0;">İşe Giriş Bildirimi</h2>
-        </div>
-        <div style="padding: 25px; background: #f9fafb;">
-            <p style="margin: 0 0 15px 0; color: #374151;">Aşağıdaki personelin işe giriş kaydı oluşturulmuştur:</p>
-            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 10px 15px; color: #6b7280; width: 200px;">Ad Soyad</td>
-                    <td style="padding: 10px 15px;"><strong>{calisan.ad} {calisan.soyad}</strong></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">TC Kimlik No</td>
-                    <td style="padding: 10px 15px;"><strong>{calisan.tc_kimlik or '-'}</strong></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">İş Başı Tarihi</td>
-                    <td style="padding: 10px 15px;"><strong style="color: #059669;">{ise_baslama}</strong></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">Proje</td>
-                    <td style="padding: 10px 15px;">{proje_adi}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">Pozisyon</td>
-                    <td style="padding: 10px 15px;">{pozisyon_adi}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">Lokasyon</td>
-                    <td style="padding: 10px 15px;">{lokasyon}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">SGK İşyeri Şubesi</td>
-                    <td style="padding: 10px 15px;">{sgk_sube}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">SGK No</td>
-                    <td style="padding: 10px 15px;">{sgk_no}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">Yönetici</td>
-                    <td style="padding: 10px 15px;">{yonetici_adi}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">Telefon</td>
-                    <td style="padding: 10px 15px;">{calisan.telefon or '-'}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 10px 15px; color: #6b7280;">E-posta</td>
-                    <td style="padding: 10px 15px;">{calisan.email or '-'}</td>
-                </tr>
-            </table>
-        </div>
-        <div style="padding: 15px; background: #e5e7eb; text-align: center;">
-            <p style="margin: 0; color: #6b7280; font-size: 12px;">TG Portal - Team Guerilla ERP Sistemi (Otomatik bildirim)</p>
-        </div>
-    </div>
-    """
-
-    return send_notification(BILDIRIM_ALICILARI, subject, html_body)
+    degiskenler = {
+        'ad_soyad': f"{calisan.ad} {calisan.soyad}",
+        'tc_kimlik': calisan.tc_kimlik or '-',
+        'ise_baslama': calisan.ise_baslama.strftime('%d.%m.%Y') if calisan.ise_baslama else '-',
+        'proje': proje_adi,
+        'pozisyon': pozisyon_adi,
+        'lokasyon': lokasyon,
+        'sgk_sube': sgk_sube,
+        'sgk_no': sgk_no,
+        'yonetici': yonetici_adi,
+        'telefon': calisan.telefon or '-',
+        'email': calisan.email or '-',
+    }
+    return send_bildirim('ISE_GIRIS', degiskenler, proje_id=proje_id)
 
 
 def notify_isten_cikis(calisan, cikis_tarihi, cikis_nedeni, zimmet_teslim=None):
-    """İşten çıkış bildirimi — Muhasebe, Filo, Eğitim, İK departmanlarına"""
-
-    # Proje bilgisi
+    """Isten cikis bildirimi - sablonu ISTEN_CIKIS"""
     proje_adi = '-'
     pozisyon_adi = '-'
+    proje_id = None
     if calisan.kadro_id:
         from app.models.proje import HedefKadro
         kadro = HedefKadro.query.get(calisan.kadro_id)
@@ -465,68 +439,28 @@ def notify_isten_cikis(calisan, cikis_tarihi, cikis_nedeni, zimmet_teslim=None):
             pozisyon_adi = kadro.pozisyon_adi or '-'
             if kadro.proje:
                 proje_adi = kadro.proje.ad
+                proje_id = kadro.proje.id
 
     if calisan.pozisyon and pozisyon_adi == '-':
         pozisyon_adi = calisan.pozisyon.ad
 
-    cikis_str = cikis_tarihi.strftime('%d.%m.%Y') if cikis_tarihi else '-'
+    zimmet_durumu = '-'
+    if zimmet_teslim is True:
+        zimmet_durumu = 'Teslim edildi'
+    elif zimmet_teslim is False:
+        zimmet_durumu = 'Teslim edilmedi'
 
-    # Zimmet durumu
-    zimmet_html = '-'
-    if zimmet_teslim is not None:
-        zimmet_html = '<span style="color: #059669;">Teslim edildi</span>' if zimmet_teslim else '<span style="color: #dc2626;">Teslim edilmedi</span>'
-
-    subject = f"İşten Çıkış Bildirimi - {calisan.ad} {calisan.soyad} - {cikis_str}"
-
-    html_body = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #dc2626, #ef4444); padding: 20px; text-align: center;">
-            <h2 style="color: white; margin: 0;">İşten Çıkış Bildirimi</h2>
-        </div>
-        <div style="padding: 25px; background: #f9fafb;">
-            <p style="margin: 0 0 15px 0; color: #374151;">Aşağıdaki personelin işten çıkış kaydı tamamlanmıştır:</p>
-            <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden;">
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 10px 15px; color: #6b7280; width: 200px;">Ad Soyad</td>
-                    <td style="padding: 10px 15px;"><strong>{calisan.ad} {calisan.soyad}</strong></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">TC Kimlik No</td>
-                    <td style="padding: 10px 15px;"><strong>{calisan.tc_kimlik or '-'}</strong></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">Çıkış Tarihi</td>
-                    <td style="padding: 10px 15px;"><strong style="color: #dc2626;">{cikis_str}</strong></td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">Çıkış Nedeni</td>
-                    <td style="padding: 10px 15px;">{cikis_nedeni or '-'}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">Proje</td>
-                    <td style="padding: 10px 15px;">{proje_adi}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb; background: #f9fafb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">Pozisyon</td>
-                    <td style="padding: 10px 15px;">{pozisyon_adi}</td>
-                </tr>
-                <tr style="border-bottom: 1px solid #e5e7eb;">
-                    <td style="padding: 10px 15px; color: #6b7280;">Telefon</td>
-                    <td style="padding: 10px 15px;">{calisan.telefon or '-'}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 10px 15px; color: #6b7280;">Zimmet Durumu</td>
-                    <td style="padding: 10px 15px;">{zimmet_html}</td>
-                </tr>
-            </table>
-        </div>
-        <div style="padding: 15px; background: #e5e7eb; text-align: center;">
-            <p style="margin: 0; color: #6b7280; font-size: 12px;">TG Portal - Team Guerilla ERP Sistemi (Otomatik bildirim)</p>
-        </div>
-    </div>
-    """
-
-    return send_notification(BILDIRIM_ALICILARI, subject, html_body)
+    degiskenler = {
+        'ad_soyad': f"{calisan.ad} {calisan.soyad}",
+        'tc_kimlik': calisan.tc_kimlik or '-',
+        'cikis_tarihi': cikis_tarihi.strftime('%d.%m.%Y') if cikis_tarihi else '-',
+        'cikis_nedeni': cikis_nedeni or '-',
+        'proje': proje_adi,
+        'pozisyon': pozisyon_adi,
+        'telefon': calisan.telefon or '-',
+        'zimmet_durumu': zimmet_durumu,
+    }
+    return send_bildirim('ISTEN_CIKIS', degiskenler, proje_id=proje_id)
 
 
 # ============================================================
@@ -534,7 +468,7 @@ def notify_isten_cikis(calisan, cikis_tarihi, cikis_nedeni, zimmet_teslim=None):
 # ============================================================
 
 def notify_sozlesme_dolacak():
-    """30 gün içinde sözleşmesi dolacak personeli İK'ya bildir"""
+    """30 gun icinde sozlesmesi dolacak personeli IK'ya bildir - sablonu SOZLESME_UYARI"""
     from app.models.ik import Calisan
     from app.models.base import CalisanDurumu
     from datetime import date, timedelta
@@ -553,54 +487,25 @@ def notify_sozlesme_dolacak():
     if not dolacaklar:
         return 0
 
-    from app.models.core import User
-    ik_users = User.query.filter(User.is_active == True, User.email.isnot(None)).all()
-    ik_emails = [u.email for u in ik_users if u.has_permission('ik.view')]
-    alicilar = list(set(ik_emails + BILDIRIM_ALICILARI))
-    if not alicilar:
-        return 0
-
-    rows = ''
+    rows = []
     for c in dolacaklar:
         kalan = (c.sozlesme_bitis - bugun).days
         renk = '#dc2626' if kalan <= 7 else '#d97706' if kalan <= 15 else '#2563eb'
         sablon_adi = c.sozlesme_sablon.ad if c.sozlesme_sablon else '-'
         tip = c.sozlesme_sablon.tip_text if c.sozlesme_sablon else '-'
-        rows += f"""
-        <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{c.full_name}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{sablon_adi}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{tip}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{c.sozlesme_bitis.strftime('%d.%m.%Y')}</td>
-            <td style="padding: 10px; border-bottom: 1px solid #e5e7eb; color: {renk}; font-weight: bold;">{kalan} gün</td>
-        </tr>"""
+        rows.append(
+            f'<tr>'
+            f'<td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{c.full_name}</td>'
+            f'<td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{sablon_adi}</td>'
+            f'<td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{tip}</td>'
+            f'<td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">{c.sozlesme_bitis.strftime("%d.%m.%Y")}</td>'
+            f'<td style="padding: 10px; border-bottom: 1px solid #e5e7eb; color: {renk}; font-weight: bold;">{kalan} gün</td>'
+            f'</tr>'
+        )
 
-    subject = f'[TG Portal] {len(dolacaklar)} Personelin Sözleşmesi Dolmak Üzere'
-    html_body = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
-        <div style="background: #d97706; color: white; padding: 20px; text-align: center;">
-            <h2 style="margin: 0;">Sözleşme Bitiş Uyarısı</h2>
-            <p style="margin: 5px 0 0 0; opacity: 0.9;">30 gün içinde sözleşmesi dolacak personel</p>
-        </div>
-        <div style="padding: 20px; background: white;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-                <thead>
-                    <tr style="background: #f3f4f6;">
-                        <th style="padding: 10px; text-align: left;">Ad Soyad</th>
-                        <th style="padding: 10px; text-align: left;">Şablon</th>
-                        <th style="padding: 10px; text-align: left;">Tip</th>
-                        <th style="padding: 10px; text-align: left;">Bitiş Tarihi</th>
-                        <th style="padding: 10px; text-align: left;">Kalan</th>
-                    </tr>
-                </thead>
-                <tbody>{rows}</tbody>
-            </table>
-        </div>
-        <div style="padding: 15px; background: #e5e7eb; text-align: center;">
-            <p style="margin: 0; color: #6b7280; font-size: 12px;">TG Portal - Team Guerilla ERP Sistemi</p>
-        </div>
-    </div>
-    """
-
-    send_notification(alicilar, subject, html_body)
+    degiskenler = {
+        'toplam_sayi': len(dolacaklar),
+        'liste_html': ''.join(rows),
+    }
+    send_bildirim('SOZLESME_UYARI', degiskenler)
     return len(dolacaklar)

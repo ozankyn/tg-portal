@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Bildirim Şablonları - TG Portal{% endblock %}
+{% block page_title %}Bildirim Şablonları{% endblock %}
+
+{% block content %}
+<div class="flex items-end justify-between mb-6">
+    <div>
+        <h1 class="text-2xl md:text-3xl font-black tracking-tight text-[#111418] dark:text-white">Bildirim Şablonları</h1>
+        <p class="text-text-muted dark:text-text-muted-dark text-sm mt-1">
+            Otomatik gönderilen maillerin konu, içerik ve alıcılarını yönetin.
+        </p>
+    </div>
+</div>
+
+<div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left">
+            <thead class="bg-gray-50 dark:bg-[#111418] text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">
+                <tr>
+                    <th class="px-6 py-4">Kod</th>
+                    <th class="px-6 py-4">Ad</th>
+                    <th class="px-6 py-4 hidden md:table-cell">Alıcılar</th>
+                    <th class="px-6 py-4">Durum</th>
+                    <th class="px-6 py-4 text-right">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for s in sablonlar %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                    <td class="px-6 py-4 font-mono text-sm text-[#111418] dark:text-white">{{ s.kod }}</td>
+                    <td class="px-6 py-4">
+                        <p class="font-semibold text-[#111418] dark:text-white">{{ s.ad }}</p>
+                        {% if s.aciklama %}
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">{{ s.aciklama }}</p>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 hidden md:table-cell text-sm text-text-muted dark:text-text-muted-dark">
+                        {% set sabit_sayi = (s.alicilar or [])|length %}
+                        {{ sabit_sayi }} sabit
+                        {% if s.dinamik_alici_rolu %} + <span class="text-primary">rol: {{ s.dinamik_alici_rolu }}</span>{% endif %}
+                        {% if s.proje_yoneticisine_gonder %} + koordinatör{% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if s.aktif %}
+                        <span class="px-2 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs font-bold rounded">Aktif</span>
+                        {% else %}
+                        <span class="px-2 py-1 bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 text-xs font-bold rounded">Pasif</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex justify-end gap-2">
+                            <a href="{{ url_for('ayarlar.bildirim_sablon_duzenle', id=s.id) }}"
+                               class="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg hover:bg-primary-dark">
+                                <span class="material-symbols-outlined text-base">edit</span>Düzenle
+                            </a>
+                            <form method="POST" action="{{ url_for('ayarlar.bildirim_sablon_test', id=s.id) }}" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1 px-3 py-1.5 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark text-xs font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                                    <span class="material-symbols-outlined text-base">mail</span>Test
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('ayarlar.bildirim_sablon_toggle', id=s.id) }}" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit"
+                                        class="inline-flex items-center gap-1 px-3 py-1.5 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark text-xs font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                                    {% if s.aktif %}Pasif yap{% else %}Aktif yap{% endif %}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-text-muted dark:text-text-muted-dark">
+                        Henüz şablon yok.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
