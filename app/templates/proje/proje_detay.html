@@ -280,10 +280,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', function() {
         document.querySelectorAll('.tab-btn').forEach(b => {
             b.classList.remove('active', 'border-blue-600', 'text-blue-600');
-            b.classList.add('border-transparent', 'text-text-muted dark:text-text-muted-dark');
+            b.classList.add('border-transparent', 'text-text-muted', 'dark:text-text-muted-dark');
         });
         this.classList.add('active', 'border-blue-600', 'text-blue-600');
-        this.classList.remove('border-transparent', 'text-text-muted dark:text-text-muted-dark');
+        this.classList.remove('border-transparent', 'text-text-muted', 'dark:text-text-muted-dark');
         
         document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
         document.getElementById(this.dataset.target).classList.remove('hidden');
