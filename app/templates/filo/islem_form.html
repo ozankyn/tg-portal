@@ -21,7 +21,9 @@
                         <select name="islem_tipi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
                             <option value="">Seçin...</option>
                             {% for tip in islem_tipleri %}
+                            {% if tip.name not in ['YAKIT', 'KAZA'] %}
                             <option value="{{ tip.value }}">{{ tip.value.replace('_', ' ').title() }}</option>
+                            {% endif %}
                             {% endfor %}
                         </select>
                     </div>
