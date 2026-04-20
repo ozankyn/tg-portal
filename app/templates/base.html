@@ -456,6 +456,10 @@
                     <span class="material-symbols-outlined">mail</span>
                     <span class="font-medium">Bildirim Şablonları</span>
                 </a>
+                <a href="{{ url_for('ayarlar.koordinator_proje_liste') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.endpoint and request.endpoint.startswith('ayarlar.koordinator_proje') %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">hub</span>
+                    <span class="font-medium">Koordinatör-Proje</span>
+                </a>
                 {% endif %}
                 
             </nav>

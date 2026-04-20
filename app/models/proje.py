@@ -53,6 +53,16 @@ class Mudurluk(db.Model, TimestampMixin, SoftDeleteMixin):
         return f'<Mudurluk {self.ad}>'
 
 
+# Many-to-Many: Koordinator (Calisan) <-> Proje
+# Bir koordinator birden fazla proje gorebilir - scope filtreleme icin
+koordinator_projeler = db.Table(
+    'koordinator_projeler',
+    db.Column('koordinator_calisan_id', db.Integer, db.ForeignKey('calisanlar.id'), primary_key=True),
+    db.Column('proje_id', db.Integer, db.ForeignKey('projeler.id'), primary_key=True),
+    db.Column('created_at', db.DateTime, default=datetime.utcnow),
+)
+
+
 class Musteri(db.Model, TimestampMixin, SoftDeleteMixin):
     """Müşteri - Şirketin hizmet verdiği firmalar"""
     __tablename__ = 'musteriler'
@@ -134,6 +144,10 @@ class Proje(db.Model, TimestampMixin, SoftDeleteMixin):
     musteri = db.relationship('Musteri', back_populates='projeler')
     kadrolar = db.relationship('HedefKadro', back_populates='proje', lazy='dynamic')
     araclar = db.relationship('Arac', backref='proje', lazy='dynamic')
+    koordinatorler = db.relationship(
+        'Calisan', secondary=koordinator_projeler,
+        backref=db.backref('koordinator_olarak_projeler', lazy='dynamic')
+    )
     
     @property
     def toplam_kadro(self):

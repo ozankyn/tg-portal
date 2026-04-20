@@ -148,10 +148,18 @@ def apply_calisan_scope(query, user=None):
         return query.filter(Calisan.id == -1)
 
     if roles & _COORDINATOR_ROLES:
+        from app.models.proje import HedefKadro, koordinator_projeler
+        atanan_proje_ids = db.session.query(koordinator_projeler.c.proje_id).filter(
+            koordinator_projeler.c.koordinator_calisan_id == calisan_id
+        )
+        atanan_kadro_ids = db.session.query(HedefKadro.id).filter(
+            HedefKadro.proje_id.in_(atanan_proje_ids)
+        )
         return query.filter(
             db.or_(
                 Calisan.yonetici_id == calisan_id,
                 Calisan.id == calisan_id,
+                Calisan.kadro_id.in_(atanan_kadro_ids),
             )
         )
 

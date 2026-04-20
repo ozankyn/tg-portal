@@ -925,6 +925,70 @@ def bildirim_sablon_test(id):
     return redirect(url_for('ayarlar.bildirim_sablon_liste'))
 
 
+# ============================================================
+# KOORDINATOR <-> PROJE ATAMASI
+# ============================================================
+
+@ayarlar_bp.route('/koordinator-projeler')
+@login_required
+def koordinator_proje_liste():
+    """Koordinator-Proje atamalari liste"""
+    if not current_user.is_admin:
+        flash('Bu sayfaya erisim yetkiniz yok.', 'danger')
+        return redirect(url_for('core.dashboard'))
+
+    from app.models.core import Role
+    from app.models.ik import Calisan
+
+    koordinator_roles = Role.query.filter(
+        Role.name.in_(['Proje Koordinatoru', 'Saha Koordinatoru'])
+    ).all()
+    user_ids = set()
+    for r in koordinator_roles:
+        for u in r.users:
+            user_ids.add(u.id)
+
+    koordinatorler = Calisan.query.join(
+        User, User.calisan_id == Calisan.id
+    ).filter(
+        User.id.in_(user_ids) if user_ids else User.id == -1,
+        Calisan.is_deleted == False,
+    ).order_by(Calisan.ad, Calisan.soyad).all()
+
+    return render_template('ayarlar/koordinator_proje_liste.html',
+                          koordinatorler=koordinatorler)
+
+
+@ayarlar_bp.route('/koordinator-projeler/<int:calisan_id>', methods=['GET', 'POST'])
+@login_required
+def koordinator_proje_duzenle(calisan_id):
+    """Bir koordinatorun atanmis projelerini duzenle"""
+    if not current_user.is_admin:
+        flash('Bu sayfaya erisim yetkiniz yok.', 'danger')
+        return redirect(url_for('core.dashboard'))
+
+    from app.models.ik import Calisan
+    from app.models.proje import Proje
+
+    koordinator = Calisan.query.get_or_404(calisan_id)
+
+    if request.method == 'POST':
+        secilen_ids = {int(pid) for pid in request.form.getlist('proje_ids')}
+        tum_projeler = Proje.query.filter_by(is_deleted=False).all()
+        koordinator.koordinator_olarak_projeler = [p for p in tum_projeler if p.id in secilen_ids]
+        db.session.commit()
+        flash(f'{koordinator.full_name} icin proje atamalari guncellendi.', 'success')
+        return redirect(url_for('ayarlar.koordinator_proje_liste'))
+
+    projeler = Proje.query.filter_by(is_deleted=False).order_by(Proje.ad).all()
+    atanan_ids = {p.id for p in koordinator.koordinator_olarak_projeler}
+
+    return render_template('ayarlar/koordinator_proje_form.html',
+                          koordinator=koordinator,
+                          projeler=projeler,
+                          atanan_ids=atanan_ids)
+
+
 @ayarlar_bp.route('/bildirim-sablonlari/<int:id>/toggle', methods=['POST'])
 @login_required
 def bildirim_sablon_toggle(id):
