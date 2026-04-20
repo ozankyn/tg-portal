@@ -10,7 +10,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from app.models.ik import ZimmetTipi, Zimmet, ZimmetLog
 from app.models.sirket import SgkDosya
-from app.models.proje import HedefKadro
+from app.models.proje import HedefKadro, Proje
 from app.models.base import CalisanDurumu
 from werkzeug.utils import secure_filename
 import os
@@ -91,22 +91,19 @@ def dashboard():
 # ÇALIŞAN YÖNETİMİ
 # ============================================================
 
-@ik_bp.route('/')
-@login_required
-@permission_required('ik.view')
-def liste():
-    """Çalışan listesi"""
-    page = request.args.get('page', 1, type=int)
-    
-    # Filtreler
+def _calisan_liste_query():
+    """Çalışan listesi query builder - liste ve export için ortak filtre mantığı"""
     departman_id = request.args.get('departman_id', type=int)
+    proje_id = request.args.get('proje_id', type=int)
     durum = request.args.get('durum')
     search = request.args.get('search', '').strip()
-    
+
     query = Calisan.query.filter_by(is_deleted=False)
-    
+
     if departman_id:
         query = query.filter(Calisan.departman_id == departman_id)
+    if proje_id:
+        query = query.join(HedefKadro, Calisan.kadro_id == HedefKadro.id).filter(HedefKadro.proje_id == proje_id)
     if durum:
         query = query.filter(Calisan.durum == CalisanDurumu(durum))
     if search:
@@ -119,17 +116,90 @@ def liste():
                 Calisan.email.ilike(search_filter)
             )
         )
-    
-    query = query.order_by(Calisan.ad, Calisan.soyad)
+
+    return query.order_by(Calisan.ad, Calisan.soyad)
+
+
+@ik_bp.route('/')
+@login_required
+@permission_required('ik.view')
+def liste():
+    """Çalışan listesi"""
+    page = request.args.get('page', 1, type=int)
+    query = _calisan_liste_query()
     pagination = paginate_query(query, page, 20)
-    
+
     departmanlar = Departman.query.filter_by(aktif=True).order_by(Departman.ad).all()
-    
+    projeler = Proje.query.filter_by(is_deleted=False, aktif=True).order_by(Proje.ad).all()
+
     return render_template('ik/liste.html',
                           calisanlar=pagination.items,
                           pagination=pagination,
                           departmanlar=departmanlar,
+                          projeler=projeler,
                           durumlar=CalisanDurumu)
+
+
+@ik_bp.route('/export')
+@login_required
+@permission_required('ik.view')
+def calisanlar_export():
+    """Filtrelenmiş çalışan listesini Excel olarak indir"""
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, PatternFill
+    from io import BytesIO
+    from flask import Response
+
+    calisanlar = _calisan_liste_query().all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Çalışanlar'
+
+    headers = ['Sicil No', 'Ad Soyad', 'Proje', 'Kadro', 'Pozisyon',
+               'Departman', 'Durum', 'İşe Başlama', 'Telefon', 'Email']
+    ws.append(headers)
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='137FEC')
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+
+    durum_etiket = {
+        'aktif': 'Aktif', 'izinli': 'İzinli', 'ayrildi': 'Ayrıldı',
+        'askiya_alindi': 'Askıda', 'aday': 'Aday',
+    }
+
+    for c in calisanlar:
+        ws.append([
+            c.sicil_no or '',
+            f'{c.ad} {c.soyad}',
+            c.kadro.proje.ad if c.kadro and c.kadro.proje else '',
+            c.kadro.pozisyon_adi if c.kadro else '',
+            c.pozisyon.ad if c.pozisyon else '',
+            c.departman.ad if c.departman else '',
+            durum_etiket.get(c.durum.value if c.durum else '', c.durum.value if c.durum else ''),
+            c.ise_baslama.strftime('%d.%m.%Y') if c.ise_baslama else '',
+            c.telefon or '',
+            c.email or '',
+        ])
+
+    widths = [12, 28, 22, 22, 22, 20, 12, 14, 16, 28]
+    for idx, w in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(idx)].width = w
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"calisanlar_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
 
 
 @ik_bp.route('/<int:id>')

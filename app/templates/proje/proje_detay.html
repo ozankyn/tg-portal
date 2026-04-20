@@ -154,11 +154,33 @@
                             </tr>
                             {% endfor %}
                         </tbody>
+                        {% if kadrolar %}
+                        <tfoot class="bg-gray-50 dark:bg-[#111418] border-t-2 border-border-light dark:border-border-dark">
+                            <tr class="font-bold">
+                                <td class="px-4 py-3 text-sm" colspan="6">
+                                    <div class="flex flex-wrap items-center gap-x-6 gap-y-1">
+                                        <span>
+                                            <span class="text-text-muted dark:text-text-muted-dark">Toplam Hedef:</span>
+                                            <span class="text-[#111418] dark:text-white ml-1">{{ stats.toplam_kadro }}</span>
+                                        </span>
+                                        <span>
+                                            <span class="text-text-muted dark:text-text-muted-dark">Toplam Aktif:</span>
+                                            <span class="text-emerald-600 dark:text-emerald-400 ml-1">{{ stats.mevcut_calisan }}</span>
+                                        </span>
+                                        <span>
+                                            <span class="text-text-muted dark:text-text-muted-dark">Doluluk:</span>
+                                            <span class="text-primary ml-1">%{{ stats.doluluk_orani }}</span>
+                                        </span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tfoot>
+                        {% endif %}
                     </table>
                 </div>
             </div>
         </div>
-        
+
         <!-- Araçlar Tab -->
         <div class="tab-content hidden" id="araclar">
             <div class="bg-white dark:bg-card-dark rounded-b-xl shadow-sm border border-t-0 border-gray-200 dark:border-border-dark">

@@ -13,6 +13,10 @@
         </p>
     </div>
     <div class="flex gap-3">
+        <a href="{{ url_for('ik.calisanlar_export', **request.args) }}" class="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700 transition-colors shadow-sm">
+            <span class="material-symbols-outlined text-lg">download</span>
+            Excel'e Aktar
+        </a>
         <a href="{{ url_for('ik.ekle') }}" class="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary-dark transition-colors shadow-sm">
             <span class="material-symbols-outlined text-lg">person_add</span>
             Yeni Çalışan Ekle
@@ -71,6 +75,14 @@
                 <option value="{{ dept.id }}" {% if request.args.get('departman_id')|int == dept.id %}selected{% endif %}>{{ dept.ad }}</option>
                 {% endfor %}
             </select>
+
+            <!-- Proje Filter -->
+            <select name="proje_id" onchange="this.form.submit()" class="h-9 px-3 rounded-lg text-xs font-medium bg-gray-100 dark:bg-[#111418] border border-border-light dark:border-border-dark focus:ring-primary focus:border-primary">
+                <option value="">Tüm Projeler</option>
+                {% for p in projeler %}
+                <option value="{{ p.id }}" {% if request.args.get('proje_id')|int == p.id %}selected{% endif %}>{{ p.ad }}</option>
+                {% endfor %}
+            </select>
         </div>
         
         <!-- Search -->
@@ -98,6 +110,8 @@
                 <tr class="bg-gray-50 dark:bg-[#111418] border-b border-border-light dark:border-border-dark">
                     <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">Çalışan</th>
                     <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden md:table-cell">Sicil No</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden xl:table-cell">Proje</th>
+                    <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden xl:table-cell">Kadro</th>
                     <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden lg:table-cell">Departman</th>
                     <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden lg:table-cell">Pozisyon</th>
                     <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden sm:table-cell">İşe Başlama</th>
@@ -124,6 +138,8 @@
                         </div>
                     </td>
                     <td class="px-6 py-4 text-sm text-[#111418] dark:text-white hidden md:table-cell font-mono">{{ calisan.sicil_no or '-' }}</td>
+                    <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden xl:table-cell">{{ calisan.kadro.proje.ad if calisan.kadro and calisan.kadro.proje else '-' }}</td>
+                    <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden xl:table-cell">{{ calisan.kadro.pozisyon_adi if calisan.kadro else '-' }}</td>
                     <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden lg:table-cell">{{ calisan.departman.ad if calisan.departman else '-' }}</td>
                     <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden lg:table-cell">{{ calisan.pozisyon.ad if calisan.pozisyon else '-' }}</td>
                     <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden sm:table-cell">{{ calisan.ise_baslama.strftime('%d.%m.%Y') if calisan.ise_baslama else '-' }}</td>
@@ -177,7 +193,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" class="px-6 py-12 text-center">
+                    <td colspan="9" class="px-6 py-12 text-center">
                         <div class="flex flex-col items-center">
                             <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-3">group_off</span>
                             <p class="text-text-muted dark:text-text-muted-dark font-medium">Çalışan bulunamadı</p>
@@ -199,7 +215,7 @@
         </p>
         <div class="flex items-center gap-1">
             {% if pagination.has_prev %}
-            <a href="{{ url_for('ik.liste', page=pagination.prev_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), search=request.args.get('search')) }}" 
+            <a href="{{ url_for('ik.liste', page=pagination.prev_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), proje_id=request.args.get('proje_id'), search=request.args.get('search')) }}" 
                class="p-1.5 rounded-lg border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-[#252b36] transition-colors">
                 <span class="material-symbols-outlined text-lg">chevron_left</span>
             </a>
@@ -214,7 +230,7 @@
                     {% if page_num == pagination.page %}
                     <span class="w-8 h-8 rounded-lg bg-primary text-white text-xs font-bold flex items-center justify-center">{{ page_num }}</span>
                     {% else %}
-                    <a href="{{ url_for('ik.liste', page=page_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), search=request.args.get('search')) }}" 
+                    <a href="{{ url_for('ik.liste', page=page_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), proje_id=request.args.get('proje_id'), search=request.args.get('search')) }}" 
                        class="w-8 h-8 rounded-lg hover:bg-gray-200 dark:hover:bg-[#252b36] text-xs font-bold flex items-center justify-center transition-colors">
                         {{ page_num }}
                     </a>
@@ -225,7 +241,7 @@
             {% endfor %}
             
             {% if pagination.has_next %}
-            <a href="{{ url_for('ik.liste', page=pagination.next_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), search=request.args.get('search')) }}" 
+            <a href="{{ url_for('ik.liste', page=pagination.next_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), proje_id=request.args.get('proje_id'), search=request.args.get('search')) }}" 
                class="p-1.5 rounded-lg border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-[#252b36] transition-colors">
                 <span class="material-symbols-outlined text-lg">chevron_right</span>
             </a>
