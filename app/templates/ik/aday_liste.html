@@ -10,12 +10,18 @@
             <span class="material-symbols-outlined text-lg">filter_alt</span>
             Filtreler
         </div>
-        {% if has_permission('ik.create') %}
-        <a href="{{ url_for('ik.aday_ekle') }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
-            <span class="material-symbols-outlined text-sm">add</span>
-            Yeni Aday
-        </a>
-        {% endif %}
+        <div class="flex gap-2">
+            <a href="{{ url_for('ik.adaylar_export', **request.args) }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-colors">
+                <span class="material-symbols-outlined text-sm">download</span>
+                Excel'e Aktar
+            </a>
+            {% if has_permission('ik.create') %}
+            <a href="{{ url_for('ik.aday_ekle') }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors">
+                <span class="material-symbols-outlined text-sm">add</span>
+                Yeni Aday
+            </a>
+            {% endif %}
+        </div>
     </div>
     <div class="p-5">
         <form method="GET" class="flex flex-wrap items-end gap-4">
@@ -29,6 +35,15 @@
                     <option value="teklif" {% if request.args.get('durum') == 'teklif' %}selected{% endif %}>Teklif</option>
                     <option value="ise_alindi" {% if request.args.get('durum') == 'ise_alindi' %}selected{% endif %}>İşe Alındı</option>
                     <option value="red" {% if request.args.get('durum') == 'red' %}selected{% endif %}>Reddedildi</option>
+                </select>
+            </div>
+            <div class="w-56">
+                <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Proje</label>
+                <select name="proje_id" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tüm Projeler</option>
+                    {% for p in projeler %}
+                    <option value="{{ p.id }}" {% if request.args.get('proje_id')|int == p.id %}selected{% endif %}>{{ p.ad }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="flex gap-2">
@@ -48,7 +63,8 @@
             <thead class="bg-gray-50 dark:bg-[#252b36] text-xs text-text-muted dark:text-text-muted-dark uppercase">
                 <tr>
                     <th class="px-4 py-3 text-left font-medium">Ad Soyad</th>
-                    <th class="px-4 py-3 text-left font-medium">Pozisyon</th>
+                    <th class="px-4 py-3 text-left font-medium">Proje</th>
+                    <th class="px-4 py-3 text-left font-medium">Kadro</th>
                     <th class="px-4 py-3 text-left font-medium">Başvuru Tarihi</th>
                     <th class="px-4 py-3 text-left font-medium">Kaynak</th>
                     <th class="px-4 py-3 text-left font-medium">Durum</th>
@@ -64,7 +80,8 @@
                         <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ aday.email }}</p>
                         {% endif %}
                     </td>
-                    <td class="px-4 py-3 text-sm">{{ aday.pozisyon.ad if aday.pozisyon else '-' }}</td>
+                    <td class="px-4 py-3 text-sm">{{ aday.kadro.proje.ad if aday.kadro and aday.kadro.proje else '-' }}</td>
+                    <td class="px-4 py-3 text-sm">{{ aday.kadro.pozisyon_adi if aday.kadro else (aday.pozisyon.ad if aday.pozisyon else '-') }}</td>
                     <td class="px-4 py-3 text-sm">{{ aday.basvuru_tarihi.strftime('%d.%m.%Y') if aday.basvuru_tarihi else '-' }}</td>
                     <td class="px-4 py-3 text-sm">{{ aday.kaynak.replace('_', ' ').title() if aday.kaynak else '-' }}</td>
                     <td class="px-4 py-3">
@@ -99,7 +116,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" class="px-4 py-12 text-center text-text-muted dark:text-text-muted-dark">
+                    <td colspan="7" class="px-4 py-12 text-center text-text-muted dark:text-text-muted-dark">
                         <span class="material-symbols-outlined text-4xl mb-2 block">inbox</span>
                         Aday bulunamadı
                     </td>

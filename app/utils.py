@@ -191,3 +191,100 @@ def calisan_in_scope(calisan, user=None):
         return False
     q = apply_calisan_scope(Calisan.query.filter(Calisan.id == calisan.id), user)
     return q.first() is not None
+
+
+# ============================================================
+# ADAY SCOPE - Rol bazli aday listesi/detay erisim filtresi
+# ============================================================
+
+def apply_aday_scope(query, user=None):
+    """Aday query'sine current user'in scope filtresini uygular.
+    - Admin / Full-access roller: filtre yok (hepsini gorur)
+    - Koordinator (Proje/Saha): atanan projelerin kadrolarina basvuran adaylar
+    - Diger roller: bos liste
+    """
+    from app import db
+    from app.models.ik import Aday, Calisan
+    from app.models.proje import HedefKadro, koordinator_projeler
+
+    user = user or current_user
+    if not user or not user.is_authenticated:
+        return query.filter(Aday.id == -1)
+
+    if user.is_admin:
+        return query
+
+    roles = _user_role_names(user)
+
+    if roles & _FULL_ACCESS_ROLES:
+        return query
+
+    calisan_id = user.calisan_id
+    if not calisan_id and user.email:
+        c = Calisan.query.filter_by(email=user.email, is_deleted=False).first()
+        if c:
+            calisan_id = c.id
+    if not calisan_id:
+        return query.filter(Aday.id == -1)
+
+    if roles & _COORDINATOR_ROLES:
+        atanan_proje_ids = db.session.query(koordinator_projeler.c.proje_id).filter(
+            koordinator_projeler.c.koordinator_calisan_id == calisan_id
+        )
+        atanan_kadro_ids = db.session.query(HedefKadro.id).filter(
+            HedefKadro.proje_id.in_(atanan_proje_ids)
+        )
+        return query.filter(Aday.kadro_id.in_(atanan_kadro_ids))
+
+    return query.filter(Aday.id == -1)
+
+
+def aday_in_scope(aday, user=None):
+    """Aday detay erisim kontrolu - bool dondurur"""
+    from app.models.ik import Aday
+    if aday is None:
+        return False
+    q = apply_aday_scope(Aday.query.filter(Aday.id == aday.id), user)
+    return q.first() is not None
+
+
+def user_scoped_projeler(user=None):
+    """Kullanicinin gorebildigi aktif proje listesini dondurur.
+    - Admin / Full-access: tum aktif projeler
+    - Koordinator: atanan projeler
+    - Diger: bos liste
+    """
+    from app import db
+    from app.models.ik import Calisan
+    from app.models.proje import Proje, koordinator_projeler
+
+    user = user or current_user
+    if not user or not user.is_authenticated:
+        return []
+
+    base_q = Proje.query.filter_by(is_deleted=False, aktif=True).order_by(Proje.ad)
+
+    if user.is_admin:
+        return base_q.all()
+
+    roles = _user_role_names(user)
+    if roles & _FULL_ACCESS_ROLES:
+        return base_q.all()
+
+    calisan_id = user.calisan_id
+    if not calisan_id and user.email:
+        c = Calisan.query.filter_by(email=user.email, is_deleted=False).first()
+        if c:
+            calisan_id = c.id
+    if not calisan_id:
+        return []
+
+    if roles & _COORDINATOR_ROLES:
+        proje_ids = [r[0] for r in db.session.query(koordinator_projeler.c.proje_id).filter(
+            koordinator_projeler.c.koordinator_calisan_id == calisan_id
+        ).all()]
+        if not proje_ids:
+            return []
+        return base_q.filter(Proje.id.in_(proje_ids)).all()
+
+    return []

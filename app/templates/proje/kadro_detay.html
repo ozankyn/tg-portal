@@ -95,6 +95,11 @@
                                 </td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-1">
+                                        {% if has_permission('ik.view') %}
+                                        <a href="{{ url_for('ik.aday_detay', id=a.id) }}" class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg" title="Görüntüle">
+                                            <span class="material-symbols-outlined">visibility</span>
+                                        </a>
+                                        {% endif %}
                                         <!-- Durum Dropdown -->
                                         <div class="relative" x-data="{ open: false }">
                                             <button @click="open = !open" class="inline-flex items-center justify-center w-8 h-8 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36]">

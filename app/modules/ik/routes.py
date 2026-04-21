@@ -22,7 +22,11 @@ from app.models.ik import (
     SozlesmeSablonu
 )
 from app.models.base import CalisanDurumu
-from app.utils import permission_required, paginate_query, apply_calisan_scope, calisan_in_scope
+from app.utils import (
+    permission_required, paginate_query,
+    apply_calisan_scope, calisan_in_scope,
+    apply_aday_scope, aday_in_scope, user_scoped_projeler,
+)
 
 ik_bp = Blueprint('ik', __name__)
 
@@ -457,22 +461,22 @@ def duzenle(id):
 # ADAY YÖNETİMİ
 # ============================================================
 
-@ik_bp.route('/adaylar')
-@login_required
-@permission_required('ik.view')
-def aday_liste():
-    """Aday listesi"""
-    page = request.args.get('page', 1, type=int)
+def _aday_liste_query():
+    """Aday listesi query builder - liste ve export icin ortak filtre mantigi"""
     durum = request.args.get('durum')
     kaynak = request.args.get('kaynak')
+    proje_id = request.args.get('proje_id', type=int)
     search = request.args.get('search', '').strip()
-    
+
     query = Aday.query.filter_by(is_deleted=False)
-    
+    query = apply_aday_scope(query)
+
     if durum:
         query = query.filter(Aday.durum == durum)
     if kaynak:
         query = query.filter(Aday.kaynak == kaynak)
+    if proje_id:
+        query = query.join(HedefKadro, Aday.kadro_id == HedefKadro.id).filter(HedefKadro.proje_id == proje_id)
     if search:
         search_filter = f'%{search}%'
         query = query.filter(
@@ -483,24 +487,111 @@ def aday_liste():
                 Aday.email.ilike(search_filter)
             )
         )
-    
-    query = query.order_by(Aday.created_at.desc())
+
+    return query.order_by(Aday.created_at.desc())
+
+
+@ik_bp.route('/adaylar')
+@login_required
+@permission_required('ik.view')
+def aday_liste():
+    """Aday listesi"""
+    page = request.args.get('page', 1, type=int)
+    query = _aday_liste_query()
     pagination = paginate_query(query, page, 20)
-    
-    # İstatistikler
+
+    # İstatistikler (scope'a gore)
+    scoped_base = apply_aday_scope(Aday.query.filter_by(is_deleted=False))
     stats = {
-        'toplam': Aday.query.filter_by(is_deleted=False).count(),
-        'basvurdu': Aday.query.filter_by(is_deleted=False, durum='basvurdu').count(),
-        'degerlendiriliyor': Aday.query.filter_by(is_deleted=False, durum='degerlendiriliyor').count(),
-        'mulakat': Aday.query.filter_by(is_deleted=False, durum='mulakat').count(),
-        'teklif': Aday.query.filter_by(is_deleted=False, durum='teklif').count(),
-        'ise_alindi': Aday.query.filter_by(is_deleted=False, durum='ise_alindi').count(),
+        'toplam': scoped_base.count(),
+        'basvurdu': scoped_base.filter(Aday.durum == 'basvurdu').count(),
+        'degerlendiriliyor': scoped_base.filter(Aday.durum == 'degerlendiriliyor').count(),
+        'mulakat': scoped_base.filter(Aday.durum == 'mulakat').count(),
+        'teklif': scoped_base.filter(Aday.durum == 'teklif').count(),
+        'ise_alindi': scoped_base.filter(Aday.durum == 'ise_alindi').count(),
     }
-    
+
+    projeler = user_scoped_projeler()
+
     return render_template('ik/aday_liste.html',
                           adaylar=pagination.items,
                           pagination=pagination,
-                          stats=stats)
+                          stats=stats,
+                          projeler=projeler)
+
+
+@ik_bp.route('/adaylar/export')
+@login_required
+@permission_required('ik.view')
+def adaylar_export():
+    """Filtrelenmis aday listesini Excel olarak indir"""
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, PatternFill
+    from io import BytesIO
+    from flask import Response
+
+    adaylar = _aday_liste_query().all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Adaylar'
+
+    headers = ['Ad Soyad', 'Telefon', 'Email', 'Başvuru Tarihi',
+               'Proje', 'Kadro/Pozisyon', 'Durum']
+    ws.append(headers)
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='137FEC')
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+
+    durum_etiket = {
+        'davet_gonderildi': 'Davet Gönderildi',
+        'kvkk_bekleniyor': 'KVKK Bekleniyor',
+        'form_bekleniyor': 'Form Bekleniyor',
+        'basvurdu': 'Başvurdu',
+        'degerlendiriliyor': 'Değerlendiriliyor',
+        'mulakat': 'Mülakat',
+        'teklif': 'Teklif',
+        'ise_alindi': 'İşe Alındı',
+        'red': 'Reddedildi',
+        'iptal': 'İptal',
+    }
+
+    for a in adaylar:
+        proje_ad = a.kadro.proje.ad if a.kadro and a.kadro.proje else ''
+        if a.kadro and a.kadro.pozisyon_adi:
+            kadro_pozisyon = a.kadro.pozisyon_adi
+        elif a.pozisyon:
+            kadro_pozisyon = a.pozisyon.ad
+        else:
+            kadro_pozisyon = ''
+        ws.append([
+            f'{a.ad or ""} {a.soyad or ""}'.strip(),
+            a.telefon or '',
+            a.email or '',
+            a.basvuru_tarihi.strftime('%d.%m.%Y') if a.basvuru_tarihi else '',
+            proje_ad,
+            kadro_pozisyon,
+            durum_etiket.get(a.durum, a.durum or ''),
+        ])
+
+    widths = [28, 16, 28, 14, 22, 24, 18]
+    for idx, w in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(idx)].width = w
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"adaylar_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
 
 
 @ik_bp.route('/aday/<int:id>/duzenle', methods=['GET', 'POST'])
@@ -509,7 +600,11 @@ def aday_liste():
 def aday_duzenle(id):
     """Aday düzenle"""
     aday = Aday.query.get_or_404(id)
-    
+
+    if not aday_in_scope(aday):
+        flash('Bu adayı düzenleme yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_liste'))
+
     if request.method == 'POST':
         telefon = request.form.get('telefon', '').strip()
         if telefon:
@@ -554,6 +649,11 @@ def aday_duzenle(id):
 def aday_detay(id):
     """Aday detay sayfası"""
     aday = Aday.query.get_or_404(id)
+
+    if not aday_in_scope(aday):
+        flash('Bu adayı görüntüleme yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_liste'))
+
     evrak_tipleri = EvrakTipi.query.filter_by(aktif=True).order_by(EvrakTipi.sira).all()
     
     # Evrak tamamlanma oranı hesapla
