@@ -552,9 +552,20 @@ def aday_ise_al(id):
     from app.models.ik import Aday, Calisan
     from app.models.base import CalisanDurumu
     from datetime import date
-    
+
     aday = Aday.query.get_or_404(id)
-    
+
+    # Kara liste engeli
+    if aday.is_kara_liste:
+        bl = aday.blacklist_calisan
+        msg = 'Bu aday kara listede, işe alınamaz.'
+        if bl and bl.liste_nedeni:
+            msg += f' Neden: {bl.liste_nedeni}'
+        flash(msg, 'danger')
+        if aday.kadro_id:
+            return redirect(url_for('proje.kadro_detay', id=aday.kadro_id))
+        return redirect(url_for('ik.aday_detay', id=aday.id))
+
     if request.method == 'POST':
         # Yeni çalışan oluştur
         calisan = Calisan(

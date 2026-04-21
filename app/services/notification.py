@@ -427,8 +427,14 @@ def notify_ise_giris(calisan):
     return send_bildirim('ISE_GIRIS', degiskenler, proje_id=proje_id)
 
 
-def notify_isten_cikis(calisan, cikis_tarihi, cikis_nedeni, zimmet_teslim=None):
-    """Isten cikis bildirimi - sablonu ISTEN_CIKIS"""
+def notify_isten_cikis(calisan, cikis_tarihi, cikis_nedeni, zimmet_teslim=None,
+                       sgk_cikis_kodu=None, liste_durumu=None):
+    """Isten cikis bildirimi - sablonu ISTEN_CIKIS
+
+    Args:
+        sgk_cikis_kodu: SgkCikisKodu instance veya None
+        liste_durumu: ListeDurumu enum veya string veya None
+    """
     proje_adi = '-'
     pozisyon_adi = '-'
     proje_id = None
@@ -450,6 +456,22 @@ def notify_isten_cikis(calisan, cikis_tarihi, cikis_nedeni, zimmet_teslim=None):
     elif zimmet_teslim is False:
         zimmet_durumu = 'Teslim edilmedi'
 
+    sgk_kod_str = '-'
+    sgk_aciklama_str = '-'
+    if sgk_cikis_kodu is not None:
+        sgk_kod_str = str(sgk_cikis_kodu.kod)
+        sgk_aciklama_str = sgk_cikis_kodu.aciklama or '-'
+
+    liste_etiket = {
+        'temiz': 'Temiz',
+        'gri_liste': 'Gri Liste',
+        'kara_liste': 'Kara Liste',
+    }
+    liste_durumu_str = '-'
+    if liste_durumu is not None:
+        val = liste_durumu.value if hasattr(liste_durumu, 'value') else str(liste_durumu)
+        liste_durumu_str = liste_etiket.get(val, val)
+
     degiskenler = {
         'ad_soyad': f"{calisan.ad} {calisan.soyad}",
         'tc_kimlik': calisan.tc_kimlik or '-',
@@ -459,6 +481,9 @@ def notify_isten_cikis(calisan, cikis_tarihi, cikis_nedeni, zimmet_teslim=None):
         'pozisyon': pozisyon_adi,
         'telefon': calisan.telefon or '-',
         'zimmet_durumu': zimmet_durumu,
+        'sgk_cikis_kodu': sgk_kod_str,
+        'sgk_cikis_aciklama': sgk_aciklama_str,
+        'liste_durumu': liste_durumu_str,
     }
     return send_bildirim('ISTEN_CIKIS', degiskenler, proje_id=proje_id)
 

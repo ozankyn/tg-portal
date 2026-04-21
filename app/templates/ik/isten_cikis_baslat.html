@@ -44,6 +44,16 @@
                             </select>
                         </div>
                         <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">SGK Çıkış Kodu</label>
+                            <select id="sgkCikisKoduSelect" name="sgk_cikis_kodu_id"
+                                    class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seçiniz</option>
+                                {% for k in sgk_kodlari %}
+                                <option value="{{ k.id }}" data-kod="{{ k.kod }}" data-oneri="{{ k.onerilen_liste_durumu.value }}">{{ k.kod }} - {{ k.aciklama }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Çıkış Sebebi</label>
                             <input type="text" name="cikis_sebebi" placeholder="Kısa açıklama"
                                    class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
@@ -52,6 +62,31 @@
                             <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Detay Notu</label>
                             <textarea name="detay_notu" rows="3" placeholder="Ek bilgiler..."
                                       class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-border-light dark:border-border-dark mb-6">
+                        <h4 class="text-sm font-semibold text-text-primary dark:text-text-primary-dark mb-3 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-base">flag</span>
+                            Kara / Gri Liste
+                        </h4>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mb-3">SGK koduna göre otomatik öneri yapılır, gerekirse değiştirebilirsiniz.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Liste Durumu</label>
+                                <select id="listeDurumuSelect" name="liste_durumu"
+                                        class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <option value="temiz" {% if calisan.liste_durumu.value == 'temiz' %}selected{% endif %}>Temiz</option>
+                                    <option value="gri_liste" {% if calisan.liste_durumu.value == 'gri_liste' %}selected{% endif %}>Gri Liste</option>
+                                    <option value="kara_liste" {% if calisan.liste_durumu.value == 'kara_liste' %}selected{% endif %}>Kara Liste</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Liste Nedeni</label>
+                                <input type="text" name="liste_nedeni" placeholder="Neden listeye alındı"
+                                       value="{{ calisan.liste_nedeni or '' }}"
+                                       class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </div>
                         </div>
                     </div>
                     
@@ -103,4 +138,20 @@
         </div>
     </div>
 </div>
+
+<script>
+(function() {
+    const sgkSelect = document.getElementById('sgkCikisKoduSelect');
+    const listeSelect = document.getElementById('listeDurumuSelect');
+    if (!sgkSelect || !listeSelect) return;
+
+    sgkSelect.addEventListener('change', function() {
+        const opt = sgkSelect.options[sgkSelect.selectedIndex];
+        const oneri = opt && opt.dataset ? opt.dataset.oneri : '';
+        if (oneri) {
+            listeSelect.value = oneri;
+        }
+    });
+})();
+</script>
 {% endblock %}

@@ -8,10 +8,10 @@ from datetime import datetime, date
 from decimal import Decimal
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, send_file, jsonify
 from flask_login import login_required, current_user
-from app.models.ik import ZimmetTipi, Zimmet, ZimmetLog
+from app.models.ik import ZimmetTipi, Zimmet, ZimmetLog, SgkCikisKodu
 from app.models.sirket import SgkDosya
 from app.models.proje import HedefKadro, Proje
-from app.models.base import CalisanDurumu
+from app.models.base import CalisanDurumu, ListeDurumu
 from werkzeug.utils import secure_filename
 import os
 
@@ -984,27 +984,43 @@ def isten_cikis_liste():
 def isten_cikis_baslat(id):
     """İşten çıkış süreci başlat"""
     calisan = Calisan.query.get_or_404(id)
-    
+
     if request.method == 'POST':
+        sgk_kodu_id = request.form.get('sgk_cikis_kodu_id', type=int)
+
         cikis = IstenCikis(
             calisan_id=id,
             planlanan_cikis_tarihi=datetime.strptime(request.form['planlanan_cikis_tarihi'], '%Y-%m-%d').date(),
             cikis_tipi=request.form.get('cikis_tipi'),
             cikis_sebebi=request.form.get('cikis_sebebi'),
             detay_notu=request.form.get('detay_notu'),
+            sgk_cikis_kodu_id=sgk_kodu_id,
             olusturan_id=current_user.id
         )
-        
+
         # Çalışan durumunu güncelle
         calisan.durum = CalisanDurumu.ASKIYA_ALINDI
-        
+
+        # Kara/Gri liste
+        liste_val = (request.form.get('liste_durumu') or '').strip().lower()
+        if liste_val in ('temiz', 'gri_liste', 'kara_liste'):
+            yeni_liste = ListeDurumu(liste_val)
+            if calisan.liste_durumu != yeni_liste or yeni_liste != ListeDurumu.TEMIZ:
+                calisan.liste_durumu = yeni_liste
+                calisan.liste_nedeni = request.form.get('liste_nedeni', '').strip() or None
+                calisan.liste_tarihi = datetime.utcnow()
+                calisan.listeye_alan_id = current_user.id
+
         db.session.add(cikis)
         db.session.commit()
-        
+
         flash('İşten çıkış süreci başlatıldı.', 'success')
         return redirect(url_for('ik.isten_cikis_detay', id=cikis.id))
-    
-    return render_template('ik/isten_cikis_baslat.html', calisan=calisan)
+
+    sgk_kodlari = SgkCikisKodu.query.filter_by(aktif=True).order_by(SgkCikisKodu.kod).all()
+    return render_template('ik/isten_cikis_baslat.html',
+                           calisan=calisan,
+                           sgk_kodlari=sgk_kodlari)
 
 
 @ik_bp.route('/isten-cikis/<int:id>')
@@ -1070,7 +1086,9 @@ def isten_cikis_tamamla(id):
             calisan=calisan,
             cikis_tarihi=cikis.gerceklesen_cikis_tarihi,
             cikis_nedeni=f"{cikis.cikis_tipi}: {cikis.cikis_sebebi}",
-            zimmet_teslim=cikis.zimmet_teslim
+            zimmet_teslim=cikis.zimmet_teslim,
+            sgk_cikis_kodu=cikis.sgk_cikis_kodu,
+            liste_durumu=calisan.liste_durumu,
         )
         print(f"[İşten Çıkış] Bildirim sonucu: {sonuc}")
     except Exception as e:

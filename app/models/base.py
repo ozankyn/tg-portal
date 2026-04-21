@@ -76,3 +76,9 @@ class CalisanDurumu(enum.Enum):
     IZINLI = 'izinli'
     ASKIYA_ALINDI = 'askiya_alindi'
     AYRILDI = 'ayrildi'
+
+
+class ListeDurumu(enum.Enum):
+    TEMIZ = 'temiz'
+    GRI_LISTE = 'gri_liste'
+    KARA_LISTE = 'kara_liste'

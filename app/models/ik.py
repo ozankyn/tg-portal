@@ -6,7 +6,7 @@ Güncelleme: davet_eden_id ve kaynak zenginleştirmesi eklendi
 
 from datetime import datetime, date, timedelta
 from app import db
-from app.models.base import TimestampMixin, SoftDeleteMixin, AuditMixin, CalisanDurumu
+from app.models.base import TimestampMixin, SoftDeleteMixin, AuditMixin, CalisanDurumu, ListeDurumu
 
 
 class Departman(db.Model, TimestampMixin, SoftDeleteMixin):
@@ -100,7 +100,13 @@ class Calisan(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     # Durum
     durum = db.Column(db.Enum(CalisanDurumu), default=CalisanDurumu.AKTIF)
     notlar = db.Column(db.Text)
-    
+
+    # Kara/Gri Liste
+    liste_durumu = db.Column(db.Enum(ListeDurumu), default=ListeDurumu.TEMIZ, nullable=False)
+    liste_nedeni = db.Column(db.Text)
+    liste_tarihi = db.Column(db.DateTime)
+    listeye_alan_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
     # Fotoğraf
     foto = db.Column(db.String(500))
 
@@ -116,6 +122,7 @@ class Calisan(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     yonetici = db.relationship('Calisan', remote_side=[id], backref='astlar')
     sozlesme_sablon = db.relationship('SozlesmeSablonu', backref=db.backref('calisanlar', lazy='dynamic'))
     izinler = db.relationship('Izin', backref='calisan', lazy='dynamic')
+    listeye_alan = db.relationship('User', foreign_keys=[listeye_alan_id])
 
     def __repr__(self):
         return f'<Calisan {self.full_name}>'
@@ -298,13 +305,40 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     
     # ==================== İlişkiler ====================
     pozisyon = db.relationship('Pozisyon', backref='adaylar')
-    
+
     def __repr__(self):
         return f'<Aday {self.full_name}>'
-    
+
     @property
     def full_name(self):
         return f'{self.ad} {self.soyad}'
+
+    @property
+    def blacklist_calisan(self):
+        """TC ile eski çalışan kaydını bulur — kara/gri liste kontrolü için.
+        Returns Calisan or None.
+        """
+        if not self.tc_kimlik:
+            return None
+        return Calisan.query.filter(
+            Calisan.tc_kimlik == self.tc_kimlik,
+            Calisan.is_deleted == False,
+            Calisan.liste_durumu != ListeDurumu.TEMIZ,
+        ).first()
+
+    @property
+    def blacklist_durum(self):
+        """Aday'ın eski kayıtlarından kara/gri liste durumu (None / ListeDurumu)"""
+        c = self.blacklist_calisan
+        return c.liste_durumu if c else None
+
+    @property
+    def is_kara_liste(self):
+        return self.blacklist_durum == ListeDurumu.KARA_LISTE
+
+    @property
+    def is_gri_liste(self):
+        return self.blacklist_durum == ListeDurumu.GRI_LISTE
     
     @property
     def is_token_valid(self):
@@ -596,46 +630,75 @@ class CalisanEvrak(db.Model, TimestampMixin):
 # İŞTEN ÇIKIŞ YÖNETİMİ
 # ============================================================
 
+class SgkCikisKodu(db.Model, TimestampMixin):
+    """Standart SGK işten çıkış kodları (referans tablo)"""
+    __tablename__ = 'sgk_cikis_kodlari'
+
+    id = db.Column(db.Integer, primary_key=True)
+    kod = db.Column(db.Integer, unique=True, nullable=False, index=True)
+    aciklama = db.Column(db.String(300), nullable=False)
+    aktif = db.Column(db.Boolean, default=True, nullable=False)
+
+    def __repr__(self):
+        return f'<SgkCikisKodu {self.kod} - {self.aciklama}>'
+
+    @property
+    def onerilen_liste_durumu(self):
+        """SGK koduna göre otomatik liste durumu önerisi"""
+        # Kara liste: haklı fesih, disiplin
+        if self.kod in (3, 26):
+            return ListeDurumu.KARA_LISTE
+        # Temiz: istifa, emeklilik, ölüm, askerlik, evlilik, sözleşme bitimi, mevsim
+        if self.kod in (1, 2, 5, 8, 9, 10, 11, 12, 13, 14, 19, 20, 25, 34):
+            return ListeDurumu.TEMIZ
+        # Gri: diğer nedenler, 4, 15, 16, 17, 18, 22, 27, 29, 30, 31, 32, 33
+        return ListeDurumu.GRI_LISTE
+
+
 class IstenCikis(db.Model, TimestampMixin):
     """İşten çıkış süreç takibi"""
     __tablename__ = 'isten_cikislar'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'), nullable=False)
-    
+
     # Tarihler
     talep_tarihi = db.Column(db.Date, default=date.today)
     planlanan_cikis_tarihi = db.Column(db.Date, nullable=False)
     gerceklesen_cikis_tarihi = db.Column(db.Date)
-    
+
     # Çıkış bilgileri
     cikis_tipi = db.Column(db.String(30))  # istifa, fesih, anlasmali, emeklilik, vefat, sozlesme_bitti
     cikis_sebebi = db.Column(db.String(100))
     detay_notu = db.Column(db.Text)
-    
+
+    # SGK Çıkış Kodu
+    sgk_cikis_kodu_id = db.Column(db.Integer, db.ForeignKey('sgk_cikis_kodlari.id'))
+
     # Checklist
     zimmet_teslim = db.Column(db.Boolean, default=False)
     zimmet_notu = db.Column(db.Text)
-    
+
     sgk_cikis_bildirimi = db.Column(db.Boolean, default=False)
     sgk_bildirim_tarihi = db.Column(db.Date)
-    
+
     # Tazminatlar
     kidem_tazminati = db.Column(db.Numeric(12, 2))
     ihbar_tazminati = db.Column(db.Numeric(12, 2))
-    
+
     # Çıkış mülakatı
     cikis_mulakati_yapildi = db.Column(db.Boolean, default=False)
     cikis_mulakat_notu = db.Column(db.Text)
-    
+
     # Durum
     durum = db.Column(db.String(20), default='basladi')  # basladi, devam_ediyor, tamamlandi, iptal
-    
+
     olusturan_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    
+
     # İlişkiler
     calisan = db.relationship('Calisan', backref=db.backref('cikis_kayitlari', lazy='dynamic'))
     olusturan = db.relationship('User', backref='olusturulan_cikislar')
+    sgk_cikis_kodu = db.relationship('SgkCikisKodu')
     
     def __repr__(self):
         return f'<IstenCikis {self.calisan_id}>'

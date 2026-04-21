@@ -75,7 +75,14 @@
                 {% for aday in adaylar %}
                 <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
                     <td class="px-4 py-3">
-                        <p class="font-medium text-text-primary dark:text-text-primary-dark">{{ aday.full_name }}</p>
+                        <div class="flex items-center gap-2">
+                            <p class="font-medium text-text-primary dark:text-text-primary-dark">{{ aday.full_name }}</p>
+                            {% if aday.is_kara_liste %}
+                            <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" title="{{ aday.blacklist_calisan.liste_nedeni or '' }}">KARA LİSTE</span>
+                            {% elif aday.is_gri_liste %}
+                            <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" title="{{ aday.blacklist_calisan.liste_nedeni or '' }}">GRİ LİSTE</span>
+                            {% endif %}
+                        </div>
                         {% if aday.email %}
                         <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ aday.email }}</p>
                         {% endif %}

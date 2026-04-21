@@ -126,6 +126,31 @@
                     {% endif %}
                 </div>
                 <div class="flex justify-between items-center">
+                    <span class="text-sm text-text-muted dark:text-text-muted-dark">Liste Durumu</span>
+                    {% set _liste = calisan.liste_durumu.value if calisan.liste_durumu else 'temiz' %}
+                    {% if _liste == 'kara_liste' %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" title="{{ calisan.liste_nedeni or '' }}">
+                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                        Kara Liste
+                    </span>
+                    {% elif _liste == 'gri_liste' %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" title="{{ calisan.liste_nedeni or '' }}">
+                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                        Gri Liste
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                        Temiz
+                    </span>
+                    {% endif %}
+                </div>
+                {% if calisan.liste_durumu and calisan.liste_durumu.value != 'temiz' and calisan.liste_nedeni %}
+                <div class="text-xs text-text-muted dark:text-text-muted-dark bg-gray-50 dark:bg-[#111418] rounded-lg px-3 py-2">
+                    <strong>Liste Nedeni:</strong> {{ calisan.liste_nedeni }}
+                </div>
+                {% endif %}
+                <div class="flex justify-between items-center">
                     <span class="text-sm text-text-muted dark:text-text-muted-dark">Çalışma Tipi</span>
                     <span class="text-sm font-medium text-[#111418] dark:text-white">
                         {% if calisan.calisma_tipi == 'tam_zamanli' %}Tam Zamanlı
