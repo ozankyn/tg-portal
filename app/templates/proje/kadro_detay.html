@@ -288,7 +288,7 @@
                     <span class="material-symbols-outlined">bolt</span>Aksiyonlar
                 </h6>
             </div>
-            <div class="p-4 space-y-2">
+            <div class="p-4 space-y-2" x-data="{ silOpen: false }">
                 {% if has_permission('proje.edit') %}
                 <a href="{{ url_for('proje.kadro_duzenle', id=kadro.id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
                     <span class="material-symbols-outlined">edit</span>Düzenle
@@ -302,6 +302,46 @@
                 <a href="{{ url_for('proje.proje_detay', id=kadro.proje_id) }}" class="flex items-center justify-center gap-2 w-full px-4 py-2 border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
                     <span class="material-symbols-outlined">arrow_back</span>Projeye Dön
                 </a>
+                {% if has_permission('proje.edit') %}
+                <button type="button" @click="silOpen = true" class="flex items-center justify-center gap-2 w-full px-4 py-2 bg-rose-600 text-white font-medium rounded-lg hover:bg-rose-700 transition-colors">
+                    <span class="material-symbols-outlined">delete</span>Kadroyu Sil
+                </button>
+
+                <!-- Sil Onay Modal -->
+                <div x-show="silOpen" x-cloak @keydown.escape.window="silOpen = false" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50" style="display: none;">
+                    <div @click.away="silOpen = false" class="bg-white dark:bg-card-dark rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+                        <div class="flex items-start gap-3">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-rose-600">warning</span>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-[#111418] dark:text-white">Kadroyu Sil</h3>
+                                <p class="text-sm text-text-muted dark:text-text-muted-dark mt-1">
+                                    <strong>{{ kadro.pozisyon_adi }}</strong>{% if kadro.il_adi %} — {{ kadro.il_adi }}{% endif %}
+                                </p>
+                                {% if kadro.mevcut_sayi > 0 %}
+                                <div class="mt-3 p-3 rounded-lg bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800">
+                                    <p class="text-sm text-rose-700 dark:text-rose-400">
+                                        Bu kadroda <strong>{{ kadro.mevcut_sayi }} aktif çalışan</strong> var, önce çalışanları başka kadroya taşıyın.
+                                    </p>
+                                </div>
+                                {% else %}
+                                <p class="text-sm text-text-primary dark:text-text-primary-dark mt-3">Bu kadroyu silmek istediğinize emin misiniz?</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2 mt-5">
+                            <button type="button" @click="silOpen = false" class="px-4 py-2 text-sm border border-border-light dark:border-border-dark text-text-primary dark:text-text-primary-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36]">İptal</button>
+                            {% if kadro.mevcut_sayi == 0 %}
+                            <form method="POST" action="{{ url_for('proje.kadro_sil', id=kadro.id) }}" class="inline">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="px-4 py-2 text-sm bg-rose-600 text-white rounded-lg hover:bg-rose-700">Sil</button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
             </div>
         </div>
     </div>

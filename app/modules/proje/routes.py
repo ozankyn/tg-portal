@@ -375,6 +375,36 @@ def kadro_duzenle(id):
     return render_template('proje/kadro_form.html', proje=kadro.proje, kadro=kadro, iller=iller, direktorlukler=direktorlukler, mudurlukler=mudurlukler)
 
 
+@proje_bp.route('/kadro/<int:id>/sil', methods=['POST'])
+@login_required
+@permission_required('proje.edit')
+def kadro_sil(id):
+    """Kadro soft-delete - aktif calisan varsa engeller"""
+    from app.models.base import CalisanDurumu
+
+    kadro = HedefKadro.query.get_or_404(id)
+    proje_id = kadro.proje_id
+
+    aktif_calisan_sayisi = kadro.calisanlar.filter(
+        Calisan.is_deleted == False,
+        Calisan.durum.in_([CalisanDurumu.AKTIF, CalisanDurumu.IZINLI])
+    ).count()
+
+    if aktif_calisan_sayisi > 0:
+        flash(
+            f'Bu kadroda {aktif_calisan_sayisi} aktif çalışan var, '
+            f'önce çalışanları başka kadroya taşıyın.',
+            'danger'
+        )
+        return redirect(url_for('proje.kadro_detay', id=id))
+
+    kadro.soft_delete(user_id=current_user.id)
+    db.session.commit()
+
+    flash(f'"{kadro.pozisyon_adi}" kadrosu silindi.', 'success')
+    return redirect(url_for('proje.proje_detay', id=proje_id))
+
+
 @proje_bp.route('/kadro/<int:id>/aday/ekle', methods=['GET', 'POST'])
 @login_required
 @permission_required('ik.create')
