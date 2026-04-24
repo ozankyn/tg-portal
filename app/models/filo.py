@@ -18,7 +18,7 @@ class Arac(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     # Temel Bilgiler
     plaka = db.Column(db.String(20), unique=True, nullable=False)
     marka = db.Column(db.String(50), nullable=False)
-    model = db.Column(db.String(50))
+    model = db.Column(db.String(200))
     model_yili = db.Column(db.Integer)
     renk = db.Column(db.String(30))
     
