@@ -96,6 +96,7 @@ class Arac(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     kira_baslangic = db.Column(db.Date)
     kira_bitis = db.Column(db.Date)
     aylik_kira = db.Column(db.Numeric(12, 2))
+    kiralama_firmasi_id = db.Column(db.Integer, db.ForeignKey('tedarikciler.id'))
     
     # Atama
     atanan_calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'))
@@ -112,6 +113,7 @@ class Arac(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     yakit_kayitlari = db.relationship('YakitKayit', backref='arac', lazy='dynamic')
     sigortalar = db.relationship('Sigorta', backref='arac', lazy='dynamic')
     muayeneler = db.relationship('Muayene', backref='arac', lazy='dynamic')
+    kiralama_firmasi = db.relationship('Tedarikci', foreign_keys=[kiralama_firmasi_id], backref='kiralanan_araclar')
     proje_id = db.Column(db.Integer, db.ForeignKey('projeler.id'))
 
     

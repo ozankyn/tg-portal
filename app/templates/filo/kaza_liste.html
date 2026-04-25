@@ -13,34 +13,71 @@
 
 <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
     <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
-        <form method="GET" class="flex flex-wrap items-center gap-2">
-            <select name="arac_id" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
-                <option value="">Tüm Araçlar</option>
-                {% for arac in araclar %}
-                <option value="{{ arac.id }}" {{ 'selected' if request.args.get('arac_id')|int == arac.id }}>
-                    {{ arac.plaka }}
-                </option>
-                {% endfor %}
-            </select>
-            <select name="onay_durumu" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
-                <option value="">Tüm Onay Durumları</option>
-                <option value="bekliyor" {{ 'selected' if request.args.get('onay_durumu') == 'bekliyor' }}>Bekliyor</option>
-                <option value="onaylandi" {{ 'selected' if request.args.get('onay_durumu') == 'onaylandi' }}>Onaylandı</option>
-                <option value="reddedildi" {{ 'selected' if request.args.get('onay_durumu') == 'reddedildi' }}>Reddedildi</option>
-            </select>
-            <select name="durum" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
-                <option value="">Tüm Durumlar</option>
-                <option value="acik" {{ 'selected' if request.args.get('durum') == 'acik' }}>Açık</option>
-                <option value="kapandi" {{ 'selected' if request.args.get('durum') == 'kapandi' }}>Kapandı</option>
-                <option value="dava" {{ 'selected' if request.args.get('durum') == 'dava' }}>Dava</option>
-            </select>
+        <form method="GET" class="space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <div class="md:col-span-2">
+                    <input type="text" name="search" class="w-full px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Plaka, sürücü, tutanak, konum..." value="{{ request.args.get('search', '') }}">
+                </div>
+                <select name="arac_id" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tüm Araçlar</option>
+                    {% for arac in araclar %}
+                    <option value="{{ arac.id }}" {% if request.args.get('arac_id', '')|int(-1) == arac.id %}selected{% endif %}>{{ arac.plaka }}</option>
+                    {% endfor %}
+                </select>
+                <select name="surucu_id" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tüm Sürücüler</option>
+                    {% for c in calisanlar %}
+                    <option value="{{ c.id }}" {% if request.args.get('surucu_id', '')|int(-1) == c.id %}selected{% endif %}>{{ c.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <select name="onay_durumu" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tüm Onay Durumları</option>
+                    <option value="bekliyor" {% if request.args.get('onay_durumu') == 'bekliyor' %}selected{% endif %}>Bekliyor</option>
+                    <option value="onaylandi" {% if request.args.get('onay_durumu') == 'onaylandi' %}selected{% endif %}>Onaylandı</option>
+                    <option value="reddedildi" {% if request.args.get('onay_durumu') == 'reddedildi' %}selected{% endif %}>Reddedildi</option>
+                </select>
+                <select name="durum" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tüm Durumlar</option>
+                    <option value="acik" {% if request.args.get('durum') == 'acik' %}selected{% endif %}>Açık</option>
+                    <option value="kapandi" {% if request.args.get('durum') == 'kapandi' %}selected{% endif %}>Kapandı</option>
+                    <option value="dava" {% if request.args.get('durum') == 'dava' %}selected{% endif %}>Dava</option>
+                </select>
+                <select name="yaralanma" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Yaralanma (Hepsi)</option>
+                    <option value="evet" {% if request.args.get('yaralanma') == 'evet' %}selected{% endif %}>Var</option>
+                    <option value="hayir" {% if request.args.get('yaralanma') == 'hayir' %}selected{% endif %}>Yok</option>
+                </select>
+                <input type="date" name="kaza_baslangic" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ request.args.get('kaza_baslangic', '') }}" title="Kaza Tarihi (Başlangıç)">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <input type="date" name="kaza_bitis" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ request.args.get('kaza_bitis', '') }}" title="Kaza Tarihi (Bitiş)">
+                <input type="date" name="kayit_baslangic" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ request.args.get('kayit_baslangic', '') }}" title="Kayıt Tarihi (Başlangıç)">
+                <input type="date" name="kayit_bitis" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ request.args.get('kayit_bitis', '') }}" title="Kayıt Tarihi (Bitiş)">
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 px-4 py-1.5 text-sm bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-base">search</span>Filtrele
+                    </button>
+                    <a href="{{ url_for('filo.kaza_liste') }}" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors inline-flex items-center justify-center" title="Temizle">
+                        <span class="material-symbols-outlined text-base">refresh</span>
+                    </a>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-2 border-t border-border-light dark:border-border-dark">
+                <a href="{{ url_for('filo.kaza_export', **request.args) }}" class="inline-flex items-center gap-2 px-4 py-1.5 text-sm bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors">
+                    <span class="material-symbols-outlined text-base">file_download</span>Excel İndir
+                </a>
+            </div>
         </form>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 dark:bg-[#111418]">
                 <tr>
-                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tarih</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark w-12">#</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Kayıt Tarihi</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Kaza Tarihi</th>
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Araç</th>
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Sürücü</th>
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Konum</th>
@@ -54,6 +91,8 @@
             <tbody class="divide-y divide-border-light dark:divide-border-dark">
                 {% for kaza in kazalar %}
                 <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418]">
+                    <td class="px-4 py-3 text-text-muted dark:text-text-muted-dark">{{ (pagination.page - 1) * pagination.per_page + loop.index }}</td>
+                    <td class="px-4 py-3 text-xs text-text-muted dark:text-text-muted-dark">{{ kaza.created_at.strftime('%d.%m.%Y %H:%M') if kaza.created_at else '-' }}</td>
                     <td class="px-4 py-3">{{ kaza.tarih.strftime('%d.%m.%Y') }}</td>
                     <td class="px-4 py-3">
                         <a href="{{ url_for('filo.detay', id=kaza.arac_id) }}" class="text-blue-600 hover:underline">
@@ -85,7 +124,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="9" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Kaza kaydı bulunamadı</td>
+                    <td colspan="11" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Kaza kaydı bulunamadı</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -99,7 +138,7 @@
         {% for p in pagination.iter_pages() %}
         {% if p %}
         <li>
-            <a href="{{ url_for('filo.kaza_liste', page=p, **request.args) }}" class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
+            <a href="{{ url_for('filo.kaza_liste', **dict(request.args, page=p)) }}" class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
         </li>
         {% endif %}
         {% endfor %}

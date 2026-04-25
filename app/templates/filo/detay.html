@@ -78,6 +78,26 @@
                         <label class="text-xs text-text-muted dark:text-text-muted-dark">Motor No</label>
                         <div><code class="text-sm bg-gray-100 px-1 rounded">{{ arac.motor_no or '-' }}</code></div>
                     </div>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Sahiplik</label>
+                        <div>{{ arac.sahiplik_tipi.title() if arac.sahiplik_tipi else '-' }}</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Kiralama Firması</label>
+                        <div>
+                            {% if arac.kiralama_firmasi %}
+                            {{ arac.kiralama_firmasi.display_name }}
+                            {% else %}-{% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Kira Bitiş</label>
+                        <div>{{ arac.kira_bitis.strftime('%d.%m.%Y') if arac.kira_bitis else '-' }}</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-text-muted dark:text-text-muted-dark">Aylık Kira</label>
+                        <div>{% if arac.aylik_kira %}₺{{ '{:,.2f}'.format(arac.aylik_kira) }}{% else %}-{% endif %}</div>
+                    </div>
                 </div>
             </div>
         </div>

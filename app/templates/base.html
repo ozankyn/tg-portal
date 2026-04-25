@@ -417,13 +417,16 @@
                         </span>
                         <span class="material-symbols-outlined text-sm transition-transform" id="filoMenuIcon">expand_more</span>
                     </button>
-                    <div id="filoMenu" class="sidebar-submenu {% if 'yakit' in request.path or 'teslim' in request.path or 'kaza' in request.path or 'ikame' in request.path or 'ceza' in request.path %}open{% endif %}">
+                    <div id="filoMenu" class="sidebar-submenu {% if 'yakit' in request.path or 'teslim' in request.path or 'kaza' in request.path or 'ikame' in request.path or 'ceza' in request.path or '/km/' in request.path %}open{% endif %}">
                         <div class="pl-12 py-1 space-y-1">
                             <a href="{{ url_for('filo.yakit_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'yakit' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Yakıt Kayıtları</a>
                             <a href="{{ url_for('filo.teslim_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'teslim' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Teslim/İade</a>
                             <a href="{{ url_for('filo.kaza_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'kaza' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Kazalar</a>
                             <a href="{{ url_for('filo.ikame_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'ikame' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">İkame Araçlar</a>
                             <a href="{{ url_for('filo.ceza_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'ceza' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Trafik Cezaları</a>
+                            {% if has_permission('filo.edit') %}
+                            <a href="{{ url_for('filo.km_import') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if '/km/' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">KM Toplu Yükle</a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>

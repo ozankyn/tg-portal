@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Araç KM Toplu Yükle - TG Portal{% endblock %}
+{% block page_title %}Araç KM Toplu Yükle{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+        <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+            <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined">table_chart</span>Excel Dosyası Yükle
+            </h6>
+        </div>
+        <div class="p-6">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-lg p-4 mb-6">
+                    <h6 class="font-medium text-blue-800 dark:text-blue-300 flex items-center gap-2 mb-2">
+                        <span class="material-symbols-outlined">info</span>Dosya Formatı
+                    </h6>
+                    <p class="text-sm text-blue-700 dark:text-blue-300/80 mb-2">Excel dosyanız aşağıdaki kolonları içermelidir:</p>
+                    <ul class="text-sm text-blue-700 dark:text-blue-300/80 list-disc list-inside space-y-1">
+                        <li><strong class="text-[#111418] dark:text-white">PLAKA</strong> - Araç plakası (zorunlu)</li>
+                        <li><strong class="text-[#111418] dark:text-white">KM</strong> - Güncel kilometre (zorunlu, sayı)</li>
+                        <li><strong class="text-[#111418] dark:text-white">TARİH</strong> - KM okuma tarihi (opsiyonel; boşsa şu an)</li>
+                    </ul>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Excel Dosyası *</label>
+                    <input type="file" name="excel_file" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" accept=".xlsx,.xls" required>
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Sadece .xlsx veya .xls dosyaları kabul edilir.</p>
+                </div>
+
+                <div class="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-lg p-4 mb-6">
+                    <div class="flex items-start gap-2">
+                        <span class="material-symbols-outlined text-amber-600 mt-0.5">warning</span>
+                        <div>
+                            <strong class="text-amber-800 dark:text-amber-300">Önemli:</strong>
+                            <ul class="text-sm text-amber-700 dark:text-amber-300/80 list-disc list-inside mt-2 space-y-1">
+                                <li>Sistemde kayıtlı olmayan plakalar atlanacaktır.</li>
+                                <li>Yeni KM mevcut KM'den küçük veya eşitse satır atlanır.</li>
+                                <li>Tarih formatı: <code>31/12/2025 14:30</code> veya Excel tarih hücresi.</li>
+                                <li>KM değeri sayısal olmalı; <code>1.234,5</code> veya <code>1234</code> gibi formatlar desteklenir.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                        <span class="material-symbols-outlined">upload</span>Yükle ve Güncelle
+                    </button>
+                    <a href="{{ url_for('filo.liste') }}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-[#111418] dark:text-white font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">İptal</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mt-6">
+        <div class="px-4 py-3 border-b border-border-light dark:border-border-dark bg-gray-50 dark:bg-[#111418]">
+            <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined">table_chart</span>Örnek Excel Formatı
+            </h6>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-100 dark:bg-gray-800">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">PLAKA</th>
+                        <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">KM</th>
+                        <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">TARİH</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                    <tr>
+                        <td class="px-4 py-3">34ABC123</td>
+                        <td class="px-4 py-3">85.450</td>
+                        <td class="px-4 py-3">25/04/2026 09:00</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-3">34XYZ789</td>
+                        <td class="px-4 py-3">142500</td>
+                        <td class="px-4 py-3"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

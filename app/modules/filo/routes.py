@@ -6,12 +6,15 @@ Araç yönetimi
 import os
 import pandas as pd
 from decimal import Decimal
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app, make_response
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app, make_response, Response
 from flask_login import login_required, current_user
 from datetime import datetime, date
 from werkzeug.utils import secure_filename
 from PIL import Image
 import io
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
+from openpyxl.utils import get_column_letter
 
 def resize_image(file, max_size=1920, quality=85):
     """Fotoğrafı yeniden boyutlandır ve optimize et"""
@@ -68,46 +71,138 @@ from app.utils import permission_required
 filo_bp = Blueprint('filo', __name__)
 
 
+def _excel_response(headers, rows, filename, widths=None):
+    """openpyxl ile filtrelenmiş listeyi Excel olarak döndürür."""
+    wb = Workbook()
+    ws = wb.active
+    ws.append(headers)
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='137FEC')
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+    for row in rows:
+        ws.append(row)
+    if widths:
+        for idx, w in enumerate(widths, start=1):
+            ws.column_dimensions[get_column_letter(idx)].width = w
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+
+
+def _arac_filtered_query():
+    """Araç listesi filtrelerini uygular — liste() ve arac_export() ortak query."""
+    search = request.args.get('search', '').strip()
+    durum = request.args.get('durum', '')
+    proje_id = request.args.get('proje_id', type=int)
+    il = request.args.get('il', '')
+    sahiplik_tipi = request.args.get('sahiplik_tipi', '')
+    kiralama_firmasi_id = request.args.get('kiralama_firmasi_id', type=int)
+    yakit_tipi = request.args.get('yakit_tipi', '')
+    model_yili = request.args.get('model_yili', type=int)
+    kira_bitis_baslangic = request.args.get('kira_bitis_baslangic', '')
+    kira_bitis_bitis = request.args.get('kira_bitis_bitis', '')
+
+    query = Arac.query.filter_by(is_deleted=False)
+
+    if search:
+        query = query.filter(db.or_(
+            Arac.plaka.ilike(f'%{search}%'),
+            Arac.marka.ilike(f'%{search}%'),
+            Arac.model.ilike(f'%{search}%')
+        ))
+    if durum:
+        query = query.filter_by(durum=AracDurumu(durum))
+    if proje_id:
+        query = query.filter_by(proje_id=proje_id)
+    if il:
+        query = query.join(Calisan, Arac.atanan_calisan_id == Calisan.id).filter(Calisan.il == il)
+    if sahiplik_tipi:
+        query = query.filter(Arac.sahiplik_tipi == sahiplik_tipi)
+    if kiralama_firmasi_id:
+        query = query.filter(Arac.kiralama_firmasi_id == kiralama_firmasi_id)
+    if yakit_tipi:
+        query = query.filter(Arac.yakit_tipi == YakitTipi(yakit_tipi))
+    if model_yili:
+        query = query.filter(Arac.model_yili == model_yili)
+    if kira_bitis_baslangic:
+        try:
+            query = query.filter(Arac.kira_bitis >= datetime.strptime(kira_bitis_baslangic, '%Y-%m-%d').date())
+        except ValueError:
+            pass
+    if kira_bitis_bitis:
+        try:
+            query = query.filter(Arac.kira_bitis <= datetime.strptime(kira_bitis_bitis, '%Y-%m-%d').date())
+        except ValueError:
+            pass
+
+    return query.order_by(Arac.plaka)
+
+
 @filo_bp.route('/')
 @login_required
 @permission_required('filo.view')
 def liste():
     """Araç listesi"""
     page = request.args.get('page', 1, type=int)
-    search = request.args.get('search', '')
-    durum = request.args.get('durum', '')
-    proje_id = request.args.get('proje_id', type=int)
-    
-    query = Arac.query.filter_by(is_deleted=False)
-    
-    if search:
-        query = query.filter(
-            db.or_(
-                Arac.plaka.ilike(f'%{search}%'),
-                Arac.marka.ilike(f'%{search}%'),
-                Arac.model.ilike(f'%{search}%')
-            )
-        )
-    
-    if durum:
-        query = query.filter_by(durum=AracDurumu(durum))
-    
-    if proje_id:
-        query = query.filter_by(proje_id=proje_id)
-    
-    query = query.order_by(Arac.plaka)
-    pagination = query.paginate(page=page, per_page=20, error_out=False)
-    
-    # Filtre için projeler
+
+    pagination = _arac_filtered_query().paginate(page=page, per_page=20, error_out=False)
+
     projeler = Proje.query.filter_by(is_deleted=False, aktif=True).order_by(Proje.ad).all()
-    
+    kiralama_firmalari = Tedarikci.query.filter_by(is_deleted=False).order_by(Tedarikci.unvan).all()
+
     return render_template('filo/liste.html',
                          araclar=pagination.items,
                          pagination=pagination,
                          projeler=projeler,
+                         kiralama_firmalari=kiralama_firmalari,
                          durumlar=AracDurumu,
+                         yakit_tipleri=YakitTipi,
                          today=date.today(),
                          iller=[i[0] for i in db.session.query(Calisan.il).filter(Calisan.il.isnot(None), Calisan.il != '').distinct().order_by(Calisan.il).all()])
+
+
+@filo_bp.route('/export')
+@login_required
+@permission_required('filo.view')
+def arac_export():
+    """Filtrelenmiş araç listesini Excel olarak indir"""
+    araclar = _arac_filtered_query().all()
+
+    headers = ['Plaka', 'Marka', 'Model', 'Model Yılı', 'Yakıt', 'Vites', 'KM',
+               'Sahiplik', 'Kiralama Firması', 'Aylık Kira (₺)', 'Kira Başlangıç', 'Kira Bitiş',
+               'Atanan Şoför', 'Proje', 'Müşteri', 'İl', 'Durum', 'Son KM Güncelleme']
+    rows = []
+    for a in araclar:
+        rows.append([
+            a.plaka,
+            a.marka or '',
+            a.model or '',
+            a.model_yili or '',
+            a.yakit_tipi.value if a.yakit_tipi else '',
+            a.vites_tipi or '',
+            a.km or 0,
+            a.sahiplik_tipi or '',
+            a.kiralama_firmasi.display_name if a.kiralama_firmasi else '',
+            float(a.aylik_kira) if a.aylik_kira else '',
+            a.kira_baslangic.strftime('%d.%m.%Y') if a.kira_baslangic else '',
+            a.kira_bitis.strftime('%d.%m.%Y') if a.kira_bitis else '',
+            a.atanan_calisan.full_name if a.atanan_calisan else '',
+            a.proje.ad if a.proje else '',
+            a.proje.musteri.display_name if a.proje and a.proje.musteri else '',
+            a.atanan_calisan.il if a.atanan_calisan and a.atanan_calisan.il else '',
+            a.durum.value if a.durum else '',
+            a.son_km_guncelleme.strftime('%d.%m.%Y %H:%M') if a.son_km_guncelleme else '',
+        ])
+    widths = [12, 14, 18, 10, 10, 10, 10, 12, 22, 14, 14, 14, 22, 18, 18, 14, 12, 18]
+    filename = f"araclar_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return _excel_response(headers, rows, filename, widths)
 
 
 @filo_bp.route('/ekle', methods=['GET', 'POST'])
@@ -132,12 +227,13 @@ def ekle():
             kira_baslangic=request.form.get('kira_baslangic') or None,
             kira_bitis=request.form.get('kira_bitis') or None,
             aylik_kira=request.form.get('aylik_kira') or None,
+            kiralama_firmasi_id=request.form.get('kiralama_firmasi_id') or None,
             atanan_calisan_id=request.form.get('atanan_calisan_id') or None,
             proje_id=request.form.get('proje_id') or None,
             durum=AracDurumu(request.form.get('durum')) if request.form.get('durum') else AracDurumu.AKTIF,
             notlar=request.form.get('notlar')
         )
-        
+
         try:
             db.session.add(arac)
             db.session.commit()
@@ -146,14 +242,16 @@ def ekle():
         except Exception as e:
             db.session.rollback()
             flash(f'Hata: {str(e)}', 'danger')
-    
+
     calisanlar = Calisan.query.filter_by(is_deleted=False).order_by(Calisan.ad).all()
     projeler = Proje.query.filter_by(is_deleted=False, aktif=True).order_by(Proje.ad).all()
-    
+    tedarikciler = Tedarikci.query.filter_by(is_deleted=False).order_by(Tedarikci.unvan).all()
+
     return render_template('filo/form.html',
                          arac=None,
                          calisanlar=calisanlar,
                          projeler=projeler,
+                         tedarikciler=tedarikciler,
                          durumlar=AracDurumu,
                          yakit_tipleri=YakitTipi)
 
@@ -197,11 +295,12 @@ def duzenle(id):
         arac.kira_baslangic = request.form.get('kira_baslangic') or None
         arac.kira_bitis = request.form.get('kira_bitis') or None
         arac.aylik_kira = request.form.get('aylik_kira') or None
+        arac.kiralama_firmasi_id = request.form.get('kiralama_firmasi_id') or None
         arac.atanan_calisan_id = request.form.get('atanan_calisan_id') or None
         arac.proje_id = request.form.get('proje_id') or None
         arac.durum = AracDurumu(request.form.get('durum')) if request.form.get('durum') else AracDurumu.AKTIF
         arac.notlar = request.form.get('notlar')
-        
+
         try:
             db.session.commit()
             flash('Araç başarıyla güncellendi.', 'success')
@@ -209,14 +308,16 @@ def duzenle(id):
         except Exception as e:
             db.session.rollback()
             flash(f'Hata: {str(e)}', 'danger')
-    
+
     calisanlar = Calisan.query.filter_by(is_deleted=False).order_by(Calisan.ad).all()
     projeler = Proje.query.filter_by(is_deleted=False, aktif=True).order_by(Proje.ad).all()
-    
+    tedarikciler = Tedarikci.query.filter_by(is_deleted=False).order_by(Tedarikci.unvan).all()
+
     return render_template('filo/form.html',
                          arac=arac,
                          calisanlar=calisanlar,
                          projeler=projeler,
+                         tedarikciler=tedarikciler,
                          durumlar=AracDurumu,
                          yakit_tipleri=YakitTipi)
 
@@ -483,6 +584,107 @@ def yakit_import():
             return redirect(request.url)
     
     return render_template('filo/yakit_import.html')
+
+
+# ==================== KM TOPLU IMPORT ====================
+
+@filo_bp.route('/km/import', methods=['GET', 'POST'])
+@login_required
+@permission_required('filo.edit')
+def km_import():
+    """Araç KM'lerini Excel'den toplu güncelle"""
+    if request.method == 'POST':
+        if 'excel_file' not in request.files:
+            flash('Dosya seçilmedi.', 'danger')
+            return redirect(request.url)
+
+        file = request.files['excel_file']
+        if not file or file.filename == '':
+            flash('Dosya seçilmedi.', 'danger')
+            return redirect(request.url)
+
+        if not file.filename.lower().endswith(('.xlsx', '.xls')):
+            flash('Sadece Excel dosyaları (.xlsx, .xls) kabul edilir.', 'danger')
+            return redirect(request.url)
+
+        try:
+            df = pd.read_excel(file)
+        except Exception as e:
+            flash(f'Excel okuma hatası: {str(e)}', 'danger')
+            return redirect(request.url)
+
+        eksik = [k for k in ['PLAKA', 'KM'] if k not in df.columns]
+        if eksik:
+            flash(f'Eksik kolonlar: {", ".join(eksik)}', 'danger')
+            return redirect(request.url)
+
+        guncellenen = 0
+        atlanan = 0
+        hatalar = []
+
+        for index, row in df.iterrows():
+            try:
+                plaka = str(row['PLAKA']).upper().replace(' ', '').strip()
+                if not plaka or plaka == 'NAN':
+                    atlanan += 1
+                    continue
+
+                arac = Arac.query.filter_by(plaka=plaka, is_deleted=False).first()
+                if not arac:
+                    hatalar.append(f"Satır {index+2}: {plaka} plakası sistemde bulunamadı")
+                    atlanan += 1
+                    continue
+
+                # KM parse
+                km_raw = row['KM']
+                try:
+                    km_str = str(km_raw).replace('.', '').replace(',', '').replace(' KM', '').replace(' km', '').strip()
+                    yeni_km = int(float(km_str)) if km_str else 0
+                except (ValueError, TypeError):
+                    hatalar.append(f"Satır {index+2}: KM formatı hatalı: {km_raw}")
+                    atlanan += 1
+                    continue
+
+                if yeni_km <= 0:
+                    hatalar.append(f"Satır {index+2}: KM 0 veya negatif: {yeni_km}")
+                    atlanan += 1
+                    continue
+
+                if yeni_km <= (arac.km or 0):
+                    hatalar.append(f"Satır {index+2}: {plaka} mevcut KM ({arac.km}) yeni KM'den ({yeni_km}) büyük/eşit, atlandı")
+                    atlanan += 1
+                    continue
+
+                # Tarih parse (opsiyonel)
+                tarih = None
+                if 'TARİH' in df.columns and pd.notna(row.get('TARİH')):
+                    try:
+                        tarih = pd.to_datetime(row['TARİH']).to_pydatetime()
+                    except Exception:
+                        try:
+                            tarih = datetime.strptime(str(row['TARİH']), '%d/%m/%Y %H:%M')
+                        except Exception:
+                            tarih = None
+
+                arac.km = yeni_km
+                arac.son_km_guncelleme = tarih or datetime.utcnow()
+                guncellenen += 1
+
+            except Exception as e:
+                hatalar.append(f"Satır {index+2}: {str(e)}")
+                atlanan += 1
+
+        db.session.commit()
+        flash(f'{guncellenen} araç KM güncellendi, {atlanan} satır atlandı.', 'success')
+
+        for h in hatalar[:10]:
+            flash(h, 'warning')
+        if len(hatalar) > 10:
+            flash(f'... ve {len(hatalar) - 10} uyarı daha', 'warning')
+
+        return redirect(url_for('filo.liste'))
+
+    return render_template('filo/km_import.html')
 
 
 @filo_bp.route('/yakit')
@@ -828,40 +1030,118 @@ def kaza_reddet(id):
     return redirect(url_for('filo.kaza_detay', id=kaza.id))
 
 
+def _kaza_filtered_query():
+    """Kaza listesi filtrelerini uygular — kaza_liste() ve kaza_export() ortak query."""
+    arac_id = request.args.get('arac_id', type=int)
+    surucu_id = request.args.get('surucu_id', type=int)
+    durum = request.args.get('durum')
+    onay_durumu = request.args.get('onay_durumu')
+    yaralanma = request.args.get('yaralanma')
+    search = request.args.get('search', '').strip()
+    kaza_baslangic = request.args.get('kaza_baslangic', '')
+    kaza_bitis = request.args.get('kaza_bitis', '')
+    kayit_baslangic = request.args.get('kayit_baslangic', '')
+    kayit_bitis = request.args.get('kayit_bitis', '')
+
+    query = Kaza.query.join(Arac, Kaza.arac_id == Arac.id).filter(Arac.is_deleted == False)
+    query = query.outerjoin(Calisan, Kaza.surucu_id == Calisan.id)
+
+    if arac_id:
+        query = query.filter(Kaza.arac_id == arac_id)
+    if surucu_id:
+        query = query.filter(Kaza.surucu_id == surucu_id)
+    if durum:
+        query = query.filter(Kaza.durum == durum)
+    if onay_durumu:
+        query = query.filter(Kaza.onay_durumu == onay_durumu)
+    if yaralanma == 'evet':
+        query = query.filter(Kaza.yaralanma == True)
+    elif yaralanma == 'hayir':
+        query = query.filter(Kaza.yaralanma == False)
+    if search:
+        query = query.filter(db.or_(
+            Arac.plaka.ilike(f'%{search}%'),
+            Kaza.tutanak_no.ilike(f'%{search}%'),
+            Kaza.konum.ilike(f'%{search}%'),
+            Calisan.ad.ilike(f'%{search}%'),
+            Calisan.soyad.ilike(f'%{search}%'),
+        ))
+    if kaza_baslangic:
+        try:
+            query = query.filter(Kaza.tarih >= datetime.strptime(kaza_baslangic, '%Y-%m-%d'))
+        except ValueError:
+            pass
+    if kaza_bitis:
+        try:
+            query = query.filter(Kaza.tarih <= datetime.strptime(kaza_bitis + ' 23:59', '%Y-%m-%d %H:%M'))
+        except ValueError:
+            pass
+    if kayit_baslangic:
+        try:
+            query = query.filter(Kaza.created_at >= datetime.strptime(kayit_baslangic, '%Y-%m-%d'))
+        except ValueError:
+            pass
+    if kayit_bitis:
+        try:
+            query = query.filter(Kaza.created_at <= datetime.strptime(kayit_bitis + ' 23:59', '%Y-%m-%d %H:%M'))
+        except ValueError:
+            pass
+
+    return query.order_by(Kaza.created_at.desc())
+
+
 @filo_bp.route('/kazalar')
 @login_required
 @permission_required('filo.view')
 def kaza_liste():
     """Kaza kayıtları listesi"""
     page = request.args.get('page', 1, type=int)
-    arac_id = request.args.get('arac_id', type=int)
-    durum = request.args.get('durum')
-    onay_durumu = request.args.get('onay_durumu')
-    
-    query = Kaza.query.join(Arac).filter(Arac.is_deleted == False)
-    
-    if arac_id:
-        query = query.filter(Kaza.arac_id == arac_id)
-    
-    if durum:
-        query = query.filter(Kaza.durum == durum)
-    
-    if onay_durumu:
-        query = query.filter(Kaza.onay_durumu == onay_durumu)
-    
-    query = query.order_by(Kaza.tarih.desc())
-    pagination = query.paginate(page=page, per_page=20, error_out=False)
-    
-    # Onay bekleyen sayısı
+
+    pagination = _kaza_filtered_query().paginate(page=page, per_page=20, error_out=False)
+
     bekleyen_sayisi = Kaza.query.filter_by(onay_durumu='bekliyor').count()
-    
     araclar = Arac.query.filter_by(is_deleted=False).order_by(Arac.plaka).all()
-    
+    calisanlar = Calisan.query.filter_by(is_deleted=False).order_by(Calisan.ad).all()
+
     return render_template('filo/kaza_liste.html',
                           kazalar=pagination.items,
                           pagination=pagination,
                           araclar=araclar,
+                          calisanlar=calisanlar,
                           bekleyen_sayisi=bekleyen_sayisi)
+
+
+@filo_bp.route('/kazalar/export')
+@login_required
+@permission_required('filo.view')
+def kaza_export():
+    """Filtrelenmiş kaza listesini Excel olarak indir"""
+    kazalar = _kaza_filtered_query().all()
+
+    headers = ['#', 'Kayıt Tarihi', 'Kaza Tarihi', 'Plaka', 'Sürücü', 'Konum',
+               'Kusur %', 'Hasar Tutarı (₺)', 'Sigorta Karşılığı (₺)',
+               'Yaralanma', 'Tutanak No', 'Durum', 'Onay Durumu', 'Açıklama']
+    rows = []
+    for idx, k in enumerate(kazalar, start=1):
+        rows.append([
+            idx,
+            k.created_at.strftime('%d.%m.%Y %H:%M') if k.created_at else '',
+            k.tarih.strftime('%d.%m.%Y %H:%M') if k.tarih else '',
+            k.arac.plaka if k.arac else '',
+            k.surucu.full_name if k.surucu else '',
+            k.konum or '',
+            k.kusur_orani or 0,
+            float(k.hasar_tutari) if k.hasar_tutari else '',
+            float(k.sigorta_karsiladi) if k.sigorta_karsiladi else '',
+            'Evet' if k.yaralanma else 'Hayır',
+            k.tutanak_no or '',
+            k.durum or '',
+            k.onay_durumu or '',
+            k.aciklama or '',
+        ])
+    widths = [6, 18, 18, 12, 22, 30, 8, 14, 16, 10, 14, 12, 14, 30]
+    filename = f"kazalar_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return _excel_response(headers, rows, filename, widths)
 
 
 # ==================== İKAME ARAÇ ====================
@@ -957,38 +1237,120 @@ def ikame_liste():
 
 # ==================== TRAFİK CEZASI ====================
 
+def _ceza_filtered_query():
+    """Trafik cezası listesi filtrelerini uygular."""
+    arac_id = request.args.get('arac_id', type=int)
+    surucu_id = request.args.get('surucu_id', type=int)
+    durum = request.args.get('durum')
+    yansitildi = request.args.get('yansitildi')
+    search = request.args.get('search', '').strip()
+    ceza_baslangic = request.args.get('ceza_baslangic', '')
+    ceza_bitis = request.args.get('ceza_bitis', '')
+    kayit_baslangic = request.args.get('kayit_baslangic', '')
+    kayit_bitis = request.args.get('kayit_bitis', '')
+
+    query = TrafikCezasi.query.join(Arac, TrafikCezasi.arac_id == Arac.id).filter(Arac.is_deleted == False)
+    query = query.outerjoin(Calisan, TrafikCezasi.surucu_id == Calisan.id)
+
+    if arac_id:
+        query = query.filter(TrafikCezasi.arac_id == arac_id)
+    if surucu_id:
+        query = query.filter(TrafikCezasi.surucu_id == surucu_id)
+    if durum:
+        query = query.filter(TrafikCezasi.durum == durum)
+    if yansitildi == 'evet':
+        query = query.filter(TrafikCezasi.surucuye_yansitildi == True)
+    elif yansitildi == 'hayir':
+        query = query.filter(TrafikCezasi.surucuye_yansitildi == False)
+    if search:
+        query = query.filter(db.or_(
+            Arac.plaka.ilike(f'%{search}%'),
+            TrafikCezasi.tutanak_no.ilike(f'%{search}%'),
+            TrafikCezasi.ceza_turu.ilike(f'%{search}%'),
+            Calisan.ad.ilike(f'%{search}%'),
+            Calisan.soyad.ilike(f'%{search}%'),
+        ))
+    if ceza_baslangic:
+        try:
+            query = query.filter(TrafikCezasi.ceza_tarihi >= datetime.strptime(ceza_baslangic, '%Y-%m-%d'))
+        except ValueError:
+            pass
+    if ceza_bitis:
+        try:
+            query = query.filter(TrafikCezasi.ceza_tarihi <= datetime.strptime(ceza_bitis + ' 23:59', '%Y-%m-%d %H:%M'))
+        except ValueError:
+            pass
+    if kayit_baslangic:
+        try:
+            query = query.filter(TrafikCezasi.created_at >= datetime.strptime(kayit_baslangic, '%Y-%m-%d'))
+        except ValueError:
+            pass
+    if kayit_bitis:
+        try:
+            query = query.filter(TrafikCezasi.created_at <= datetime.strptime(kayit_bitis + ' 23:59', '%Y-%m-%d %H:%M'))
+        except ValueError:
+            pass
+
+    return query.order_by(TrafikCezasi.created_at.desc())
+
+
 @filo_bp.route('/cezalar')
 @login_required
 @permission_required('filo.view')
 def ceza_liste():
     """Trafik cezaları listesi"""
     page = request.args.get('page', 1, type=int)
-    arac_id = request.args.get('arac_id', type=int)
-    durum = request.args.get('durum')
-    
-    query = TrafikCezasi.query.join(Arac).filter(Arac.is_deleted == False)
-    
-    if arac_id:
-        query = query.filter(TrafikCezasi.arac_id == arac_id)
-    
-    if durum:
-        query = query.filter(TrafikCezasi.durum == durum)
-    
-    query = query.order_by(TrafikCezasi.created_at.desc())
-    pagination = query.paginate(page=page, per_page=20, error_out=False)
-    
-    # Özet
+
+    pagination = _ceza_filtered_query().paginate(page=page, per_page=20, error_out=False)
+
     bekleyen = TrafikCezasi.query.filter_by(durum='bekliyor').count()
     toplam_borc = db.session.query(db.func.sum(TrafikCezasi.ceza_tutari)).filter(TrafikCezasi.durum == 'bekliyor').scalar() or 0
-    
     araclar = Arac.query.filter_by(is_deleted=False).order_by(Arac.plaka).all()
-    
+    calisanlar = Calisan.query.filter_by(is_deleted=False).order_by(Calisan.ad).all()
+
     return render_template('filo/ceza_liste.html',
                           cezalar=pagination.items,
                           pagination=pagination,
                           araclar=araclar,
+                          calisanlar=calisanlar,
                           bekleyen=bekleyen,
                           toplam_borc=toplam_borc)
+
+
+@filo_bp.route('/cezalar/export')
+@login_required
+@permission_required('filo.view')
+def ceza_export():
+    """Filtrelenmiş trafik cezası listesini Excel olarak indir"""
+    cezalar = _ceza_filtered_query().all()
+
+    headers = ['#', 'Kayıt Tarihi', 'Ceza Tarihi', 'Tebliğ Tarihi', 'Son Ödeme',
+               'Plaka', 'Sürücü', 'Ceza Türü', 'Tutar (₺)', 'İndirimli (₺)', 'Ödenen (₺)',
+               'Puan', 'Konum', 'Tutanak No', 'Durum', 'Yansıtıldı', 'Yansıtma Tarihi']
+    rows = []
+    for idx, c in enumerate(cezalar, start=1):
+        rows.append([
+            idx,
+            c.created_at.strftime('%d.%m.%Y %H:%M') if c.created_at else '',
+            c.ceza_tarihi.strftime('%d.%m.%Y %H:%M') if c.ceza_tarihi else '',
+            c.teblig_tarihi.strftime('%d.%m.%Y') if c.teblig_tarihi else '',
+            c.son_odeme_tarihi.strftime('%d.%m.%Y') if c.son_odeme_tarihi else '',
+            c.arac.plaka if c.arac else '',
+            c.surucu.full_name if c.surucu else '',
+            c.ceza_turu or '',
+            float(c.ceza_tutari) if c.ceza_tutari else '',
+            float(c.indirimli_tutar) if c.indirimli_tutar else '',
+            float(c.odenen_tutar) if c.odenen_tutar else '',
+            c.ceza_puani or 0,
+            c.konum or '',
+            c.tutanak_no or '',
+            c.durum or '',
+            'Evet' if c.surucuye_yansitildi else 'Hayır',
+            c.yansitma_tarihi.strftime('%d.%m.%Y') if c.yansitma_tarihi else '',
+        ])
+    widths = [6, 18, 18, 14, 14, 12, 22, 18, 12, 12, 12, 8, 22, 14, 12, 12, 14]
+    filename = f"trafik_cezalari_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return _excel_response(headers, rows, filename, widths)
 
 
 @filo_bp.route('/<int:id>/ceza/ekle', methods=['GET', 'POST'])

@@ -12,29 +12,65 @@
 {% endif %}
 
 <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
-    <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex flex-wrap items-center justify-between gap-2">
-        <form method="GET" class="flex flex-wrap items-center gap-2">
-            <select name="arac_id" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
-                <option value="">Tüm Araçlar</option>
-                {% for arac in araclar %}
-                <option value="{{ arac.id }}" {{ 'selected' if request.args.get('arac_id')|int == arac.id }}>
-                    {{ arac.plaka }}
-                </option>
-                {% endfor %}
-            </select>
-            <select name="durum" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" onchange="this.form.submit()">
-                <option value="">Tüm Durumlar</option>
-                <option value="bekliyor" {{ 'selected' if request.args.get('durum') == 'bekliyor' }}>Bekliyor</option>
-                <option value="odendi" {{ 'selected' if request.args.get('durum') == 'odendi' }}>Ödendi</option>
-                <option value="itiraz" {{ 'selected' if request.args.get('durum') == 'itiraz' }}>İtiraz</option>
-            </select>
+    <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+        <form method="GET" class="space-y-3">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <div class="md:col-span-2">
+                    <input type="text" name="search" class="w-full px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Plaka, sürücü, tutanak, ceza türü..." value="{{ request.args.get('search', '') }}">
+                </div>
+                <select name="arac_id" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tüm Araçlar</option>
+                    {% for arac in araclar %}
+                    <option value="{{ arac.id }}" {% if request.args.get('arac_id', '')|int(-1) == arac.id %}selected{% endif %}>{{ arac.plaka }}</option>
+                    {% endfor %}
+                </select>
+                <select name="surucu_id" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tüm Sürücüler</option>
+                    {% for c in calisanlar %}
+                    <option value="{{ c.id }}" {% if request.args.get('surucu_id', '')|int(-1) == c.id %}selected{% endif %}>{{ c.full_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <select name="durum" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tüm Durumlar</option>
+                    <option value="bekliyor" {% if request.args.get('durum') == 'bekliyor' %}selected{% endif %}>Bekliyor</option>
+                    <option value="odendi" {% if request.args.get('durum') == 'odendi' %}selected{% endif %}>Ödendi</option>
+                    <option value="itiraz" {% if request.args.get('durum') == 'itiraz' %}selected{% endif %}>İtiraz</option>
+                    <option value="iptal" {% if request.args.get('durum') == 'iptal' %}selected{% endif %}>İptal</option>
+                </select>
+                <select name="yansitildi" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Yansıtma (Hepsi)</option>
+                    <option value="evet" {% if request.args.get('yansitildi') == 'evet' %}selected{% endif %}>Yansıtıldı</option>
+                    <option value="hayir" {% if request.args.get('yansitildi') == 'hayir' %}selected{% endif %}>Yansıtılmadı</option>
+                </select>
+                <input type="date" name="ceza_baslangic" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ request.args.get('ceza_baslangic', '') }}" title="Ceza Tarihi (Başlangıç)">
+                <input type="date" name="ceza_bitis" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ request.args.get('ceza_bitis', '') }}" title="Ceza Tarihi (Bitiş)">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-2">
+                <input type="date" name="kayit_baslangic" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ request.args.get('kayit_baslangic', '') }}" title="Kayıt Tarihi (Başlangıç)">
+                <input type="date" name="kayit_bitis" class="px-3 py-1.5 text-sm border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ request.args.get('kayit_bitis', '') }}" title="Kayıt Tarihi (Bitiş)">
+                <button type="submit" class="px-4 py-1.5 text-sm bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-base">search</span>Filtrele
+                </button>
+                <a href="{{ url_for('filo.ceza_liste') }}" class="px-4 py-1.5 text-sm border border-border-light dark:border-border-dark text-text-muted dark:text-text-muted-dark rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors inline-flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-base">refresh</span>Temizle
+                </a>
+            </div>
+            <div class="flex flex-wrap gap-2 pt-2 border-t border-border-light dark:border-border-dark">
+                <a href="{{ url_for('filo.ceza_export', **request.args) }}" class="inline-flex items-center gap-2 px-4 py-1.5 text-sm bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors">
+                    <span class="material-symbols-outlined text-base">file_download</span>Excel İndir
+                </a>
+            </div>
         </form>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-gray-50 dark:bg-[#111418]">
                 <tr>
-                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tarih</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark w-12">#</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Kayıt Tarihi</th>
+                    <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Ceza Tarihi</th>
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Araç</th>
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Sürücü</th>
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Ceza Türü</th>
@@ -47,6 +83,8 @@
             <tbody class="divide-y divide-border-light dark:divide-border-dark">
                 {% for ceza in cezalar %}
                 <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                    <td class="px-4 py-3 text-text-muted dark:text-text-muted-dark">{{ (pagination.page - 1) * pagination.per_page + loop.index }}</td>
+                    <td class="px-4 py-3 text-xs text-text-muted dark:text-text-muted-dark">{{ ceza.created_at.strftime('%d.%m.%Y %H:%M') if ceza.created_at else '-' }}</td>
                     <td class="px-4 py-3">{{ ceza.ceza_tarihi.strftime('%d.%m.%Y') }}</td>
                     <td class="px-4 py-3">
                         <a href="{{ url_for('filo.detay', id=ceza.arac_id) }}" class="text-blue-600 hover:underline font-medium">
@@ -80,7 +118,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Trafik cezası bulunamadı</td>
+                    <td colspan="10" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Trafik cezası bulunamadı</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -94,7 +132,7 @@
         {% for p in pagination.iter_pages() %}
         {% if p %}
         <li>
-            <a href="{{ url_for('filo.ceza_liste', page=p, **request.args) }}" class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white dark:bg-card-dark border border-border-light dark:border-border-dark text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
+            <a href="{{ url_for('filo.ceza_liste', **dict(request.args, page=p)) }}" class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white dark:bg-card-dark border border-border-light dark:border-border-dark text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
         </li>
         {% endif %}
         {% endfor %}
