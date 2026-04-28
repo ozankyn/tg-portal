@@ -287,29 +287,6 @@
                     </div>
                 </div>
                 
-                <!-- Eğitim Submenu -->
-                <div class="sidebar-menu-item">
-                    <button onclick="toggleSubmenu('egitimMenu')" 
-                            class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white">
-                        <span class="flex items-center gap-3">
-                            <span class="material-symbols-outlined">school</span>
-                            <span class="font-medium">Eğitim</span>
-                        </span>
-                        <span class="material-symbols-outlined text-sm transition-transform" id="egitimMenuIcon">expand_more</span>
-                    </button>
-                    <div id="egitimMenu" class="sidebar-submenu {% if request.blueprint == 'egitim' %}open{% endif %}">
-                        <div class="pl-12 py-1 space-y-1">
-                            <a href="{{ url_for('egitim.dashboard') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.dashboard' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Dashboard</a>
-                            <a href="{{ url_for('egitim.liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Eğitimler</a>
-                            <a href="{{ url_for('egitim.ekle') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.ekle' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Yeni Eğitim</a>
-                            <a href="{{ url_for('egitim.zorunlu_egitim_takip') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.zorunlu_egitim_takip' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Zorunlu Takip</a>
-                            <a href="{{ url_for('egitim.tip_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.tip_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Eğitim Tipleri</a>
-                            <a href="{{ url_for('egitim.soru_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.soru_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Soru Bankası</a>
-                            <a href="{{ url_for('egitim.test_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.test_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Testler</a>
-                        </div>
-                    </div>
-                </div>
-                
                 <a href="{{ url_for('ik.evrak_tipleri') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.endpoint == 'ik.evrak_tipleri' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
                     <span class="material-symbols-outlined">folder</span>
                     <span class="font-medium">Evrak Tipleri</span>
@@ -327,7 +304,37 @@
                 </a>
                 {% endif %}
                 {% endif %}
-                
+
+                {% if has_permission('egitim.view') %}
+                <!-- Eğitim Section -->
+                <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Eğitim</p>
+                <div class="sidebar-menu-item">
+                    <button onclick="toggleSubmenu('egitimMenu')"
+                            class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'egitim' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                        <span class="flex items-center gap-3">
+                            <span class="material-symbols-outlined">school</span>
+                            <span class="font-medium">Eğitim</span>
+                        </span>
+                        <span class="material-symbols-outlined text-sm transition-transform" id="egitimMenuIcon">expand_more</span>
+                    </button>
+                    <div id="egitimMenu" class="sidebar-submenu {% if request.blueprint == 'egitim' %}open{% endif %}">
+                        <div class="pl-12 py-1 space-y-1">
+                            <a href="{{ url_for('egitim.dashboard') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.dashboard' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Dashboard</a>
+                            <a href="{{ url_for('egitim.liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Eğitimler</a>
+                            {% if has_permission('egitim.edit') %}
+                            <a href="{{ url_for('egitim.ekle') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.ekle' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Yeni Eğitim</a>
+                            {% endif %}
+                            <a href="{{ url_for('egitim.zorunlu_egitim_takip') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.zorunlu_egitim_takip' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Zorunlu Takip</a>
+                            {% if has_permission('egitim.edit') %}
+                            <a href="{{ url_for('egitim.tip_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.tip_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Eğitim Tipleri</a>
+                            <a href="{{ url_for('egitim.soru_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.soru_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Soru Bankası</a>
+                            <a href="{{ url_for('egitim.test_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'egitim.test_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Testler</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- Masraf -->
                 <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Masraf</p>
                 <a href="{{ url_for('masraf.dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.blueprint == 'masraf' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
