@@ -50,7 +50,8 @@ ROL_PERMISSION_MATRIX = {
     'Departman Muduru': {
         'aciklama': 'Departman muduru, kendi alaninda tam yetki + onay',
         'permissions': {
-            'calisan': ['view', 'edit'], 'egitim': ['view'], 'filo': ['view'], 'ik': ['view'],
+            'calisan': ['view', 'edit'], 'egitim': ['view'], 'filo': ['view'],
+            'ik': ['view', 'create', 'disiplin', 'zimmet'],
             'masraf': ['view', 'create', 'onay'], 'onay': ['view', 'islem'],
             'proje': ['view', 'create', 'edit'], 'rapor': ['view', 'export'],
             'satinalma': ['view', 'create', 'onay'], 'sozlesme': ['view', 'onay'],
@@ -70,7 +71,7 @@ ROL_PERMISSION_MATRIX = {
         'aciklama': 'IK operasyonlari, calisan yonetimi, egitim katilim',
         'permissions': {
             'calisan': ['view', 'create', 'edit'], 'egitim': ['view', 'katilim'],
-            'ik': ['view', 'create', 'edit', 'izin', 'sozlesme'],
+            'ik': ['view', 'create', 'edit', 'izin', 'sozlesme', 'disiplin', 'zimmet'],
             'masraf': ['view', 'create'], 'onay': ['view'], 'proje': ['view'],
             'rapor': ['view'], 'sozlesme': ['view', 'create'], 'talep': ['view', 'create'],
         },
