@@ -14,11 +14,13 @@ ENV FLASK_APP=app.py
 # - fonts-dejavu: Türkçe karakter desteği
 RUN apt-get update && apt-get install -y \
     gcc \
+    pkg-config \
     libpq-dev \
     libpango-1.0-0 \
     libpangoft2-1.0-0 \
     libpangocairo-1.0-0 \
     libcairo2 \
+    libcairo2-dev \
     libgdk-pixbuf-2.0-0 \
     libffi-dev \
     shared-mime-info \
