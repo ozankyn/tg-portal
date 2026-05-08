@@ -3,10 +3,13 @@
 Sözleşme PDF Jeneratör
 - Otomatik değişkenler: çalışan modelinden
 - Manuel değişkenler: sözleşme oluşturma formundan
-- HTML şablon → WeasyPrint → PDF
+- HTML şablon → xhtml2pdf → PDF
 """
+import io
 import re
 from datetime import date, datetime
+
+from xhtml2pdf import pisa
 
 
 # ============================================================
@@ -173,13 +176,10 @@ li { margin: 0.2em 0; }
 
 
 def html_to_pdf_bytes(html, css_extra=None):
-    """HTML → PDF bytes (WeasyPrint).
+    """HTML → PDF bytes (xhtml2pdf).
 
-    CSS'i HTML içine <style> ile gömüyoruz; bu sürüm-bağımsız ve daha temiz.
-    (WeasyPrint sürümleri arasında stylesheets= argümanı imzası değişebiliyor.)
+    CSS'i HTML içine <style> ile gömüyoruz.
     """
-    from weasyprint import HTML
-
     css_block = _DEFAULT_CSS
     if css_extra:
         css_block += "\n" + css_extra
@@ -196,7 +196,9 @@ def html_to_pdf_bytes(html, css_extra=None):
 </body>
 </html>"""
 
-    return HTML(string=full_html).write_pdf()
+    result = io.BytesIO()
+    pisa.CreatePDF(io.StringIO(full_html), dest=result)
+    return result.getvalue()
 
 
 def render_sozlesme_pdf(html_sablon, degerler):
