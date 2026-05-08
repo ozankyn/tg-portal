@@ -40,6 +40,5 @@ anthropic
 msal==1.26.0
 APScheduler==3.10.4
 
-# PDF Jeneratör
-xhtml2pdf
-pdfplumber==0.11.4
+# Sözleşme Jeneratör (DOCX)
+python-docx==1.1.2

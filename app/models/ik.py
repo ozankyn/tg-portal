@@ -114,7 +114,7 @@ class Calisan(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     sozlesme_sablon_id = db.Column(db.Integer, db.ForeignKey('sozlesme_sablonlari.id'))
     sozlesme_baslangic = db.Column(db.Date)
     sozlesme_bitis = db.Column(db.Date)
-    sozlesme_pdf = db.Column(db.String(500))  # İmzalı sözleşme PDF yolu
+    sozlesme_pdf = db.Column(db.String(500))  # Sözleşme dosya yolu (oluşturulan .docx veya yüklenen imzalı PDF)
 
     # İlişkiler
     departman = db.relationship('Departman', foreign_keys=[departman_id], backref='calisanlar')
@@ -1114,8 +1114,8 @@ class SozlesmeSablonu(db.Model, TimestampMixin, SoftDeleteMixin):
     pozisyon_id = db.Column(db.Integer, db.ForeignKey('pozisyonlar.id'))
     departman_id = db.Column(db.Integer, db.ForeignKey('departmanlar.id'))
 
-    sablon_dosya = db.Column(db.String(500))  # PDF şablon yolu (eski yöntem)
-    html_sablon = db.Column(db.Text)          # HTML şablon (PDF jeneratör için)
+    sablon_dosya = db.Column(db.String(500))  # .docx şablon yolu (placeholder'lı Word dosyası)
+    html_sablon = db.Column(db.Text)          # (deprecated - eski HTML şablonları için saklanıyor)
     degiskenler = db.Column(db.JSON)          # Şablonda kullanılan değişken listesi (opsiyonel meta)
     aciklama = db.Column(db.Text)
     aktif = db.Column(db.Boolean, default=True)

@@ -2425,111 +2425,28 @@ def api_sozlesme_sablonlari():
 
 
 # ============================================================
-# SÖZLEŞME PDF JENERATÖR
+# SÖZLEŞME DOCX JENERATÖR
 # ============================================================
 
-@ik_bp.route('/sozlesme-sablonlari/pdf-import', methods=['POST'])
-@login_required
-@permission_required('ik.edit')
-def sablon_pdf_import():
-    """PDF yükle → otomatik HTML şablon üret → editöre yönlendir.
-
-    Mevcut bir şablona içe aktarılabilir (id parametresi) veya yeni şablon oluşturulur (ad + tip ile).
-    """
-    from app.services.sozlesme_pdf import pdf_to_html
-
-    pdf = request.files.get('pdf_dosya')
-    if not pdf or not pdf.filename or not pdf.filename.lower().endswith('.pdf'):
-        flash('Geçerli bir PDF dosyası seçin.', 'danger')
-        return redirect(url_for('ik.sablon_liste'))
-
-    try:
-        html = pdf_to_html(pdf.read())
-    except Exception as e:
-        current_app.logger.exception('PDF parse hatası')
-        flash(f'PDF okunamadı: {e}', 'danger')
-        return redirect(url_for('ik.sablon_liste'))
-
-    sablon_id = request.form.get('sablon_id', type=int)
-    if sablon_id:
-        # Mevcut şablona içe aktar (üzerine yaz uyarısı UI'da)
-        sablon = SozlesmeSablonu.query.get_or_404(sablon_id)
-        sablon.html_sablon = html
-    else:
-        # Yeni şablon oluştur
-        ad = (request.form.get('ad') or '').strip() or pdf.filename.rsplit('.', 1)[0]
-        tip = request.form.get('tip') or 'belirsiz_sureli'
-        sablon = SozlesmeSablonu(ad=ad, tip=tip, html_sablon=html, aktif=True)
-        db.session.add(sablon)
-
-    db.session.commit()
-    flash(
-        'PDF içe aktarıldı. Otomatik tespit edilen değişkenleri ve sarı vurgulu tutarları kontrol edin.',
-        'success'
-    )
-    return redirect(url_for('ik.sablon_html_editor', id=sablon.id))
-
-
-@ik_bp.route('/sozlesme-sablonlari/<int:id>/html-editor', methods=['GET', 'POST'])
-@login_required
-@permission_required('ik.edit')
-def sablon_html_editor(id):
-    """Şablon HTML editörü (Quill)."""
-    from app.services.sozlesme_pdf import OTOMATIK_DEGISKENLER, MANUEL_DEGISKENLER, kullanilan_degiskenler
-
-    sablon = SozlesmeSablonu.query.get_or_404(id)
-
-    if request.method == 'POST':
-        sablon.html_sablon = request.form.get('html_sablon') or ''
-        sablon.degiskenler = {'kullanilan': kullanilan_degiskenler(sablon.html_sablon)}
-        db.session.commit()
-        flash('Şablon HTML kaydedildi.', 'success')
-        return redirect(url_for('ik.sablon_html_editor', id=id))
-
-    return render_template(
-        'ik/sablon_html_editor.html',
-        sablon=sablon,
-        otomatik_degiskenler=OTOMATIK_DEGISKENLER,
-        manuel_degiskenler=MANUEL_DEGISKENLER,
-    )
-
-
-@ik_bp.route('/sozlesme-sablonlari/<int:id>/onizleme', methods=['POST'])
-@login_required
-@permission_required('ik.view')
-def sablon_onizleme(id):
-    """Örnek verilerle PDF önizlemesi (inline)."""
-    from app.services.sozlesme_pdf import ornek_degerler, render_sozlesme_pdf
-    from flask import Response
-
-    sablon = SozlesmeSablonu.query.get_or_404(id)
-    html = request.form.get('html_sablon') or sablon.html_sablon or ''
-
-    if not html.strip():
-        flash('Önizleme için önce şablon HTML\'i yazıp kaydedin.', 'warning')
-        return redirect(url_for('ik.sablon_html_editor', id=id))
-
-    try:
-        pdf_bytes = render_sozlesme_pdf(html, ornek_degerler())
-    except Exception as e:
-        current_app.logger.exception('Önizleme PDF hatası')
-        return f"PDF oluşturulamadı: {e}", 500
-
-    return Response(
-        pdf_bytes,
-        mimetype='application/pdf',
-        headers={'Content-Disposition': f'inline; filename="onizleme-{id}.pdf"'}
-    )
+def _read_sablon_docx(sablon):
+    """Şablon dosyasını disk'ten okur. Bytes döner."""
+    if not sablon.sablon_dosya:
+        return None
+    fpath = os.path.join(current_app.config['UPLOAD_FOLDER'], sablon.sablon_dosya)
+    if not os.path.exists(fpath):
+        return None
+    with open(fpath, 'rb') as f:
+        return f.read()
 
 
 @ik_bp.route('/calisan/<int:id>/sozlesme-olustur', methods=['GET', 'POST'])
 @login_required
 @permission_required('ik.edit')
 def calisan_sozlesme_olustur(id):
-    """Çalışana sözleşme PDF'i oluştur (otomatik + manuel değişkenler)."""
-    from app.services.sozlesme_pdf import (
+    """Çalışana sözleşme .docx'i oluştur (otomatik + manuel değişkenler)."""
+    from app.services.sozlesme_generator import (
         OTOMATIK_DEGISKENLER, MANUEL_DEGISKENLER,
-        calisan_degiskenleri, render_sozlesme_pdf
+        calisan_degiskenleri, degiskenleri_doldur_docx
     )
 
     calisan = Calisan.query.get_or_404(id)
@@ -2540,43 +2457,41 @@ def calisan_sozlesme_olustur(id):
     sablonlar = SozlesmeSablonu.query.filter(
         SozlesmeSablonu.aktif == True,
         SozlesmeSablonu.is_deleted == False,
-        SozlesmeSablonu.html_sablon.isnot(None),
-        SozlesmeSablonu.html_sablon != ''
+        SozlesmeSablonu.sablon_dosya.isnot(None),
+        SozlesmeSablonu.sablon_dosya != ''
     ).order_by(SozlesmeSablonu.ad).all()
 
     if request.method == 'POST':
         sablon_id = int(request.form.get('sablon_id') or 0)
         sablon = SozlesmeSablonu.query.get_or_404(sablon_id)
 
-        if not sablon.html_sablon:
-            flash('Bu şablonun HTML içeriği yok.', 'danger')
+        template_bytes = _read_sablon_docx(sablon)
+        if not template_bytes:
+            flash('Bu şablonun .docx dosyası bulunamadı.', 'danger')
             return redirect(url_for('ik.calisan_sozlesme_olustur', id=id))
 
-        # Otomatik + manuel değişkenleri birleştir
         degerler = calisan_degiskenleri(calisan)
         for md in MANUEL_DEGISKENLER:
             degerler[md['kod']] = (request.form.get(md['kod']) or '').strip()
 
         try:
-            pdf_bytes = render_sozlesme_pdf(sablon.html_sablon, degerler)
+            docx_bytes = degiskenleri_doldur_docx(template_bytes, degerler)
         except Exception as e:
-            current_app.logger.exception('Sözleşme PDF hatası')
-            flash(f'PDF oluşturulamadı: {e}', 'danger')
+            current_app.logger.exception('Sözleşme DOCX hatası')
+            flash(f'Sözleşme oluşturulamadı: {e}', 'danger')
             return redirect(url_for('ik.calisan_sozlesme_olustur', id=id))
 
-        # Kaydet
         upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'sozlesmeler', str(calisan.id))
         os.makedirs(upload_folder, exist_ok=True)
-        fname = f"sozlesme_{calisan.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
-        fpath = os.path.join(upload_folder, fname)
-        with open(fpath, 'wb') as f:
-            f.write(pdf_bytes)
+        fname = f"sozlesme_{calisan.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.docx"
+        with open(os.path.join(upload_folder, fname), 'wb') as f:
+            f.write(docx_bytes)
 
         calisan.sozlesme_pdf = f"sozlesmeler/{calisan.id}/{fname}"
         calisan.sozlesme_sablon_id = sablon.id
         db.session.commit()
 
-        flash(f'Sözleşme PDF oluşturuldu: {fname}', 'success')
+        flash(f'Sözleşme oluşturuldu: {fname}', 'success')
         return redirect(url_for('ik.detay', id=calisan.id))
 
     return render_template(
@@ -2593,11 +2508,11 @@ def calisan_sozlesme_olustur(id):
 @login_required
 @permission_required('ik.edit')
 def sozlesme_toplu_olustur(proje_id):
-    """Proje bazlı toplu sözleşme oluşturma."""
+    """Proje bazlı toplu sözleşme oluşturma (.docx)."""
     from app.models.proje import Proje
     from app.models.base import CalisanDurumu
-    from app.services.sozlesme_pdf import (
-        MANUEL_DEGISKENLER, calisan_degiskenleri, render_sozlesme_pdf
+    from app.services.sozlesme_generator import (
+        MANUEL_DEGISKENLER, calisan_degiskenleri, degiskenleri_doldur_docx
     )
 
     proje = Proje.query.get_or_404(proje_id)
@@ -2610,8 +2525,8 @@ def sozlesme_toplu_olustur(proje_id):
     sablonlar = SozlesmeSablonu.query.filter(
         SozlesmeSablonu.aktif == True,
         SozlesmeSablonu.is_deleted == False,
-        SozlesmeSablonu.html_sablon.isnot(None),
-        SozlesmeSablonu.html_sablon != ''
+        SozlesmeSablonu.sablon_dosya.isnot(None),
+        SozlesmeSablonu.sablon_dosya != ''
     ).order_by(SozlesmeSablonu.ad).all()
 
     if request.method == 'POST':
@@ -2623,7 +2538,11 @@ def sozlesme_toplu_olustur(proje_id):
             flash('En az bir çalışan seçmelisiniz.', 'warning')
             return redirect(url_for('ik.sozlesme_toplu_olustur', proje_id=proje_id))
 
-        # Tüm seçili çalışanlara aynı manuel değerler uygulanır
+        template_bytes = _read_sablon_docx(sablon)
+        if not template_bytes:
+            flash('Bu şablonun .docx dosyası bulunamadı.', 'danger')
+            return redirect(url_for('ik.sozlesme_toplu_olustur', proje_id=proje_id))
+
         ortak_manuel = {md['kod']: (request.form.get(md['kod']) or '').strip() for md in MANUEL_DEGISKENLER}
 
         basarili, hatali = 0, 0
@@ -2634,13 +2553,13 @@ def sozlesme_toplu_olustur(proje_id):
             try:
                 degerler = calisan_degiskenleri(c)
                 degerler.update(ortak_manuel)
-                pdf_bytes = render_sozlesme_pdf(sablon.html_sablon, degerler)
+                docx_bytes = degiskenleri_doldur_docx(template_bytes, degerler)
 
                 folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'sozlesmeler', str(c.id))
                 os.makedirs(folder, exist_ok=True)
-                fname = f"sozlesme_{c.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+                fname = f"sozlesme_{c.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.docx"
                 with open(os.path.join(folder, fname), 'wb') as f:
-                    f.write(pdf_bytes)
+                    f.write(docx_bytes)
 
                 c.sozlesme_pdf = f"sozlesmeler/{c.id}/{fname}"
                 c.sozlesme_sablon_id = sablon.id

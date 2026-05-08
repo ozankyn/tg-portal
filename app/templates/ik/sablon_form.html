@@ -112,14 +112,17 @@
         </div>
         <div class="space-y-6">
             <div>
-                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Şablon PDF</label>
+                <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Şablon DOCX</label>
                 {% if sablon and sablon.sablon_dosya %}
                 <p class="text-sm text-text-muted dark:text-text-muted-dark mb-2">
-                    Mevcut dosya: <a href="{{ url_for('uploaded_file', filename=sablon.sablon_dosya) }}" target="_blank" class="text-primary hover:underline">PDF İndir</a>
+                    Mevcut dosya: <a href="{{ url_for('uploaded_file', filename=sablon.sablon_dosya) }}" target="_blank" class="text-primary hover:underline">DOCX İndir</a>
                 </p>
                 {% endif %}
-                <input type="file" name="sablon_dosya" accept=".pdf,.doc,.docx"
+                <input type="file" name="sablon_dosya" accept=".docx"
                        class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                <p class="mt-2 text-xs text-text-muted dark:text-text-muted-dark">
+                    Word dosyası içine <code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">{ad_soyad}</code>, <code class="px-1 py-0.5 bg-gray-100 dark:bg-gray-800 rounded">{ise_baslama}</code> gibi placeholder'lar yerleştirin. Sözleşme oluşturulurken otomatik doldurulur.
+                </p>
             </div>
             <div>
                 <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">Açıklama</label>

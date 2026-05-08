@@ -12,11 +12,6 @@
     </div>
     {% if has_permission('ik.edit') %}
     <div class="flex items-center gap-2">
-        <button type="button" onclick="document.getElementById('pdfImportModal').classList.remove('hidden')"
-                class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-all shadow-lg flex items-center gap-2">
-            <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
-            PDF'ten Oluştur
-        </button>
         <a href="{{ url_for('ik.sablon_ekle') }}" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-lg transition-all shadow-lg shadow-primary/20 flex items-center gap-2 w-fit">
             <span class="material-symbols-outlined text-lg">add</span>
             Yeni Şablon
@@ -24,67 +19,6 @@
     </div>
     {% endif %}
 </div>
-
-{% if has_permission('ik.edit') %}
-<!-- PDF Import Modal -->
-<div id="pdfImportModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-lg w-full p-6">
-        <div class="flex items-center gap-3 mb-4">
-            <span class="material-symbols-outlined text-indigo-600 text-3xl">picture_as_pdf</span>
-            <div>
-                <h3 class="text-lg font-bold text-[#111418] dark:text-white">PDF'ten Şablon Oluştur</h3>
-                <p class="text-xs text-text-muted dark:text-text-muted-dark">PDF içeriği otomatik HTML'e dönüştürülür ve değişkenler işaretlenir.</p>
-            </div>
-        </div>
-
-        <form action="{{ url_for('ik.sablon_pdf_import') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-            <div>
-                <label class="block text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider mb-1">Şablon Adı *</label>
-                <input type="text" name="ad" required placeholder="Örn: Belirsiz Süreli - Merchandising"
-                       class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-indigo-500">
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider mb-1">Sözleşme Tipi *</label>
-                <select name="tip" required class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-indigo-500">
-                    <option value="belirsiz_sureli">Belirsiz Süreli</option>
-                    <option value="belirli_sureli">Belirli Süreli</option>
-                    <option value="part_time">Part Time</option>
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider mb-1">PDF Dosyası *</label>
-                <input type="file" name="pdf_dosya" accept=".pdf" required
-                       class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg">
-            </div>
-
-            <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-300 space-y-1">
-                <p class="font-bold">🪄 Otomatik tespit edilenler:</p>
-                <ul class="list-disc list-inside space-y-0.5 text-[11px]">
-                    <li>"İşçi Adı Soyadı:" → <code>{ad_soyad}</code></li>
-                    <li>"TC Kimlik No:" → <code>{tc_kimlik}</code></li>
-                    <li>"Çalışma Adresi:" → <code>{adres}</code></li>
-                    <li>"E-posta Adresi:" → <code>{email}</code></li>
-                    <li>"Tarih: …/…/20.." → <code>{bugunun_tarihi}</code></li>
-                    <li>Para tutarları (TL) → <mark>sarı vurgu</mark> (manuel düzeltme gerekli)</li>
-                </ul>
-            </div>
-
-            <div class="flex justify-end gap-3 pt-2">
-                <button type="button" onclick="document.getElementById('pdfImportModal').classList.add('hidden')"
-                        class="px-4 py-2 text-sm font-bold text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg">İptal</button>
-                <button type="submit" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg flex items-center gap-2">
-                    <span class="material-symbols-outlined text-base">upload</span>
-                    İçe Aktar
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-{% endif %}
 
 <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden">
     <div class="overflow-x-auto">
@@ -110,7 +44,9 @@
                             <div>
                                 <span class="font-bold text-[#111418] dark:text-white">{{ s.ad }}</span>
                                 {% if s.sablon_dosya %}
-                                <p class="text-xs text-text-muted dark:text-text-muted-dark">PDF mevcut</p>
+                                <p class="text-xs text-text-muted dark:text-text-muted-dark">DOCX yüklü</p>
+                                {% else %}
+                                <p class="text-xs text-amber-600 dark:text-amber-400">Şablon dosyası yok</p>
                                 {% endif %}
                             </div>
                         </div>
@@ -139,14 +75,11 @@
                     <td class="px-6 py-4 text-right">
                         <div class="flex items-center justify-end gap-2">
                             {% if s.sablon_dosya %}
-                            <a href="{{ url_for('uploaded_file', filename=s.sablon_dosya) }}" target="_blank" class="p-2 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-colors" title="PDF İndir">
+                            <a href="{{ url_for('uploaded_file', filename=s.sablon_dosya) }}" target="_blank" class="p-2 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-colors" title="Şablonu İndir">
                                 <span class="material-symbols-outlined text-lg text-text-muted dark:text-text-muted-dark">download</span>
                             </a>
                             {% endif %}
                             {% if has_permission('ik.edit') %}
-                            <a href="{{ url_for('ik.sablon_html_editor', id=s.id) }}" class="p-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors" title="HTML Editör">
-                                <span class="material-symbols-outlined text-lg {% if s.html_sablon %}text-indigo-600{% else %}text-text-muted dark:text-text-muted-dark{% endif %}">code_blocks</span>
-                            </a>
                             <a href="{{ url_for('ik.sablon_duzenle', id=s.id) }}" class="p-2 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-colors" title="Düzenle">
                                 <span class="material-symbols-outlined text-lg text-text-muted dark:text-text-muted-dark">edit</span>
                             </a>
