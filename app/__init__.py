@@ -39,7 +39,7 @@ def create_app(config_name=None):
     
     # Upload settings
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, '..', 'uploads')
-    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+    app.config['MAX_CONTENT_LENGTH'] = 110 * 1024 * 1024  # 110MB max (video uploads up to 100MB)
     # Flask-Login Remember Me
     app.config['REMEMBER_COOKIE_DURATION'] = timedelta(days=30)
     app.config['REMEMBER_COOKIE_SECURE'] = True

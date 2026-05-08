@@ -18,7 +18,7 @@ import os
 from app import db
 from app.models.ik import (
     Departman, Pozisyon, Calisan, Izin, Aday,
-    EvrakTipi, AdayEvrak, CalisanEvrak, IstenCikis,
+    EvrakTipi, AdayEvrak, AdayMedya, CalisanEvrak, IstenCikis,
     SozlesmeSablonu
 )
 from app.models.base import CalisanDurumu
@@ -804,6 +804,162 @@ def evrak_indir(id):
     """Evrak indir"""
     evrak = AdayEvrak.query.get_or_404(id)
     return send_file(evrak.dosya_yolu, as_attachment=True, download_name=evrak.dosya_adi)
+
+
+# ============================================================
+# ADAY MEDYA (Foto/Video) YÖNETİMİ
+# ============================================================
+
+FOTO_EXTS = {'jpg', 'jpeg', 'png', 'webp'}
+VIDEO_EXTS = {'mp4', 'mov', 'webm'}
+FOTO_MAX = 10 * 1024 * 1024     # 10MB
+VIDEO_MAX = 100 * 1024 * 1024   # 100MB
+
+
+def _ext(filename):
+    return filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+
+
+def _medya_to_dict(m):
+    return {
+        'id': m.id,
+        'tip': m.tip,
+        'dosya_adi': m.dosya_adi,
+        'url': url_for('uploaded_file', filename=m.dosya_yolu),
+        'boyut': m.dosya_boyut,
+        'mime_type': m.mime_type,
+        'tarih': m.created_at.strftime('%d.%m.%Y %H:%M') if m.created_at else '',
+    }
+
+
+@ik_bp.route('/aday/<int:id>/medya/foto', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def aday_foto_yukle(id):
+    """Aday fotoğrafı yükle (çoklu)."""
+    aday = Aday.query.get_or_404(id)
+
+    files = request.files.getlist('fotos')
+    if not files:
+        return jsonify({'success': False, 'message': 'Dosya seçilmedi.'}), 400
+
+    upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'adaylar', str(id), 'fotos')
+    os.makedirs(upload_folder, exist_ok=True)
+
+    eklenen = []
+    hatalar = []
+    for dosya in files:
+        if not dosya or not dosya.filename:
+            continue
+        ext = _ext(dosya.filename)
+        if ext not in FOTO_EXTS:
+            hatalar.append(f"{dosya.filename}: geçersiz format")
+            continue
+
+        # Boyut kontrolü
+        dosya.seek(0, os.SEEK_END)
+        boyut = dosya.tell()
+        dosya.seek(0)
+        if boyut > FOTO_MAX:
+            hatalar.append(f"{dosya.filename}: 10MB'dan büyük")
+            continue
+
+        orijinal = secure_filename(dosya.filename)
+        new_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}.{ext}"
+        filepath = os.path.join(upload_folder, new_filename)
+        dosya.save(filepath)
+
+        # uploads/'a göre relatif yol
+        rel_path = os.path.join('adaylar', str(id), 'fotos', new_filename).replace('\\', '/')
+
+        medya = AdayMedya(
+            aday_id=aday.id,
+            tip='foto',
+            dosya_adi=orijinal,
+            dosya_yolu=rel_path,
+            dosya_boyut=boyut,
+            mime_type=dosya.mimetype or f'image/{ext}',
+            yukleyen_id=current_user.id
+        )
+        db.session.add(medya)
+        db.session.flush()
+        eklenen.append(_medya_to_dict(medya))
+
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'eklenen': eklenen,
+        'hatalar': hatalar,
+        'message': f"{len(eklenen)} fotoğraf yüklendi" + (f", {len(hatalar)} hata" if hatalar else "")
+    })
+
+
+@ik_bp.route('/aday/<int:id>/medya/video', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def aday_video_yukle(id):
+    """Aday videosu yükle (tek)."""
+    aday = Aday.query.get_or_404(id)
+
+    dosya = request.files.get('video')
+    if not dosya or not dosya.filename:
+        return jsonify({'success': False, 'message': 'Dosya seçilmedi.'}), 400
+
+    ext = _ext(dosya.filename)
+    if ext not in VIDEO_EXTS:
+        return jsonify({'success': False, 'message': 'Geçersiz video formatı (mp4, mov, webm).'}), 400
+
+    dosya.seek(0, os.SEEK_END)
+    boyut = dosya.tell()
+    dosya.seek(0)
+    if boyut > VIDEO_MAX:
+        return jsonify({'success': False, 'message': 'Video 100MB\'dan büyük olamaz.'}), 400
+
+    upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'adaylar', str(id), 'videos')
+    os.makedirs(upload_folder, exist_ok=True)
+
+    orijinal = secure_filename(dosya.filename)
+    new_filename = f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}.{ext}"
+    filepath = os.path.join(upload_folder, new_filename)
+    dosya.save(filepath)
+
+    rel_path = os.path.join('adaylar', str(id), 'videos', new_filename).replace('\\', '/')
+
+    medya = AdayMedya(
+        aday_id=aday.id,
+        tip='video',
+        dosya_adi=orijinal,
+        dosya_yolu=rel_path,
+        dosya_boyut=boyut,
+        mime_type=dosya.mimetype or f'video/{ext}',
+        yukleyen_id=current_user.id
+    )
+    db.session.add(medya)
+    db.session.commit()
+
+    return jsonify({'success': True, 'eklenen': _medya_to_dict(medya), 'message': 'Video yüklendi'})
+
+
+@ik_bp.route('/aday/medya/<int:medya_id>/sil', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def aday_medya_sil(medya_id):
+    """Aday foto/video sil."""
+    medya = AdayMedya.query.get_or_404(medya_id)
+
+    # Dosyayı diskten sil
+    try:
+        full_path = os.path.join(current_app.config['UPLOAD_FOLDER'], medya.dosya_yolu)
+        if os.path.exists(full_path):
+            os.remove(full_path)
+    except Exception as e:
+        current_app.logger.warning(f"Medya dosya silinemedi: {e}")
+
+    db.session.delete(medya)
+    db.session.commit()
+
+    return jsonify({'success': True, 'message': 'Silindi'})
 
 
 @ik_bp.route('/evrak-tipleri')

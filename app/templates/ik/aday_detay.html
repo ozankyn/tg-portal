@@ -284,7 +284,286 @@
                 </table>
             </div>
         </div>
-        
+
+        <!-- Fotoğraflar & Videolar -->
+        {% if has_permission('ik.view') %}
+        {% set fotos = aday.medyalar.filter_by(tip='foto').all() %}
+        {% set videos = aday.medyalar.filter_by(tip='video').all() %}
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm" id="medyaCard"
+             data-aday-id="{{ aday.id }}"
+             data-can-edit="{{ '1' if has_permission('ik.edit') else '0' }}">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined">photo_library</span>
+                    Fotoğraflar & Videolar
+                </h3>
+                <span class="text-xs text-text-muted dark:text-text-muted-dark">
+                    <span id="fotoCount">{{ fotos|length }}</span> fotoğraf · <span id="videoCount">{{ videos|length }}</span> video
+                </span>
+            </div>
+
+            {% if has_permission('ik.edit') %}
+            <!-- Yükleme alanları -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <!-- Foto upload -->
+                <div id="fotoDrop" class="border-2 border-dashed border-border-light dark:border-border-dark rounded-xl p-6 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                    <input type="file" id="fotoInput" accept="image/jpeg,image/png,image/webp" multiple class="hidden">
+                    <span class="material-symbols-outlined text-4xl text-text-muted dark:text-text-muted-dark mb-2">add_photo_alternate</span>
+                    <p class="text-sm font-medium text-[#111418] dark:text-white">Fotoğraf yüklemek için tıkla veya sürükle</p>
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">JPG, PNG, WEBP · max 10MB / dosya · çoklu seçim</p>
+                    <div id="fotoProgress" class="hidden mt-3 text-sm text-primary"></div>
+                </div>
+                <!-- Video upload -->
+                <div id="videoDrop" class="border-2 border-dashed border-border-light dark:border-border-dark rounded-xl p-6 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors">
+                    <input type="file" id="videoInput" accept="video/mp4,video/quicktime,video/webm" class="hidden">
+                    <span class="material-symbols-outlined text-4xl text-text-muted dark:text-text-muted-dark mb-2">video_call</span>
+                    <p class="text-sm font-medium text-[#111418] dark:text-white">Video yüklemek için tıkla veya sürükle</p>
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">MP4, MOV, WEBM · max 100MB</p>
+                    <div id="videoProgress" class="hidden mt-3 text-sm text-primary"></div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Foto galeri -->
+            <div class="mb-2">
+                <h4 class="text-sm font-bold text-[#111418] dark:text-white mb-3">Fotoğraflar</h4>
+                <div id="fotoGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                    {% for m in fotos %}
+                    <div class="medya-item relative group aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-[#111418] border border-border-light dark:border-border-dark" data-medya-id="{{ m.id }}">
+                        <img src="{{ url_for('uploaded_file', filename=m.dosya_yolu) }}"
+                             alt="{{ m.dosya_adi }}"
+                             class="w-full h-full object-cover cursor-pointer transition-transform group-hover:scale-105"
+                             onclick="openLightbox('{{ url_for('uploaded_file', filename=m.dosya_yolu) }}', '{{ m.dosya_adi|e }}')">
+                        {% if has_permission('ik.edit') %}
+                        <button onclick="medyaSil({{ m.id }}, this)"
+                                class="absolute top-1 right-1 w-7 h-7 bg-rose-600/90 hover:bg-rose-700 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                                title="Sil">
+                            <span class="material-symbols-outlined text-base">delete</span>
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                <div id="fotoEmpty" class="text-center text-text-muted dark:text-text-muted-dark py-6 {% if fotos %}hidden{% endif %}">
+                    <span class="material-symbols-outlined text-3xl mb-1 opacity-50">image</span>
+                    <p class="text-sm">Henüz fotoğraf yok</p>
+                </div>
+            </div>
+
+            <!-- Video listesi -->
+            <div class="mt-6">
+                <h4 class="text-sm font-bold text-[#111418] dark:text-white mb-3">Videolar</h4>
+                <div id="videoGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for m in videos %}
+                    <div class="medya-item relative group bg-gray-100 dark:bg-[#111418] rounded-lg overflow-hidden border border-border-light dark:border-border-dark" data-medya-id="{{ m.id }}">
+                        <video src="{{ url_for('uploaded_file', filename=m.dosya_yolu) }}" controls preload="metadata" class="w-full h-auto max-h-[360px] bg-black"></video>
+                        <div class="flex items-center justify-between px-3 py-2">
+                            <span class="text-xs text-text-muted dark:text-text-muted-dark truncate">{{ m.dosya_adi }}</span>
+                            {% if has_permission('ik.edit') %}
+                            <button onclick="medyaSil({{ m.id }}, this)" class="text-rose-600 hover:text-rose-700 text-xs flex items-center gap-1" title="Sil">
+                                <span class="material-symbols-outlined text-base">delete</span> Sil
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div id="videoEmpty" class="text-center text-text-muted dark:text-text-muted-dark py-6 {% if videos %}hidden{% endif %}">
+                    <span class="material-symbols-outlined text-3xl mb-1 opacity-50">movie</span>
+                    <p class="text-sm">Henüz video yok</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lightbox -->
+        <div id="lightbox" class="hidden fixed inset-0 bg-black/90 z-[60] items-center justify-center p-4" onclick="closeLightbox(event)">
+            <button class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center" onclick="closeLightbox(event)">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+            <img id="lightboxImg" src="" alt="" class="max-w-full max-h-full object-contain">
+        </div>
+
+        <script>
+        (function() {
+            const card = document.getElementById('medyaCard');
+            const adayId = card.dataset.adayId;
+            const canEdit = card.dataset.canEdit === '1';
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+
+            const fotoGrid = document.getElementById('fotoGrid');
+            const videoGrid = document.getElementById('videoGrid');
+            const fotoEmpty = document.getElementById('fotoEmpty');
+            const videoEmpty = document.getElementById('videoEmpty');
+            const fotoCount = document.getElementById('fotoCount');
+            const videoCount = document.getElementById('videoCount');
+
+            function updateCounts() {
+                const fc = fotoGrid.querySelectorAll('.medya-item').length;
+                const vc = videoGrid.querySelectorAll('.medya-item').length;
+                fotoCount.textContent = fc;
+                videoCount.textContent = vc;
+                fotoEmpty.classList.toggle('hidden', fc > 0);
+                videoEmpty.classList.toggle('hidden', vc > 0);
+            }
+
+            function escapeHtml(s) {
+                return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            }
+
+            function fotoCardHTML(m) {
+                return `
+                    <div class="medya-item relative group aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-[#111418] border border-border-light dark:border-border-dark" data-medya-id="${m.id}">
+                        <img src="${m.url}" alt="${escapeHtml(m.dosya_adi)}"
+                             class="w-full h-full object-cover cursor-pointer transition-transform group-hover:scale-105"
+                             onclick="openLightbox('${m.url}', '${escapeHtml(m.dosya_adi)}')">
+                        ${canEdit ? `<button onclick="medyaSil(${m.id}, this)" class="absolute top-1 right-1 w-7 h-7 bg-rose-600/90 hover:bg-rose-700 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow" title="Sil"><span class="material-symbols-outlined text-base">delete</span></button>` : ''}
+                    </div>`;
+            }
+
+            function videoCardHTML(m) {
+                return `
+                    <div class="medya-item relative group bg-gray-100 dark:bg-[#111418] rounded-lg overflow-hidden border border-border-light dark:border-border-dark" data-medya-id="${m.id}">
+                        <video src="${m.url}" controls preload="metadata" class="w-full h-auto max-h-[360px] bg-black"></video>
+                        <div class="flex items-center justify-between px-3 py-2">
+                            <span class="text-xs text-text-muted dark:text-text-muted-dark truncate">${escapeHtml(m.dosya_adi)}</span>
+                            ${canEdit ? `<button onclick="medyaSil(${m.id}, this)" class="text-rose-600 hover:text-rose-700 text-xs flex items-center gap-1" title="Sil"><span class="material-symbols-outlined text-base">delete</span> Sil</button>` : ''}
+                        </div>
+                    </div>`;
+            }
+
+            window.openLightbox = function(url, alt) {
+                const lb = document.getElementById('lightbox');
+                document.getElementById('lightboxImg').src = url;
+                document.getElementById('lightboxImg').alt = alt || '';
+                lb.classList.remove('hidden');
+                lb.classList.add('flex');
+            };
+            window.closeLightbox = function(e) {
+                if (e && e.target.tagName === 'IMG' && e.target.id === 'lightboxImg') return;
+                const lb = document.getElementById('lightbox');
+                lb.classList.add('hidden');
+                lb.classList.remove('flex');
+                document.getElementById('lightboxImg').src = '';
+            };
+
+            window.medyaSil = function(id, btn) {
+                if (!confirm('Bu medyayı silmek istediğinize emin misiniz?')) return;
+                fetch(`/ik/aday/medya/${id}/sil`, {
+                    method: 'POST',
+                    headers: {'X-CSRFToken': csrfToken}
+                }).then(r => r.json()).then(d => {
+                    if (d.success) {
+                        const item = btn.closest('.medya-item');
+                        if (item) item.remove();
+                        updateCounts();
+                    } else {
+                        alert(d.message || 'Silme başarısız');
+                    }
+                }).catch(() => alert('Bağlantı hatası'));
+            };
+
+            if (canEdit) {
+                // Foto upload
+                const fotoDrop = document.getElementById('fotoDrop');
+                const fotoInput = document.getElementById('fotoInput');
+                const fotoProgress = document.getElementById('fotoProgress');
+
+                fotoDrop.addEventListener('click', () => fotoInput.click());
+                fotoDrop.addEventListener('dragover', e => { e.preventDefault(); fotoDrop.classList.add('border-primary', 'bg-primary/5'); });
+                fotoDrop.addEventListener('dragleave', () => fotoDrop.classList.remove('border-primary', 'bg-primary/5'));
+                fotoDrop.addEventListener('drop', e => {
+                    e.preventDefault();
+                    fotoDrop.classList.remove('border-primary', 'bg-primary/5');
+                    uploadFotos(e.dataTransfer.files);
+                });
+                fotoInput.addEventListener('change', e => uploadFotos(e.target.files));
+
+                function uploadFotos(files) {
+                    if (!files || !files.length) return;
+                    const fd = new FormData();
+                    for (const f of files) fd.append('fotos', f);
+                    fotoProgress.classList.remove('hidden');
+                    fotoProgress.textContent = `${files.length} dosya yükleniyor...`;
+                    fetch(`/ik/aday/${adayId}/medya/foto`, {
+                        method: 'POST',
+                        headers: {'X-CSRFToken': csrfToken},
+                        body: fd
+                    }).then(r => r.json()).then(d => {
+                        fotoProgress.classList.add('hidden');
+                        fotoInput.value = '';
+                        if (d.success) {
+                            (d.eklenen || []).forEach(m => fotoGrid.insertAdjacentHTML('afterbegin', fotoCardHTML(m)));
+                            updateCounts();
+                            if (d.hatalar && d.hatalar.length) alert('Hatalar:\n' + d.hatalar.join('\n'));
+                        } else {
+                            alert(d.message || 'Yükleme başarısız');
+                        }
+                    }).catch(() => {
+                        fotoProgress.classList.add('hidden');
+                        alert('Bağlantı hatası');
+                    });
+                }
+
+                // Video upload
+                const videoDrop = document.getElementById('videoDrop');
+                const videoInput = document.getElementById('videoInput');
+                const videoProgress = document.getElementById('videoProgress');
+
+                videoDrop.addEventListener('click', () => videoInput.click());
+                videoDrop.addEventListener('dragover', e => { e.preventDefault(); videoDrop.classList.add('border-primary', 'bg-primary/5'); });
+                videoDrop.addEventListener('dragleave', () => videoDrop.classList.remove('border-primary', 'bg-primary/5'));
+                videoDrop.addEventListener('drop', e => {
+                    e.preventDefault();
+                    videoDrop.classList.remove('border-primary', 'bg-primary/5');
+                    if (e.dataTransfer.files.length) uploadVideo(e.dataTransfer.files[0]);
+                });
+                videoInput.addEventListener('change', e => { if (e.target.files[0]) uploadVideo(e.target.files[0]); });
+
+                function uploadVideo(file) {
+                    if (file.size > 100 * 1024 * 1024) {
+                        alert('Video 100MB\'dan büyük olamaz.');
+                        return;
+                    }
+                    const fd = new FormData();
+                    fd.append('video', file);
+                    videoProgress.classList.remove('hidden');
+                    videoProgress.textContent = 'Video yükleniyor...';
+
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', `/ik/aday/${adayId}/medya/video`);
+                    xhr.setRequestHeader('X-CSRFToken', csrfToken);
+                    xhr.upload.onprogress = e => {
+                        if (e.lengthComputable) {
+                            const pct = Math.round((e.loaded / e.total) * 100);
+                            videoProgress.textContent = `Video yükleniyor... %${pct}`;
+                        }
+                    };
+                    xhr.onload = () => {
+                        videoProgress.classList.add('hidden');
+                        videoInput.value = '';
+                        try {
+                            const d = JSON.parse(xhr.responseText);
+                            if (d.success) {
+                                videoGrid.insertAdjacentHTML('afterbegin', videoCardHTML(d.eklenen));
+                                updateCounts();
+                            } else {
+                                alert(d.message || 'Yükleme başarısız');
+                            }
+                        } catch (e) {
+                            alert('Sunucu hatası');
+                        }
+                    };
+                    xhr.onerror = () => {
+                        videoProgress.classList.add('hidden');
+                        alert('Bağlantı hatası');
+                    };
+                    xhr.send(fd);
+                }
+            }
+        })();
+        </script>
+        {% endif %}
+
         <!-- Personal Information Grid -->
         <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
             <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-6">Kişisel Bilgiler</h3>

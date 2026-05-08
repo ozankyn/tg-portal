@@ -603,6 +603,29 @@ class AdayEvrak(db.Model, TimestampMixin):
         return text_map.get(self.durum, self.durum)
 
 
+class AdayMedya(db.Model, TimestampMixin):
+    """Aday foto/video yüklemeleri"""
+    __tablename__ = 'aday_medya'
+
+    id = db.Column(db.Integer, primary_key=True)
+    aday_id = db.Column(db.Integer, db.ForeignKey('adaylar.id'), nullable=False, index=True)
+    tip = db.Column(db.String(10), nullable=False)  # 'foto' veya 'video'
+
+    dosya_adi = db.Column(db.String(255))      # Orijinal isim
+    dosya_yolu = db.Column(db.String(500))     # uploads klasörüne göre relatif yol (uploads/'a giren)
+    dosya_boyut = db.Column(db.Integer)        # bytes
+    mime_type = db.Column(db.String(100))
+
+    yukleyen_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    # İlişkiler
+    aday = db.relationship('Aday', backref=db.backref('medyalar', lazy='dynamic', order_by='AdayMedya.created_at.desc()'))
+    yukleyen = db.relationship('User')
+
+    def __repr__(self):
+        return f'<AdayMedya {self.aday_id}-{self.tip}-{self.id}>'
+
+
 class CalisanEvrak(db.Model, TimestampMixin):
     """Çalışan evrakları"""
     __tablename__ = 'calisan_evraklar'

@@ -75,7 +75,19 @@
                 {% for aday in adaylar %}
                 <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
                     <td class="px-4 py-3">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-3">
+                            {% set ilk_foto = aday.medyalar.filter_by(tip='foto').first() %}
+                            {% if ilk_foto %}
+                            <img src="{{ url_for('uploaded_file', filename=ilk_foto.dosya_yolu) }}"
+                                 alt="{{ aday.full_name }}"
+                                 class="w-10 h-10 rounded-full object-cover border border-border-light dark:border-border-dark flex-shrink-0">
+                            {% else %}
+                            <div class="w-10 h-10 rounded-full bg-gray-100 dark:bg-[#111418] flex items-center justify-center text-xs font-bold text-text-muted dark:text-text-muted-dark border border-border-light dark:border-border-dark flex-shrink-0">
+                                {{ (aday.ad[0] if aday.ad else '')|upper }}{{ (aday.soyad[0] if aday.soyad else '')|upper }}
+                            </div>
+                            {% endif %}
+                            <div>
+                            <div class="flex items-center gap-2">
                             <p class="font-medium text-text-primary dark:text-text-primary-dark">{{ aday.full_name }}</p>
                             {% if aday.is_kara_liste %}
                             <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" title="{{ aday.blacklist_calisan.liste_nedeni or '' }}">KARA LİSTE</span>
@@ -86,6 +98,8 @@
                         {% if aday.email %}
                         <p class="text-sm text-text-muted dark:text-text-muted-dark">{{ aday.email }}</p>
                         {% endif %}
+                            </div>
+                        </div>
                     </td>
                     <td class="px-4 py-3 text-sm">{{ aday.kadro.proje.ad if aday.kadro and aday.kadro.proje else '-' }}</td>
                     <td class="px-4 py-3 text-sm">{{ aday.kadro.pozisyon_adi if aday.kadro else (aday.pozisyon.ad if aday.pozisyon else '-') }}</td>
