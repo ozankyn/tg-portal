@@ -235,6 +235,10 @@ class HedefKadro(db.Model, TimestampMixin, SoftDeleteMixin):
     
     # SMS Doğrulama Ayarı
     sms_dogrulama_zorunlu = db.Column(db.Boolean, default=False)
+
+    # Başvuruda foto/video zorunluluğu
+    foto_gerekli = db.Column(db.Boolean, default=False, nullable=False)
+    video_gerekli = db.Column(db.Boolean, default=False, nullable=False)
     
     # İlişkiler
     proje = db.relationship('Proje', back_populates='kadrolar')

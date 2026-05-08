@@ -259,7 +259,27 @@
                             <p class="text-xs text-text-muted dark:text-text-muted-dark">Başvuruda telefon doğrulaması istenir</p>
                         </div>
                     </div>
-                    
+
+                    <div class="flex items-start">
+                        <input type="checkbox" class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500 mt-0.5" id="foto_gerekli" name="foto_gerekli" {% if kadro and kadro.foto_gerekli %}checked{% endif %}>
+                        <div class="ml-2">
+                            <label class="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1" for="foto_gerekli">
+                                <span class="material-symbols-outlined text-base">photo_camera</span>Fotoğraf Yükleme Zorunlu
+                            </label>
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark">Başvuru ve evrak yükleme ekranında fotoğraf alanı görünür ve zorunludur</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start">
+                        <input type="checkbox" class="w-4 h-4 text-blue-600 border-border-light dark:border-border-dark rounded focus:ring-blue-500 mt-0.5" id="video_gerekli" name="video_gerekli" {% if kadro and kadro.video_gerekli %}checked{% endif %}>
+                        <div class="ml-2">
+                            <label class="text-sm text-gray-700 dark:text-gray-300 flex items-center gap-1" for="video_gerekli">
+                                <span class="material-symbols-outlined text-base">videocam</span>Video Yükleme Zorunlu
+                            </label>
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark">Başvuru ve evrak yükleme ekranında video alanı görünür ve zorunludur</p>
+                        </div>
+                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Notlar</label>
                         <textarea name="notlar" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="4">{{ kadro.notlar if kadro else '' }}</textarea>

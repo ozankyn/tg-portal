@@ -317,9 +317,10 @@
                                    class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">CV (Özgeçmiş)</label>
-                            <input type="file" name="cv_dosya" accept=".pdf,.doc,.docx"
+                            <label class="block text-sm font-medium text-gray-700 mb-1">CV (Özgeçmiş) <span class="text-red-500">*</span></label>
+                            <input type="file" name="cv_dosya" required accept=".pdf,.doc,.docx"
                                    class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            <p class="text-xs text-gray-500 mt-1">PDF, DOC veya DOCX</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Kimlik Ön Yüz</label>
@@ -342,6 +343,36 @@
                                    class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                         </div>
                     </div>
+
+                    {% if kadro.foto_gerekli or kadro.video_gerekli %}
+                    <!-- 8. Tanıtım Foto/Video (kadroya göre) -->
+                    <h5 class="flex items-center gap-2 text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                        <span class="material-symbols-outlined text-lg text-blue-600">photo_library</span>
+                        Tanıtım Fotoğraf & Video
+                    </h5>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        {% if kadro.foto_gerekli %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Fotoğraf(lar) <span class="text-red-500">*</span>
+                            </label>
+                            <input type="file" name="medya_fotos" required multiple accept="image/jpeg,image/png,image/webp"
+                                   class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            <p class="text-xs text-gray-500 mt-1">JPG/PNG/WEBP · max 10MB / dosya · birden çok seçebilirsiniz</p>
+                        </div>
+                        {% endif %}
+                        {% if kadro.video_gerekli %}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Video <span class="text-red-500">*</span>
+                            </label>
+                            <input type="file" name="medya_video" required accept="video/mp4,video/quicktime,video/webm"
+                                   class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            <p class="text-xs text-gray-500 mt-1">MP4/MOV/WEBM · max 100MB</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
                     
                     <!-- Gönder -->
                     <div class="space-y-3">

@@ -4,10 +4,10 @@ TG Portal - Public Kariyer Sayfası
 Açık pozisyonları görüntüleme ve doğrudan başvuru - Login gerektirmez
 """
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
 from datetime import datetime
 from app import db
-from app.models.ik import Aday, KAYNAK_TURLERI, EvrakTipi, AdayEvrak
+from app.models.ik import Aday, KAYNAK_TURLERI, EvrakTipi, AdayEvrak, AdayMedya
 from app.models.proje import HedefKadro, Proje, Musteri
 
 kariyer_bp = Blueprint('kariyer', __name__)
@@ -172,13 +172,32 @@ def basvuru_form(token):
         # Dosya yüklemeleri
         import os
         from werkzeug.utils import secure_filename
-        
+
+        # CV zorunlu kontrolü
+        cv_file = request.files.get('cv_dosya')
+        if not cv_file or not cv_file.filename:
+            flash('CV (özgeçmiş) dosyası zorunludur.', 'danger')
+            return redirect(url_for('kariyer.basvuru_form', token=token))
+
+        # Kadro flag'lerine göre foto/video zorunlu kontrolü
+        if kadro.foto_gerekli:
+            fotos = [f for f in request.files.getlist('medya_fotos') if f and f.filename]
+            if not fotos:
+                flash('Bu pozisyon için en az bir fotoğraf yüklemeniz zorunludur.', 'danger')
+                return redirect(url_for('kariyer.basvuru_form', token=token))
+
+        if kadro.video_gerekli:
+            video_file = request.files.get('medya_video')
+            if not video_file or not video_file.filename:
+                flash('Bu pozisyon için video yüklemeniz zorunludur.', 'danger')
+                return redirect(url_for('kariyer.basvuru_form', token=token))
+
         upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'adaylar', str(aday.id))
         os.makedirs(upload_folder, exist_ok=True)
-        
-        file_fields = ['foto', 'cv_dosya', 'kimlik_on', 'kimlik_arka', 'ehliyet_foto', 
+
+        file_fields = ['foto', 'cv_dosya', 'kimlik_on', 'kimlik_arka', 'ehliyet_foto',
                       'diploma_foto', 'src_foto', 'ikametgah', 'adli_sicil']
-        
+
         for field in file_fields:
             file = request.files.get(field)
             if file and file.filename:
@@ -186,7 +205,63 @@ def basvuru_form(token):
                 filepath = os.path.join(upload_folder, filename)
                 file.save(filepath)
                 setattr(aday, field, f"uploads/adaylar/{aday.id}/{filename}")
-        
+
+        # Tanıtım foto/video → AdayMedya
+        FOTO_EXTS = {'jpg', 'jpeg', 'png', 'webp'}
+        VIDEO_EXTS = {'mp4', 'mov', 'webm'}
+        FOTO_MAX = 10 * 1024 * 1024
+        VIDEO_MAX = 100 * 1024 * 1024
+
+        def _ext(fn):
+            return fn.rsplit('.', 1)[1].lower() if '.' in fn else ''
+
+        if kadro.foto_gerekli:
+            fotos_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'adaylar', str(aday.id), 'fotos')
+            os.makedirs(fotos_dir, exist_ok=True)
+            for f in request.files.getlist('medya_fotos'):
+                if not f or not f.filename:
+                    continue
+                ext = _ext(f.filename)
+                if ext not in FOTO_EXTS:
+                    continue
+                f.seek(0, os.SEEK_END)
+                boyut = f.tell()
+                f.seek(0)
+                if boyut > FOTO_MAX:
+                    continue
+                fname = f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}.{ext}"
+                fpath = os.path.join(fotos_dir, fname)
+                f.save(fpath)
+                rel = f"adaylar/{aday.id}/fotos/{fname}"
+                db.session.add(AdayMedya(
+                    aday_id=aday.id, tip='foto',
+                    dosya_adi=secure_filename(f.filename),
+                    dosya_yolu=rel, dosya_boyut=boyut,
+                    mime_type=f.mimetype or f'image/{ext}',
+                ))
+
+        if kadro.video_gerekli:
+            v = request.files.get('medya_video')
+            if v and v.filename:
+                ext = _ext(v.filename)
+                if ext in VIDEO_EXTS:
+                    v.seek(0, os.SEEK_END)
+                    boyut = v.tell()
+                    v.seek(0)
+                    if boyut <= VIDEO_MAX:
+                        videos_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'adaylar', str(aday.id), 'videos')
+                        os.makedirs(videos_dir, exist_ok=True)
+                        fname = f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}.{ext}"
+                        fpath = os.path.join(videos_dir, fname)
+                        v.save(fpath)
+                        rel = f"adaylar/{aday.id}/videos/{fname}"
+                        db.session.add(AdayMedya(
+                            aday_id=aday.id, tip='video',
+                            dosya_adi=secure_filename(v.filename),
+                            dosya_yolu=rel, dosya_boyut=boyut,
+                            mime_type=v.mimetype or f'video/{ext}',
+                        ))
+
         # Başvuruyu tamamla
         aday.basvuru_tamamlandi = True
         aday.basvuru_tarihi = datetime.utcnow()
@@ -247,13 +322,20 @@ def evrak_yukle_sayfa(token):
         tamamlanan = len([t for t in EvrakTipi.query.filter_by(zorunlu=True, aktif=True).all() if t.id in yuklenen_tipler])
         evrak_tamamlanma = int((tamamlanan / zorunlu_count) * 100)
     
+    fotos = aday.medyalar.filter_by(tip='foto').all()
+    videos = aday.medyalar.filter_by(tip='video').all()
+    kadro = aday.kadro
+
     return render_template('kariyer/evrak_yukle.html',
                           aday=aday,
                           token=token,
                           evraklar=evraklar,
                           evrak_tipleri=evrak_tipleri,
                           eksik_evraklar=eksik_evraklar,
-                          evrak_tamamlanma=evrak_tamamlanma)
+                          evrak_tamamlanma=evrak_tamamlanma,
+                          kadro=kadro,
+                          fotos=fotos,
+                          videos=videos)
 
 
 @kariyer_bp.route('/evrak/<token>/yukle', methods=['POST'])
@@ -284,20 +366,20 @@ def evrak_yukle_post(token):
     
     if dosya and allowed_file(dosya.filename):
         evrak_tipi_id = int(request.form['evrak_tipi_id'])
-        
+
         # Dosya adı oluştur
         filename = secure_filename(dosya.filename)
         ext = filename.rsplit('.', 1)[1].lower()
         new_filename = f"aday_{aday.id}_{evrak_tipi_id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}"
-        
+
         # Klasör oluştur
         upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'evraklar', 'adaylar', str(aday.id))
         os.makedirs(upload_folder, exist_ok=True)
-        
+
         # Dosyayı kaydet
         filepath = os.path.join(upload_folder, new_filename)
         dosya.save(filepath)
-        
+
         # Veritabanına ekle
         evrak = AdayEvrak(
             aday_id=aday.id,
@@ -309,9 +391,145 @@ def evrak_yukle_post(token):
         )
         db.session.add(evrak)
         db.session.commit()
-        
+
         flash('Evrak başarıyla yüklendi.', 'success')
     else:
         flash('Geçersiz dosya formatı. (PDF, JPG, PNG, DOC, DOCX)', 'danger')
-    
+
     return redirect(url_for('kariyer.evrak_yukle_sayfa', token=token))
+
+
+# ============================================================
+# ADAY MEDYA (Foto/Video) - PUBLIC TOKEN İLE
+# ============================================================
+
+_FOTO_EXTS = {'jpg', 'jpeg', 'png', 'webp'}
+_VIDEO_EXTS = {'mp4', 'mov', 'webm'}
+_FOTO_MAX = 10 * 1024 * 1024
+_VIDEO_MAX = 100 * 1024 * 1024
+
+
+def _kariyer_ext(fn):
+    return fn.rsplit('.', 1)[1].lower() if '.' in fn else ''
+
+
+def _kariyer_medya_dict(m):
+    return {
+        'id': m.id,
+        'tip': m.tip,
+        'dosya_adi': m.dosya_adi,
+        'url': url_for('uploaded_file', filename=m.dosya_yolu),
+        'boyut': m.dosya_boyut,
+        'mime_type': m.mime_type,
+    }
+
+
+@kariyer_bp.route('/evrak/<token>/medya/foto', methods=['POST'])
+def medya_foto_yukle(token):
+    """Public foto yükleme (token ile)."""
+    import os
+    from werkzeug.utils import secure_filename
+
+    aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first()
+    if not aday:
+        return jsonify({'success': False, 'message': 'Geçersiz link.'}), 403
+
+    files = request.files.getlist('fotos')
+    if not files:
+        return jsonify({'success': False, 'message': 'Dosya seçilmedi.'}), 400
+
+    fotos_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'adaylar', str(aday.id), 'fotos')
+    os.makedirs(fotos_dir, exist_ok=True)
+
+    eklenen, hatalar = [], []
+    for f in files:
+        if not f or not f.filename:
+            continue
+        ext = _kariyer_ext(f.filename)
+        if ext not in _FOTO_EXTS:
+            hatalar.append(f"{f.filename}: geçersiz format")
+            continue
+        f.seek(0, os.SEEK_END); boyut = f.tell(); f.seek(0)
+        if boyut > _FOTO_MAX:
+            hatalar.append(f"{f.filename}: 10MB'dan büyük")
+            continue
+        fname = f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}.{ext}"
+        fpath = os.path.join(fotos_dir, fname)
+        f.save(fpath)
+        rel = f"adaylar/{aday.id}/fotos/{fname}"
+        m = AdayMedya(
+            aday_id=aday.id, tip='foto',
+            dosya_adi=secure_filename(f.filename),
+            dosya_yolu=rel, dosya_boyut=boyut,
+            mime_type=f.mimetype or f'image/{ext}',
+        )
+        db.session.add(m)
+        db.session.flush()
+        eklenen.append(_kariyer_medya_dict(m))
+
+    db.session.commit()
+    return jsonify({'success': True, 'eklenen': eklenen, 'hatalar': hatalar})
+
+
+@kariyer_bp.route('/evrak/<token>/medya/video', methods=['POST'])
+def medya_video_yukle(token):
+    """Public video yükleme (token ile)."""
+    import os
+    from werkzeug.utils import secure_filename
+
+    aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first()
+    if not aday:
+        return jsonify({'success': False, 'message': 'Geçersiz link.'}), 403
+
+    v = request.files.get('video')
+    if not v or not v.filename:
+        return jsonify({'success': False, 'message': 'Dosya seçilmedi.'}), 400
+
+    ext = _kariyer_ext(v.filename)
+    if ext not in _VIDEO_EXTS:
+        return jsonify({'success': False, 'message': 'Geçersiz video formatı (mp4, mov, webm).'}), 400
+
+    v.seek(0, os.SEEK_END); boyut = v.tell(); v.seek(0)
+    if boyut > _VIDEO_MAX:
+        return jsonify({'success': False, 'message': 'Video 100MB\'dan büyük olamaz.'}), 400
+
+    videos_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'adaylar', str(aday.id), 'videos')
+    os.makedirs(videos_dir, exist_ok=True)
+    fname = f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}.{ext}"
+    fpath = os.path.join(videos_dir, fname)
+    v.save(fpath)
+    rel = f"adaylar/{aday.id}/videos/{fname}"
+    m = AdayMedya(
+        aday_id=aday.id, tip='video',
+        dosya_adi=secure_filename(v.filename),
+        dosya_yolu=rel, dosya_boyut=boyut,
+        mime_type=v.mimetype or f'video/{ext}',
+    )
+    db.session.add(m)
+    db.session.commit()
+    return jsonify({'success': True, 'eklenen': _kariyer_medya_dict(m)})
+
+
+@kariyer_bp.route('/evrak/<token>/medya/<int:medya_id>/sil', methods=['POST'])
+def medya_sil(token, medya_id):
+    """Public medya silme (token + sahiplik kontrolü)."""
+    import os
+
+    aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first()
+    if not aday:
+        return jsonify({'success': False, 'message': 'Geçersiz link.'}), 403
+
+    m = AdayMedya.query.filter_by(id=medya_id, aday_id=aday.id).first()
+    if not m:
+        return jsonify({'success': False, 'message': 'Medya bulunamadı.'}), 404
+
+    try:
+        full = os.path.join(current_app.config['UPLOAD_FOLDER'], m.dosya_yolu)
+        if os.path.exists(full):
+            os.remove(full)
+    except Exception as e:
+        current_app.logger.warning(f"Medya silinemedi: {e}")
+
+    db.session.delete(m)
+    db.session.commit()
+    return jsonify({'success': True})
