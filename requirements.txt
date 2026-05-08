@@ -42,4 +42,5 @@ APScheduler==3.10.4
 
 # PDF Jeneratör
 weasyprint==60.2
+pydyf==0.11.0  # WeasyPrint 60.2 ile uyumlu pydyf sürümü (0.12+ PDF.__init__ hata verir)
 pdfplumber==0.11.4
