@@ -173,25 +173,30 @@ li { margin: 0.2em 0; }
 
 
 def html_to_pdf_bytes(html, css_extra=None):
-    """HTML → PDF bytes (WeasyPrint)."""
-    from weasyprint import HTML, CSS
+    """HTML → PDF bytes (WeasyPrint).
+
+    CSS'i HTML içine <style> ile gömüyoruz; bu sürüm-bağımsız ve daha temiz.
+    (WeasyPrint sürümleri arasında stylesheets= argümanı imzası değişebiliyor.)
+    """
+    from weasyprint import HTML
+
+    css_block = _DEFAULT_CSS
+    if css_extra:
+        css_block += "\n" + css_extra
 
     full_html = f"""<!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="utf-8">
     <title>Sözleşme</title>
+    <style>{css_block}</style>
 </head>
 <body>
 {html}
 </body>
 </html>"""
 
-    stylesheets = [CSS(string=_DEFAULT_CSS)]
-    if css_extra:
-        stylesheets.append(CSS(string=css_extra))
-
-    return HTML(string=full_html).write_pdf(stylesheets=stylesheets)
+    return HTML(string=full_html).write_pdf()
 
 
 def render_sozlesme_pdf(html_sablon, degerler):
