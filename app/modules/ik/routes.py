@@ -2422,3 +2422,199 @@ def api_sozlesme_sablonlari():
         'tip_text': s.tip_text,
         'kapsam': s.kapsam_text
     } for s in sablonlar])
+
+
+# ============================================================
+# SÖZLEŞME PDF JENERATÖR
+# ============================================================
+
+@ik_bp.route('/sozlesme-sablonlari/<int:id>/html-editor', methods=['GET', 'POST'])
+@login_required
+@permission_required('ik.edit')
+def sablon_html_editor(id):
+    """Şablon HTML editörü (Quill)."""
+    from app.services.sozlesme_pdf import OTOMATIK_DEGISKENLER, MANUEL_DEGISKENLER, kullanilan_degiskenler
+
+    sablon = SozlesmeSablonu.query.get_or_404(id)
+
+    if request.method == 'POST':
+        sablon.html_sablon = request.form.get('html_sablon') or ''
+        sablon.degiskenler = {'kullanilan': kullanilan_degiskenler(sablon.html_sablon)}
+        db.session.commit()
+        flash('Şablon HTML kaydedildi.', 'success')
+        return redirect(url_for('ik.sablon_html_editor', id=id))
+
+    return render_template(
+        'ik/sablon_html_editor.html',
+        sablon=sablon,
+        otomatik_degiskenler=OTOMATIK_DEGISKENLER,
+        manuel_degiskenler=MANUEL_DEGISKENLER,
+    )
+
+
+@ik_bp.route('/sozlesme-sablonlari/<int:id>/onizleme', methods=['POST'])
+@login_required
+@permission_required('ik.view')
+def sablon_onizleme(id):
+    """Örnek verilerle PDF önizlemesi (inline)."""
+    from app.services.sozlesme_pdf import ornek_degerler, render_sozlesme_pdf
+    from flask import Response
+
+    sablon = SozlesmeSablonu.query.get_or_404(id)
+    html = request.form.get('html_sablon') or sablon.html_sablon or ''
+
+    if not html.strip():
+        flash('Önizleme için önce şablon HTML\'i yazıp kaydedin.', 'warning')
+        return redirect(url_for('ik.sablon_html_editor', id=id))
+
+    try:
+        pdf_bytes = render_sozlesme_pdf(html, ornek_degerler())
+    except Exception as e:
+        current_app.logger.exception('Önizleme PDF hatası')
+        return f"PDF oluşturulamadı: {e}", 500
+
+    return Response(
+        pdf_bytes,
+        mimetype='application/pdf',
+        headers={'Content-Disposition': f'inline; filename="onizleme-{id}.pdf"'}
+    )
+
+
+@ik_bp.route('/calisan/<int:id>/sozlesme-olustur', methods=['GET', 'POST'])
+@login_required
+@permission_required('ik.edit')
+def calisan_sozlesme_olustur(id):
+    """Çalışana sözleşme PDF'i oluştur (otomatik + manuel değişkenler)."""
+    from app.services.sozlesme_pdf import (
+        OTOMATIK_DEGISKENLER, MANUEL_DEGISKENLER,
+        calisan_degiskenleri, render_sozlesme_pdf
+    )
+
+    calisan = Calisan.query.get_or_404(id)
+    if not calisan_in_scope(calisan):
+        flash('Bu çalışan için sözleşme oluşturma yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.liste'))
+
+    sablonlar = SozlesmeSablonu.query.filter(
+        SozlesmeSablonu.aktif == True,
+        SozlesmeSablonu.is_deleted == False,
+        SozlesmeSablonu.html_sablon.isnot(None),
+        SozlesmeSablonu.html_sablon != ''
+    ).order_by(SozlesmeSablonu.ad).all()
+
+    if request.method == 'POST':
+        sablon_id = int(request.form.get('sablon_id') or 0)
+        sablon = SozlesmeSablonu.query.get_or_404(sablon_id)
+
+        if not sablon.html_sablon:
+            flash('Bu şablonun HTML içeriği yok.', 'danger')
+            return redirect(url_for('ik.calisan_sozlesme_olustur', id=id))
+
+        # Otomatik + manuel değişkenleri birleştir
+        degerler = calisan_degiskenleri(calisan)
+        for md in MANUEL_DEGISKENLER:
+            degerler[md['kod']] = (request.form.get(md['kod']) or '').strip()
+
+        try:
+            pdf_bytes = render_sozlesme_pdf(sablon.html_sablon, degerler)
+        except Exception as e:
+            current_app.logger.exception('Sözleşme PDF hatası')
+            flash(f'PDF oluşturulamadı: {e}', 'danger')
+            return redirect(url_for('ik.calisan_sozlesme_olustur', id=id))
+
+        # Kaydet
+        upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'sozlesmeler', str(calisan.id))
+        os.makedirs(upload_folder, exist_ok=True)
+        fname = f"sozlesme_{calisan.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+        fpath = os.path.join(upload_folder, fname)
+        with open(fpath, 'wb') as f:
+            f.write(pdf_bytes)
+
+        calisan.sozlesme_pdf = f"sozlesmeler/{calisan.id}/{fname}"
+        calisan.sozlesme_sablon_id = sablon.id
+        db.session.commit()
+
+        flash(f'Sözleşme PDF oluşturuldu: {fname}', 'success')
+        return redirect(url_for('ik.detay', id=calisan.id))
+
+    return render_template(
+        'ik/sozlesme_olustur.html',
+        calisan=calisan,
+        sablonlar=sablonlar,
+        otomatik_degerler=calisan_degiskenleri(calisan),
+        otomatik_degiskenler=OTOMATIK_DEGISKENLER,
+        manuel_degiskenler=MANUEL_DEGISKENLER,
+    )
+
+
+@ik_bp.route('/proje/<int:proje_id>/sozlesme-toplu', methods=['GET', 'POST'])
+@login_required
+@permission_required('ik.edit')
+def sozlesme_toplu_olustur(proje_id):
+    """Proje bazlı toplu sözleşme oluşturma."""
+    from app.models.proje import Proje
+    from app.models.base import CalisanDurumu
+    from app.services.sozlesme_pdf import (
+        MANUEL_DEGISKENLER, calisan_degiskenleri, render_sozlesme_pdf
+    )
+
+    proje = Proje.query.get_or_404(proje_id)
+    calisanlar = Calisan.query.filter(
+        Calisan.is_deleted == False,
+        Calisan.durum == CalisanDurumu.AKTIF,
+        Calisan.kadro.has(proje_id=proje_id)
+    ).order_by(Calisan.ad, Calisan.soyad).all()
+
+    sablonlar = SozlesmeSablonu.query.filter(
+        SozlesmeSablonu.aktif == True,
+        SozlesmeSablonu.is_deleted == False,
+        SozlesmeSablonu.html_sablon.isnot(None),
+        SozlesmeSablonu.html_sablon != ''
+    ).order_by(SozlesmeSablonu.ad).all()
+
+    if request.method == 'POST':
+        sablon_id = int(request.form.get('sablon_id') or 0)
+        sablon = SozlesmeSablonu.query.get_or_404(sablon_id)
+        secili_ids = request.form.getlist('calisan_ids', type=int)
+
+        if not secili_ids:
+            flash('En az bir çalışan seçmelisiniz.', 'warning')
+            return redirect(url_for('ik.sozlesme_toplu_olustur', proje_id=proje_id))
+
+        # Tüm seçili çalışanlara aynı manuel değerler uygulanır
+        ortak_manuel = {md['kod']: (request.form.get(md['kod']) or '').strip() for md in MANUEL_DEGISKENLER}
+
+        basarili, hatali = 0, 0
+        for cid in secili_ids:
+            c = Calisan.query.get(cid)
+            if not c or not calisan_in_scope(c):
+                continue
+            try:
+                degerler = calisan_degiskenleri(c)
+                degerler.update(ortak_manuel)
+                pdf_bytes = render_sozlesme_pdf(sablon.html_sablon, degerler)
+
+                folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'sozlesmeler', str(c.id))
+                os.makedirs(folder, exist_ok=True)
+                fname = f"sozlesme_{c.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+                with open(os.path.join(folder, fname), 'wb') as f:
+                    f.write(pdf_bytes)
+
+                c.sozlesme_pdf = f"sozlesmeler/{c.id}/{fname}"
+                c.sozlesme_sablon_id = sablon.id
+                basarili += 1
+            except Exception:
+                current_app.logger.exception(f'Toplu sözleşme hatası: calisan_id={cid}')
+                hatali += 1
+
+        db.session.commit()
+        flash(f'Toplu sözleşme tamamlandı. Başarılı: {basarili}, Hata: {hatali}', 'success' if hatali == 0 else 'warning')
+        return redirect(url_for('proje.proje_detay', id=proje_id))
+
+    return render_template(
+        'ik/sozlesme_toplu.html',
+        proje=proje,
+        calisanlar=calisanlar,
+        sablonlar=sablonlar,
+        manuel_degiskenler=MANUEL_DEGISKENLER,
+    )

@@ -92,7 +92,12 @@
         <!-- Kadrolar Tab -->
         <div class="tab-content" id="kadrolar">
             <div class="bg-white dark:bg-card-dark rounded-b-xl shadow-sm border border-t-0 border-gray-200 dark:border-border-dark">
-                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-end">
+                <div class="px-4 py-3 border-b border-border-light dark:border-border-dark flex justify-end gap-2">
+                    {% if has_permission('ik.edit') %}
+                    <a href="{{ url_for('ik.sozlesme_toplu_olustur', proje_id=proje.id) }}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors">
+                        <span class="material-symbols-outlined">picture_as_pdf</span>Toplu Sözleşme
+                    </a>
+                    {% endif %}
                     {% if has_permission('proje.edit') %}
                     <a href="{{ url_for('proje.kadro_ekle', proje_id=proje.id) }}" class="inline-flex items-center gap-2 px-3 py-1.5 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition-colors">
                         <span class="material-symbols-outlined">add</span>Kadro Ekle

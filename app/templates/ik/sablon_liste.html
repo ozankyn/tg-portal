@@ -76,6 +76,9 @@
                             </a>
                             {% endif %}
                             {% if has_permission('ik.edit') %}
+                            <a href="{{ url_for('ik.sablon_html_editor', id=s.id) }}" class="p-2 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors" title="HTML Editör">
+                                <span class="material-symbols-outlined text-lg {% if s.html_sablon %}text-indigo-600{% else %}text-text-muted dark:text-text-muted-dark{% endif %}">code_blocks</span>
+                            </a>
                             <a href="{{ url_for('ik.sablon_duzenle', id=s.id) }}" class="p-2 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-colors" title="Düzenle">
                                 <span class="material-symbols-outlined text-lg text-text-muted dark:text-text-muted-dark">edit</span>
                             </a>

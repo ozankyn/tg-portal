@@ -1114,7 +1114,9 @@ class SozlesmeSablonu(db.Model, TimestampMixin, SoftDeleteMixin):
     pozisyon_id = db.Column(db.Integer, db.ForeignKey('pozisyonlar.id'))
     departman_id = db.Column(db.Integer, db.ForeignKey('departmanlar.id'))
 
-    sablon_dosya = db.Column(db.String(500))  # PDF şablon yolu
+    sablon_dosya = db.Column(db.String(500))  # PDF şablon yolu (eski yöntem)
+    html_sablon = db.Column(db.Text)          # HTML şablon (PDF jeneratör için)
+    degiskenler = db.Column(db.JSON)          # Şablonda kullanılan değişken listesi (opsiyonel meta)
     aciklama = db.Column(db.Text)
     aktif = db.Column(db.Boolean, default=True)
     sira = db.Column(db.Integer, default=0)

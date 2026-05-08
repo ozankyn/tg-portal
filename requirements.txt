@@ -39,3 +39,6 @@ Flask-Mail==0.9.1
 anthropic
 msal==1.26.0
 APScheduler==3.10.4
+
+# PDF Jeneratör
+weasyprint==60.2

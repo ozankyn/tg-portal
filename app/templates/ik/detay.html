@@ -205,7 +205,7 @@
         {% endif %}
 
         <!-- Sözleşme Bilgileri -->
-        {% if calisan.sozlesme_sablon or calisan.sozlesme_baslangic or calisan.sozlesme_bitis %}
+        {% if calisan.sozlesme_sablon or calisan.sozlesme_baslangic or calisan.sozlesme_bitis or calisan.sozlesme_pdf or has_permission('ik.edit') %}
         <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
             <h3 class="text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark mb-4 tracking-widest">Sözleşme Bilgileri</h3>
             <div class="space-y-4">
@@ -254,7 +254,16 @@
                     <a href="{{ url_for('uploaded_file', filename=calisan.sozlesme_pdf) }}" target="_blank"
                        class="flex items-center gap-2 text-sm text-primary hover:underline">
                         <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
-                        İmzalı Sözleşme PDF
+                        Sözleşme PDF
+                    </a>
+                </div>
+                {% endif %}
+                {% if has_permission('ik.edit') %}
+                <div class="{% if not calisan.sozlesme_pdf %}pt-2 border-t border-border-light dark:border-border-dark{% endif %}">
+                    <a href="{{ url_for('ik.calisan_sozlesme_olustur', id=calisan.id) }}"
+                       class="flex items-center gap-2 text-sm text-emerald-600 hover:underline">
+                        <span class="material-symbols-outlined text-lg">auto_awesome</span>
+                        {% if calisan.sozlesme_pdf %}Yeniden Oluştur{% else %}Sözleşme Oluştur{% endif %}
                     </a>
                 </div>
                 {% endif %}
