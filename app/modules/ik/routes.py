@@ -2428,6 +2428,48 @@ def api_sozlesme_sablonlari():
 # SÖZLEŞME PDF JENERATÖR
 # ============================================================
 
+@ik_bp.route('/sozlesme-sablonlari/pdf-import', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def sablon_pdf_import():
+    """PDF yükle → otomatik HTML şablon üret → editöre yönlendir.
+
+    Mevcut bir şablona içe aktarılabilir (id parametresi) veya yeni şablon oluşturulur (ad + tip ile).
+    """
+    from app.services.sozlesme_pdf import pdf_to_html
+
+    pdf = request.files.get('pdf_dosya')
+    if not pdf or not pdf.filename or not pdf.filename.lower().endswith('.pdf'):
+        flash('Geçerli bir PDF dosyası seçin.', 'danger')
+        return redirect(url_for('ik.sablon_liste'))
+
+    try:
+        html = pdf_to_html(pdf.read())
+    except Exception as e:
+        current_app.logger.exception('PDF parse hatası')
+        flash(f'PDF okunamadı: {e}', 'danger')
+        return redirect(url_for('ik.sablon_liste'))
+
+    sablon_id = request.form.get('sablon_id', type=int)
+    if sablon_id:
+        # Mevcut şablona içe aktar (üzerine yaz uyarısı UI'da)
+        sablon = SozlesmeSablonu.query.get_or_404(sablon_id)
+        sablon.html_sablon = html
+    else:
+        # Yeni şablon oluştur
+        ad = (request.form.get('ad') or '').strip() or pdf.filename.rsplit('.', 1)[0]
+        tip = request.form.get('tip') or 'belirsiz_sureli'
+        sablon = SozlesmeSablonu(ad=ad, tip=tip, html_sablon=html, aktif=True)
+        db.session.add(sablon)
+
+    db.session.commit()
+    flash(
+        'PDF içe aktarıldı. Otomatik tespit edilen değişkenleri ve sarı vurgulu tutarları kontrol edin.',
+        'success'
+    )
+    return redirect(url_for('ik.sablon_html_editor', id=sablon.id))
+
+
 @ik_bp.route('/sozlesme-sablonlari/<int:id>/html-editor', methods=['GET', 'POST'])
 @login_required
 @permission_required('ik.edit')

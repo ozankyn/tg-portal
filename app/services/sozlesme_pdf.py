@@ -198,3 +198,142 @@ def render_sozlesme_pdf(html_sablon, degerler):
     """Şablonu doldur + PDF bytes döner."""
     doldurulmus = degiskenleri_doldur(html_sablon, degerler)
     return html_to_pdf_bytes(doldurulmus)
+
+
+# ============================================================
+# PDF → HTML İÇE AKTARMA (otomatik değişken yerleştirme)
+# ============================================================
+
+# "Etiket: değer" tipinde alanlar — etiket sonrasındaki içerik {kod} ile değiştirilir
+# (PDF'te genelde boş bırakılan veya sabit değer içeren satırlar)
+_LABEL_TO_VAR = [
+    # (regex etiket pattern, değişken kodu)
+    (r'(İşçi\s*(?:Adı|Adi)\s*Soyad[ıi]\s*[:：])',     'ad_soyad'),
+    (r'(T\.?C\.?\s*Kimlik\s*No\s*[:：])',             'tc_kimlik'),
+    (r'(İşe\s*Başlama\s*Tarihi\s*[:：])',             'ise_baslama'),
+    (r'(Çalışma\s*Adresi\s*[:：])',                   'adres'),
+    (r'(E[\-\s]?posta\s*Adresi\s*[:：])',             'email'),
+    (r'(Telefon\s*[:：])',                            'telefon'),
+    (r'(Doğum\s*Tarihi\s*[:：])',                     'dogum_tarihi'),
+    (r'(Sicil\s*No\s*[:：])',                         'sicil_no'),
+]
+
+# Tarih placeholder'ı: "Tarih: …/…/20.." → "Tarih: {bugunun_tarihi}"
+_TARIH_PLACEHOLDER = re.compile(r'Tarih\s*[:：]\s*[\.…]+/[\.…]+/?\s*20\.{2,}', re.IGNORECASE)
+
+# Para tutarı pattern'i (vurgulanması için): "36.270,00 TL", "6551,18 TL", "680 TL"
+_PARA_RE = re.compile(r'\b\d{1,3}(?:\.\d{3})*(?:,\d{1,2})?\s*TL\b')
+
+
+def _normalize_text(s):
+    """PDF'ten gelen metni normalize et (çoklu boşluk, satır sonu)."""
+    s = s.replace(' ', ' ')
+    s = re.sub(r'[ \t]+', ' ', s)
+    return s.strip()
+
+
+def _para_to_kod(amount_str):
+    """36.270,00 TL → muhtemel değişken kodu önerisi (ipucu için)."""
+    # Şu anda sadece vurgu yapıyoruz, kod tahmini değil.
+    return None
+
+
+def auto_replace_variables(html):
+    """HTML içinde bilinen etiketleri {değişken} ile yer değiştirir.
+
+    - "İşçi Adı Soyadı:" → "İşçi Adı Soyadı: {ad_soyad}"
+    - "Tarih: …/…/20.." → "Tarih: {bugunun_tarihi}"
+    - Para tutarları: <mark> ile işaretlenir (admin manuel {net_ucret} vs. yapacak)
+    """
+    if not html:
+        return html
+
+    out = html
+
+    # Etiket sonrası boşluk varsa değişkeni hemen sonrasına yerleştir
+    for pattern, kod in _LABEL_TO_VAR:
+        out = re.sub(
+            pattern + r'(\s*)(?=<|$|\n)',
+            lambda m, k=kod: f"{m.group(1)} {{{k}}}",
+            out,
+            flags=re.IGNORECASE,
+        )
+
+    # Tarih placeholder
+    out = _TARIH_PLACEHOLDER.sub('Tarih: {bugunun_tarihi}', out)
+
+    # Para tutarlarını <mark> ile işaretle (admin gözle görsün, manuel düzenlesin)
+    out = _PARA_RE.sub(
+        lambda m: f'<mark style="background:#fef3c7;padding:0 2px;border:1px dashed #f59e0b;" title="Bu tutarı uygun değişkenle ({{net_ucret}}, {{brut_ucret}}, {{prim_tutari}} vb.) değiştirin">{m.group(0)}</mark>',
+        out,
+    )
+
+    return out
+
+
+def pdf_to_html(pdf_bytes):
+    """PDF bytes → temel HTML (paragraflar + listeler).
+
+    pdfplumber ile sayfa sayfa text çıkarır, paragrafları <p> ile sarar.
+    Çıkan HTML editörde düzenlenebilir.
+    """
+    import pdfplumber
+    from io import BytesIO
+
+    paragraflar = []
+
+    with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
+        for page in pdf.pages:
+            text = page.extract_text() or ''
+            text = _normalize_text(text)
+
+            # Boş satıra göre paragraflara böl
+            blocks = re.split(r'\n\s*\n+', text)
+            for blk in blocks:
+                blk = blk.strip()
+                if not blk:
+                    continue
+
+                # Tek satırlık başlık tahmini (kısa + büyük harf oranı yüksek)
+                lines = [l.strip() for l in blk.split('\n') if l.strip()]
+                if len(lines) == 1 and len(lines[0]) < 80:
+                    s = lines[0]
+                    # Numaralı başlık (örn. "1. Taraflar", "2/A. İşin Tanımı")
+                    if re.match(r'^\d+[\)\./A-Z]*\s', s) or s.isupper() or s.endswith(':'):
+                        paragraflar.append(f'<h3>{_html_escape(s)}</h3>')
+                        continue
+
+                # Madde işaretli satırlar varsa <ul>'a çevir
+                if any(re.match(r'^[•\-\*•]\s', l) for l in lines):
+                    items = []
+                    text_buffer = []
+                    for l in lines:
+                        if re.match(r'^[•\-\*•]\s', l):
+                            if text_buffer:
+                                paragraflar.append(f'<p>{_html_escape(" ".join(text_buffer))}</p>')
+                                text_buffer = []
+                            items.append(re.sub(r'^[•\-\*•]\s*', '', l))
+                        else:
+                            if items:
+                                items[-1] += ' ' + l
+                            else:
+                                text_buffer.append(l)
+                    if text_buffer:
+                        paragraflar.append(f'<p>{_html_escape(" ".join(text_buffer))}</p>')
+                    if items:
+                        li = ''.join(f'<li>{_html_escape(i)}</li>' for i in items)
+                        paragraflar.append(f'<ul>{li}</ul>')
+                else:
+                    # Düz paragraf — satırları boşlukla birleştir
+                    paragraflar.append(f'<p>{_html_escape(" ".join(lines))}</p>')
+
+    raw_html = '\n'.join(paragraflar)
+    return auto_replace_variables(raw_html)
+
+
+def _html_escape(s):
+    return (
+        s.replace('&', '&amp;')
+         .replace('<', '&lt;')
+         .replace('>', '&gt;')
+    )

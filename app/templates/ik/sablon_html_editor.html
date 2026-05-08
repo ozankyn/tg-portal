@@ -56,6 +56,17 @@
         <span class="text-[#111418] dark:text-white font-medium">{{ sablon.ad }}</span>
     </div>
     <div class="flex items-center gap-2">
+        <form action="{{ url_for('ik.sablon_pdf_import') }}" method="POST" enctype="multipart/form-data" class="inline-flex">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="sablon_id" value="{{ sablon.id }}">
+            <input type="file" name="pdf_dosya" accept=".pdf" id="pdfReimport" class="hidden"
+                   onchange="if(this.files.length && confirm('Mevcut HTML içeriğin üzerine PDF\\'ten yeni içerik aktarılacak. Devam edilsin mi?')) this.form.submit();">
+            <button type="button" onclick="document.getElementById('pdfReimport').click()"
+                    class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg flex items-center gap-2"
+                    title="PDF'ten yeniden içe aktar">
+                <span class="material-symbols-outlined text-base">file_upload</span> PDF
+            </button>
+        </form>
         <button type="button" id="btnOnizleme" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-lg flex items-center gap-2">
             <span class="material-symbols-outlined text-base">picture_as_pdf</span> Önizleme (PDF)
         </button>
