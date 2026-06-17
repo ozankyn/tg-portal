@@ -9,7 +9,7 @@ from datetime import datetime
 from app import db
 from app.models.ik import (
     Aday, KAYNAK_TURLERI, BASVURU_KAYNAK_TURLERI, BEDEN_SECENEKLERI,
-    EvrakTipi, AdayEvrak, AdayMedya,
+    EvrakTipi, AdayEvrak, AdayMedya, SozlesmeSablonu,
 )
 from app.models.proje import HedefKadro, Proje, Musteri
 
@@ -346,6 +346,16 @@ def evrak_yukle_sayfa(token):
     videos = aday.medyalar.filter_by(tip='video').all()
     kadro = aday.kadro
 
+    # Şirket evrakları: adayın kadrosunun proje/müşterisine tanımlı sözleşme şablonları
+    sirket_sablonlari = []
+    if kadro and kadro.proje:
+        musteri_id = kadro.proje.musteri_id
+        sablonlar = SozlesmeSablonu.sablonlari_filtrele(
+            musteri_id=musteri_id, proje_id=kadro.proje_id
+        )
+        # Sadece indirilebilir dosyası olanları göster
+        sirket_sablonlari = [s for s in sablonlar if s.sablon_dosya]
+
     return render_template('kariyer/evrak_yukle.html',
                           aday=aday,
                           token=token,
@@ -355,7 +365,8 @@ def evrak_yukle_sayfa(token):
                           evrak_tamamlanma=evrak_tamamlanma,
                           kadro=kadro,
                           fotos=fotos,
-                          videos=videos)
+                          videos=videos,
+                          sirket_sablonlari=sirket_sablonlari)
 
 
 @kariyer_bp.route('/evrak/<token>/yukle', methods=['POST'])
@@ -400,12 +411,15 @@ def evrak_yukle_post(token):
         filepath = os.path.join(upload_folder, new_filename)
         dosya.save(filepath)
 
+        # dosya_yolu UPLOAD_FOLDER'a göre RELATİF saklanır (uploaded_file / send_file ile uyumlu)
+        rel_path = f"evraklar/adaylar/{aday.id}/{new_filename}"
+
         # Veritabanına ekle
         evrak = AdayEvrak(
             aday_id=aday.id,
             evrak_tipi_id=evrak_tipi_id,
             dosya_adi=filename,
-            dosya_yolu=filepath,
+            dosya_yolu=rel_path,
             dosya_boyut=os.path.getsize(filepath),
             mime_type=dosya.content_type
         )
@@ -553,3 +567,108 @@ def medya_sil(token, medya_id):
     db.session.delete(m)
     db.session.commit()
     return jsonify({'success': True})
+
+
+# ============================================================
+# KARGO GÖNDERİM BARKODU (PUBLIC - TOKEN İLE)
+# ============================================================
+
+_BARKOD_EXTS = {'jpg', 'jpeg', 'png', 'webp'}
+_BARKOD_MAX = 10 * 1024 * 1024
+
+
+@kariyer_bp.route('/evrak/<token>/kargo-barkod', methods=['POST'])
+def kargo_barkod_yukle(token):
+    """Kargo gönderim barkodu fotoğrafı yükleme (public, token ile)."""
+    import os
+    from werkzeug.utils import secure_filename
+
+    aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first()
+    if not aday:
+        flash('Geçersiz veya süresi dolmuş link.', 'danger')
+        return redirect(url_for('kariyer.basvuru'))
+
+    foto = request.files.get('kargo_barkod')
+    if not foto or not foto.filename:
+        flash('Kargo barkodu fotoğrafı seçilmedi.', 'danger')
+        return redirect(url_for('kariyer.evrak_yukle_sayfa', token=token))
+
+    ext = foto.filename.rsplit('.', 1)[1].lower() if '.' in foto.filename else ''
+    if ext not in _BARKOD_EXTS:
+        flash('Geçersiz format. Sadece JPG, PNG veya WEBP yükleyebilirsiniz.', 'danger')
+        return redirect(url_for('kariyer.evrak_yukle_sayfa', token=token))
+
+    foto.seek(0, os.SEEK_END)
+    boyut = foto.tell()
+    foto.seek(0)
+    if boyut > _BARKOD_MAX:
+        flash('Dosya 10MB\'dan büyük olamaz.', 'danger')
+        return redirect(url_for('kariyer.evrak_yukle_sayfa', token=token))
+
+    barkod_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'adaylar', str(aday.id), 'kargo_barkod')
+    os.makedirs(barkod_dir, exist_ok=True)
+
+    # Eski barkod fotoğrafını temizle (tek dosya tutulur)
+    if aday.kargo_barkod_foto:
+        try:
+            eski = os.path.join(current_app.config['UPLOAD_FOLDER'], aday.kargo_barkod_foto)
+            if os.path.exists(eski):
+                os.remove(eski)
+        except Exception as e:
+            current_app.logger.warning(f"Eski kargo barkodu silinemedi: {e}")
+
+    fname = f"barkod_{datetime.now().strftime('%Y%m%d%H%M%S%f')}.{ext}"
+    foto.save(os.path.join(barkod_dir, fname))
+    aday.kargo_barkod_foto = f"adaylar/{aday.id}/kargo_barkod/{fname}"
+    db.session.commit()
+
+    flash('Kargo gönderim barkodu başarıyla yüklendi.', 'success')
+    return redirect(url_for('kariyer.evrak_yukle_sayfa', token=token))
+
+
+# ============================================================
+# ŞİRKET EVRAKLARI İNDİRME (PUBLIC - TOKEN İLE)
+# ============================================================
+
+@kariyer_bp.route('/evrak/<token>/sirket-evrak/<int:sablon_id>')
+def sirket_evrak_indir(token, sablon_id):
+    """Adayın kadrosuna tanımlı sözleşme şablonunu indir (public, token ile)."""
+    import os
+    from flask import send_file
+
+    aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first()
+    if not aday:
+        flash('Geçersiz veya süresi dolmuş link.', 'danger')
+        return redirect(url_for('kariyer.basvuru'))
+
+    sablon = SozlesmeSablonu.query.filter_by(id=sablon_id, is_deleted=False, aktif=True).first()
+    if not sablon or not sablon.sablon_dosya:
+        flash('Evrak bulunamadı.', 'danger')
+        return redirect(url_for('kariyer.evrak_yukle_sayfa', token=token))
+
+    full_path = os.path.join(current_app.config['UPLOAD_FOLDER'], sablon.sablon_dosya)
+    if not os.path.exists(full_path):
+        flash('Evrak dosyası bulunamadı.', 'danger')
+        return redirect(url_for('kariyer.evrak_yukle_sayfa', token=token))
+
+    ext = sablon.sablon_dosya.rsplit('.', 1)[1].lower() if '.' in sablon.sablon_dosya else 'docx'
+    indirme_adi = f"{sablon.ad}.{ext}"
+    return send_file(full_path, as_attachment=True, download_name=indirme_adi)
+
+
+@kariyer_bp.route('/evrak/<token>/kvkk-metni')
+def kvkk_indir(token):
+    """KVKK aydınlatma metnini indirilebilir HTML olarak ver (public, token ile)."""
+    from flask import Response
+
+    aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first()
+    if not aday:
+        flash('Geçersiz veya süresi dolmuş link.', 'danger')
+        return redirect(url_for('kariyer.basvuru'))
+
+    html = render_template('kariyer/kvkk_indir.html', aday=aday)
+    return Response(
+        html,
+        mimetype='text/html',
+        headers={'Content-Disposition': 'attachment; filename=kvkk-aydinlatma-metni.html'},
+    )

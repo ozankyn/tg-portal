@@ -25,7 +25,87 @@
         </p>
         {% endif %}
     </div>
-    
+
+    {# ===== Şirket Evrakları (indirilebilir) — sözleşme şablonu yoksa görünmez ===== #}
+    {% if sirket_sablonlari %}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+            <h6 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined">description</span>
+                Şirket Evrakları
+            </h6>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">İlgili evrakları indirebilirsiniz.</p>
+        </div>
+        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+            {% for s in sirket_sablonlari %}
+            <a href="{{ url_for('kariyer.sirket_evrak_indir', token=token, sablon_id=s.id) }}"
+               class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-blue-600">contract</span>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ s.ad }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ s.tip_text }}{% if s.sablon_dosya %} · {{ s.sablon_dosya.rsplit('.', 1)[1]|upper }}{% endif %}</p>
+                    </div>
+                </div>
+                <span class="material-symbols-outlined text-gray-400 group-hover:text-blue-600 transition-colors">download</span>
+            </a>
+            {% endfor %}
+            <a href="{{ url_for('kariyer.kvkk_indir', token=token) }}"
+               class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+                <div class="flex items-center gap-3">
+                    <span class="material-symbols-outlined text-blue-600">verified_user</span>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900 dark:text-white">KVKK Aydınlatma Metni</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Kişisel verilerin korunması</p>
+                    </div>
+                </div>
+                <span class="material-symbols-outlined text-gray-400 group-hover:text-blue-600 transition-colors">download</span>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {# ===== Kargo Gönderim Barkodu (zorunlu) ===== #}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
+        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h6 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined">qr_code_2</span>
+                Kargo Gönderim Barkodu <span class="text-red-500">*</span>
+            </h6>
+            {% if aday.kargo_barkod_foto %}
+            <span class="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-bold rounded flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">check_circle</span> Yüklendi
+            </span>
+            {% else %}
+            <span class="px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-bold rounded">Bekleniyor</span>
+            {% endif %}
+        </div>
+        <div class="p-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Tarafınıza gönderilen kargonun gönderim barkodu / takip numarası fotoğrafını yükleyiniz.</p>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {% if aday.kargo_barkod_foto %}
+                <div class="md:col-span-1">
+                    <a href="{{ url_for('uploaded_file', filename=aday.kargo_barkod_foto) }}" target="_blank">
+                        <img src="{{ url_for('uploaded_file', filename=aday.kargo_barkod_foto) }}" alt="Kargo barkodu"
+                             class="w-full h-40 object-contain bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                    </a>
+                </div>
+                {% endif %}
+                <form method="POST" action="{{ url_for('kariyer.kargo_barkod_yukle', token=token) }}" enctype="multipart/form-data"
+                      class="md:col-span-{% if aday.kargo_barkod_foto %}2{% else %}3{% endif %} space-y-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="file" name="kargo_barkod" required accept="image/jpeg,image/png,image/webp"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">JPG, PNG veya WEBP · Max 10MB</p>
+                    <button type="submit" class="px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined">upload</span>
+                        {% if aday.kargo_barkod_foto %}Yeniden Yükle{% else %}Yükle{% endif %}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Sol: Evrak Yükle Formu -->
         <div class="lg:col-span-1">

@@ -466,6 +466,8 @@ def _aday_liste_query():
     durum = request.args.get('durum')
     kaynak = request.args.get('kaynak')
     proje_id = request.args.get('proje_id', type=int)
+    il = request.args.get('il', '').strip()
+    ilce = request.args.get('ilce', '').strip()
     search = request.args.get('search', '').strip()
 
     query = Aday.query.filter_by(is_deleted=False)
@@ -477,6 +479,10 @@ def _aday_liste_query():
         query = query.filter(Aday.kaynak == kaynak)
     if proje_id:
         query = query.join(HedefKadro, Aday.kadro_id == HedefKadro.id).filter(HedefKadro.proje_id == proje_id)
+    if il:
+        query = query.filter(Aday.il == il)
+    if ilce:
+        query = query.filter(Aday.ilce == ilce)
     if search:
         search_filter = f'%{search}%'
         query = query.filter(
@@ -513,11 +519,24 @@ def aday_liste():
 
     projeler = user_scoped_projeler()
 
+    # İl / İlçe filtre seçenekleri (scope'a göre, dolu olan adaylardan)
+    il_ilce_rows = apply_aday_scope(
+        Aday.query.filter(Aday.is_deleted == False, Aday.il.isnot(None), Aday.il != '')
+    ).with_entities(Aday.il, Aday.ilce).distinct().all()
+    iller = sorted({r.il for r in il_ilce_rows if r.il})
+    il_ilce_map = {}
+    for r in il_ilce_rows:
+        if r.il and r.ilce:
+            il_ilce_map.setdefault(r.il, set()).add(r.ilce)
+    il_ilce_map = {k: sorted(v) for k, v in il_ilce_map.items()}
+
     return render_template('ik/aday_liste.html',
                           adaylar=pagination.items,
                           pagination=pagination,
                           stats=stats,
-                          projeler=projeler)
+                          projeler=projeler,
+                          iller=iller,
+                          il_ilce_map=il_ilce_map)
 
 
 @ik_bp.route('/adaylar/export')
@@ -760,13 +779,16 @@ def aday_evrak_yukle(id):
         # Dosyayı kaydet
         filepath = os.path.join(upload_folder, new_filename)
         dosya.save(filepath)
-        
+
+        # dosya_yolu UPLOAD_FOLDER'a göre RELATİF saklanır (uploaded_file / send_file ile uyumlu)
+        rel_path = f"evraklar/adaylar/{id}/{new_filename}"
+
         # Veritabanına ekle
         evrak = AdayEvrak(
             aday_id=id,
             evrak_tipi_id=evrak_tipi_id,
             dosya_adi=filename,
-            dosya_yolu=filepath,
+            dosya_yolu=rel_path,
             dosya_boyut=os.path.getsize(filepath),
             mime_type=dosya.content_type,
             yukleyen_id=current_user.id
@@ -815,9 +837,26 @@ def evrak_reddet(id):
 @login_required
 @permission_required('ik.view')
 def evrak_indir(id):
-    """Evrak indir"""
+    """Evrak indir / görüntüle.
+
+    dosya_yolu hem yeni (UPLOAD_FOLDER'a göre relatif) hem de eski
+    (mutlak yol) kayıtlarla uyumlu şekilde çözümlenir.
+    ?goster=1 → tarayıcıda inline aç (indirme yerine).
+    """
     evrak = AdayEvrak.query.get_or_404(id)
-    return send_file(evrak.dosya_yolu, as_attachment=True, download_name=evrak.dosya_adi)
+
+    yol = evrak.dosya_yolu or ''
+    if os.path.isabs(yol):
+        full_path = yol
+    else:
+        full_path = os.path.join(current_app.config['UPLOAD_FOLDER'], yol)
+
+    if not os.path.exists(full_path):
+        flash('Evrak dosyası bulunamadı.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=evrak.aday_id))
+
+    inline = request.args.get('goster') == '1'
+    return send_file(full_path, as_attachment=not inline, download_name=evrak.dosya_adi)
 
 
 # ============================================================

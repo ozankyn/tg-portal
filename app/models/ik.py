@@ -263,6 +263,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
 
     # ==================== Lojistik ====================
     kargo_subesi = db.Column(db.String(150))  # En yakın kargo şubesi
+    kargo_barkod_foto = db.Column(db.String(255))  # Kargo gönderim barkodu fotoğrafı (dosya yolu)
 
     # ==================== Başvuru Kaynağı / Geçmiş ====================
     basvuru_kaynak = db.Column(db.String(50))   # BASVURU_KAYNAK_TURLERI'nden biri (nereden ulaştı)
