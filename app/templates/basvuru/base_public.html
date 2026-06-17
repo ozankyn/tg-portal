@@ -16,6 +16,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
+            // Public sayfalar her zaman light; dark: varyantları (media-query ile) ASLA tetiklenmesin
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {

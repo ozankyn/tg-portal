@@ -5,17 +5,17 @@
 {% block content %}
 <div class="max-w-4xl mx-auto">
     <div class="text-center mb-8">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Evrak Yükleme</h1>
-        <p class="text-gray-600 dark:text-gray-400 mt-2">Sayın {{ aday.ad }} {{ aday.soyad }}, lütfen istenen evrakları yükleyiniz.</p>
+        <h1 class="text-2xl font-bold text-gray-900">Evrak Yükleme</h1>
+        <p class="text-gray-600 mt-2">Sayın {{ aday.ad }} {{ aday.soyad }}, lütfen istenen evrakları yükleyiniz.</p>
     </div>
     
     <!-- İlerleme Durumu -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <div class="flex items-center justify-between mb-2">
-            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Evrak Tamamlanma Durumu</span>
+            <span class="text-sm font-medium text-gray-700">Evrak Tamamlanma Durumu</span>
             <span class="text-sm font-bold {% if evrak_tamamlanma == 100 %}text-green-600{% elif evrak_tamamlanma >= 50 %}text-amber-600{% else %}text-red-600{% endif %}">%{{ evrak_tamamlanma }}</span>
         </div>
-        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+        <div class="w-full bg-gray-200 rounded-full h-3">
             <div class="{% if evrak_tamamlanma == 100 %}bg-green-600{% elif evrak_tamamlanma >= 50 %}bg-amber-500{% else %}bg-red-500{% endif %} h-3 rounded-full transition-all" style="width: {{ evrak_tamamlanma }}%"></div>
         </div>
         {% if evrak_tamamlanma == 100 %}
@@ -28,35 +28,35 @@
 
     {# ===== Şirket Evrakları (indirilebilir) — sözleşme şablonu yoksa görünmez ===== #}
     {% if sirket_sablonlari %}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
-        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-            <h6 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+        <div class="px-4 py-3 border-b border-gray-200">
+            <h6 class="font-medium text-gray-900 flex items-center gap-2">
                 <span class="material-symbols-outlined">description</span>
                 Şirket Evrakları
             </h6>
-            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">İlgili evrakları indirebilirsiniz.</p>
+            <p class="text-xs text-gray-500 mt-1">İlgili evrakları indirebilirsiniz.</p>
         </div>
-        <div class="divide-y divide-gray-200 dark:divide-gray-700">
+        <div class="divide-y divide-gray-200">
             {% for s in sirket_sablonlari %}
             <a href="{{ url_for('kariyer.sirket_evrak_indir', token=token, sablon_id=s.id) }}"
-               class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+               class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors group">
                 <div class="flex items-center gap-3">
                     <span class="material-symbols-outlined text-blue-600">contract</span>
                     <div>
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ s.ad }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ s.tip_text }}{% if s.sablon_dosya %} · {{ s.sablon_dosya.rsplit('.', 1)[1]|upper }}{% endif %}</p>
+                        <p class="text-sm font-medium text-gray-900">{{ s.ad }}</p>
+                        <p class="text-xs text-gray-500">{{ s.tip_text }}{% if s.sablon_dosya %} · {{ s.sablon_dosya.rsplit('.', 1)[1]|upper }}{% endif %}</p>
                     </div>
                 </div>
                 <span class="material-symbols-outlined text-gray-400 group-hover:text-blue-600 transition-colors">download</span>
             </a>
             {% endfor %}
             <a href="{{ url_for('kariyer.kvkk_indir', token=token) }}"
-               class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group">
+               class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors group">
                 <div class="flex items-center gap-3">
                     <span class="material-symbols-outlined text-blue-600">verified_user</span>
                     <div>
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">KVKK Aydınlatma Metni</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">Kişisel verilerin korunması</p>
+                        <p class="text-sm font-medium text-gray-900">KVKK Aydınlatma Metni</p>
+                        <p class="text-xs text-gray-500">Kişisel verilerin korunması</p>
                     </div>
                 </div>
                 <span class="material-symbols-outlined text-gray-400 group-hover:text-blue-600 transition-colors">download</span>
@@ -66,28 +66,28 @@
     {% endif %}
 
     {# ===== Kargo Gönderim Barkodu (zorunlu) ===== #}
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-6">
-        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <h6 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
+        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+            <h6 class="font-medium text-gray-900 flex items-center gap-2">
                 <span class="material-symbols-outlined">qr_code_2</span>
                 Kargo Gönderim Barkodu <span class="text-red-500">*</span>
             </h6>
             {% if aday.kargo_barkod_foto %}
-            <span class="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-bold rounded flex items-center gap-1">
+            <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded flex items-center gap-1">
                 <span class="material-symbols-outlined text-sm">check_circle</span> Yüklendi
             </span>
             {% else %}
-            <span class="px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-bold rounded">Bekleniyor</span>
+            <span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded">Bekleniyor</span>
             {% endif %}
         </div>
         <div class="p-4">
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Tarafınıza gönderilen kargonun gönderim barkodu / takip numarası fotoğrafını yükleyiniz.</p>
+            <p class="text-sm text-gray-600 mb-4">Tarafınıza gönderilen kargonun gönderim barkodu / takip numarası fotoğrafını yükleyiniz.</p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {% if aday.kargo_barkod_foto %}
                 <div class="md:col-span-1">
                     <a href="{{ url_for('uploaded_file', filename=aday.kargo_barkod_foto) }}" target="_blank">
                         <img src="{{ url_for('uploaded_file', filename=aday.kargo_barkod_foto) }}" alt="Kargo barkodu"
-                             class="w-full h-40 object-contain bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700">
+                             class="w-full h-40 object-contain bg-gray-100 rounded-lg border border-gray-200">
                     </a>
                 </div>
                 {% endif %}
@@ -95,8 +95,8 @@
                       class="md:col-span-{% if aday.kargo_barkod_foto %}2{% else %}3{% endif %} space-y-3">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="file" name="kargo_barkod" required accept="image/jpeg,image/png,image/webp"
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                    <p class="text-xs text-gray-500 dark:text-gray-400">JPG, PNG veya WEBP · Max 10MB</p>
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900">
+                    <p class="text-xs text-gray-500">JPG, PNG veya WEBP · Max 10MB</p>
                     <button type="submit" class="px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined">upload</span>
                         {% if aday.kargo_barkod_foto %}Yeniden Yükle{% else %}Yükle{% endif %}
@@ -109,8 +109,8 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Sol: Evrak Yükle Formu -->
         <div class="lg:col-span-1">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-blue-600 rounded-t-xl">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200 bg-blue-600 rounded-t-xl">
                     <h6 class="font-medium text-white flex items-center gap-2">
                         <span class="material-symbols-outlined">upload_file</span>
                         Evrak Yükle
@@ -120,8 +120,8 @@
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Evrak Tipi *</label>
-                        <select name="evrak_tipi_id" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Evrak Tipi *</label>
+                        <select name="evrak_tipi_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900">
                             <option value="">Seçiniz</option>
                             {% for tip in evrak_tipleri %}
                             <option value="{{ tip.id }}">{{ tip.ad }}{% if tip.zorunlu %} *{% endif %}</option>
@@ -130,10 +130,10 @@
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dosya *</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Dosya *</label>
                         <input type="file" name="dosya" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">PDF, JPG, PNG, DOC, DOCX (Max 10MB)</p>
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900">
+                        <p class="text-xs text-gray-500 mt-1">PDF, JPG, PNG, DOC, DOCX (Max 10MB)</p>
                     </div>
                     
                     <button type="submit" class="w-full px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
@@ -145,12 +145,12 @@
             
             <!-- Eksik Evraklar -->
             {% if eksik_evraklar %}
-            <div class="mt-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-700 p-4">
-                <h6 class="font-medium text-amber-800 dark:text-amber-400 flex items-center gap-2 mb-2">
+            <div class="mt-4 bg-amber-50 rounded-xl border border-amber-200 p-4">
+                <h6 class="font-medium text-amber-800 flex items-center gap-2 mb-2">
                     <span class="material-symbols-outlined">warning</span>
                     Eksik Zorunlu Evraklar
                 </h6>
-                <ul class="text-sm text-amber-700 dark:text-amber-300 space-y-1">
+                <ul class="text-sm text-amber-700 space-y-1">
                     {% for tip in eksik_evraklar %}
                     <li class="flex items-center gap-1">
                         <span class="material-symbols-outlined text-sm">radio_button_unchecked</span>
@@ -164,31 +164,31 @@
         
         <!-- Sağ: Yüklenen Evraklar -->
         <div class="lg:col-span-2">
-            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                    <h6 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="px-4 py-3 border-b border-gray-200">
+                    <h6 class="font-medium text-gray-900 flex items-center gap-2">
                         <span class="material-symbols-outlined">folder_open</span>
                         Yüklenen Evraklar ({{ evraklar|length }})
                     </h6>
                 </div>
                 
                 {% if evraklar %}
-                <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                <div class="divide-y divide-gray-200">
                     {% for evrak in evraklar %}
                     <div class="p-4 flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-lg {% if evrak.durum == 'onaylandi' %}bg-green-100 dark:bg-green-900/30{% elif evrak.durum == 'reddedildi' %}bg-red-100 dark:bg-red-900/30{% else %}bg-blue-100 dark:bg-blue-900/30{% endif %} flex items-center justify-center">
+                            <div class="w-10 h-10 rounded-lg {% if evrak.durum == 'onaylandi' %}bg-green-100{% elif evrak.durum == 'reddedildi' %}bg-red-100{% else %}bg-blue-100{% endif %} flex items-center justify-center">
                                 <span class="material-symbols-outlined {% if evrak.durum == 'onaylandi' %}text-green-600{% elif evrak.durum == 'reddedildi' %}text-red-600{% else %}text-blue-600{% endif %}">
                                     {% if evrak.durum == 'onaylandi' %}check_circle{% elif evrak.durum == 'reddedildi' %}cancel{% else %}description{% endif %}
                                 </span>
                             </div>
                             <div>
-                                <p class="font-medium text-gray-900 dark:text-white">{{ evrak.evrak_tipi.ad if evrak.evrak_tipi else 'Belge' }}</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                <p class="font-medium text-gray-900">{{ evrak.evrak_tipi.ad if evrak.evrak_tipi else 'Belge' }}</p>
+                                <p class="text-xs text-gray-500">
                                     {{ evrak.dosya_adi }} • {{ (evrak.dosya_boyut / 1024)|round(1) }} KB
                                 </p>
                                 {% if evrak.red_sebebi %}
-                                <p class="text-xs text-red-600 dark:text-red-400 mt-1">
+                                <p class="text-xs text-red-600 mt-1">
                                     <strong>Red sebebi:</strong> {{ evrak.red_sebebi }}
                                 </p>
                                 {% endif %}
@@ -196,11 +196,11 @@
                         </div>
                         <div class="flex items-center gap-2">
                             {% if evrak.durum == 'onaylandi' %}
-                            <span class="px-2 py-1 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-xs font-bold rounded">Onaylı</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-bold rounded">Onaylı</span>
                             {% elif evrak.durum == 'reddedildi' %}
-                            <span class="px-2 py-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 text-xs font-bold rounded">Reddedildi</span>
+                            <span class="px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded">Reddedildi</span>
                             {% else %}
-                            <span class="px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-bold rounded">İnceleniyor</span>
+                            <span class="px-2 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded">İnceleniyor</span>
                             {% endif %}
                         </div>
                     </div>
@@ -208,20 +208,20 @@
                 </div>
                 {% else %}
                 <div class="p-8 text-center">
-                    <span class="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600">folder_off</span>
-                    <p class="mt-2 text-gray-500 dark:text-gray-400">Henüz evrak yüklenmemiş</p>
-                    <p class="text-sm text-gray-400 dark:text-gray-500">Soldaki formdan evraklarınızı yükleyebilirsiniz.</p>
+                    <span class="material-symbols-outlined text-4xl text-gray-300">folder_off</span>
+                    <p class="mt-2 text-gray-500">Henüz evrak yüklenmemiş</p>
+                    <p class="text-sm text-gray-400">Soldaki formdan evraklarınızı yükleyebilirsiniz.</p>
                 </div>
                 {% endif %}
             </div>
             
             <!-- Bilgi Notu -->
-            <div class="mt-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-700 p-4">
+            <div class="mt-4 bg-blue-50 rounded-xl border border-blue-200 p-4">
                 <div class="flex gap-3">
-                    <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">info</span>
-                    <div class="text-sm text-blue-700 dark:text-blue-300">
+                    <span class="material-symbols-outlined text-blue-600">info</span>
+                    <div class="text-sm text-blue-700">
                         <p class="font-medium">Bilgilendirme</p>
-                        <ul class="mt-1 space-y-1 text-blue-600 dark:text-blue-400">
+                        <ul class="mt-1 space-y-1 text-blue-600">
                             <li>• Yüklediğiniz evraklar İK birimimiz tarafından incelenecektir.</li>
                             <li>• Zorunlu evrakların tamamı onaylandıktan sonra işe alım süreciniz devam edecektir.</li>
                             <li>• Reddedilen evrakları düzelterek tekrar yükleyebilirsiniz.</li>
@@ -234,14 +234,14 @@
 
     {% if kadro and (kadro.foto_gerekli or kadro.video_gerekli) %}
     <!-- Foto / Video Yükleme -->
-    <div class="mt-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
+    <div class="mt-6 bg-white rounded-xl shadow-sm border border-gray-200"
          id="medyaCard" data-token="{{ token }}">
-        <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <h6 class="font-medium text-gray-900 dark:text-white flex items-center gap-2">
+        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+            <h6 class="font-medium text-gray-900 flex items-center gap-2">
                 <span class="material-symbols-outlined">photo_library</span>
                 Tanıtım Fotoğraf & Video
             </h6>
-            <span class="text-xs text-gray-500 dark:text-gray-400">
+            <span class="text-xs text-gray-500">
                 <span id="fotoCount">{{ fotos|length }}</span> fotoğraf · <span id="videoCount">{{ videos|length }}</span> video
             </span>
         </div>
@@ -250,20 +250,20 @@
             <!-- Drop alanları -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {% if kadro.foto_gerekli %}
-                <div id="fotoDrop" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+                <div id="fotoDrop" class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
                     <input type="file" id="fotoInput" accept="image/jpeg,image/png,image/webp" multiple class="hidden">
                     <span class="material-symbols-outlined text-4xl text-gray-400 mb-2">add_photo_alternate</span>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">Fotoğraf yüklemek için tıkla veya sürükle</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">JPG/PNG/WEBP · max 10MB · çoklu seçim · <span class="text-red-500 font-bold">zorunlu</span></p>
+                    <p class="text-sm font-medium text-gray-900">Fotoğraf yüklemek için tıkla veya sürükle</p>
+                    <p class="text-xs text-gray-500 mt-1">JPG/PNG/WEBP · max 10MB · çoklu seçim · <span class="text-red-500 font-bold">zorunlu</span></p>
                     <div id="fotoProgress" class="hidden mt-3 text-sm text-blue-600"></div>
                 </div>
                 {% endif %}
                 {% if kadro.video_gerekli %}
-                <div id="videoDrop" class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors">
+                <div id="videoDrop" class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
                     <input type="file" id="videoInput" accept="video/mp4,video/quicktime,video/webm" class="hidden">
                     <span class="material-symbols-outlined text-4xl text-gray-400 mb-2">video_call</span>
-                    <p class="text-sm font-medium text-gray-900 dark:text-white">Video yüklemek için tıkla veya sürükle</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">MP4/MOV/WEBM · max 100MB · <span class="text-red-500 font-bold">zorunlu</span></p>
+                    <p class="text-sm font-medium text-gray-900">Video yüklemek için tıkla veya sürükle</p>
+                    <p class="text-xs text-gray-500 mt-1">MP4/MOV/WEBM · max 100MB · <span class="text-red-500 font-bold">zorunlu</span></p>
                     <div id="videoProgress" class="hidden mt-3 text-sm text-blue-600"></div>
                 </div>
                 {% endif %}
@@ -272,10 +272,10 @@
             {% if kadro.foto_gerekli %}
             <!-- Foto galeri -->
             <div>
-                <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Fotoğraflar</h4>
+                <h4 class="text-sm font-bold text-gray-900 mb-3">Fotoğraflar</h4>
                 <div id="fotoGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     {% for m in fotos %}
-                    <div class="medya-item relative group aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700" data-medya-id="{{ m.id }}">
+                    <div class="medya-item relative group aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200" data-medya-id="{{ m.id }}">
                         <img src="{{ url_for('uploaded_file', filename=m.dosya_yolu) }}"
                              alt="{{ m.dosya_adi }}"
                              class="w-full h-full object-cover cursor-pointer transition-transform group-hover:scale-105"
@@ -288,7 +288,7 @@
                     </div>
                     {% endfor %}
                 </div>
-                <div id="fotoEmpty" class="text-center text-gray-500 dark:text-gray-400 py-6 {% if fotos %}hidden{% endif %}">
+                <div id="fotoEmpty" class="text-center text-gray-500 py-6 {% if fotos %}hidden{% endif %}">
                     <span class="material-symbols-outlined text-3xl mb-1 opacity-50">image</span>
                     <p class="text-sm">Henüz fotoğraf yüklenmedi</p>
                 </div>
@@ -298,13 +298,13 @@
             {% if kadro.video_gerekli %}
             <!-- Video listesi -->
             <div>
-                <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-3">Videolar</h4>
+                <h4 class="text-sm font-bold text-gray-900 mb-3">Videolar</h4>
                 <div id="videoGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {% for m in videos %}
-                    <div class="medya-item relative group bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700" data-medya-id="{{ m.id }}">
+                    <div class="medya-item relative group bg-gray-100 rounded-lg overflow-hidden border border-gray-200" data-medya-id="{{ m.id }}">
                         <video src="{{ url_for('uploaded_file', filename=m.dosya_yolu) }}" controls preload="metadata" class="w-full h-auto max-h-[360px] bg-black"></video>
                         <div class="flex items-center justify-between px-3 py-2">
-                            <span class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ m.dosya_adi }}</span>
+                            <span class="text-xs text-gray-500 truncate">{{ m.dosya_adi }}</span>
                             <button onclick="medyaSil({{ m.id }}, this)" class="text-rose-600 hover:text-rose-700 text-xs flex items-center gap-1" title="Sil">
                                 <span class="material-symbols-outlined text-base">delete</span> Sil
                             </button>
@@ -312,7 +312,7 @@
                     </div>
                     {% endfor %}
                 </div>
-                <div id="videoEmpty" class="text-center text-gray-500 dark:text-gray-400 py-6 {% if videos %}hidden{% endif %}">
+                <div id="videoEmpty" class="text-center text-gray-500 py-6 {% if videos %}hidden{% endif %}">
                     <span class="material-symbols-outlined text-3xl mb-1 opacity-50">movie</span>
                     <p class="text-sm">Henüz video yüklenmedi</p>
                 </div>
@@ -357,7 +357,7 @@
 
         function fotoCardHTML(m) {
             return `
-                <div class="medya-item relative group aspect-square rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-700" data-medya-id="${m.id}">
+                <div class="medya-item relative group aspect-square rounded-lg overflow-hidden bg-gray-100 border border-gray-200" data-medya-id="${m.id}">
                     <img src="${m.url}" alt="${escapeHtml(m.dosya_adi)}"
                          class="w-full h-full object-cover cursor-pointer transition-transform group-hover:scale-105"
                          onclick="openLightbox('${m.url}', '${escapeHtml(m.dosya_adi)}')">
@@ -367,10 +367,10 @@
 
         function videoCardHTML(m) {
             return `
-                <div class="medya-item relative group bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700" data-medya-id="${m.id}">
+                <div class="medya-item relative group bg-gray-100 rounded-lg overflow-hidden border border-gray-200" data-medya-id="${m.id}">
                     <video src="${m.url}" controls preload="metadata" class="w-full h-auto max-h-[360px] bg-black"></video>
                     <div class="flex items-center justify-between px-3 py-2">
-                        <span class="text-xs text-gray-500 dark:text-gray-400 truncate">${escapeHtml(m.dosya_adi)}</span>
+                        <span class="text-xs text-gray-500 truncate">${escapeHtml(m.dosya_adi)}</span>
                         <button onclick="medyaSil(${m.id}, this)" class="text-rose-600 hover:text-rose-700 text-xs flex items-center gap-1" title="Sil"><span class="material-symbols-outlined text-base">delete</span> Sil</button>
                     </div>
                 </div>`;
