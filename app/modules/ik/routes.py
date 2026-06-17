@@ -538,7 +538,10 @@ def adaylar_export():
     ws.title = 'Adaylar'
 
     headers = ['Ad Soyad', 'Telefon', 'Email', 'Başvuru Tarihi',
-               'Proje', 'Kadro/Pozisyon', 'Durum']
+               'Proje', 'Kadro/Pozisyon', 'Durum',
+               'İl', 'İlçe', 'Üst Beden', 'Alt Beden', 'Ayakkabı No',
+               'Kargo Şubesi', 'TG\'de Çalıştı', 'Seyahat Engeli',
+               'Askerlik', 'Başvuru Kaynağı']
     ws.append(headers)
 
     header_font = Font(bold=True, color='FFFFFF')
@@ -576,9 +579,20 @@ def adaylar_export():
             proje_ad,
             kadro_pozisyon,
             durum_etiket.get(a.durum, a.durum or ''),
+            a.il or '',
+            a.ilce or '',
+            a.ust_beden or '',
+            a.alt_beden or '',
+            a.ayakkabi_no or '',
+            a.kargo_subesi or '',
+            'Evet' if a.tg_calistimi else 'Hayır',
+            'Var' if a.seyahat_engeli else 'Yok',
+            a.askerlik_durumu or '',
+            a.basvuru_kaynak_text if a.basvuru_kaynak else '',
         ])
 
-    widths = [28, 16, 28, 14, 22, 24, 18]
+    widths = [28, 16, 28, 14, 22, 24, 18,
+              14, 14, 10, 10, 10, 26, 12, 14, 12, 18]
     for idx, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = w
 

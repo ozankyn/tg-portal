@@ -7,7 +7,10 @@ Açık pozisyonları görüntüleme ve doğrudan başvuru - Login gerektirmez
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
 from datetime import datetime
 from app import db
-from app.models.ik import Aday, KAYNAK_TURLERI, EvrakTipi, AdayEvrak, AdayMedya
+from app.models.ik import (
+    Aday, KAYNAK_TURLERI, BASVURU_KAYNAK_TURLERI, BEDEN_SECENEKLERI,
+    EvrakTipi, AdayEvrak, AdayMedya,
+)
 from app.models.proje import HedefKadro, Proje, Musteri
 
 kariyer_bp = Blueprint('kariyer', __name__)
@@ -127,7 +130,19 @@ def basvuru_form(token):
         aday.adres = request.form.get('adres')
         aday.il = request.form.get('il')
         aday.ilce = request.form.get('ilce')
-        
+
+        # Fiziksel bilgiler
+        aday.ust_beden = request.form.get('ust_beden') or None
+        aday.alt_beden = request.form.get('alt_beden') or None
+        aday.ayakkabi_no = request.form.get('ayakkabi_no') or None
+
+        # Lojistik
+        aday.kargo_subesi = request.form.get('kargo_subesi') or None
+
+        # Başvuru kaynağı / geçmiş
+        aday.basvuru_kaynak = request.form.get('basvuru_kaynak') or None
+        aday.tg_calistimi = request.form.get('tg_calistimi') == 'on'
+
         # Eğitim
         aday.egitim_durumu = request.form.get('egitim_durumu')
         aday.okul_adi = request.form.get('okul_adi')
@@ -158,6 +173,11 @@ def basvuru_form(token):
         aday.saglik_sorunu = request.form.get('saglik_sorunu') == 'on'
         aday.saglik_sorunu_aciklama = request.form.get('saglik_sorunu_aciklama')
         aday.askerlik_durumu = request.form.get('askerlik_durumu')
+
+        # Askerlik durumu erkek adaylar için zorunlu
+        if aday.cinsiyet == 'erkek' and not aday.askerlik_durumu:
+            flash('Askerlik durumu erkek adaylar için zorunludur.', 'danger')
+            return redirect(url_for('kariyer.basvuru_form', token=token))
         aday.askerlik_tecil_tarihi = datetime.strptime(request.form.get('askerlik_tecil_tarihi'), '%Y-%m-%d').date() if request.form.get('askerlik_tecil_tarihi') else None
         aday.sabika_kaydi = request.form.get('sabika_kaydi') == 'on'
         aday.sabika_aciklama = request.form.get('sabika_aciklama')
@@ -173,11 +193,7 @@ def basvuru_form(token):
         import os
         from werkzeug.utils import secure_filename
 
-        # CV zorunlu kontrolü
-        cv_file = request.files.get('cv_dosya')
-        if not cv_file or not cv_file.filename:
-            flash('CV (özgeçmiş) dosyası zorunludur.', 'danger')
-            return redirect(url_for('kariyer.basvuru_form', token=token))
+        # CV artık opsiyonel — zorunlu kontrol yok.
 
         # Kadro flag'lerine göre foto/video zorunlu kontrolü
         if kadro.foto_gerekli:
@@ -195,8 +211,10 @@ def basvuru_form(token):
         upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'adaylar', str(aday.id))
         os.makedirs(upload_folder, exist_ok=True)
 
-        file_fields = ['foto', 'cv_dosya', 'kimlik_on', 'kimlik_arka', 'ehliyet_foto',
-                      'diploma_foto', 'src_foto', 'ikametgah', 'adli_sicil']
+        # Başvuru formunda artık yalnızca CV (opsiyonel) + kadro bazlı foto/video alınıyor.
+        # Diğer belgeler (kimlik, ehliyet, diploma, adli sicil vb.) işe alım sürecinde
+        # /kariyer/evrak akışından toplanıyor.
+        file_fields = ['cv_dosya']
 
         for field in file_fields:
             file = request.files.get(field)
@@ -275,7 +293,9 @@ def basvuru_form(token):
         
         return redirect(url_for('kariyer.basvuru_tamam', token=token))
     
-    return render_template('kariyer/form.html', aday=aday, kadro=kadro)
+    return render_template('kariyer/form.html', aday=aday, kadro=kadro,
+                           basvuru_kaynak_turleri=BASVURU_KAYNAK_TURLERI,
+                           beden_secenekleri=BEDEN_SECENEKLERI)
 
 
 @kariyer_bp.route('/basvur/tamam/<token>')

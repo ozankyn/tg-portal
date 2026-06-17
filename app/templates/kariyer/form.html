@@ -8,7 +8,7 @@
         <span class="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm">
             <span class="material-symbols-outlined text-sm">check</span>
         </span>
-        <span class="text-sm text-white/70">KVKK Onay</span>
+        <span class="text-sm text-gray-500">KVKK Onay</span>
     </div>
     <div class="w-8 h-0.5 bg-green-500"></div>
     {% if aday.telefon_dogrulandi %}
@@ -16,18 +16,18 @@
         <span class="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm">
             <span class="material-symbols-outlined text-sm">check</span>
         </span>
-        <span class="text-sm text-white/70">Telefon Doğrulama</span>
+        <span class="text-sm text-gray-500">Telefon Doğrulama</span>
     </div>
     <div class="w-8 h-0.5 bg-green-500"></div>
     {% endif %}
     <div class="flex items-center gap-2">
         <span class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-medium">{{ 3 if aday.telefon_dogrulandi else 2 }}</span>
-        <span class="text-sm font-medium text-white">Başvuru Formu</span>
+        <span class="text-sm font-medium text-gray-900">Başvuru Formu</span>
     </div>
-    <div class="w-8 h-0.5 bg-white/30"></div>
+    <div class="w-8 h-0.5 bg-gray-300"></div>
     <div class="flex items-center gap-2">
-        <span class="w-8 h-8 rounded-full bg-white/30 text-white/70 flex items-center justify-center text-sm font-medium">{{ 4 if aday.telefon_dogrulandi else 3 }}</span>
-        <span class="text-sm text-white/50">Tamamlandı</span>
+        <span class="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-medium">{{ 4 if aday.telefon_dogrulandi else 3 }}</span>
+        <span class="text-sm text-gray-400">Tamamlandı</span>
     </div>
 </div>
 {% endblock %}
@@ -44,9 +44,9 @@
                 <p class="text-sm text-slate-300 mt-1">{% if kadro.proje.musteri.kariyer_gorunum_adi %}{{ kadro.proje.musteri.kariyer_gorunum_adi }} - {% endif %}{{ kadro.pozisyon_adi }}{% if kadro.il %} · {{ kadro.il }}{% endif %}</p>
             </div>
             <div class="p-6">
-                <form method="POST" enctype="multipart/form-data">
+                <form method="POST" enctype="multipart/form-data" id="basvuruForm">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
+
                     <!-- 1. Kişisel Bilgiler -->
                     <h5 class="flex items-center gap-2 text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
                         <span class="material-symbols-outlined text-lg text-blue-600">person</span>
@@ -65,26 +65,26 @@
                         </div>
                         <div class="md:col-span-4">
                             <label class="block text-sm font-medium text-gray-700 mb-1">T.C. Kimlik No <span class="text-red-500">*</span></label>
-                            <input type="text" name="tc_kimlik" required maxlength="11" pattern="[0-9]{11}"
+                            <input type="text" name="tc_kimlik" required maxlength="11" pattern="[0-9]{11}" value="{{ aday.tc_kimlik or '' }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div class="md:col-span-4">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Doğum Tarihi <span class="text-red-500">*</span></label>
-                            <input type="date" name="dogum_tarihi" required
+                            <input type="date" name="dogum_tarihi" required value="{{ aday.dogum_tarihi.strftime('%Y-%m-%d') if aday.dogum_tarihi else '' }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div class="md:col-span-4">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Doğum Yeri</label>
-                            <input type="text" name="dogum_yeri"
+                            <input type="text" name="dogum_yeri" value="{{ aday.dogum_yeri or '' }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div class="md:col-span-2">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Cinsiyet <span class="text-red-500">*</span></label>
-                            <select name="cinsiyet" required
+                            <select name="cinsiyet" id="cinsiyet" required
                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçiniz</option>
-                                <option value="erkek">Erkek</option>
-                                <option value="kadin">Kadın</option>
+                                <option value="erkek" {% if aday.cinsiyet == 'erkek' %}selected{% endif %}>Erkek</option>
+                                <option value="kadin" {% if aday.cinsiyet == 'kadin' %}selected{% endif %}>Kadın</option>
                             </select>
                         </div>
                         <div class="md:col-span-2">
@@ -92,19 +92,11 @@
                             <select name="medeni_durum"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçiniz</option>
-                                <option value="bekar">Bekâr</option>
-                                <option value="evli">Evli</option>
-                                <option value="bosanmis">Boşanmış</option>
+                                <option value="bekar" {% if aday.medeni_durum == 'bekar' %}selected{% endif %}>Bekâr</option>
+                                <option value="evli" {% if aday.medeni_durum == 'evli' %}selected{% endif %}>Evli</option>
+                                <option value="bosanmis" {% if aday.medeni_durum == 'bosanmis' %}selected{% endif %}>Boşanmış</option>
                             </select>
                         </div>
-                    </div>
-                    
-                    <!-- 2. İletişim Bilgileri -->
-                    <h5 class="flex items-center gap-2 text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                        <span class="material-symbols-outlined text-lg text-blue-600">call</span>
-                        İletişim Bilgileri
-                    </h5>
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
                         <div class="md:col-span-4">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Cep Telefonu <span class="text-red-500">*</span></label>
                             {% if aday.telefon_dogrulandi %}
@@ -124,24 +116,71 @@
                             <input type="email" name="email" required value="{{ aday.email or '' }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">İl <span class="text-red-500">*</span></label>
-                            <input type="text" name="il" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <!-- 2. Fiziksel Bilgiler -->
+                    <h5 class="flex items-center gap-2 text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                        <span class="material-symbols-outlined text-lg text-blue-600">straighten</span>
+                        Fiziksel Bilgiler
+                    </h5>
+                    <p class="text-xs text-gray-500 mb-4 -mt-2">Üniforma / kıyafet temini için kullanılacaktır.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Üst Beden</label>
+                            <select name="ust_beden"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seçiniz</option>
+                                {% for b in beden_secenekleri %}
+                                <option value="{{ b }}" {% if aday.ust_beden == b %}selected{% endif %}>{{ b }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">İlçe</label>
-                            <input type="text" name="ilce"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Alt Beden</label>
+                            <select name="alt_beden"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seçiniz</option>
+                                {% for b in beden_secenekleri %}
+                                <option value="{{ b }}" {% if aday.alt_beden == b %}selected{% endif %}>{{ b }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        <div class="md:col-span-12">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Adres</label>
-                            <textarea name="adres" rows="2"
-                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Ayakkabı No</label>
+                            <select name="ayakkabi_no"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seçiniz</option>
+                                {% for no in range(36, 48) %}
+                                <option value="{{ no }}" {% if aday.ayakkabi_no == no|string %}selected{% endif %}>{{ no }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
-                    
-                    <!-- 3. Eğitim Bilgileri -->
+
+                    <!-- 3. Adres Bilgileri -->
+                    <h5 class="flex items-center gap-2 text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                        <span class="material-symbols-outlined text-lg text-blue-600">location_on</span>
+                        Adres Bilgileri
+                    </h5>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">İl <span class="text-red-500">*</span></label>
+                            <input type="text" name="il" required value="{{ aday.il or '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">İlçe</label>
+                            <input type="text" name="ilce" value="{{ aday.ilce or '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Açık Adres</label>
+                            <textarea name="adres" rows="2"
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ aday.adres or '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- 4. Eğitim Bilgileri -->
                     <h5 class="flex items-center gap-2 text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
                         <span class="material-symbols-outlined text-lg text-blue-600">school</span>
                         Eğitim Bilgileri
@@ -152,28 +191,28 @@
                             <select name="egitim_durumu" required
                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçiniz</option>
-                                <option value="ilkokul">İlkokul</option>
-                                <option value="ortaokul">Ortaokul</option>
-                                <option value="lise">Lise</option>
-                                <option value="onlisans">Ön Lisans</option>
-                                <option value="lisans">Lisans</option>
-                                <option value="yukseklisans">Yüksek Lisans</option>
-                                <option value="doktora">Doktora</option>
+                                <option value="ilkokul" {% if aday.egitim_durumu == 'ilkokul' %}selected{% endif %}>İlkokul</option>
+                                <option value="ortaokul" {% if aday.egitim_durumu == 'ortaokul' %}selected{% endif %}>Ortaokul</option>
+                                <option value="lise" {% if aday.egitim_durumu == 'lise' %}selected{% endif %}>Lise</option>
+                                <option value="onlisans" {% if aday.egitim_durumu == 'onlisans' %}selected{% endif %}>Ön Lisans</option>
+                                <option value="lisans" {% if aday.egitim_durumu == 'lisans' %}selected{% endif %}>Lisans</option>
+                                <option value="yukseklisans" {% if aday.egitim_durumu == 'yukseklisans' %}selected{% endif %}>Yüksek Lisans</option>
+                                <option value="doktora" {% if aday.egitim_durumu == 'doktora' %}selected{% endif %}>Doktora</option>
                             </select>
                         </div>
                         <div class="md:col-span-5">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Okul Adı</label>
-                            <input type="text" name="okul_adi"
+                            <input type="text" name="okul_adi" value="{{ aday.okul_adi or '' }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div class="md:col-span-4">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Bölüm</label>
-                            <input type="text" name="bolum"
+                            <input type="text" name="bolum" value="{{ aday.bolum or '' }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
-                    
-                    <!-- 4. Ehliyet Bilgileri -->
+
+                    <!-- 5. Ehliyet Bilgileri -->
                     <h5 class="flex items-center gap-2 text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
                         <span class="material-symbols-outlined text-lg text-blue-600">directions_car</span>
                         Ehliyet Bilgileri
@@ -181,7 +220,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
                         <div class="md:col-span-2 flex items-center">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="ehliyet_var" id="ehliyet_var"
+                                <input type="checkbox" name="ehliyet_var" id="ehliyet_var" {% if aday.ehliyet_var %}checked{% endif %}
                                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                 <span class="text-sm text-gray-700">Ehliyetim Var</span>
                             </label>
@@ -191,164 +230,176 @@
                             <select name="ehliyet_sinifi"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçiniz</option>
-                                <option value="A1">A1</option>
-                                <option value="A2">A2</option>
-                                <option value="A">A</option>
-                                <option value="B">B</option>
-                                <option value="C">C</option>
-                                <option value="D">D</option>
-                                <option value="E">E</option>
+                                {% for s in ['A1','A2','A','B','C','D','E'] %}
+                                <option value="{{ s }}" {% if aday.ehliyet_sinifi == s %}selected{% endif %}>{{ s }}</option>
+                                {% endfor %}
                             </select>
                         </div>
                         <div class="md:col-span-3">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Ehliyet Tarihi</label>
-                            <input type="date" name="ehliyet_tarihi"
+                            <input type="date" name="ehliyet_tarihi" value="{{ aday.ehliyet_tarihi.strftime('%Y-%m-%d') if aday.ehliyet_tarihi else '' }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div class="md:col-span-2 flex items-center">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="src_belgesi" id="src_belgesi"
+                                <input type="checkbox" name="src_belgesi" id="src_belgesi" {% if aday.src_belgesi %}checked{% endif %}
                                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                 <span class="text-sm text-gray-700">SRC Belgem Var</span>
                             </label>
                         </div>
                         <div class="md:col-span-3 flex items-center">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="psikoteknik" id="psikoteknik"
+                                <input type="checkbox" name="psikoteknik" id="psikoteknik" {% if aday.psikoteknik %}checked{% endif %}
                                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                 <span class="text-sm text-gray-700">Psikoteknik Belgem Var</span>
                             </label>
                         </div>
                     </div>
-                    
-                    <!-- 5. İş Deneyimi -->
+
+                    <!-- 6. İş Bilgileri -->
                     <h5 class="flex items-center gap-2 text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
                         <span class="material-symbols-outlined text-lg text-blue-600">work</span>
-                        İş Deneyimi
+                        İş Bilgileri
                     </h5>
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
-                        <div class="md:col-span-3">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Toplam Tecrübe (Yıl)</label>
-                            <input type="number" name="toplam_tecrube_yil" min="0" max="50" value="0"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Askerlik Durumu <span id="askerlik_zorunlu" class="text-red-500 {% if aday.cinsiyet != 'erkek' %}hidden{% endif %}">*</span>
+                            </label>
+                            <select name="askerlik_durumu" id="askerlik_durumu" {% if aday.cinsiyet == 'erkek' %}required{% endif %}
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seçiniz</option>
+                                <option value="yapti" {% if aday.askerlik_durumu == 'yapti' %}selected{% endif %}>Yaptı</option>
+                                <option value="muaf" {% if aday.askerlik_durumu == 'muaf' %}selected{% endif %}>Muaf</option>
+                                <option value="tecilli" {% if aday.askerlik_durumu == 'tecilli' %}selected{% endif %}>Tecilli</option>
+                                <option value="yapmiyor" {% if aday.askerlik_durumu == 'yapmiyor' %}selected{% endif %}>Yapmıyor (Kadın)</option>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Erkek adaylar için zorunludur.</p>
                         </div>
-                        <div class="md:col-span-5">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Son İş Yeri</label>
-                            <input type="text" name="son_is_yeri"
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Toplam Tecrübe (Yıl)</label>
+                            <input type="number" name="toplam_tecrube_yil" min="0" max="50" value="{{ aday.toplam_tecrube_yil or 0 }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div class="md:col-span-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Son Pozisyon</label>
-                            <input type="text" name="son_pozisyon"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div class="md:col-span-3">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">İşe Başlangıç</label>
-                            <input type="date" name="son_is_baslangic"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div class="md:col-span-3">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">İşten Ayrılış</label>
-                            <input type="date" name="son_is_bitis"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div class="md:col-span-6">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Ayrılma Nedeni</label>
-                            <input type="text" name="son_is_ayrilma_nedeni"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                    </div>
-                    
-                    <!-- 6. Ek Bilgiler -->
-                    <h5 class="flex items-center gap-2 text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
-                        <span class="material-symbols-outlined text-lg text-blue-600">info</span>
-                        Ek Bilgiler
-                    </h5>
-                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
-                        <div class="md:col-span-3">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Askerlik Durumu</label>
-                            <select name="askerlik_durumu"
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">Seçiniz</option>
-                                <option value="yapti">Yaptı</option>
-                                <option value="muaf">Muaf</option>
-                                <option value="tecilli">Tecilli</option>
-                                <option value="yapmiyor">Yapmıyor (Kadın)</option>
-                            </select>
-                        </div>
-                        <div class="md:col-span-3">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Beklenen Maaş (₺)</label>
-                            <input type="number" name="beklenen_maas" min="0" step="1000"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        </div>
-                        <div class="md:col-span-3">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Ne Zaman Başlayabilirsiniz?</label>
                             <select name="ne_zaman_baslayabilir"
                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">Seçiniz</option>
-                                <option value="hemen">Hemen</option>
-                                <option value="1_hafta">1 Hafta İçinde</option>
-                                <option value="2_hafta">2 Hafta İçinde</option>
-                                <option value="1_ay">1 Ay İçinde</option>
+                                <option value="hemen" {% if aday.ne_zaman_baslayabilir == 'hemen' %}selected{% endif %}>Hemen</option>
+                                <option value="1_hafta" {% if aday.ne_zaman_baslayabilir == '1_hafta' %}selected{% endif %}>1 Hafta İçinde</option>
+                                <option value="2_hafta" {% if aday.ne_zaman_baslayabilir == '2_hafta' %}selected{% endif %}>2 Hafta İçinde</option>
+                                <option value="1_ay" {% if aday.ne_zaman_baslayabilir == '1_ay' %}selected{% endif %}>1 Ay İçinde</option>
                             </select>
                         </div>
-                        <div class="md:col-span-3 flex items-center">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" name="vardiyali_calisabilir" id="vardiyali" checked
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Son İş Yeri</label>
+                            <input type="text" name="son_is_yeri" value="{{ aday.son_is_yeri or '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Son Pozisyon</label>
+                            <input type="text" name="son_pozisyon" value="{{ aday.son_pozisyon or '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">İşe Başlangıç</label>
+                            <input type="date" name="son_is_baslangic" value="{{ aday.son_is_baslangic.strftime('%Y-%m-%d') if aday.son_is_baslangic else '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">İşten Ayrılış</label>
+                            <input type="date" name="son_is_bitis" value="{{ aday.son_is_bitis.strftime('%Y-%m-%d') if aday.son_is_bitis else '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Ayrılma Nedeni</label>
+                            <input type="text" name="son_is_ayrilma_nedeni" value="{{ aday.son_is_ayrilma_nedeni or '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Beklenen Maaş (₺)</label>
+                            <input type="number" name="beklenen_maas" min="0" step="1000" value="{{ aday.beklenen_maas|int if aday.beklenen_maas else '' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="md:col-span-4 flex items-end">
+                            <label class="flex items-center gap-2 cursor-pointer pb-2">
+                                <input type="checkbox" name="vardiyali_calisabilir" id="vardiyali" {% if aday.vardiyali_calisabilir %}checked{% endif %}
                                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                 <span class="text-sm text-gray-700">Vardiyalı Çalışabilirim</span>
                             </label>
                         </div>
+                        <div class="md:col-span-4 flex items-end">
+                            <label class="flex items-center gap-2 cursor-pointer pb-2">
+                                <input type="checkbox" name="seyahat_engeli" id="seyahat_engeli" {% if aday.seyahat_engeli %}checked{% endif %}
+                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Seyahat engelim var</span>
+                            </label>
+                        </div>
+                        <div class="md:col-span-12">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="tg_calistimi" id="tg_calistimi" {% if aday.tg_calistimi %}checked{% endif %}
+                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <span class="text-sm text-gray-700">Daha önce Team Guerilla'da çalıştım</span>
+                            </label>
+                        </div>
                     </div>
-                    
-                    <!-- 7. Belgeler -->
+
+                    <!-- 7. Lojistik -->
+                    <h5 class="flex items-center gap-2 text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                        <span class="material-symbols-outlined text-lg text-blue-600">local_shipping</span>
+                        Lojistik
+                    </h5>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+                        <div class="md:col-span-12">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Size En Yakın Kargo Şubesi</label>
+                            <input type="text" name="kargo_subesi" value="{{ aday.kargo_subesi or '' }}" placeholder="Örn: Aras Kargo Kadıköy Şubesi"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p class="text-xs text-gray-500 mt-1">Üniforma ve malzeme gönderimi için kullanılacaktır.</p>
+                        </div>
+                    </div>
+
+                    <!-- 8. Kaynak -->
+                    <h5 class="flex items-center gap-2 text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                        <span class="material-symbols-outlined text-lg text-blue-600">campaign</span>
+                        Bize Nereden Ulaştınız?
+                    </h5>
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Başvuru Kaynağı</label>
+                            <select name="basvuru_kaynak"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seçiniz</option>
+                                {% for kod, etiket in basvuru_kaynak_turleri %}
+                                <option value="{{ kod }}" {% if aday.basvuru_kaynak == kod %}selected{% endif %}>{{ etiket }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 9. Belgeler -->
                     <h5 class="flex items-center gap-2 text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
                         <span class="material-symbols-outlined text-lg text-blue-600">upload_file</span>
                         Belgeler
                     </h5>
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-2">
                         <span class="material-symbols-outlined text-blue-600">info</span>
-                        <span class="text-sm text-blue-800">Lütfen belgelerin net ve okunabilir olduğundan emin olun. Maksimum dosya boyutu: 5MB</span>
+                        <span class="text-sm text-blue-800">Diğer belgeler (kimlik, diploma vb.) işe alım sürecinde ayrıca talep edilecektir. Maksimum dosya boyutu: 5MB</span>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Vesikalık Fotoğraf</label>
-                            <input type="file" name="foto" accept="image/*"
-                                   class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">CV (Özgeçmiş) <span class="text-red-500">*</span></label>
-                            <input type="file" name="cv_dosya" required accept=".pdf,.doc,.docx"
+                            <label class="block text-sm font-medium text-gray-700 mb-1">CV (Özgeçmiş) <span class="text-xs text-gray-400">(opsiyonel)</span></label>
+                            <input type="file" name="cv_dosya" accept=".pdf,.doc,.docx"
                                    class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                             <p class="text-xs text-gray-500 mt-1">PDF, DOC veya DOCX</p>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Kimlik Ön Yüz</label>
-                            <input type="file" name="kimlik_on" accept="image/*"
-                                   class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Ehliyet Fotoğrafı</label>
-                            <input type="file" name="ehliyet_foto" accept="image/*"
-                                   class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Diploma</label>
-                            <input type="file" name="diploma_foto" accept="image/*,.pdf"
-                                   class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Adli Sicil Belgesi</label>
-                            <input type="file" name="adli_sicil" accept="image/*,.pdf"
-                                   class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                         </div>
                     </div>
 
                     {% if kadro.foto_gerekli or kadro.video_gerekli %}
-                    <!-- 8. Tanıtım Foto/Video (kadroya göre) -->
+                    <!-- 10. Tanıtım Foto/Video (kadroya göre) -->
                     <h5 class="flex items-center gap-2 text-base font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
                         <span class="material-symbols-outlined text-lg text-blue-600">photo_library</span>
-                        Tanıtım Fotoğraf & Video
+                        Tanıtım Fotoğraf &amp; Video
                     </h5>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         {% if kadro.foto_gerekli %}
@@ -373,7 +424,7 @@
                         {% endif %}
                     </div>
                     {% endif %}
-                    
+
                     <!-- Gönder -->
                     <div class="space-y-3">
                         <button type="submit" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white text-lg font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-lg">
@@ -390,4 +441,22 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Askerlik durumu erkek adaylar için zorunlu
+    (function () {
+        const cinsiyet = document.getElementById('cinsiyet');
+        const askerlik = document.getElementById('askerlik_durumu');
+        const yildiz = document.getElementById('askerlik_zorunlu');
+        function guncelle() {
+            const erkek = cinsiyet.value === 'erkek';
+            askerlik.required = erkek;
+            yildiz.classList.toggle('hidden', !erkek);
+        }
+        if (cinsiyet && askerlik) {
+            cinsiyet.addEventListener('change', guncelle);
+            guncelle();
+        }
+    })();
+</script>
 {% endblock %}

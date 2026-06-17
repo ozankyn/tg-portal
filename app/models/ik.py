@@ -175,6 +175,21 @@ KAYNAK_TURLERI = [
 ]
 
 
+# Başvuru kaynağı - "Bize nereden ulaştınız?" (aday'ın kendisi seçer)
+BASVURU_KAYNAK_TURLERI = [
+    ('linkedin', 'LinkedIn'),
+    ('instagram', 'Instagram'),
+    ('kariyer_net', 'Kariyer.net'),
+    ('referans', 'Referans'),
+    ('is_ilani', 'İş İlanı'),
+    ('arkadas_tavsiyesi', 'Arkadaş Tavsiyesi'),
+    ('diger', 'Diğer'),
+]
+
+# Beden seçenekleri (üst/alt giyim)
+BEDEN_SECENEKLERI = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']
+
+
 class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     """İş başvuru adayları - KVKK Uyumlu"""
     __tablename__ = 'adaylar'
@@ -240,7 +255,19 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     adres = db.Column(db.Text)
     il = db.Column(db.String(50))
     ilce = db.Column(db.String(50))
-    
+
+    # ==================== Fiziksel Bilgiler ====================
+    ust_beden = db.Column(db.String(10))    # XS, S, M, L, XL, XXL, 3XL
+    alt_beden = db.Column(db.String(10))    # XS, S, M, L, XL, XXL, 3XL
+    ayakkabi_no = db.Column(db.String(5))   # 36-47
+
+    # ==================== Lojistik ====================
+    kargo_subesi = db.Column(db.String(150))  # En yakın kargo şubesi
+
+    # ==================== Başvuru Kaynağı / Geçmiş ====================
+    basvuru_kaynak = db.Column(db.String(50))   # BASVURU_KAYNAK_TURLERI'nden biri (nereden ulaştı)
+    tg_calistimi = db.Column(db.Boolean, default=False)  # Daha önce Team Guerilla'da çalıştı mı?
+
     # ==================== Eğitim ====================
     egitim_durumu = db.Column(db.String(50))  # ilkokul, ortaokul, lise, onlisans, lisans, yukseklisans, doktora
     okul_adi = db.Column(db.String(200))
@@ -386,6 +413,11 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
         """Kaynak türünü okunabilir text olarak döndür"""
         kaynak_map = dict(KAYNAK_TURLERI)
         return kaynak_map.get(self.kaynak, self.kaynak or '-')
+
+    @property
+    def basvuru_kaynak_text(self):
+        """'Bize nereden ulaştınız?' cevabını okunabilir text olarak döndür"""
+        return dict(BASVURU_KAYNAK_TURLERI).get(self.basvuru_kaynak, self.basvuru_kaynak or '-')
     
     @property
     def yas(self):
