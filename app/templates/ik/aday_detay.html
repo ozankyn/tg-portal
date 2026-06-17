@@ -105,87 +105,163 @@
             </div>
             
             <div class="border-t border-border-light dark:border-border-dark p-6 flex flex-col gap-3">
-                {% if aday.durum != 'ise_alindi' and aday.durum != 'reddedildi' %}
-                <a href="{{ url_for('ik.aday_calisana_donustur', id=aday.id) }}" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
-                    <span class="material-symbols-outlined text-lg">person_add</span>
-                    Çalışana Dönüştür
-                </a>
-                {% endif %}
-                <div class="grid grid-cols-2 gap-3">
-                    <a href="{{ url_for('ik.aday_duzenle', id=aday.id) }}" class="bg-gray-100 dark:bg-[#111418] hover:bg-gray-200 dark:hover:bg-[#252b36] text-sm font-bold py-2 rounded-lg transition-all text-center">Düzenle</a>
-                    {% if aday.durum != 'reddedildi' %}
-                    <button onclick="document.getElementById('redModal').classList.remove('hidden')" class="bg-gray-100 dark:bg-[#111418] hover:bg-red-100 dark:hover:bg-red-900/20 text-sm font-bold py-2 rounded-lg transition-all text-red-600">Reddet</button>
-                    {% else %}
-                    <span class="bg-red-100 dark:bg-red-900/20 text-red-600 text-sm font-bold py-2 rounded-lg text-center">Reddedildi</span>
+                {% set can_edit = has_permission('ik.edit') %}
+                {% set can_sgk = has_permission('ik.edit') or has_permission('masraf.edit') %}
+
+                {% if aday.is_reddedildi %}
+                <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                    <p class="text-sm font-bold text-red-600 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base">block</span> Reddedildi
+                    </p>
+                    {% if aday.red_nedeni %}<p class="text-xs text-red-500 mt-1">{{ aday.red_nedeni }}</p>{% endif %}
+                    {% if aday.red_tarihi %}<p class="text-[11px] text-text-muted mt-1">{{ aday.red_tarihi.strftime('%d.%m.%Y %H:%M') }}</p>{% endif %}
+                </div>
+
+                {% elif aday.durum == 'calisana_donusturuldu' %}
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3">
+                    <p class="text-sm font-bold text-green-600 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base">check_circle</span> Çalışana Dönüştürüldü
+                    </p>
+                    {% if aday.calisan_id %}
+                    <a href="{{ url_for('ik.detay', id=aday.calisan_id) }}" class="text-xs text-primary font-bold hover:underline mt-1 inline-block">Çalışan kaydını aç →</a>
                     {% endif %}
                 </div>
+
+                {% elif can_edit and aday.durum == 'basvurdu' %}
+                <form action="{{ url_for('ik.aday_incele', id=aday.id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-lg">search</span> İncelemeye Al
+                    </button>
+                </form>
+
+                {% elif can_edit and aday.durum == 'inceleniyor' %}
+                <button onclick="document.getElementById('onayModal').classList.remove('hidden')" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">task_alt</span> Onayla
+                </button>
+
+                {% elif can_edit and aday.durum == 'onaylandi' %}
+                <button onclick="document.getElementById('sgkTalepModal').classList.remove('hidden')" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">send</span> SGK Giriş Talebi Oluştur
+                </button>
+
+                {% elif can_sgk and aday.durum == 'sgk_giris_talebi' %}
+                <button onclick="document.getElementById('sgkGirisModal').classList.remove('hidden')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">upload_file</span> SGK Girişi Yaptım
+                </button>
+
+                {% elif can_edit and aday.durum == 'sgk_girisi_yapildi' %}
+                <a href="{{ url_for('ik.aday_calisana_donustur', id=aday.id) }}" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">person_add</span> Çalışana Dönüştür
+                </a>
+                {% endif %}
+
+                <div class="grid grid-cols-2 gap-3">
+                    <a href="{{ url_for('ik.aday_duzenle', id=aday.id) }}" class="bg-gray-100 dark:bg-[#111418] hover:bg-gray-200 dark:hover:bg-[#252b36] text-sm font-bold py-2 rounded-lg transition-all text-center">Düzenle</a>
+                    {% if can_edit and not aday.is_reddedildi and aday.durum != 'calisana_donusturuldu' %}
+                    <button onclick="document.getElementById('redModal').classList.remove('hidden')" class="bg-gray-100 dark:bg-[#111418] hover:bg-red-100 dark:hover:bg-red-900/20 text-sm font-bold py-2 rounded-lg transition-all text-red-600">Reddet</button>
+                    {% endif %}
+                </div>
+
+                {% if aday.planlanan_baslangic %}
+                <div class="flex items-center justify-between text-xs bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-3 py-2">
+                    <span class="text-text-muted dark:text-text-muted-dark font-semibold uppercase">Planlı Başlangıç</span>
+                    <span class="font-bold text-blue-700 dark:text-blue-300">{{ aday.planlanan_baslangic.strftime('%d.%m.%Y') }}</span>
+                </div>
+                {% endif %}
+                {% if aday.sgk_bildirgesi %}
+                <a href="{{ url_for('uploaded_file', filename=aday.sgk_bildirgesi) }}" target="_blank" class="flex items-center gap-2 text-xs font-bold text-indigo-600 hover:underline">
+                    <span class="material-symbols-outlined text-base">description</span> SGK Giriş Bildirgesi
+                </a>
+                {% endif %}
             </div>
         </div>
-        
-        <!-- Status Management -->
-        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
-            <h3 class="text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark mb-4 tracking-widest">Aday Durum Yönetimi</h3>
-            <form action="{{ url_for('ik.aday_durum_degistir', id=aday.id) }}" method="POST" class="space-y-4">
+
+        <!-- Manuel Durum (gelişmiş) -->
+        {% if has_permission('ik.edit') %}
+        <details class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <summary class="text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark tracking-widest cursor-pointer">Manuel Durum Değiştir</summary>
+            <form action="{{ url_for('ik.aday_durum_degistir', id=aday.id) }}" method="POST" class="space-y-4 mt-4">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div>
-                    <label class="block text-xs font-semibold text-text-muted dark:text-text-muted-dark mb-1.5 uppercase">Güncel Aşama</label>
-                    <select name="durum" class="w-full bg-gray-50 dark:bg-[#111418] border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary">
-                        <option value="basvurdu" {% if aday.durum == 'basvurdu' %}selected{% endif %}>Başvurdu</option>
-                        <option value="degerlendiriliyor" {% if aday.durum == 'degerlendiriliyor' %}selected{% endif %}>Değerlendiriliyor</option>
-                        <option value="mulakat" {% if aday.durum == 'mulakat' %}selected{% endif %}>Mülakat</option>
-                        <option value="teklif" {% if aday.durum == 'teklif' %}selected{% endif %}>Teklif Aşamasında</option>
-                        <option value="ise_alindi" {% if aday.durum == 'ise_alindi' %}selected{% endif %}>İşe Alındı</option>
-                        <option value="reddedildi" {% if aday.durum == 'reddedildi' %}selected{% endif %}>Reddedildi</option>
-                    </select>
-                </div>
+                <select name="durum" class="w-full bg-gray-50 dark:bg-[#111418] border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary">
+                    <option value="basvurdu" {% if aday.durum == 'basvurdu' %}selected{% endif %}>Başvurdu</option>
+                    <option value="inceleniyor" {% if aday.durum == 'inceleniyor' %}selected{% endif %}>İnceleniyor</option>
+                    <option value="onaylandi" {% if aday.durum == 'onaylandi' %}selected{% endif %}>Onaylandı</option>
+                    <option value="sgk_giris_talebi" {% if aday.durum == 'sgk_giris_talebi' %}selected{% endif %}>SGK Giriş Talebi</option>
+                    <option value="sgk_girisi_yapildi" {% if aday.durum == 'sgk_girisi_yapildi' %}selected{% endif %}>SGK Girişi Yapıldı</option>
+                    <option value="calisana_donusturuldu" {% if aday.durum == 'calisana_donusturuldu' %}selected{% endif %}>Çalışana Dönüştürüldü</option>
+                    <option value="reddedildi" {% if aday.is_reddedildi %}selected{% endif %}>Reddedildi</option>
+                </select>
                 <button type="submit" class="w-full bg-primary/10 hover:bg-primary/20 text-primary font-bold py-2 rounded-lg transition-all text-sm">
                     Durumu Güncelle
                 </button>
             </form>
-        </div>
-        
+        </details>
+        {% endif %}
+
     </aside>
     
     <!-- Right Column: Details & Tabs -->
     <div class="lg:col-span-8 space-y-6">
         
-        <!-- Recruitment Progress -->
+        <!-- Recruitment Progress (6 adım) -->
         <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            {% set adimlar = [('Başvurdu','how_to_reg'),('İnceleniyor','search'),('Onaylandı','task_alt'),('SGK Giriş Talebi','send'),('SGK Girişi','verified'),('Çalışan','badge')] %}
+            {% set aktif = aday.akis_adim_index %}
+            {% set toplam = adimlar|length %}
+            {% set yuzde = 0 if aktif < 0 else ((aktif + 1) * 100 / toplam)|int %}
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-lg font-bold text-[#111418] dark:text-white">İşe Alım Süreci</h3>
-                {% set progress = {'basvurdu': 20, 'degerlendiriliyor': 40, 'mulakat': 60, 'teklif': 80, 'ise_alindi': 100, 'reddedildi': 0} %}
-                {% set current_progress = progress.get(aday.durum, 0) %}
-                <span class="text-sm font-bold text-primary px-3 py-1 bg-primary/10 rounded-full">%{{ current_progress }} Tamamlandı</span>
+                {% if aday.is_reddedildi %}
+                <span class="text-sm font-bold text-red-600 px-3 py-1 bg-red-100 dark:bg-red-900/20 rounded-full">Reddedildi</span>
+                {% else %}
+                <span class="text-sm font-bold text-primary px-3 py-1 bg-primary/10 rounded-full">%{{ yuzde }} Tamamlandı</span>
+                {% endif %}
             </div>
             <div class="relative py-4">
                 <div class="h-1.5 w-full bg-gray-100 dark:bg-[#111418] rounded-full overflow-hidden">
-                    <div class="h-full bg-primary transition-all duration-500" style="width: {{ current_progress }}%"></div>
+                    <div class="h-full {% if aday.is_reddedildi %}bg-red-400{% else %}bg-primary{% endif %} transition-all duration-500" style="width: {{ 0 if aday.is_reddedildi else yuzde }}%"></div>
                 </div>
-                <div class="flex justify-between mt-4">
-                    <div class="flex flex-col items-center gap-1">
-                        <div class="w-4 h-4 rounded-full {% if current_progress >= 20 %}bg-primary{% else %}bg-gray-200 dark:bg-gray-700{% endif %}"></div>
-                        <span class="text-[10px] font-bold uppercase {% if current_progress >= 20 %}text-primary{% else %}text-text-muted dark:text-text-muted-dark{% endif %}">Başvuru</span>
+                <div class="grid grid-cols-6 gap-1 mt-4">
+                    {% for ad, ikon in adimlar %}
+                    {% set done = (not aday.is_reddedildi) and (aktif >= loop.index0) %}
+                    {% set son = (not aday.is_reddedildi) and (loop.index0 == toplam - 1) and done %}
+                    <div class="flex flex-col items-center gap-1 text-center">
+                        <div class="w-8 h-8 rounded-full flex items-center justify-center {% if son %}bg-green-500 text-white{% elif done %}bg-primary text-white{% else %}bg-gray-200 dark:bg-gray-700 text-text-muted dark:text-text-muted-dark{% endif %}">
+                            <span class="material-symbols-outlined text-base">{{ ikon }}</span>
+                        </div>
+                        <span class="text-[9px] leading-tight font-bold uppercase {% if done %}text-primary{% else %}text-text-muted dark:text-text-muted-dark{% endif %}">{{ ad }}</span>
                     </div>
-                    <div class="flex flex-col items-center gap-1">
-                        <div class="w-4 h-4 rounded-full {% if current_progress >= 40 %}bg-primary{% else %}bg-gray-200 dark:bg-gray-700{% endif %}"></div>
-                        <span class="text-[10px] font-bold uppercase {% if current_progress >= 40 %}text-primary{% else %}text-text-muted dark:text-text-muted-dark{% endif %}">Değerlendirme</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-1">
-                        <div class="w-4 h-4 rounded-full {% if current_progress >= 60 %}bg-primary{% else %}bg-gray-200 dark:bg-gray-700{% endif %}"></div>
-                        <span class="text-[10px] font-bold uppercase {% if current_progress >= 60 %}text-primary{% else %}text-text-muted dark:text-text-muted-dark{% endif %}">Mülakat</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-1">
-                        <div class="w-4 h-4 rounded-full {% if current_progress >= 80 %}bg-primary{% elif aday.durum == 'teklif' %}border-2 border-primary bg-white dark:bg-card-dark ring-4 ring-primary/20{% else %}bg-gray-200 dark:bg-gray-700{% endif %}"></div>
-                        <span class="text-[10px] font-bold uppercase {% if current_progress >= 80 %}text-primary{% else %}text-text-muted dark:text-text-muted-dark{% endif %}">Teklif</span>
-                    </div>
-                    <div class="flex flex-col items-center gap-1">
-                        <div class="w-4 h-4 rounded-full {% if current_progress >= 100 %}bg-green-500{% else %}bg-gray-200 dark:bg-gray-700{% endif %}"></div>
-                        <span class="text-[10px] font-bold uppercase {% if current_progress >= 100 %}text-green-500{% else %}text-text-muted dark:text-text-muted-dark{% endif %}">İşe Alım</span>
-                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
-        
+
+        <!-- Süreç Geçmişi (timeline) -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined">history</span> Süreç Geçmişi
+            </h3>
+            {% set gecmis = aday.islem_gecmisi.all() %}
+            {% if gecmis %}
+            <ol class="relative border-l border-border-light dark:border-border-dark ml-2">
+                {% for log in gecmis %}
+                <li class="mb-5 ml-5">
+                    <span class="absolute -left-1.5 w-3 h-3 rounded-full {% if log.islem == 'reddet' %}bg-red-500{% elif log.islem == 'donustur' %}bg-green-500{% else %}bg-primary{% endif %}"></span>
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <p class="text-sm font-bold text-[#111418] dark:text-white">{{ log.islem_etiket }}</p>
+                        <span class="text-xs text-text-muted dark:text-text-muted-dark">{{ log.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                    </div>
+                    {% if log.aciklama %}<p class="text-sm text-text-muted dark:text-text-muted-dark mt-0.5">{{ log.aciklama }}</p>{% endif %}
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-0.5">{{ log.kullanici.full_name if log.kullanici else 'Sistem' }}</p>
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            <p class="text-sm text-text-muted dark:text-text-muted-dark">Henüz işlem kaydı yok.</p>
+            {% endif %}
+        </div>
+
         <!-- Document Tracking Table -->
         <!-- Aday Evrak Yükleme Linki -->
         {% if aday.davet_token %}
@@ -708,9 +784,10 @@
 <div id="redModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full p-6">
         <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-4">Adayı Reddet</h3>
-        <form action="#" method="POST">
+        <form action="{{ url_for('ik.aday_reddet', id=aday.id) }}" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <textarea name="red_sebebi" class="w-full bg-gray-50 dark:bg-[#111418] border-border-light dark:border-border-dark rounded-lg p-3 text-sm min-h-[100px]" placeholder="Red sebebini yazın..." required></textarea>
+            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Red Nedeni <span class="text-red-500">*</span></label>
+            <textarea name="red_nedeni" class="w-full bg-gray-50 dark:bg-[#111418] border-border-light dark:border-border-dark rounded-lg p-3 text-sm min-h-[100px]" placeholder="Red sebebini yazın..." required></textarea>
             <div class="flex justify-end gap-3 mt-4">
                 <button type="button" onclick="document.getElementById('redModal').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-[#111418] rounded-lg font-medium text-sm hover:bg-gray-200 dark:hover:bg-[#252b36] transition-colors">
                     İptal
@@ -718,6 +795,60 @@
                 <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700 transition-colors">
                     Reddet
                 </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Onay Modal (planlı başlangıç tarihi zorunlu) -->
+<div id="onayModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full p-6">
+        <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-4">Adayı Onayla</h3>
+        <form action="{{ url_for('ik.aday_onayla', id=aday.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Planlı Başlangıç Tarihi <span class="text-red-500">*</span></label>
+            <input type="date" name="planlanan_baslangic" required value="{{ aday.planlanan_baslangic.strftime('%Y-%m-%d') if aday.planlanan_baslangic else '' }}"
+                   class="w-full bg-gray-50 dark:bg-[#111418] border-border-light dark:border-border-dark rounded-lg p-2.5 text-sm">
+            <div class="flex justify-end gap-3 mt-4">
+                <button type="button" onclick="document.getElementById('onayModal').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-[#111418] rounded-lg font-medium text-sm hover:bg-gray-200 dark:hover:bg-[#252b36] transition-colors">İptal</button>
+                <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg font-bold text-sm hover:bg-primary-dark transition-colors">Onayla</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- SGK Giriş Talebi Modal -->
+<div id="sgkTalepModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full p-6">
+        <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-2">SGK Giriş Talebi Oluştur</h3>
+        <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">Bordro/muhasebe ekibine bildirim gönderilecektir.</p>
+        <form action="{{ url_for('ik.aday_sgk_talep', id=aday.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Planlı Başlangıç Tarihi <span class="text-red-500">*</span></label>
+            <input type="date" name="planlanan_baslangic" {% if not aday.planlanan_baslangic %}required{% endif %} value="{{ aday.planlanan_baslangic.strftime('%Y-%m-%d') if aday.planlanan_baslangic else '' }}"
+                   class="w-full bg-gray-50 dark:bg-[#111418] border-border-light dark:border-border-dark rounded-lg p-2.5 text-sm">
+            <div class="flex justify-end gap-3 mt-4">
+                <button type="button" onclick="document.getElementById('sgkTalepModal').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-[#111418] rounded-lg font-medium text-sm hover:bg-gray-200 dark:hover:bg-[#252b36] transition-colors">İptal</button>
+                <button type="submit" class="px-4 py-2 bg-amber-500 text-white rounded-lg font-bold text-sm hover:bg-amber-600 transition-colors">Talep Oluştur</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- SGK Girişi Yapıldı Modal (bildirge PDF zorunlu) -->
+<div id="sgkGirisModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full p-6">
+        <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-2">SGK Girişi Yapıldı</h3>
+        <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">SGK giriş bildirgesini (PDF) yükleyiniz.</p>
+        <form action="{{ url_for('ik.aday_sgk_girisi_yapildi', id=aday.id) }}" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">SGK Giriş Bildirgesi <span class="text-red-500">*</span></label>
+            <input type="file" name="sgk_bildirgesi" required accept=".pdf,.jpg,.jpeg,.png"
+                   class="w-full bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg p-2 text-sm">
+            <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">PDF, JPG veya PNG</p>
+            <div class="flex justify-end gap-3 mt-4">
+                <button type="button" onclick="document.getElementById('sgkGirisModal').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-[#111418] rounded-lg font-medium text-sm hover:bg-gray-200 dark:hover:bg-[#252b36] transition-colors">İptal</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors">Kaydet</button>
             </div>
         </form>
     </div>

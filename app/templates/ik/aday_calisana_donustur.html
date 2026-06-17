@@ -114,7 +114,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">İşe Başlama Tarihi *</label>
-                            <input type="date" name="ise_baslama" required value="{{ now().strftime('%Y-%m-%d') if now else '' }}"
+                            <input type="date" name="ise_baslama" required value="{{ aday.planlanan_baslangic.strftime('%Y-%m-%d') if aday.planlanan_baslangic else (now().strftime('%Y-%m-%d') if now else '') }}"
                                    class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>

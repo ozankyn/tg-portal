@@ -26,6 +26,10 @@ AVAILABLE_VARIABLES = {
     'SOZLESME_UYARI': [
         'toplam_sayi', 'liste_html',
     ],
+    'SGK_GIRIS_TALEBI': [
+        'ad_soyad', 'tc_kimlik', 'planlanan_baslangic', 'proje', 'pozisyon',
+        'lokasyon', 'telefon', 'email', 'aday_url',
+    ],
 }
 
 

@@ -19,7 +19,7 @@ from app import db
 from app.models.ik import (
     Departman, Pozisyon, Calisan, Izin, Aday,
     EvrakTipi, AdayEvrak, AdayMedya, CalisanEvrak, IstenCikis,
-    SozlesmeSablonu
+    SozlesmeSablonu, AdayIslemGecmisi, ADAY_DURUM_AKISI
 )
 from app.models.base import CalisanDurumu
 from app.utils import (
@@ -48,7 +48,8 @@ def dashboard():
     # İstatistikler
     aktif_calisan = Calisan.query.filter_by(is_deleted=False, durum=CalisanDurumu.AKTIF).count()
     bekleyen_aday = Aday.query.filter_by(is_deleted=False).filter(
-        Aday.durum.in_(['basvurdu', 'degerlendiriliyor', 'mulakat'])
+        Aday.durum.in_(['basvurdu', 'inceleniyor', 'onaylandi', 'sgk_giris_talebi',
+                        'sgk_girisi_yapildi', 'degerlendiriliyor', 'mulakat'])
     ).count()
     bekleyen_izin = Izin.query.filter_by(durum='beklemede').count()
     eksik_evrak_aday = 0
@@ -716,18 +717,167 @@ def aday_detay(id):
                           ise_alim_hazir=ise_alim_hazir)
 
 
+def _aday_log(aday, islem, aciklama=None, yeni_durum=None):
+    """Aday işlem geçmişine kayıt ekler. aday.durum DEĞİŞTİRİLMEDEN önce çağrılmalı
+    (onceki_durum doğru yakalansın diye)."""
+    db.session.add(AdayIslemGecmisi(
+        aday_id=aday.id,
+        islem=islem,
+        aciklama=aciklama,
+        onceki_durum=aday.durum,
+        yeni_durum=yeni_durum or aday.durum,
+        kullanici_id=current_user.id,
+    ))
+
+
 @ik_bp.route('/aday/<int:id>/durum', methods=['POST'])
 @login_required
 @permission_required('ik.edit')
 def aday_durum_degistir(id):
-    """Aday durumunu değiştir"""
+    """Aday durumunu manuel değiştir (genel)"""
     aday = Aday.query.get_or_404(id)
-    aday.durum = request.form.get('durum')
+    yeni = request.form.get('durum')
     if request.form.get('degerlendirme_notu'):
         aday.degerlendirme_notu = request.form.get('degerlendirme_notu')
+    if yeni and yeni != aday.durum:
+        _aday_log(aday, 'durum', 'Durum manuel güncellendi.', yeni)
+        aday.durum = yeni
     db.session.commit()
-    
+
     flash('Aday durumu güncellendi.', 'success')
+    return redirect(url_for('ik.aday_detay', id=id))
+
+
+@ik_bp.route('/aday/<int:id>/incele', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def aday_incele(id):
+    """Adayı incelemeye al (Başvurdu → İnceleniyor)"""
+    aday = Aday.query.get_or_404(id)
+    if not aday_in_scope(aday):
+        flash('Bu adaya erişim yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_liste'))
+    _aday_log(aday, 'incele', 'İncelemeye alındı.', 'inceleniyor')
+    aday.durum = 'inceleniyor'
+    db.session.commit()
+    flash('Aday incelemeye alındı.', 'success')
+    return redirect(url_for('ik.aday_detay', id=id))
+
+
+@ik_bp.route('/aday/<int:id>/onayla', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def aday_onayla(id):
+    """Adayı onayla. Planlı başlangıç tarihi zorunlu (İnceleniyor → Onaylandı)"""
+    aday = Aday.query.get_or_404(id)
+    if not aday_in_scope(aday):
+        flash('Bu adaya erişim yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_liste'))
+
+    planlanan = request.form.get('planlanan_baslangic')
+    if not planlanan:
+        flash('Onay için "Planlı Başlangıç Tarihi" zorunludur.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
+    aday.planlanan_baslangic = datetime.strptime(planlanan, '%Y-%m-%d').date()
+    _aday_log(aday, 'onayla',
+              f'Onaylandı. Planlı başlangıç: {aday.planlanan_baslangic.strftime("%d.%m.%Y")}',
+              'onaylandi')
+    aday.durum = 'onaylandi'
+    db.session.commit()
+    flash('Aday onaylandı.', 'success')
+    return redirect(url_for('ik.aday_detay', id=id))
+
+
+@ik_bp.route('/aday/<int:id>/sgk-talep', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def aday_sgk_talep(id):
+    """SGK giriş talebi oluştur. Planlı başlangıç yoksa formdan al (Onaylandı → SGK Giriş Talebi)"""
+    aday = Aday.query.get_or_404(id)
+    if not aday_in_scope(aday):
+        flash('Bu adaya erişim yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_liste'))
+
+    # Planlı başlangıç tarihi formdan da gelebilir
+    if request.form.get('planlanan_baslangic'):
+        aday.planlanan_baslangic = datetime.strptime(request.form['planlanan_baslangic'], '%Y-%m-%d').date()
+
+    if not aday.planlanan_baslangic:
+        flash('SGK giriş talebi için önce "Planlı Başlangıç Tarihi" girilmelidir.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
+    _aday_log(aday, 'sgk_talep', 'SGK giriş talebi oluşturuldu; bordro/muhasebe bilgilendirildi.',
+              'sgk_giris_talebi')
+    aday.durum = 'sgk_giris_talebi'
+    db.session.commit()
+
+    # Bordro/muhasebe ekibine bildirim
+    try:
+        from app.services.notification import notify_sgk_giris_talebi
+        notify_sgk_giris_talebi(aday)
+    except Exception as e:
+        current_app.logger.warning(f"SGK giriş talebi bildirimi gönderilemedi: {e}")
+
+    flash('SGK giriş talebi oluşturuldu ve bordro/muhasebe ekibine bildirim gönderildi.', 'success')
+    return redirect(url_for('ik.aday_detay', id=id))
+
+
+@ik_bp.route('/aday/<int:id>/sgk-girisi-yapildi', methods=['POST'])
+@login_required
+def aday_sgk_girisi_yapildi(id):
+    """SGK girişi yapıldı + giriş bildirgesi (PDF) yükle. Muhasebe/bordro veya İK yapar."""
+    # Bu adım bordro/muhasebe tarafından yapılabilir → ik.edit VEYA masraf.edit yeter
+    if not (current_user.has_permission('ik.edit') or current_user.has_permission('masraf.edit')):
+        flash('Bu işlem için yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
+    aday = Aday.query.get_or_404(id)
+
+    dosya = request.files.get('sgk_bildirgesi')
+    if not dosya or not dosya.filename:
+        flash('SGK giriş bildirgesi (PDF) yüklemek zorunludur.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
+    ext = dosya.filename.rsplit('.', 1)[1].lower() if '.' in dosya.filename else ''
+    if ext not in ('pdf', 'jpg', 'jpeg', 'png'):
+        flash('Geçersiz format. PDF, JPG veya PNG yükleyiniz.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
+    sgk_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'adaylar', str(aday.id), 'sgk')
+    os.makedirs(sgk_dir, exist_ok=True)
+    fname = f"sgk_bildirge_{aday.id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}"
+    dosya.save(os.path.join(sgk_dir, fname))
+    aday.sgk_bildirgesi = f"adaylar/{aday.id}/sgk/{fname}"
+
+    _aday_log(aday, 'sgk_giris', 'SGK girişi yapıldı, giriş bildirgesi yüklendi.', 'sgk_girisi_yapildi')
+    aday.durum = 'sgk_girisi_yapildi'
+    db.session.commit()
+    flash('SGK girişi kaydedildi. Aday çalışana dönüştürülmeye hazır.', 'success')
+    return redirect(url_for('ik.aday_detay', id=id))
+
+
+@ik_bp.route('/aday/<int:id>/reddet', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def aday_reddet(id):
+    """Adayı reddet (her aşamadan). Red nedeni zorunlu."""
+    aday = Aday.query.get_or_404(id)
+    if not aday_in_scope(aday):
+        flash('Bu adaya erişim yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_liste'))
+
+    red_nedeni = (request.form.get('red_nedeni') or request.form.get('red_sebebi') or '').strip()
+    if not red_nedeni:
+        flash('Red nedeni zorunludur.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
+    aday.red_nedeni = red_nedeni
+    aday.red_tarihi = datetime.utcnow()
+    _aday_log(aday, 'reddet', red_nedeni, 'reddedildi')
+    aday.durum = 'reddedildi'
+    db.session.commit()
+    flash('Aday reddedildi.', 'success')
     return redirect(url_for('ik.aday_detay', id=id))
 
 
@@ -1082,48 +1232,54 @@ def eksik_evraklar():
 def aday_calisana_donustur(id):
     """Adayı çalışana dönüştür"""
     aday = Aday.query.get_or_404(id)
-    
-    # Evrak kontrolü
-    zorunlu_tipler = EvrakTipi.query.filter_by(zorunlu=True, aktif=True).all()
-    yuklenen_tipler = [e.evrak_tipi_id for e in aday.evraklar.filter(
-        AdayEvrak.durum == 'onaylandi'
-    ).all()]
-    eksik = [t for t in zorunlu_tipler if t.id not in yuklenen_tipler]
-    
-    if eksik:
-        flash('Tüm zorunlu evraklar onaylanmadan işe alım yapılamaz.', 'danger')
+
+    # Faz 3 akışı: yalnızca SGK girişi yapıldıktan sonra çalışana dönüştürülebilir
+    if aday.durum != 'sgk_girisi_yapildi':
+        flash('Aday yalnızca "SGK Girişi Yapıldı" aşamasında çalışana dönüştürülebilir.', 'danger')
         return redirect(url_for('ik.aday_detay', id=id))
-    
+
     if not aday.kvkk_onay:
         flash('KVKK onayı alınmadan işe alım yapılamaz.', 'danger')
         return redirect(url_for('ik.aday_detay', id=id))
-    
+
     if request.method == 'POST':
-        # Yeni çalışan oluştur
+        ise_baslama_form = request.form.get('ise_baslama')
+        ise_baslama = (datetime.strptime(ise_baslama_form, '%Y-%m-%d').date()
+                       if ise_baslama_form else aday.planlanan_baslangic)
+        # Yeni çalışan oluştur (aday bilgileri aktarılır)
         calisan = Calisan(
             ad=aday.ad,
             soyad=aday.soyad,
             tc_kimlik=aday.tc_kimlik,
             dogum_tarihi=aday.dogum_tarihi,
+            dogum_yeri=aday.dogum_yeri,
             cinsiyet=aday.cinsiyet,
+            medeni_durum=aday.medeni_durum,
             telefon=aday.telefon,
             email=aday.email,
             adres=aday.adres,
             il=aday.il,
             ilce=aday.ilce,
+            egitim_durumu=aday.egitim_durumu,
+            beden=aday.ust_beden,
+            kargo_subesi=aday.kargo_subesi,
             pozisyon_id=aday.pozisyon_id,
+            kadro_id=aday.kadro_id,
             sicil_no=None if request.form.get('sicil_no', '').strip() in ('', 'None', 'none') else request.form.get('sicil_no', '').strip(),
-            ise_baslama=datetime.strptime(request.form['ise_baslama'], '%Y-%m-%d').date(),
+            ise_baslama=ise_baslama,
             calisma_tipi=request.form.get('calisma_tipi', 'tam_zamanli'),
             durum=CalisanDurumu.AKTIF,
             created_by=current_user.id
         )
         db.session.add(calisan)
         db.session.flush()  # ID almak için
-        
-        # Aday durumunu güncelle
-        aday.durum = 'ise_alindi'
-        
+
+        # Aday durumunu güncelle + çalışana bağla + logla
+        _aday_log(aday, 'donustur',
+                  f'Çalışana dönüştürüldü (Çalışan #{calisan.id}).', 'calisana_donusturuldu')
+        aday.durum = 'calisana_donusturuldu'
+        aday.calisan_id = calisan.id
+
         # Onaylı evrakları kopyala
         for aday_evrak in aday.evraklar.filter_by(durum='onaylandi').all():
             calisan_evrak = CalisanEvrak(

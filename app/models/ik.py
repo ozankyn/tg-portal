@@ -175,6 +175,17 @@ KAYNAK_TURLERI = [
 ]
 
 
+# Aday işe alım süreci akışı (sıralı aşamalar). Reddedildi her aşamadan olabilir.
+ADAY_DURUM_AKISI = [
+    ('basvurdu', 'Başvurdu'),
+    ('inceleniyor', 'İnceleniyor'),
+    ('onaylandi', 'Onaylandı'),
+    ('sgk_giris_talebi', 'SGK Giriş Talebi'),
+    ('sgk_girisi_yapildi', 'SGK Girişi Yapıldı'),
+    ('calisana_donusturuldu', 'Çalışana Dönüştürüldü'),
+]
+
+
 # Başvuru kaynağı - "Bize nereden ulaştınız?" (aday'ın kendisi seçer)
 BASVURU_KAYNAK_TURLERI = [
     ('linkedin', 'LinkedIn'),
@@ -328,11 +339,18 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     mulakat_notu = db.Column(db.Text)
     teklif_maas = db.Column(db.Numeric(10, 2))
     red_nedeni = db.Column(db.Text)
-    
+    red_tarihi = db.Column(db.DateTime)
+
+    # ==================== İşe Alım Süreci (Faz 3) ====================
+    planlanan_baslangic = db.Column(db.Date)          # Planlı işe başlangıç tarihi (onayda zorunlu)
+    sgk_bildirgesi = db.Column(db.String(255))        # SGK giriş bildirgesi PDF dosya yolu
+    calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'))  # Dönüştürülen çalışan
+
     notlar = db.Column(db.Text)  # İK notları
-    
+
     # ==================== İlişkiler ====================
     pozisyon = db.relationship('Pozisyon', backref='adaylar')
+    donusen_calisan = db.relationship('Calisan', foreign_keys=[calisan_id])
 
     def __repr__(self):
         return f'<Aday {self.full_name}>'
@@ -383,11 +401,18 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
             'kvkk_bekleniyor': 'KVKK Onayı Bekleniyor',
             'form_bekleniyor': 'Form Bekleniyor',
             'basvurdu': 'Başvuru Yapıldı',
+            'inceleniyor': 'İnceleniyor',
+            'onaylandi': 'Onaylandı',
+            'sgk_giris_talebi': 'SGK Giriş Talebi',
+            'sgk_girisi_yapildi': 'SGK Girişi Yapıldı',
+            'calisana_donusturuldu': 'Çalışana Dönüştürüldü',
+            # Eski/legacy değerler
             'degerlendiriliyor': 'Değerlendiriliyor',
             'mulakat': 'Mülakat Aşamasında',
             'teklif': 'Teklif Yapıldı',
             'ise_alindi': 'İşe Alındı',
             'red': 'Reddedildi',
+            'reddedildi': 'Reddedildi',
             'iptal': 'İptal Edildi'
         }
         return durum_map.get(self.durum, self.durum)
@@ -400,14 +425,34 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
             'kvkk_bekleniyor': 'warning',
             'form_bekleniyor': 'warning',
             'basvurdu': 'primary',
+            'inceleniyor': 'info',
+            'onaylandi': 'success',
+            'sgk_giris_talebi': 'warning',
+            'sgk_girisi_yapildi': 'info',
+            'calisana_donusturuldu': 'success',
             'degerlendiriliyor': 'primary',
             'mulakat': 'info',
             'teklif': 'success',
             'ise_alindi': 'success',
             'red': 'danger',
+            'reddedildi': 'danger',
             'iptal': 'secondary'
         }
         return renk_map.get(self.durum, 'secondary')
+
+    @property
+    def is_reddedildi(self):
+        return self.durum in ('red', 'reddedildi')
+
+    @property
+    def akis_adim_index(self):
+        """ADAY_DURUM_AKISI içindeki sıra (0-bazlı); akışta değilse -1."""
+        kodlar = [k for k, _ in ADAY_DURUM_AKISI]
+        # Legacy durumları yeni akışa eşle
+        esle = {'degerlendiriliyor': 'inceleniyor', 'mulakat': 'inceleniyor',
+                'teklif': 'onaylandi', 'ise_alindi': 'calisana_donusturuldu'}
+        d = esle.get(self.durum, self.durum)
+        return kodlar.index(d) if d in kodlar else -1
     
     @property
     def kaynak_text(self):
@@ -657,6 +702,43 @@ class AdayMedya(db.Model, TimestampMixin):
 
     def __repr__(self):
         return f'<AdayMedya {self.aday_id}-{self.tip}-{self.id}>'
+
+
+class AdayIslemGecmisi(db.Model, TimestampMixin):
+    """Aday işe alım sürecindeki her aşama/işlem kaydı (audit timeline)."""
+    __tablename__ = 'aday_islem_gecmisi'
+
+    id = db.Column(db.Integer, primary_key=True)
+    aday_id = db.Column(db.Integer, db.ForeignKey('adaylar.id'), nullable=False, index=True)
+
+    islem = db.Column(db.String(50), nullable=False)  # incele, onayla, sgk_talep, sgk_giris, donustur, reddet, durum
+    aciklama = db.Column(db.Text)
+    onceki_durum = db.Column(db.String(30))
+    yeni_durum = db.Column(db.String(30))
+
+    kullanici_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
+    # İlişkiler
+    aday = db.relationship('Aday', backref=db.backref(
+        'islem_gecmisi', lazy='dynamic', order_by='AdayIslemGecmisi.created_at.desc()'))
+    kullanici = db.relationship('User')
+
+    ISLEM_ETIKET = {
+        'incele': 'İncelemeye Alındı',
+        'onayla': 'Onaylandı',
+        'sgk_talep': 'SGK Giriş Talebi Oluşturuldu',
+        'sgk_giris': 'SGK Girişi Yapıldı',
+        'donustur': 'Çalışana Dönüştürüldü',
+        'reddet': 'Reddedildi',
+        'durum': 'Durum Güncellendi',
+    }
+
+    @property
+    def islem_etiket(self):
+        return self.ISLEM_ETIKET.get(self.islem, self.islem)
+
+    def __repr__(self):
+        return f'<AdayIslemGecmisi {self.aday_id}-{self.islem}>'
 
 
 class CalisanEvrak(db.Model, TimestampMixin):

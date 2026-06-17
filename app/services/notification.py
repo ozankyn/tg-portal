@@ -369,6 +369,39 @@ def notify_masraf_raporu_sonuc(rapor, onaylandi=True, aciklama=None):
 # ============================================================
 
 
+def notify_sgk_giris_talebi(aday):
+    """SGK giriş talebi - bordro/muhasebe ekibine bildirim (sablon: SGK_GIRIS_TALEBI)"""
+    proje_adi = '-'
+    pozisyon_adi = '-'
+    lokasyon = '-'
+    proje_id = None
+    if aday.kadro:
+        pozisyon_adi = aday.kadro.pozisyon_adi or '-'
+        if aday.kadro.proje:
+            proje_adi = aday.kadro.proje.ad
+            proje_id = aday.kadro.proje.id
+        if aday.kadro.il:
+            lokasyon = aday.kadro.il
+
+    try:
+        aday_url = url_for('ik.aday_detay', id=aday.id, _external=True)
+    except Exception:
+        aday_url = '#'
+
+    degiskenler = {
+        'ad_soyad': aday.full_name,
+        'tc_kimlik': aday.tc_kimlik or '-',
+        'planlanan_baslangic': aday.planlanan_baslangic.strftime('%d.%m.%Y') if aday.planlanan_baslangic else '-',
+        'proje': proje_adi,
+        'pozisyon': pozisyon_adi,
+        'lokasyon': lokasyon,
+        'telefon': aday.telefon or '-',
+        'email': aday.email or '-',
+        'aday_url': aday_url,
+    }
+    return send_bildirim('SGK_GIRIS_TALEBI', degiskenler, proje_id=proje_id)
+
+
 def notify_ise_giris(calisan):
     """Ise giris bildirimi - sablonu ISE_GIRIS"""
     print(f">>> NOTIFY_ISE_GIRIS TETIKLENDI: {calisan.ad} {calisan.soyad} (id={calisan.id})", flush=True)
