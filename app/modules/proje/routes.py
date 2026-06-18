@@ -204,7 +204,7 @@ def proje_detay(id):
         'mevcut_calisan': proje.mevcut_calisan,
         'eksik_kadro': proje.toplam_kadro - proje.mevcut_calisan,
         'doluluk_orani': proje.doluluk_orani,
-        'bekleyen_aday': sum(k.bekleyen_aday_sayisi for k in kadrolar),
+        'bekleyen_aday': sum(k.aktif_aday_sayisi for k in kadrolar),
         'arac_sayisi': len(araclar)
     }
     

@@ -286,7 +286,18 @@ class HedefKadro(db.Model, TimestampMixin, SoftDeleteMixin):
             Aday.is_deleted == False,
             Aday.durum.in_(['basvurdu', 'degerlendiriliyor', 'mulakat'])
         ).count()
-    
+
+    @property
+    def aktif_aday_sayisi(self):
+        """Bu kadroya bagli aktif aday sayisi.
+        Reddedilen ve calisana donusturulen adaylar haric tutulur."""
+        from app.models.ik import Aday
+        pasif_durumlar = ['red', 'reddedildi', 'iptal', 'calisana_donusturuldu', 'ise_alindi']
+        return self.adaylar.filter(
+            Aday.is_deleted == False,
+            ~Aday.durum.in_(pasif_durumlar)
+        ).count()
+
     @property
     def doluluk_orani(self):
         if self.hedef_sayi == 0:
