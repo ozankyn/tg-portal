@@ -4,8 +4,8 @@ TG Portal - Public Kariyer Sayfası
 Açık pozisyonları görüntüleme ve doğrudan başvuru - Login gerektirmez
 """
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
-from datetime import datetime
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify, session
+from datetime import datetime, timedelta
 from app import db
 from app.models.ik import (
     Aday, KAYNAK_TURLERI, BASVURU_KAYNAK_TURLERI, BEDEN_SECENEKLERI,
@@ -14,6 +14,69 @@ from app.models.ik import (
 from app.models.proje import HedefKadro, Proje, Musteri
 
 kariyer_bp = Blueprint('kariyer', __name__)
+
+
+# ============================================================
+# SESSION TABANLI BAŞVURU YARDIMCILARI
+# Açık başvuruda aday kaydı YALNIZCA form gönderilince oluşur.
+# KVKK onayı, telefon ve doğrulama bilgisi o ana kadar session'da tutulur.
+# ============================================================
+
+SESSION_KEY = 'kariyer_basvuru'
+
+
+def _get_basvuru_session(kadro_id):
+    """İlgili kadroya ait aktif başvuru session'ını döndür (yoksa None)."""
+    s = session.get(SESSION_KEY)
+    if not s or s.get('kadro_id') != kadro_id:
+        return None
+    return s
+
+
+def _parse_dt(s):
+    """ISO format string -> datetime (hatalıysa None)."""
+    try:
+        return datetime.fromisoformat(s) if s else None
+    except (ValueError, TypeError):
+        return None
+
+
+def _otp_valid(bsv):
+    """Session'daki OTP hâlâ geçerli mi?"""
+    if not bsv.get('otp_kod') or not bsv.get('otp_expires'):
+        return False
+    exp = _parse_dt(bsv.get('otp_expires'))
+    return bool(exp) and datetime.utcnow() < exp
+
+
+def _verify_session_otp(bsv, kod):
+    """Session tabanlı OTP doğrulama. (basarili, mesaj) döner; bsv güncellenir."""
+    if not _otp_valid(bsv):
+        return False, 'Doğrulama kodunun süresi dolmuş. Lütfen yeni kod isteyin.'
+    if bsv.get('otp_deneme', 0) >= 3:
+        return False, 'Çok fazla yanlış deneme. Lütfen yeni kod isteyin.'
+    if bsv.get('otp_kod') != kod:
+        bsv['otp_deneme'] = bsv.get('otp_deneme', 0) + 1
+        return False, f"Yanlış kod. {3 - bsv['otp_deneme']} deneme hakkınız kaldı."
+    bsv['telefon_dogrulandi'] = True
+    bsv['otp_kod'] = None
+    return True, 'Telefon doğrulandı'
+
+
+class _FormAday:
+    """kariyer/form.html render'ı için geçici placeholder (DB'ye yazılmaz).
+    Tanımsız alanlar None döner; böylece form boş render edilir."""
+    def __init__(self, telefon=None, telefon_dogrulandi=False):
+        self.telefon = telefon
+        self.telefon_dogrulandi = telefon_dogrulandi
+        self.vardiyali_calisabilir = True
+        self.toplam_tecrube_yil = 0
+
+    def __getattr__(self, name):
+        # Dunder/özel isimler için normal AttributeError davranışı korunur
+        if name.startswith('__') and name.endswith('__'):
+            raise AttributeError(name)
+        return None
 
 
 @kariyer_bp.route('/')
@@ -61,62 +124,196 @@ def basvuru_kvkk(kadro_id):
 
 @kariyer_bp.route('/basvur/<int:kadro_id>/kvkk-onayla', methods=['POST'])
 def kvkk_onayla(kadro_id):
-    """Açık başvuru - KVKK onay işlemi"""
+    """Açık başvuru - KVKK onayı (session'a yazılır, DB'ye DEĞİL)"""
     kadro = HedefKadro.query.get_or_404(kadro_id)
-    
+
     if not request.form.get('kvkk_onay'):
         flash('Devam etmek için aydınlatma metnini onaylamanız gerekmektedir.', 'warning')
         return redirect(url_for('kariyer.basvuru_kvkk', kadro_id=kadro_id))
-    
-    # Geçici aday oluştur (ad/soyad form'dan gelecek)
-    aday = Aday(
-        ad='',  # Form'dan doldurulacak
-        soyad='',
-        kadro_id=kadro_id,
-        kaynak='acik_basvuru',
-        durum='form_bekleniyor',
-        kvkk_onay=True,
-        kvkk_onay_tarihi=datetime.utcnow(),
-        kvkk_onay_ip=request.headers.get('X-Forwarded-For', request.remote_addr),
-        aydinlatma_metni_versiyonu='1.0'
-    )
-    
-    # Token oluştur (form için)
-    aday.generate_token()
-    
-    db.session.add(aday)
-    db.session.commit()
-    
+
+    # Başvuru bilgilerini session'da başlat — DB kaydı form gönderilince oluşur
+    session[SESSION_KEY] = {
+        'kadro_id': kadro_id,
+        'kvkk_onay': True,
+        'kvkk_onay_tarihi': datetime.utcnow().isoformat(),
+        'kvkk_onay_ip': request.headers.get('X-Forwarded-For', request.remote_addr),
+        'telefon': None,
+        'telefon_dogrulandi': False,
+        'otp_kod': None,
+        'otp_expires': None,
+        'otp_deneme': 0,
+    }
+
     # SMS doğrulama gerekiyor mu?
     if kadro.sms_dogrulama_zorunlu:
-        return redirect(url_for('basvuru.telefon_dogrula', token=aday.davet_token))
-    
-    return redirect(url_for('kariyer.basvuru_form', token=aday.davet_token))
+        return redirect(url_for('kariyer.telefon_dogrula', kadro_id=kadro_id))
+
+    return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
 
 
-@kariyer_bp.route('/basvur/form/<token>', methods=['GET', 'POST'])
-def basvuru_form(token):
-    """Açık başvuru formu"""
-    aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first_or_404()
-    
-    if not aday.is_token_valid:
-        flash('Başvuru süreniz dolmuş. Lütfen tekrar başvurun.', 'danger')
-        return redirect(url_for('kariyer.pozisyonlar'))
-    
-    if aday.basvuru_tamamlandi:
-        return render_template('kariyer/zaten_tamamlandi.html', aday=aday)
-    
-    kadro = aday.kadro
-    
+@kariyer_bp.route('/basvur/<int:kadro_id>/telefon-dogrula', methods=['GET', 'POST'])
+def telefon_dogrula(kadro_id):
+    """Açık başvuru - telefon doğrulama (session tabanlı, DB kaydı yok)"""
+    from app.modules.basvuru.routes import send_netgsm_sms
+    import random
+
+    kadro = HedefKadro.query.get_or_404(kadro_id)
+    bsv = _get_basvuru_session(kadro_id)
+
+    if not bsv or not bsv.get('kvkk_onay'):
+        flash('Önce aydınlatma metnini onaylamanız gerekmektedir.', 'warning')
+        return redirect(url_for('kariyer.basvuru_kvkk', kadro_id=kadro_id))
+
+    if bsv.get('telefon_dogrulandi'):
+        return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
+
     if request.method == 'POST':
-        # Zorunlu alanlar
-        aday.ad = request.form.get('ad')
-        aday.soyad = request.form.get('soyad')
-        
-        if not aday.ad or not aday.soyad:
-            flash('Ad ve soyad alanları zorunludur.', 'danger')
-            return redirect(url_for('kariyer.basvuru_form', token=token))
-        
+        action = request.form.get('action')
+
+        if action == 'send_code':
+            telefon = (request.form.get('telefon') or '').strip()
+            if telefon and not telefon.startswith('0') and not telefon.startswith('+'):
+                telefon = '0' + telefon
+            if not telefon:
+                flash('Telefon numarası gereklidir.', 'danger')
+                return redirect(url_for('kariyer.telefon_dogrula', kadro_id=kadro_id))
+
+            kod = str(random.randint(100000, 999999))
+            bsv['telefon'] = telefon
+            bsv['otp_kod'] = kod
+            bsv['otp_expires'] = (datetime.utcnow() + timedelta(minutes=5)).isoformat()
+            bsv['otp_deneme'] = 0
+            session[SESSION_KEY] = bsv
+
+            mesaj = f"Team Guerilla is basvuru dogrulama kodunuz: {kod} - Bu kod 5 dakika gecerlidir."
+            result = send_netgsm_sms(telefon, mesaj)
+            if result['success']:
+                flash('Doğrulama kodu telefonunuza gönderildi.', 'success')
+            else:
+                flash(f'SMS gönderilemedi: {result.get("error")}', 'danger')
+            return redirect(url_for('kariyer.telefon_dogrula', kadro_id=kadro_id))
+
+        elif action == 'verify_code':
+            kod = (request.form.get('kod') or '').strip()
+            if not kod:
+                flash('Doğrulama kodunu giriniz.', 'warning')
+                return redirect(url_for('kariyer.telefon_dogrula', kadro_id=kadro_id))
+
+            ok, mesaj = _verify_session_otp(bsv, kod)
+            session[SESSION_KEY] = bsv
+            if ok:
+                flash('Telefonunuz doğrulandı!', 'success')
+                return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
+            flash(mesaj, 'danger')
+            return redirect(url_for('kariyer.telefon_dogrula', kadro_id=kadro_id))
+
+    kod_gonderildi = _otp_valid(bsv)
+    return render_template('kariyer/telefon_dogrula.html',
+                           kadro=kadro,
+                           telefon=bsv.get('telefon'),
+                           kod_gonderildi=kod_gonderildi,
+                           deneme=bsv.get('otp_deneme', 0))
+
+
+@kariyer_bp.route('/basvur/<int:kadro_id>/kod-tekrar')
+def kod_tekrar_gonder(kadro_id):
+    """Açık başvuru - doğrulama kodunu tekrar gönder (session tabanlı)"""
+    from app.modules.basvuru.routes import send_netgsm_sms
+    import random
+
+    bsv = _get_basvuru_session(kadro_id)
+    if not bsv or not bsv.get('telefon'):
+        flash('Önce telefon numaranızı girin.', 'warning')
+        return redirect(url_for('kariyer.telefon_dogrula', kadro_id=kadro_id))
+
+    kod = str(random.randint(100000, 999999))
+    bsv['otp_kod'] = kod
+    bsv['otp_expires'] = (datetime.utcnow() + timedelta(minutes=5)).isoformat()
+    bsv['otp_deneme'] = 0
+    session[SESSION_KEY] = bsv
+
+    mesaj = f"Team Guerilla is basvuru dogrulama kodunuz: {kod} - Bu kod 5 dakika gecerlidir."
+    result = send_netgsm_sms(bsv['telefon'], mesaj)
+    if result['success']:
+        flash('Yeni doğrulama kodu gönderildi.', 'success')
+    else:
+        flash(f'SMS gönderilemedi: {result.get("error")}', 'danger')
+
+    return redirect(url_for('kariyer.telefon_dogrula', kadro_id=kadro_id))
+
+
+@kariyer_bp.route('/basvur/<int:kadro_id>/form', methods=['GET', 'POST'])
+def basvuru_form(kadro_id):
+    """Açık başvuru formu — Aday kaydı YALNIZCA form gönderilince oluşur"""
+    kadro = HedefKadro.query.get_or_404(kadro_id)
+    bsv = _get_basvuru_session(kadro_id)
+
+    # KVKK onayı session'da yoksa baştan başlat
+    if not bsv or not bsv.get('kvkk_onay'):
+        flash('Önce aydınlatma metnini onaylamanız gerekmektedir.', 'warning')
+        return redirect(url_for('kariyer.basvuru_kvkk', kadro_id=kadro_id))
+
+    # SMS doğrulama zorunluysa telefon doğrulanmış olmalı
+    if kadro.sms_dogrulama_zorunlu and not bsv.get('telefon_dogrulandi'):
+        flash('Devam etmek için telefon numaranızı doğrulamanız gerekmektedir.', 'warning')
+        return redirect(url_for('kariyer.telefon_dogrula', kadro_id=kadro_id))
+
+    if request.method == 'POST':
+        # Zorunlu alan kontrolü — tüm bilgiler tek seferde alınır
+        ad = (request.form.get('ad') or '').strip()
+        soyad = (request.form.get('soyad') or '').strip()
+        zorunlu_alanlar = {
+            'Ad': ad,
+            'Soyad': soyad,
+            'TC Kimlik No': request.form.get('tc_kimlik'),
+            'Doğum tarihi': request.form.get('dogum_tarihi'),
+            'Cinsiyet': request.form.get('cinsiyet'),
+            'E-posta': request.form.get('email'),
+            'Telefon': request.form.get('telefon'),
+            'İl': request.form.get('il'),
+        }
+        eksikler = [etiket for etiket, deger in zorunlu_alanlar.items() if not deger]
+        if eksikler:
+            flash('Lütfen zorunlu alanları doldurun: ' + ', '.join(eksikler), 'danger')
+            return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
+
+        if request.form.get('cinsiyet') == 'erkek' and not request.form.get('askerlik_durumu'):
+            flash('Askerlik durumu erkek adaylar için zorunludur.', 'danger')
+            return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
+
+        # Kadro flag'lerine göre foto/video zorunlu kontrolü (aday oluşturmadan önce)
+        if kadro.foto_gerekli:
+            fotos = [f for f in request.files.getlist('medya_fotos') if f and f.filename]
+            if not fotos:
+                flash('Bu pozisyon için en az bir fotoğraf yüklemeniz zorunludur.', 'danger')
+                return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
+
+        if kadro.video_gerekli:
+            video_file = request.files.get('medya_video')
+            if not video_file or not video_file.filename:
+                flash('Bu pozisyon için video yüklemeniz zorunludur.', 'danger')
+                return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
+
+        # ---- Aday kaydını oluştur (tüm bilgiler tek INSERT) ----
+        aday = Aday(
+            ad=ad,
+            soyad=soyad,
+            kadro_id=kadro_id,
+            kaynak='acik_basvuru',
+            durum='basvurdu',
+            kvkk_onay=True,
+            kvkk_onay_tarihi=_parse_dt(bsv.get('kvkk_onay_tarihi')) or datetime.utcnow(),
+            kvkk_onay_ip=bsv.get('kvkk_onay_ip'),
+            aydinlatma_metni_versiyonu='1.0',
+            telefon_dogrulandi=bool(bsv.get('telefon_dogrulandi')),
+            basvuru_tamamlandi=True,
+            basvuru_tarihi=datetime.utcnow(),
+        )
+        aday.generate_token()
+        if bsv.get('telefon_dogrulandi'):
+            aday.telefon_dogrulama_tarihi = datetime.utcnow()
+            aday.telefon_dogrulama_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+
         # Kişisel bilgiler
         aday.tc_kimlik = request.form.get('tc_kimlik')
         aday.dogum_tarihi = datetime.strptime(request.form.get('dogum_tarihi'), '%Y-%m-%d').date() if request.form.get('dogum_tarihi') else None
@@ -124,9 +321,9 @@ def basvuru_form(token):
         aday.cinsiyet = request.form.get('cinsiyet')
         aday.medeni_durum = request.form.get('medeni_durum')
         
-        # İletişim
+        # İletişim — doğrulanmış telefon session'dan alınır
         aday.email = request.form.get('email')
-        aday.telefon = request.form.get('telefon')
+        aday.telefon = bsv.get('telefon') if bsv.get('telefon_dogrulandi') else request.form.get('telefon')
         aday.adres = request.form.get('adres')
         aday.il = request.form.get('il')
         aday.ilce = request.form.get('ilce')
@@ -173,11 +370,6 @@ def basvuru_form(token):
         aday.saglik_sorunu = request.form.get('saglik_sorunu') == 'on'
         aday.saglik_sorunu_aciklama = request.form.get('saglik_sorunu_aciklama')
         aday.askerlik_durumu = request.form.get('askerlik_durumu')
-
-        # Askerlik durumu erkek adaylar için zorunlu
-        if aday.cinsiyet == 'erkek' and not aday.askerlik_durumu:
-            flash('Askerlik durumu erkek adaylar için zorunludur.', 'danger')
-            return redirect(url_for('kariyer.basvuru_form', token=token))
         aday.askerlik_tecil_tarihi = datetime.strptime(request.form.get('askerlik_tecil_tarihi'), '%Y-%m-%d').date() if request.form.get('askerlik_tecil_tarihi') else None
         aday.sabika_kaydi = request.form.get('sabika_kaydi') == 'on'
         aday.sabika_aciklama = request.form.get('sabika_aciklama')
@@ -189,25 +381,15 @@ def basvuru_form(token):
         aday.vardiyali_calisabilir = request.form.get('vardiyali_calisabilir') == 'on'
         aday.seyahat_engeli = request.form.get('seyahat_engeli') == 'on'
         
+        # Aday'ı kaydet ve ID al (dosya yolları aday.id'ye göre oluşturulur)
+        db.session.add(aday)
+        db.session.flush()
+
         # Dosya yüklemeleri
         import os
         from werkzeug.utils import secure_filename
 
-        # CV artık opsiyonel — zorunlu kontrol yok.
-
-        # Kadro flag'lerine göre foto/video zorunlu kontrolü
-        if kadro.foto_gerekli:
-            fotos = [f for f in request.files.getlist('medya_fotos') if f and f.filename]
-            if not fotos:
-                flash('Bu pozisyon için en az bir fotoğraf yüklemeniz zorunludur.', 'danger')
-                return redirect(url_for('kariyer.basvuru_form', token=token))
-
-        if kadro.video_gerekli:
-            video_file = request.files.get('medya_video')
-            if not video_file or not video_file.filename:
-                flash('Bu pozisyon için video yüklemeniz zorunludur.', 'danger')
-                return redirect(url_for('kariyer.basvuru_form', token=token))
-
+        # CV opsiyonel; foto/video zorunluluğu yukarıda kontrol edildi.
         upload_folder = os.path.join(current_app.root_path, 'static', 'uploads', 'adaylar', str(aday.id))
         os.makedirs(upload_folder, exist_ok=True)
 
@@ -280,20 +462,25 @@ def basvuru_form(token):
                             mime_type=v.mimetype or f'video/{ext}',
                         ))
 
-        # Başvuruyu tamamla
-        aday.basvuru_tamamlandi = True
-        aday.basvuru_tarihi = datetime.utcnow()
-        aday.durum = 'basvurdu'
-        
+        # Başvuru tamamlandı (durum/flag'ler aday oluşturulurken set edildi)
         db.session.commit()
+
+        # Session temizle
+        session.pop(SESSION_KEY, None)
 
         # İK ekibine bildirim gönder
         from app.services.notification import notify_yeni_basvuru
         notify_yeni_basvuru(aday)
-        
-        return redirect(url_for('kariyer.basvuru_tamam', token=token))
-    
-    return render_template('kariyer/form.html', aday=aday, kadro=kadro,
+
+        # Evrak yükleme sayfasına yönlendir
+        return redirect(url_for('kariyer.evrak_yukle_sayfa', token=aday.davet_token))
+
+    # GET — boş formu placeholder ile render et (henüz DB kaydı yok)
+    form_aday = _FormAday(
+        telefon=bsv.get('telefon'),
+        telefon_dogrulandi=bool(bsv.get('telefon_dogrulandi')),
+    )
+    return render_template('kariyer/form.html', aday=form_aday, kadro=kadro,
                            basvuru_kaynak_turleri=BASVURU_KAYNAK_TURLERI,
                            beden_secenekleri=BEDEN_SECENEKLERI)
 

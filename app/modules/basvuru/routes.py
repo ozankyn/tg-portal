@@ -512,9 +512,7 @@ def telefon_dogrula(token):
         return redirect(url_for('basvuru.basvuru_giris', token=token))
     
     if aday.telefon_dogrulandi:
-        # Kariyer başvurusu ise kariyer formuna yönlendir
-        if aday.kaynak == 'acik_basvuru':
-            return redirect(url_for('kariyer.basvuru_form', token=token))
+        # Eski token tabanlı başvurular için form (yeni açık başvuru akışı session tabanlıdır)
         return redirect(url_for('basvuru.basvuru_form', token=token))
     
     if request.method == 'POST':
@@ -551,9 +549,7 @@ def telefon_dogrula(token):
             
             if success:
                 flash('Telefonunuz doğrulandı!', 'success')
-                # Kariyer başvurusu ise kariyer formuna yönlendir
-                if aday.kaynak == 'acik_basvuru':
-                    return redirect(url_for('kariyer.basvuru_form', token=token))
+                # Eski token tabanlı başvuru formu
                 return redirect(url_for('basvuru.basvuru_form', token=token))
             else:
                             flash(message, 'danger')

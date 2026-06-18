@@ -1,0 +1,161 @@
+{% extends "basvuru/base_public.html" %}
+
+{% block title %}Telefon Doğrulama{% endblock %}
+
+{% block progress %}
+<div class="flex items-center justify-center gap-3 mb-8 flex-wrap">
+    <div class="flex items-center gap-2 text-white">
+        <span class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center">
+            <span class="material-symbols-outlined text-lg">check</span>
+        </span>
+        <span class="font-medium text-sm">KVKK Onay</span>
+    </div>
+    <div class="w-8 h-0.5 bg-white"></div>
+    <div class="flex items-center gap-2 text-white">
+        <span class="w-8 h-8 rounded-full bg-white text-blue-600 flex items-center justify-center text-sm font-bold">2</span>
+        <span class="font-medium text-sm">Telefon Doğrulama</span>
+    </div>
+    <div class="w-8 h-0.5 bg-gray-300"></div>
+    <div class="flex items-center gap-2 text-gray-400">
+        <span class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold">3</span>
+        <span class="font-medium text-sm">Başvuru Formu</span>
+    </div>
+    <div class="w-8 h-0.5 bg-gray-300"></div>
+    <div class="flex items-center gap-2 text-gray-400">
+        <span class="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-sm font-bold">4</span>
+        <span class="font-medium text-sm">Tamamlandı</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div class="bg-blue-600 p-5 text-center">
+            <h4 class="text-white text-xl font-bold flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">smartphone</span>
+                Telefon Doğrulama
+            </h4>
+        </div>
+
+        <div class="p-6">
+            {% if kadro %}
+            <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 mb-4 text-sm text-center">
+                <span class="material-symbols-outlined text-blue-500 align-middle mr-1">work</span>
+                {% if kadro.proje.musteri.kariyer_gorunum_adi %}
+                <strong>{{ kadro.proje.musteri.kariyer_gorunum_adi }}</strong> -
+                {% endif %}
+                <strong>{{ kadro.pozisyon_adi }}</strong>
+            </div>
+            {% endif %}
+
+            <p class="text-center text-gray-600 text-sm mb-6">
+                Başvurunuzu tamamlamak için cep telefonu numaranızı doğrulamanız gerekmektedir.
+            </p>
+
+            {% if not kod_gonderildi %}
+            <!-- Telefon Girişi ve Kod Gönderme -->
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="send_code">
+
+                <div class="mb-6">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Cep Telefonu</label>
+                    <div class="flex">
+                        <span class="inline-flex items-center px-4 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg text-gray-600 text-sm">
+                            🇹🇷 +90
+                        </span>
+                        <input type="tel" name="telefon"
+                               class="flex-1 p-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
+                               placeholder="5XX XXX XX XX"
+                               value="{{ telefon[1:] if telefon and telefon.startswith('0') else (telefon[3:] if telefon and telefon.startswith('+90') else telefon or '') }}"
+                               pattern="[0-9]{10}"
+                               maxlength="10"
+                               required>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Başında 0 olmadan 10 haneli numaranızı girin</p>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">send</span>
+                    Doğrulama Kodu Gönder
+                </button>
+            </form>
+
+            {% else %}
+            <!-- Kod Doğrulama -->
+            <div class="text-center mb-6">
+                <div class="bg-gray-50 rounded-xl p-3 mb-3 inline-flex items-center gap-2">
+                    <span class="material-symbols-outlined text-emerald-500">phone_android</span>
+                    <strong class="text-gray-900">{{ telefon }}</strong>
+                </div>
+                <p class="text-gray-500 text-xs flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined text-sm">schedule</span>
+                    Kod 5 dakika içinde geçerlidir
+                </p>
+            </div>
+
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="action" value="verify_code">
+
+                <div class="mb-4">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Doğrulama Kodu</label>
+                    <input type="text" name="kod"
+                           class="w-full p-4 border border-gray-300 rounded-xl text-center text-3xl font-bold tracking-[0.5em] focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="000000"
+                           pattern="[0-9]{6}"
+                           maxlength="6"
+                           autofocus
+                           required>
+                    <p class="text-xs text-gray-500 mt-1 text-center">SMS ile gelen 6 haneli kodu girin</p>
+                </div>
+
+                {% if deneme and deneme > 0 %}
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-sm text-amber-800 flex items-center gap-2">
+                    <span class="material-symbols-outlined">warning</span>
+                    {{ 3 - deneme }} deneme hakkınız kaldı
+                </div>
+                {% endif %}
+
+                <button type="submit" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 mb-4">
+                    <span class="material-symbols-outlined">check</span>
+                    Doğrula
+                </button>
+            </form>
+
+            <div class="border-t border-gray-200 pt-4 text-center">
+                <p class="text-gray-500 text-xs mb-2">Kod gelmedi mi?</p>
+                <a href="{{ url_for('kariyer.kod_tekrar_gonder', kadro_id=kadro.id) }}"
+                   class="inline-flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+                    <span class="material-symbols-outlined text-base">refresh</span>
+                    Tekrar Gönder
+                </a>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <span class="text-gray-500 text-xs flex items-center justify-center gap-1">
+            <span class="material-symbols-outlined text-sm">verified_user</span>
+            Bilgileriniz güvenle korunmaktadır
+        </span>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Otomatik telefon formatı
+document.querySelector('input[name="telefon"]')?.addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').substring(0, 10);
+});
+
+// Otomatik kod formatı
+document.querySelector('input[name="kod"]')?.addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').substring(0, 6);
+});
+</script>
+{% endblock %}
