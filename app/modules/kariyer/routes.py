@@ -472,8 +472,9 @@ def basvuru_form(kadro_id):
         from app.services.notification import notify_yeni_basvuru
         notify_yeni_basvuru(aday)
 
-        # Evrak yükleme sayfasına yönlendir
-        return redirect(url_for('kariyer.evrak_yukle_sayfa', token=aday.davet_token))
+        # "Başvurunuz alındı" sayfasına yönlendir.
+        # Evrak yükleme linki İK tarafından aday kaydından manuel paylaşılır.
+        return redirect(url_for('kariyer.basvuru_tamam', token=aday.davet_token))
 
     # GET — boş formu placeholder ile render et (henüz DB kaydı yok)
     form_aday = _FormAday(
