@@ -294,6 +294,22 @@ def basvuru_form(kadro_id):
                 flash('Bu pozisyon için video yüklemeniz zorunludur.', 'danger')
                 return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
 
+        # Mükerrer başvuru kontrolü — aynı kadroya aynı TC veya telefon ile
+        # daha önce başvuru yapılmış mı? (silinmiş kayıtlar sayılmaz)
+        tc_kimlik = request.form.get('tc_kimlik')
+        telefon = bsv.get('telefon') if bsv.get('telefon_dogrulandi') else request.form.get('telefon')
+        mukerrer = Aday.query.filter(
+            Aday.kadro_id == kadro_id,
+            Aday.is_deleted == False,
+            db.or_(
+                db.and_(tc_kimlik != None, Aday.tc_kimlik == tc_kimlik),
+                db.and_(telefon != None, Aday.telefon == telefon),
+            ),
+        ).first()
+        if mukerrer:
+            flash('Bu pozisyona daha önce başvuru yapmışsınız.', 'danger')
+            return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
+
         # ---- Aday kaydını oluştur (tüm bilgiler tek INSERT) ----
         aday = Aday(
             ad=ad,
