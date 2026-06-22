@@ -124,6 +124,9 @@ def ise_alim_dashboard():
     kadro_q = HedefKadro.query.filter_by(is_deleted=False).filter(
         HedefKadro.proje_id.in_(proje_ids) if proje_ids else False
     )
+    # Proje filtresi - seçiliyse tüm dashboard o projeye göre filtrelenir
+    if secili_proje_id:
+        kadro_q = kadro_q.filter(HedefKadro.proje_id == secili_proje_id)
     kadrolar = kadro_q.all()
 
     # Aday sayılarını tek sorguda topla: kadro_id + durum + cinsiyet bazında
@@ -235,9 +238,6 @@ def ise_alim_dashboard():
     genel['kadin_oran'] = round((genel['kadin'] / toplam_cinsiyet) * 100, 1) if toplam_cinsiyet else 0
     genel['erkek_oran'] = round((genel['erkek'] / toplam_cinsiyet) * 100, 1) if toplam_cinsiyet else 0
 
-    # Kadro detay tablosu - proje filtresi uygula
-    if secili_proje_id:
-        kadro_detay = [d for d in kadro_detay if d['proje_id'] == secili_proje_id]
     kadro_detay.sort(key=lambda x: (x['proje_ad'], x['baslik']))
 
     return render_template(

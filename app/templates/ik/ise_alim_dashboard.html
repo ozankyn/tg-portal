@@ -16,11 +16,21 @@
 {%- endmacro %}
 
 {% block content %}
-<div class="flex items-center justify-between mb-4">
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
     <p class="text-sm text-text-muted dark:text-text-muted-dark flex items-center gap-2">
         <span class="material-symbols-outlined text-base animate-pulse text-green-500">sensors</span>
         Canlı veri · 30 saniyede bir otomatik yenilenir
     </p>
+    <form method="get" class="flex items-center gap-2">
+        <label for="proje" class="text-sm text-text-muted dark:text-text-muted-dark whitespace-nowrap">Proje:</label>
+        <select name="proje" id="proje" onchange="this.form.submit()"
+                class="text-sm rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-card-dark px-3 py-1.5 focus:ring-primary focus:border-primary">
+            <option value="">Tümü</option>
+            {% for p in projeler %}
+            <option value="{{ p.id }}" {% if secili_proje_id == p.id %}selected{% endif %}>{{ p.ad }}</option>
+            {% endfor %}
+        </select>
+    </form>
 </div>
 
 <!-- 1. GENEL ÖZET KARTLARI -->
@@ -121,21 +131,11 @@
 
 <!-- 3. KADRO BAZLI DETAY -->
 <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
-    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
         <h3 class="font-semibold text-text-primary dark:text-text-primary-dark flex items-center gap-2">
             <span class="material-symbols-outlined text-lg">badge</span>
             Kadro Bazlı Detay
         </h3>
-        <form method="get" class="flex items-center gap-2">
-            <label for="proje" class="text-sm text-text-muted dark:text-text-muted-dark">Proje:</label>
-            <select name="proje" id="proje" onchange="this.form.submit()"
-                    class="text-sm rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-card-dark px-3 py-1.5 focus:ring-primary focus:border-primary">
-                <option value="">Tümü</option>
-                {% for p in projeler %}
-                <option value="{{ p.id }}" {% if secili_proje_id == p.id %}selected{% endif %}>{{ p.ad }}</option>
-                {% endfor %}
-            </select>
-        </form>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full text-sm whitespace-nowrap">
