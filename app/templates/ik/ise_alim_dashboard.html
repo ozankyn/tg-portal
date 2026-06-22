@@ -15,6 +15,12 @@
 {%- if d >= 100 -%}text-green-600 dark:text-green-400{%- elif d >= 50 -%}text-yellow-600 dark:text-yellow-400{%- else -%}text-red-600 dark:text-red-400{%- endif -%}
 {%- endmacro %}
 
+{% macro ke_cell(kadin, kadin_oran, erkek, erkek_oran) -%}
+<span class="text-pink-500">K: {{ kadin }} <span class="text-xs">(%{{ kadin_oran }})</span></span>
+<span class="text-text-muted dark:text-text-muted-dark mx-1">·</span>
+<span class="text-blue-500">E: {{ erkek }} <span class="text-xs">(%{{ erkek_oran }})</span></span>
+{%- endmacro %}
+
 {% block content %}
 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
     <p class="text-sm text-text-muted dark:text-text-muted-dark flex items-center gap-2">
@@ -34,14 +40,14 @@
 </div>
 
 <!-- 1. GENEL ÖZET KARTLARI -->
-<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
     <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4">
         <p class="text-xs text-text-muted dark:text-text-muted-dark mb-1">Toplam Açık Kadro</p>
         <p class="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{{ genel.hedef }}</p>
     </div>
     <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4">
-        <p class="text-xs text-text-muted dark:text-text-muted-dark mb-1">Toplam Başvuru</p>
-        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ genel.toplam_basvuru }}</p>
+        <p class="text-xs text-text-muted dark:text-text-muted-dark mb-1">Toplam Aday</p>
+        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ genel.aktif_aday }}</p>
     </div>
     <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4">
         <p class="text-xs text-text-muted dark:text-text-muted-dark mb-1">Onaylanan</p>
@@ -56,8 +62,12 @@
         <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ genel.donusturuldu }}</p>
     </div>
     <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4">
-        <p class="text-xs text-text-muted dark:text-text-muted-dark mb-1">Genel Doluluk</p>
+        <p class="text-xs text-text-muted dark:text-text-muted-dark mb-1">Doluluk (Çalışan)</p>
         <p class="text-2xl font-bold {{ doluluk_text(genel.doluluk) }}">%{{ genel.doluluk }}</p>
+    </div>
+    <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4">
+        <p class="text-xs text-text-muted dark:text-text-muted-dark mb-1">Doluluk (Aday)</p>
+        <p class="text-2xl font-bold {{ doluluk_text(genel.doluluk_aday) }}">%{{ genel.doluluk_aday }}</p>
     </div>
 </div>
 
@@ -91,16 +101,19 @@
         </h3>
     </div>
     <div class="overflow-x-auto">
-        <table class="w-full text-sm">
+        <table class="w-full text-sm whitespace-nowrap">
             <thead>
                 <tr class="text-left text-text-muted dark:text-text-muted-dark border-b border-border-light dark:border-border-dark">
                     <th class="px-5 py-3 font-medium">Proje</th>
                     <th class="px-3 py-3 font-medium text-right">Hedef</th>
+                    <th class="px-3 py-3 font-medium text-right">Toplam Aday</th>
                     <th class="px-3 py-3 font-medium text-right">Başvuru</th>
                     <th class="px-3 py-3 font-medium text-right">Onaylanan</th>
                     <th class="px-3 py-3 font-medium text-right">SGK Bekleyen</th>
                     <th class="px-3 py-3 font-medium text-right">İşe Başlayan</th>
-                    <th class="px-5 py-3 font-medium w-48">Doluluk</th>
+                    <th class="px-3 py-3 font-medium text-center">K / E</th>
+                    <th class="px-3 py-3 font-medium text-right">Doluluk (Çalışan)</th>
+                    <th class="px-5 py-3 font-medium text-right">Doluluk (Aday)</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-border-light dark:divide-border-dark">
@@ -108,21 +121,17 @@
                 <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
                     <td class="px-5 py-3 font-medium text-text-primary dark:text-text-primary-dark">{{ p.ad }}</td>
                     <td class="px-3 py-3 text-right">{{ p.hedef }}</td>
-                    <td class="px-3 py-3 text-right text-blue-600 dark:text-blue-400">{{ p.basvuru }}</td>
+                    <td class="px-3 py-3 text-right font-semibold text-blue-600 dark:text-blue-400">{{ p.aktif_aday }}</td>
+                    <td class="px-3 py-3 text-right">{{ p.basvuru }}</td>
                     <td class="px-3 py-3 text-right">{{ p.onaylanan }}</td>
                     <td class="px-3 py-3 text-right text-yellow-600 dark:text-yellow-400">{{ p.sgk_talebi }}</td>
                     <td class="px-3 py-3 text-right text-green-600 dark:text-green-400 font-semibold">{{ p.donusturuldu }}</td>
-                    <td class="px-5 py-3">
-                        <div class="flex items-center gap-2">
-                            <div class="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                                <div class="{{ doluluk_renk(p.doluluk) }} h-full" style="width: {{ [p.doluluk, 100]|min }}%"></div>
-                            </div>
-                            <span class="text-xs font-semibold {{ doluluk_text(p.doluluk) }} w-10 text-right">%{{ p.doluluk }}</span>
-                        </div>
-                    </td>
+                    <td class="px-3 py-3 text-center">{{ ke_cell(p.kadin, p.kadin_oran, p.erkek, p.erkek_oran) }}</td>
+                    <td class="px-3 py-3 text-right font-semibold {{ doluluk_text(p.doluluk_calisan) }}">%{{ p.doluluk_calisan }}</td>
+                    <td class="px-5 py-3 text-right font-semibold {{ doluluk_text(p.doluluk_aday) }}">%{{ p.doluluk_aday }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="7" class="px-5 py-6 text-center text-text-muted dark:text-text-muted-dark">Veri bulunamadı.</td></tr>
+                <tr><td colspan="10" class="px-5 py-6 text-center text-text-muted dark:text-text-muted-dark">Veri bulunamadı.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -143,14 +152,16 @@
                 <tr class="text-left text-text-muted dark:text-text-muted-dark border-b border-border-light dark:border-border-dark">
                     <th class="px-5 py-3 font-medium">Kadro</th>
                     <th class="px-3 py-3 font-medium text-right">Hedef</th>
+                    <th class="px-3 py-3 font-medium text-right">Toplam Aday</th>
                     <th class="px-3 py-3 font-medium text-right">Başvuru</th>
                     <th class="px-3 py-3 font-medium text-right">Onaylanan</th>
                     <th class="px-3 py-3 font-medium text-right">SGK Talebi</th>
                     <th class="px-3 py-3 font-medium text-right">SGK Yapıldı</th>
                     <th class="px-3 py-3 font-medium text-right">Çalışana Dön.</th>
                     <th class="px-3 py-3 font-medium text-right">Reddedilen</th>
-                    <th class="px-3 py-3 font-medium text-right">K / E</th>
-                    <th class="px-5 py-3 font-medium w-40">Doluluk</th>
+                    <th class="px-3 py-3 font-medium text-center">K / E</th>
+                    <th class="px-3 py-3 font-medium text-right">Doluluk (Çalışan)</th>
+                    <th class="px-5 py-3 font-medium text-right">Doluluk (Aday)</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-border-light dark:divide-border-dark">
@@ -161,26 +172,19 @@
                         <div class="text-xs text-text-muted dark:text-text-muted-dark">{{ k.proje_ad }}</div>
                     </td>
                     <td class="px-3 py-3 text-right">{{ k.hedef }}</td>
-                    <td class="px-3 py-3 text-right text-blue-600 dark:text-blue-400">{{ k.basvuru }}</td>
+                    <td class="px-3 py-3 text-right font-semibold text-blue-600 dark:text-blue-400">{{ k.aktif_aday }}</td>
+                    <td class="px-3 py-3 text-right">{{ k.basvuru }}</td>
                     <td class="px-3 py-3 text-right">{{ k.onaylanan }}</td>
                     <td class="px-3 py-3 text-right text-yellow-600 dark:text-yellow-400">{{ k.sgk_talebi }}</td>
                     <td class="px-3 py-3 text-right">{{ k.sgk_yapildi }}</td>
                     <td class="px-3 py-3 text-right text-green-600 dark:text-green-400 font-semibold">{{ k.donusturuldu }}</td>
                     <td class="px-3 py-3 text-right text-red-500">{{ k.reddedilen }}</td>
-                    <td class="px-3 py-3 text-right">
-                        <span class="text-pink-500">{{ k.kadin }}</span> / <span class="text-blue-500">{{ k.erkek }}</span>
-                    </td>
-                    <td class="px-5 py-3">
-                        <div class="flex items-center gap-2">
-                            <div class="flex-1 h-2 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                                <div class="{{ doluluk_renk(k.doluluk) }} h-full" style="width: {{ [k.doluluk, 100]|min }}%"></div>
-                            </div>
-                            <span class="text-xs font-semibold {{ doluluk_text(k.doluluk) }} w-10 text-right">%{{ k.doluluk }}</span>
-                        </div>
-                    </td>
+                    <td class="px-3 py-3 text-center">{{ ke_cell(k.kadin, k.kadin_oran, k.erkek, k.erkek_oran) }}</td>
+                    <td class="px-3 py-3 text-right font-semibold {{ doluluk_text(k.doluluk_calisan) }}">%{{ k.doluluk_calisan }}</td>
+                    <td class="px-5 py-3 text-right font-semibold {{ doluluk_text(k.doluluk_aday) }}">%{{ k.doluluk_aday }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="10" class="px-5 py-6 text-center text-text-muted dark:text-text-muted-dark">Veri bulunamadı.</td></tr>
+                <tr><td colspan="12" class="px-5 py-6 text-center text-text-muted dark:text-text-muted-dark">Veri bulunamadı.</td></tr>
                 {% endfor %}
             </tbody>
         </table>

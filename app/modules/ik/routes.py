@@ -109,6 +109,17 @@ def _bos_ozet():
     }
 
 
+def _oran(part, total):
+    """Yüzde hesapla (sıfıra bölme korumalı)."""
+    return round((part / total) * 100, 1) if total else 0
+
+
+def _aktif_aday(o):
+    """Reddedilen hariç süreçteki toplam aday (başvuru..işe başlayan)."""
+    return (o['basvuru'] + o['onaylanan'] + o['sgk_talebi'] +
+            o['sgk_yapildi'] + o['donusturuldu'])
+
+
 @ik_bp.route('/ise-alim-dashboard')
 @login_required
 @permission_required('ik.view')
@@ -171,7 +182,7 @@ def ise_alim_dashboard():
         o = kadro_ozet.get(k.id, _bos_ozet())
         hedef = k.hedef_sayi or 0
         donusturuldu = o['donusturuldu']
-        doluluk = round((donusturuldu / hedef) * 100, 1) if hedef else 0
+        aktif_aday = _aktif_aday(o)
 
         kadro_detay.append({
             'id': k.id,
@@ -179,6 +190,7 @@ def ise_alim_dashboard():
             'proje_ad': k.proje.ad if k.proje else '-',
             'baslik': k.full_title,
             'hedef': hedef,
+            'aktif_aday': aktif_aday,
             'basvuru': o['basvuru'],
             'onaylanan': o['onaylanan'],
             'sgk_talebi': o['sgk_talebi'],
@@ -187,7 +199,10 @@ def ise_alim_dashboard():
             'reddedilen': o['reddedilen'],
             'kadin': o['kadin'],
             'erkek': o['erkek'],
-            'doluluk': doluluk,
+            'kadin_oran': _oran(o['kadin'], o['kadin'] + o['erkek']),
+            'erkek_oran': _oran(o['erkek'], o['kadin'] + o['erkek']),
+            'doluluk_calisan': _oran(donusturuldu, hedef),
+            'doluluk_aday': _oran(aktif_aday, hedef),
         })
 
         # Proje toplama
@@ -205,17 +220,23 @@ def ise_alim_dashboard():
     proje_satirlari = []
     for pid, pdata in proje_ozet.items():
         oz = pdata['ozet']
-        doluluk = round((oz['donusturuldu'] / oz['hedef']) * 100, 1) if oz['hedef'] else 0
+        aktif_aday = _aktif_aday(oz)
         proje_satirlari.append({
             'id': pid,
             'ad': pdata['ad'],
             'hedef': oz['hedef'],
+            'aktif_aday': aktif_aday,
             'basvuru': oz['basvuru'],
             'onaylanan': oz['onaylanan'],
             'sgk_talebi': oz['sgk_talebi'],
             'sgk_yapildi': oz['sgk_yapildi'],
             'donusturuldu': oz['donusturuldu'],
-            'doluluk': doluluk,
+            'kadin': oz['kadin'],
+            'erkek': oz['erkek'],
+            'kadin_oran': _oran(oz['kadin'], oz['kadin'] + oz['erkek']),
+            'erkek_oran': _oran(oz['erkek'], oz['kadin'] + oz['erkek']),
+            'doluluk_calisan': _oran(oz['donusturuldu'], oz['hedef']),
+            'doluluk_aday': _oran(aktif_aday, oz['hedef']),
         })
     proje_satirlari.sort(key=lambda x: x['ad'])
 
@@ -233,10 +254,11 @@ def ise_alim_dashboard():
         genel['erkek'] += d['erkek']
     # Toplam başvuru = scope'taki aktif kadrolara bağlı tüm adaylar
     genel['toplam_basvuru'] = sum(kadro_ozet.get(k.id, _bos_ozet())['toplam_aday'] for k in kadrolar)
-    genel['doluluk'] = round((genel['donusturuldu'] / genel['hedef']) * 100, 1) if genel['hedef'] else 0
-    toplam_cinsiyet = genel['kadin'] + genel['erkek']
-    genel['kadin_oran'] = round((genel['kadin'] / toplam_cinsiyet) * 100, 1) if toplam_cinsiyet else 0
-    genel['erkek_oran'] = round((genel['erkek'] / toplam_cinsiyet) * 100, 1) if toplam_cinsiyet else 0
+    genel['aktif_aday'] = _aktif_aday(genel)
+    genel['doluluk'] = _oran(genel['donusturuldu'], genel['hedef'])
+    genel['doluluk_aday'] = _oran(genel['aktif_aday'], genel['hedef'])
+    genel['kadin_oran'] = _oran(genel['kadin'], genel['kadin'] + genel['erkek'])
+    genel['erkek_oran'] = _oran(genel['erkek'], genel['kadin'] + genel['erkek'])
 
     kadro_detay.sort(key=lambda x: (x['proje_ad'], x['baslik']))
 
