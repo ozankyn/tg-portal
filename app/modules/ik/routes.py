@@ -93,6 +93,165 @@ def dashboard():
 
 
 # ============================================================
+# CANLI İŞE ALIM DASHBOARD
+# ============================================================
+
+# Aday durumlarının dashboard bucket'larına eşlenmesi (legacy değerler dahil)
+_ISE_ALIM_BASVURU_DURUMLAR = ['basvurdu', 'inceleniyor', 'degerlendiriliyor', 'mulakat']
+_ISE_ALIM_RED_DURUMLAR = ['red', 'reddedildi', 'iptal']
+
+
+def _bos_ozet():
+    return {
+        'hedef': 0, 'basvuru': 0, 'onaylanan': 0, 'sgk_talebi': 0,
+        'sgk_yapildi': 0, 'donusturuldu': 0, 'reddedilen': 0,
+        'kadin': 0, 'erkek': 0, 'toplam_aday': 0,
+    }
+
+
+@ik_bp.route('/ise-alim-dashboard')
+@login_required
+@permission_required('ik.view')
+def ise_alim_dashboard():
+    """Canlı işe alım dashboard'ı - kadro/proje bazlı başvuru ve doluluk özeti."""
+    secili_proje_id = request.args.get('proje', type=int)
+
+    # Kullanıcının görebildiği projeler (scope) + dropdown için
+    projeler = user_scoped_projeler()
+    proje_ids = [p.id for p in projeler]
+
+    # Aktif kadrolar (silinmemiş) - scope'a göre filtreli
+    kadro_q = HedefKadro.query.filter_by(is_deleted=False).filter(
+        HedefKadro.proje_id.in_(proje_ids) if proje_ids else False
+    )
+    kadrolar = kadro_q.all()
+
+    # Aday sayılarını tek sorguda topla: kadro_id + durum + cinsiyet bazında
+    aday_q = db.session.query(
+        Aday.kadro_id,
+        Aday.durum,
+        Aday.cinsiyet,
+        db.func.count(Aday.id),
+    ).filter(
+        Aday.is_deleted == False,
+        Aday.kadro_id.isnot(None),
+    ).group_by(Aday.kadro_id, Aday.durum, Aday.cinsiyet)
+    aday_q = apply_aday_scope(aday_q)
+
+    # kadro_id -> özet dict
+    kadro_ozet = {}
+    for kadro_id, durum, cinsiyet, adet in aday_q.all():
+        ozet = kadro_ozet.setdefault(kadro_id, _bos_ozet())
+        ozet['toplam_aday'] += adet
+        if durum in _ISE_ALIM_BASVURU_DURUMLAR:
+            ozet['basvuru'] += adet
+        elif durum == 'onaylandi':
+            ozet['onaylanan'] += adet
+        elif durum == 'sgk_giris_talebi':
+            ozet['sgk_talebi'] += adet
+        elif durum == 'sgk_girisi_yapildi':
+            ozet['sgk_yapildi'] += adet
+        elif durum == 'calisana_donusturuldu':
+            ozet['donusturuldu'] += adet
+        elif durum in _ISE_ALIM_RED_DURUMLAR:
+            ozet['reddedilen'] += adet
+        # cinsiyet (red/iptal hariç toplam kadın-erkek dağılımı)
+        if cinsiyet == 'kadin':
+            ozet['kadin'] += adet
+        elif cinsiyet == 'erkek':
+            ozet['erkek'] += adet
+
+    # Kadro bazlı detay satırları + proje bazlı toplama
+    kadro_detay = []
+    proje_ozet = {}  # proje_id -> {ad, ozet}
+    for k in kadrolar:
+        o = kadro_ozet.get(k.id, _bos_ozet())
+        hedef = k.hedef_sayi or 0
+        donusturuldu = o['donusturuldu']
+        doluluk = round((donusturuldu / hedef) * 100, 1) if hedef else 0
+
+        kadro_detay.append({
+            'id': k.id,
+            'proje_id': k.proje_id,
+            'proje_ad': k.proje.ad if k.proje else '-',
+            'baslik': k.full_title,
+            'hedef': hedef,
+            'basvuru': o['basvuru'],
+            'onaylanan': o['onaylanan'],
+            'sgk_talebi': o['sgk_talebi'],
+            'sgk_yapildi': o['sgk_yapildi'],
+            'donusturuldu': donusturuldu,
+            'reddedilen': o['reddedilen'],
+            'kadin': o['kadin'],
+            'erkek': o['erkek'],
+            'doluluk': doluluk,
+        })
+
+        # Proje toplama
+        po = proje_ozet.setdefault(k.proje_id, {
+            'ad': k.proje.ad if k.proje else '-',
+            'ozet': _bos_ozet(),
+        })
+        for key in ('hedef',):
+            po['ozet']['hedef'] += hedef
+        for key in ('basvuru', 'onaylanan', 'sgk_talebi', 'sgk_yapildi',
+                    'donusturuldu', 'reddedilen', 'kadin', 'erkek', 'toplam_aday'):
+            po['ozet'][key] += o[key]
+
+    # Proje özet listesi (doluluk hesaplı)
+    proje_satirlari = []
+    for pid, pdata in proje_ozet.items():
+        oz = pdata['ozet']
+        doluluk = round((oz['donusturuldu'] / oz['hedef']) * 100, 1) if oz['hedef'] else 0
+        proje_satirlari.append({
+            'id': pid,
+            'ad': pdata['ad'],
+            'hedef': oz['hedef'],
+            'basvuru': oz['basvuru'],
+            'onaylanan': oz['onaylanan'],
+            'sgk_talebi': oz['sgk_talebi'],
+            'sgk_yapildi': oz['sgk_yapildi'],
+            'donusturuldu': oz['donusturuldu'],
+            'doluluk': doluluk,
+        })
+    proje_satirlari.sort(key=lambda x: x['ad'])
+
+    # Genel özet kartları (tüm scope - proje filtresinden bağımsız)
+    genel = _bos_ozet()
+    for d in kadro_detay:
+        genel['hedef'] += d['hedef']
+        genel['basvuru'] += d['basvuru']
+        genel['onaylanan'] += d['onaylanan']
+        genel['sgk_talebi'] += d['sgk_talebi']
+        genel['sgk_yapildi'] += d['sgk_yapildi']
+        genel['donusturuldu'] += d['donusturuldu']
+        genel['reddedilen'] += d['reddedilen']
+        genel['kadin'] += d['kadin']
+        genel['erkek'] += d['erkek']
+    # Toplam başvuru = scope'taki aktif kadrolara bağlı tüm adaylar
+    genel['toplam_basvuru'] = sum(kadro_ozet.get(k.id, _bos_ozet())['toplam_aday'] for k in kadrolar)
+    genel['doluluk'] = round((genel['donusturuldu'] / genel['hedef']) * 100, 1) if genel['hedef'] else 0
+    toplam_cinsiyet = genel['kadin'] + genel['erkek']
+    genel['kadin_oran'] = round((genel['kadin'] / toplam_cinsiyet) * 100, 1) if toplam_cinsiyet else 0
+    genel['erkek_oran'] = round((genel['erkek'] / toplam_cinsiyet) * 100, 1) if toplam_cinsiyet else 0
+
+    # Kadro detay tablosu - proje filtresi uygula
+    if secili_proje_id:
+        kadro_detay = [d for d in kadro_detay if d['proje_id'] == secili_proje_id]
+    kadro_detay.sort(key=lambda x: (x['proje_ad'], x['baslik']))
+
+    return render_template(
+        'ik/ise_alim_dashboard.html',
+        active='ik-ise-alim',
+        genel=genel,
+        proje_satirlari=proje_satirlari,
+        kadro_detay=kadro_detay,
+        projeler=projeler,
+        secili_proje_id=secili_proje_id,
+    )
+
+
+# ============================================================
 # ÇALIŞAN YÖNETİMİ
 # ============================================================
 

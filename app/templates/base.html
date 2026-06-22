@@ -201,8 +201,15 @@
                     <span class="material-symbols-outlined">monitoring</span>
                     <span class="font-medium">İK Dashboard</span>
                 </a>
-                
-                <a href="{{ url_for('ik.organizasyon') }}" 
+
+                <a href="{{ url_for('ik.ise_alim_dashboard') }}"
+                   class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors
+                          {% if request.endpoint == 'ik.ise_alim_dashboard' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">insights</span>
+                    <span class="font-medium">İşe Alım Dashboard</span>
+                </a>
+
+                <a href="{{ url_for('ik.organizasyon') }}"
                    class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors
                           {% if request.endpoint == 'ik.organizasyon' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
                     <span class="material-symbols-outlined">account_tree</span>
