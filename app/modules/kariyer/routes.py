@@ -794,7 +794,7 @@ def kargo_barkod_yukle(token):
 
     foto = request.files.get('kargo_barkod')
     if not foto or not foto.filename:
-        flash('Kargo barkodu fotoğrafı seçilmedi.', 'danger')
+        # Kargo barkodu opsiyonel - dosya seçilmeden gönderilirse sessizce geri dön
         return redirect(url_for('kariyer.evrak_yukle_sayfa', token=token))
 
     ext = foto.filename.rsplit('.', 1)[1].lower() if '.' in foto.filename else ''

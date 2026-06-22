@@ -81,7 +81,7 @@
             {% endif %}
         </div>
         <div class="p-4">
-            <p class="text-sm text-gray-600 mb-4">Tarafınıza gönderilen kargonun gönderim barkodu / takip numarası fotoğrafını yükleyiniz.</p>
+            <p class="text-sm text-gray-600 mb-4">Tarafınıza gönderilen kargonun gönderim barkodu / takip numarası fotoğrafını yükleyebilirsiniz. <span class="text-gray-400">(opsiyonel)</span></p>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {% if aday.kargo_barkod_foto %}
                 <div class="md:col-span-1">
@@ -94,7 +94,7 @@
                 <form method="POST" action="{{ url_for('kariyer.kargo_barkod_yukle', token=token) }}" enctype="multipart/form-data"
                       class="md:col-span-{% if aday.kargo_barkod_foto %}2{% else %}3{% endif %} space-y-3">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="file" name="kargo_barkod" required accept="image/jpeg,image/png,image/webp"
+                    <input type="file" name="kargo_barkod" accept="image/jpeg,image/png,image/webp"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900">
                     <p class="text-xs text-gray-500">JPG, PNG veya WEBP · Max 10MB</p>
                     <button type="submit" class="px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
