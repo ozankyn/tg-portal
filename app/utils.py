@@ -45,6 +45,31 @@ def admin_required(f):
     return decorated_function
 
 
+def admin_or_permission_required(permission):
+    """
+    Admin VEYA belirli bir yetkiye sahip kullanıcıların erişebildiği decorator
+
+    is_admin=True olan herkes erişir VEYA verilen özel yetkisi (claim/rol) olan erişir.
+
+    Kullanım:
+        @admin_or_permission_required('admin.kullanici_yonetimi')
+        def admin_kullanicilar():
+            ...
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                flash('Bu işlem için giriş yapmalısınız.', 'warning')
+                return redirect(url_for('core.login'))
+            if not (current_user.is_admin or current_user.has_permission(permission)):
+                flash('Bu işlem için yetkiniz bulunmamaktadır.', 'danger')
+                abort(403)
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
 def module_access_required(module):
     """
     Modül erişim yetkisi kontrolü

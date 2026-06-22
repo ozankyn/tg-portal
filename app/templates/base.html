@@ -478,7 +478,17 @@
                     <span class="font-medium">Koordinatör-Proje</span>
                 </a>
                 {% endif %}
-                
+
+                {% if current_user.is_admin or has_permission('admin.kullanici_yonetimi') %}
+                {% if not current_user.is_admin %}
+                <p class="px-4 pt-4 pb-2 text-xs font-bold text-text-muted dark:text-[#586474] uppercase tracking-wider">Yönetim</p>
+                {% endif %}
+                <a href="{{ url_for('core.admin_kullanicilar') }}" class="flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors {% if request.endpoint and request.endpoint.startswith('core.admin_kullanici') %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="material-symbols-outlined">manage_accounts</span>
+                    <span class="font-medium">Kullanıcı Yönetimi</span>
+                </a>
+                {% endif %}
+
             </nav>
             
             <!-- Sidebar Footer -->

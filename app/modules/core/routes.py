@@ -8,7 +8,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models.core import User, Role, Permission, AuditLog
-from app.utils import admin_required
+from app.utils import admin_required, admin_or_permission_required
 
 core_bp = Blueprint('core', __name__)
 
@@ -233,7 +233,7 @@ def profil():
 
 @core_bp.route('/admin/kullanicilar')
 @login_required
-@admin_required
+@admin_or_permission_required('admin.kullanici_yonetimi')
 def admin_kullanicilar():
     """Kullanıcı yönetimi"""
     users = User.query.filter_by(is_deleted=False).order_by(User.ad).all()
@@ -243,7 +243,7 @@ def admin_kullanicilar():
 
 @core_bp.route('/admin/kullanici/ekle', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@admin_or_permission_required('admin.kullanici_yonetimi')
 def admin_kullanici_ekle():
     """Yeni kullanıcı ekle"""
     if request.method == 'POST':
@@ -283,7 +283,7 @@ def admin_kullanici_ekle():
 
 @core_bp.route('/admin/kullanici/<int:id>/duzenle', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@admin_or_permission_required('admin.kullanici_yonetimi')
 def admin_kullanici_duzenle(id):
     """Kullanıcı düzenle"""
     user = User.query.get_or_404(id)
