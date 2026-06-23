@@ -120,13 +120,11 @@ def _aktif_aday(o):
             o['sgk_yapildi'] + o['donusturuldu'])
 
 
-@ik_bp.route('/ise-alim-dashboard')
-@login_required
-@permission_required('ik.view')
-def ise_alim_dashboard():
-    """Canlı işe alım dashboard'ı - kadro/proje bazlı başvuru ve doluluk özeti."""
-    secili_proje_id = request.args.get('proje', type=int)
+def _ise_alim_dashboard_data(secili_proje_id=None):
+    """İşe alım dashboard veri toplama - hem sayfa hem Excel export için ortak.
 
+    Döner: dict(genel, proje_satirlari, kadro_detay, projeler, secili_proje_id)
+    """
     # Kullanıcının görebildiği projeler (scope) + dropdown için
     projeler = user_scoped_projeler()
     proje_ids = [p.id for p in projeler]
@@ -189,8 +187,10 @@ def ise_alim_dashboard():
             'proje_id': k.proje_id,
             'proje_ad': k.proje.ad if k.proje else '-',
             'baslik': k.full_title,
+            'il': (k.il if k.il else k.il_adi) or '-',
             'hedef': hedef,
             'aktif_aday': aktif_aday,
+            'toplam_aday': o['toplam_aday'],
             'basvuru': o['basvuru'],
             'onaylanan': o['onaylanan'],
             'sgk_talebi': o['sgk_talebi'],
@@ -226,6 +226,8 @@ def ise_alim_dashboard():
             'ad': pdata['ad'],
             'hedef': oz['hedef'],
             'aktif_aday': aktif_aday,
+            'toplam_aday': oz['toplam_aday'],
+            'reddedilen': oz['reddedilen'],
             'basvuru': oz['basvuru'],
             'onaylanan': oz['onaylanan'],
             'sgk_talebi': oz['sgk_talebi'],
@@ -262,14 +264,128 @@ def ise_alim_dashboard():
 
     kadro_detay.sort(key=lambda x: (x['proje_ad'], x['baslik']))
 
-    return render_template(
-        'ik/ise_alim_dashboard.html',
-        active='ik-ise-alim',
-        genel=genel,
-        proje_satirlari=proje_satirlari,
-        kadro_detay=kadro_detay,
-        projeler=projeler,
-        secili_proje_id=secili_proje_id,
+    return {
+        'genel': genel,
+        'proje_satirlari': proje_satirlari,
+        'kadro_detay': kadro_detay,
+        'projeler': projeler,
+        'secili_proje_id': secili_proje_id,
+    }
+
+
+@ik_bp.route('/ise-alim-dashboard')
+@login_required
+@permission_required('ik.view')
+def ise_alim_dashboard():
+    """Canlı işe alım dashboard'ı - kadro/proje bazlı başvuru ve doluluk özeti."""
+    secili_proje_id = request.args.get('proje', type=int)
+    data = _ise_alim_dashboard_data(secili_proje_id)
+    return render_template('ik/ise_alim_dashboard.html', active='ik-ise-alim', **data)
+
+
+@ik_bp.route('/ise-alim-dashboard/export')
+@login_required
+@permission_required('ik.view')
+def ise_alim_dashboard_export():
+    """İşe alım dashboard'ını 3 sheet'li Excel olarak indir (seçili proje filtresine göre)."""
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from io import BytesIO
+    from flask import Response
+
+    secili_proje_id = request.args.get('proje', type=int)
+    data = _ise_alim_dashboard_data(secili_proje_id)
+    genel = data['genel']
+    proje_satirlari = data['proje_satirlari']
+    kadro_detay = data['kadro_detay']
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='137FEC')
+    baslik_font = Font(bold=True, size=12)
+
+    def _stil_basliklar(ws, satir=1):
+        for cell in ws[satir]:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+    def _genislikler(ws, widths):
+        for idx, w in enumerate(widths, start=1):
+            ws.column_dimensions[get_column_letter(idx)].width = w
+
+    wb = Workbook()
+
+    # ---- Sheet 1: Genel Özet ----
+    ws1 = wb.active
+    ws1.title = 'Genel Özet'
+    ws1['A1'] = 'İşe Alım Genel Özet'
+    ws1['A1'].font = baslik_font
+    ws1.append([])
+    ws1.append(['Metrik', 'Değer'])
+    _stil_basliklar(ws1, 3)
+    ozet_satirlar = [
+        ('Toplam Kadro Hedefi', genel['hedef']),
+        ('Toplam Aday', genel.get('toplam_basvuru', 0)),
+        ('Onaylanan', genel['onaylanan']),
+        ('SGK Bekleyen', genel['sgk_talebi']),
+        ('İşe Başlayan', genel['donusturuldu']),
+        ('Doluluk (Çalışan) %', genel['doluluk']),
+        ('Doluluk (Aday) %', genel['doluluk_aday']),
+        ('Kadın Sayısı', genel['kadin']),
+        ('Kadın %', genel['kadin_oran']),
+        ('Erkek Sayısı', genel['erkek']),
+        ('Erkek %', genel['erkek_oran']),
+    ]
+    for ad, deger in ozet_satirlar:
+        ws1.append([ad, deger])
+    _genislikler(ws1, [28, 16])
+
+    # ---- Sheet 2: Proje Bazlı ----
+    ws2 = wb.create_sheet('Proje Bazlı')
+    proje_headers = ['Proje Adı', 'Hedef', 'Toplam Aday', 'Başvuru', 'Onaylanan',
+                     'SGK Talebi', 'SGK Yapıldı', 'İşe Başlayan', 'Reddedilen',
+                     'Kadın', 'Kadın %', 'Erkek', 'Erkek %',
+                     'Doluluk (Çalışan) %', 'Doluluk (Aday) %']
+    ws2.append(proje_headers)
+    _stil_basliklar(ws2)
+    for p in proje_satirlari:
+        ws2.append([
+            p['ad'], p['hedef'], p['toplam_aday'],
+            p['basvuru'], p['onaylanan'], p['sgk_talebi'], p['sgk_yapildi'],
+            p['donusturuldu'], p['reddedilen'],
+            p['kadin'], p['kadin_oran'], p['erkek'], p['erkek_oran'],
+            p['doluluk_calisan'], p['doluluk_aday'],
+        ])
+    _genislikler(ws2, [24, 8, 12, 10, 11, 11, 12, 13, 11, 8, 9, 8, 9, 18, 16])
+
+    # ---- Sheet 3: Kadro Bazlı ----
+    ws3 = wb.create_sheet('Kadro Bazlı')
+    kadro_headers = ['Proje', 'Kadro', 'İl', 'Hedef', 'Toplam Aday', 'Başvuru',
+                     'Onaylanan', 'SGK Talebi', 'SGK Yapıldı', 'İşe Başlayan',
+                     'Reddedilen', 'Kadın', 'Kadın %', 'Erkek', 'Erkek %',
+                     'Doluluk (Çalışan) %', 'Doluluk (Aday) %']
+    ws3.append(kadro_headers)
+    _stil_basliklar(ws3)
+    for d in kadro_detay:
+        ws3.append([
+            d['proje_ad'], d['baslik'], d['il'], d['hedef'], d['toplam_aday'],
+            d['basvuru'], d['onaylanan'], d['sgk_talebi'], d['sgk_yapildi'],
+            d['donusturuldu'], d['reddedilen'],
+            d['kadin'], d['kadin_oran'], d['erkek'], d['erkek_oran'],
+            d['doluluk_calisan'], d['doluluk_aday'],
+        ])
+    _genislikler(ws3, [22, 26, 12, 8, 12, 10, 11, 11, 12, 13, 11, 8, 9, 8, 9, 18, 16])
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"ise_alim_dashboard_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
     )
 
 

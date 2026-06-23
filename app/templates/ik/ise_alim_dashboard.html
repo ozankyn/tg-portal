@@ -27,16 +27,23 @@
         <span class="material-symbols-outlined text-base animate-pulse text-green-500">sensors</span>
         Canlı veri · 30 saniyede bir otomatik yenilenir
     </p>
-    <form method="get" class="flex items-center gap-2">
-        <label for="proje" class="text-sm text-text-muted dark:text-text-muted-dark whitespace-nowrap">Proje:</label>
-        <select name="proje" id="proje" onchange="this.form.submit()"
-                class="text-sm rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-card-dark px-3 py-1.5 focus:ring-primary focus:border-primary">
-            <option value="">Tümü</option>
-            {% for p in projeler %}
-            <option value="{{ p.id }}" {% if secili_proje_id == p.id %}selected{% endif %}>{{ p.ad }}</option>
-            {% endfor %}
-        </select>
-    </form>
+    <div class="flex items-center gap-2">
+        <form method="get" class="flex items-center gap-2">
+            <label for="proje" class="text-sm text-text-muted dark:text-text-muted-dark whitespace-nowrap">Proje:</label>
+            <select name="proje" id="proje" onchange="this.form.submit()"
+                    class="text-sm rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-card-dark px-3 py-1.5 focus:ring-primary focus:border-primary">
+                <option value="">Tümü</option>
+                {% for p in projeler %}
+                <option value="{{ p.id }}" {% if secili_proje_id == p.id %}selected{% endif %}>{{ p.ad }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <a href="{{ url_for('ik.ise_alim_dashboard_export', proje=secili_proje_id or '') }}"
+           class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-colors whitespace-nowrap">
+            <span class="material-symbols-outlined text-sm">download</span>
+            Excel'e Aktar
+        </a>
+    </div>
 </div>
 
 <!-- 1. GENEL ÖZET KARTLARI -->
