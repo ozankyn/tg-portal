@@ -4,7 +4,7 @@ TG Portal - İK (Human Resources) Routes
 Güncellenmiş versiyon: Evrak yönetimi, İşten çıkış, Aday→Çalışan dönüşümü
 """
 
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from decimal import Decimal
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, send_file, jsonify
 from flask_login import login_required, current_user
@@ -1043,7 +1043,139 @@ def aday_sgk_girisi_yapildi(id):
         current_app.logger.warning(f"SGK girişi yapıldı bildirimi gönderilemedi: {e}")
 
     flash('SGK girişi kaydedildi. Aday çalışana dönüştürülmeye hazır.', 'success')
+    if request.form.get('next') == 'sgk_bekleyen':
+        return redirect(url_for('ik.sgk_bekleyen'))
     return redirect(url_for('ik.aday_detay', id=id))
+
+
+# ============================================================
+# SGK GİRİŞ BEKLEYEN ADAYLAR (Muhasebe/Bordro)
+# ============================================================
+
+def _sgk_talep_tarihleri(aday_ids):
+    """aday_id -> SGK giriş talebinin oluşturulduğu tarih (islem_gecmisi sgk_talep)."""
+    if not aday_ids:
+        return {}
+    rows = db.session.query(
+        AdayIslemGecmisi.aday_id,
+        db.func.max(AdayIslemGecmisi.created_at)
+    ).filter(
+        AdayIslemGecmisi.aday_id.in_(aday_ids),
+        AdayIslemGecmisi.islem == 'sgk_talep'
+    ).group_by(AdayIslemGecmisi.aday_id).all()
+    return {aday_id: tarih for aday_id, tarih in rows}
+
+
+def _sgk_bekleyen_query():
+    """Durumu 'sgk_giris_talebi' olan adaylar - scope filtreli."""
+    q = Aday.query.filter_by(is_deleted=False, durum='sgk_giris_talebi')
+    return apply_aday_scope(q)
+
+
+@ik_bp.route('/sgk-bekleyen')
+@login_required
+@permission_required('ik.view')
+def sgk_bekleyen():
+    """SGK girişi bekleyen adaylar - bordro/muhasebe iş listesi."""
+    adaylar = _sgk_bekleyen_query().all()
+    # En yakın planlı başlangıç en üstte; tarihsizler en sona
+    adaylar.sort(key=lambda a: (a.planlanan_baslangic is None, a.planlanan_baslangic or date.max))
+
+    talep_tarihleri = _sgk_talep_tarihleri([a.id for a in adaylar])
+
+    bugun = date.today()
+    hafta_sonu = bugun + timedelta(days=7)
+    toplam = len(adaylar)
+    bugun_baslamasi = sum(
+        1 for a in adaylar
+        if a.planlanan_baslangic and a.planlanan_baslangic <= bugun
+    )
+    bu_hafta = sum(
+        1 for a in adaylar
+        if a.planlanan_baslangic and bugun <= a.planlanan_baslangic <= hafta_sonu
+    )
+
+    return render_template('ik/sgk_bekleyen.html',
+                           adaylar=adaylar,
+                           talep_tarihleri=talep_tarihleri,
+                           bugun=bugun,
+                           toplam=toplam,
+                           bugun_baslamasi=bugun_baslamasi,
+                           bu_hafta=bu_hafta,
+                           active='ik-sgk-bekleyen')
+
+
+@ik_bp.route('/sgk-bekleyen/export')
+@login_required
+@permission_required('ik.view')
+def sgk_bekleyen_export():
+    """SGK bekleyen adayları Excel olarak indir."""
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, PatternFill
+    from io import BytesIO
+    from flask import Response
+
+    adaylar = _sgk_bekleyen_query().all()
+    adaylar.sort(key=lambda a: (a.planlanan_baslangic is None, a.planlanan_baslangic or date.max))
+    talep_tarihleri = _sgk_talep_tarihleri([a.id for a in adaylar])
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'SGK Bekleyen'
+
+    headers = ['Ad Soyad', 'TC Kimlik', 'Proje', 'Kadro', 'İl',
+               'Planlanan Başlangıç', 'SGK Talep Tarihi', 'Telefon', 'Email']
+    ws.append(headers)
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='137FEC')
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+
+    for a in adaylar:
+        talep = talep_tarihleri.get(a.id)
+        ws.append([
+            a.full_name,
+            a.tc_kimlik or '',
+            a.kadro.proje.ad if a.kadro and a.kadro.proje else '',
+            a.kadro.pozisyon_adi if a.kadro else '',
+            (a.kadro.il if a.kadro and a.kadro.il else (a.il or '')),
+            a.planlanan_baslangic.strftime('%d.%m.%Y') if a.planlanan_baslangic else '',
+            talep.strftime('%d.%m.%Y %H:%M') if talep else '',
+            a.telefon or '',
+            a.email or '',
+        ])
+
+    widths = [26, 14, 22, 24, 14, 18, 18, 16, 28]
+    for idx, w in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(idx)].width = w
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"sgk_bekleyen_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+
+
+@ik_bp.app_context_processor
+def inject_sgk_bekleyen_count():
+    """Sidebar rozeti için SGK bekleyen aday sayısı (scope filtreli)."""
+    def sgk_bekleyen_count():
+        if not current_user.is_authenticated:
+            return 0
+        try:
+            return _sgk_bekleyen_query().count()
+        except Exception:
+            db.session.rollback()
+            return 0
+    return dict(sgk_bekleyen_count=sgk_bekleyen_count)
 
 
 @ik_bp.route('/aday/<int:id>/reddet', methods=['POST'])
