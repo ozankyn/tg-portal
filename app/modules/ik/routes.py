@@ -837,6 +837,37 @@ def aday_liste():
                           il_ilce_map=il_ilce_map)
 
 
+def _aday_org_bilgisi(aday):
+    """Adayın kadrosundan (Direktörlük, Müdürlük) bilgisini çıkarır.
+    Önce HedefKadro FK alanları, yoksa pozisyon_adi içinden parse edilir.
+    Örn: "Trakya Md. - Tekirdağ - P.T Sniper" -> Müdürlük: "Trakya Md."
+    """
+    direktorluk = ''
+    mudurluk = ''
+    kadro = aday.kadro
+    if not kadro:
+        return direktorluk, mudurluk
+
+    if kadro.direktorluk:
+        direktorluk = kadro.direktorluk.ad
+    if kadro.mudurluk:
+        mudurluk = kadro.mudurluk.ad
+
+    # FK yoksa pozisyon_adi içinden müdürlük bilgisini parse et
+    if not mudurluk and kadro.pozisyon_adi:
+        for part in kadro.pozisyon_adi.split(' - '):
+            p = part.strip()
+            if 'Md.' in p or 'Müdürlü' in p or 'Mudurlu' in p:
+                mudurluk = p
+                break
+
+    # Direktörlük hâlâ boşsa projenin müşterisinden al
+    if not direktorluk and kadro.proje and kadro.proje.musteri:
+        direktorluk = kadro.proje.musteri.display_name or ''
+
+    return direktorluk, mudurluk
+
+
 @ik_bp.route('/adaylar/export')
 @login_required
 @permission_required('ik.view')
@@ -855,7 +886,7 @@ def adaylar_export():
     ws.title = 'Adaylar'
 
     headers = ['Ad Soyad', 'Telefon', 'Email', 'Başvuru Tarihi',
-               'Proje', 'Kadro/Pozisyon', 'Durum',
+               'Proje', 'Direktörlük', 'Müdürlük', 'Kadro/Pozisyon', 'Durum',
                'İl', 'İlçe', 'Üst Beden', 'Alt Beden', 'Ayakkabı No',
                'Kargo Şubesi', 'TG\'de Çalıştı', 'Seyahat Engeli',
                'Askerlik', 'Başvuru Kaynağı']
@@ -888,12 +919,15 @@ def adaylar_export():
             kadro_pozisyon = a.pozisyon.ad
         else:
             kadro_pozisyon = ''
+        direktorluk, mudurluk = _aday_org_bilgisi(a)
         ws.append([
             f'{a.ad or ""} {a.soyad or ""}'.strip(),
             a.telefon or '',
             a.email or '',
             a.basvuru_tarihi.strftime('%d.%m.%Y') if a.basvuru_tarihi else '',
             proje_ad,
+            direktorluk,
+            mudurluk,
             kadro_pozisyon,
             durum_etiket.get(a.durum, a.durum or ''),
             a.il or '',
@@ -908,7 +942,7 @@ def adaylar_export():
             a.basvuru_kaynak_text if a.basvuru_kaynak else '',
         ])
 
-    widths = [28, 16, 28, 14, 22, 24, 18,
+    widths = [28, 16, 28, 14, 22, 22, 22, 24, 18,
               14, 14, 10, 10, 10, 26, 12, 14, 12, 18]
     for idx, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = w
