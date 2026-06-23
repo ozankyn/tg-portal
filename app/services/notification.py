@@ -78,6 +78,43 @@ def send_bildirim(kod, degiskenler=None, proje_id=None):
     return send_notification(sorted(alicilar), konu, icerik)
 
 
+def notify_sifre_sifirlama(user, reset_url, gecerlilik='1 saat'):
+    """Şifre sıfırlama maili - ilgili kullanıcıya gönderilir (sablon: SIFRE_SIFIRLAMA).
+
+    send_bildirim'den farkli olarak alici dinamik (kullanicinin kendi email'i),
+    bu yuzden sablonu render edip dogrudan kullaniciya gondeririz.
+    """
+    from app.models.bildirim import BildirimSablonu
+
+    if not user.email:
+        print(">>> SIFRE_SIFIRLAMA: kullanicinin email'i yok, gonderilemedi", flush=True)
+        return False
+
+    degiskenler = {
+        'ad_soyad': user.full_name,
+        'reset_url': reset_url,
+        'gecerlilik': gecerlilik,
+    }
+
+    sablon = BildirimSablonu.query.filter_by(kod='SIFRE_SIFIRLAMA', aktif=True).first()
+    if sablon:
+        konu = render_sablon(sablon.konu_sablonu, degiskenler)
+        icerik = render_sablon(sablon.icerik_sablonu, degiskenler)
+    else:
+        # Sablon yoksa (migration calismadiysa) basit fallback
+        konu = 'Şifre Sıfırlama - TG Portal'
+        icerik = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <p>Sayın {user.full_name},</p>
+            <p>Şifrenizi sıfırlamak için aşağıdaki linke tıklayın. Bağlantı {gecerlilik} geçerlidir.</p>
+            <p><a href="{reset_url}" style="background: #137fec; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold;">Şifremi Sıfırla</a></p>
+            <p style="color: #6b7280; font-size: 13px;">Bu talebi siz yapmadıysanız bu e-postayı yok sayabilirsiniz.</p>
+        </div>
+        """
+
+    return send_notification([user.email], konu, icerik)
+
+
 def send_notification(to, subject, html_body, text_body=None):
     """Genel bildirim gönderme fonksiyonu"""
     import sys

@@ -103,6 +103,72 @@ def sifre_degistir():
     return render_template('core/sifre_degistir.html')
 
 
+@core_bp.route('/auth/sifremi-unuttum', methods=['GET', 'POST'])
+def sifremi_unuttum():
+    """Şifremi unuttum - email ile sıfırlama linki gönder"""
+    if current_user.is_authenticated:
+        return redirect(url_for('core.dashboard'))
+
+    # Güvenlik: email var/yok belli olmasın diye her durumda aynı mesaj
+    ortak_mesaj = ('Eğer bu e-posta adresi sistemde kayıtlıysa, şifre sıfırlama '
+                   'bağlantısı gönderildi. Lütfen e-posta kutunuzu kontrol edin.')
+
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+
+        user = User.query.filter_by(email=email, is_deleted=False).first()
+        if user and user.is_active:
+            from app.services.notification import notify_sifre_sifirlama
+            token = user.sifre_token_olustur(gecerlilik_saat=1)
+            db.session.commit()
+            reset_url = url_for('core.sifre_sifirla', token=token, _external=True)
+            try:
+                notify_sifre_sifirlama(user, reset_url, gecerlilik='1 saat')
+            except Exception as e:
+                current_app.logger.error(f"Şifre sıfırlama maili gönderilemedi ({email}): {e}")
+
+        flash(ortak_mesaj, 'info')
+        return redirect(url_for('core.login'))
+
+    return render_template('core/sifremi_unuttum.html')
+
+
+@core_bp.route('/auth/sifre-sifirla/<token>', methods=['GET', 'POST'])
+def sifre_sifirla(token):
+    """Token ile yeni şifre belirleme"""
+    if current_user.is_authenticated:
+        return redirect(url_for('core.dashboard'))
+
+    user = User.query.filter_by(sifre_token=token, is_deleted=False).first()
+
+    if not user or not user.sifre_token_gecerli_mi():
+        flash('Şifre sıfırlama bağlantısı geçersiz veya süresi dolmuş. '
+              'Lütfen yeniden talep edin.', 'danger')
+        return redirect(url_for('core.sifremi_unuttum'))
+
+    if request.method == 'POST':
+        yeni = request.form.get('yeni_sifre', '')
+        tekrar = request.form.get('yeni_sifre_tekrar', '')
+
+        if len(yeni) < 8:
+            flash('Yeni şifre en az 8 karakter olmalıdır.', 'danger')
+            return render_template('core/sifre_sifirla.html', token=token)
+
+        if yeni != tekrar:
+            flash('Yeni şifre ile tekrarı eşleşmiyor.', 'danger')
+            return render_template('core/sifre_sifirla.html', token=token)
+
+        user.set_password(yeni)
+        user.sifre_degistirildi = True
+        user.sifre_token_temizle()
+        db.session.commit()
+
+        flash('Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş yapabilirsiniz.', 'success')
+        return redirect(url_for('core.login'))
+
+    return render_template('core/sifre_sifirla.html', token=token)
+
+
 @core_bp.route('/logout')
 @login_required
 def logout():

@@ -48,6 +48,10 @@ class User(db.Model, UserMixin, TimestampMixin, SoftDeleteMixin):
     is_admin = db.Column(db.Boolean, default=False)
     sifre_degistirildi = db.Column(db.Boolean, default=False, nullable=False)
     last_login = db.Column(db.DateTime)
+
+    # Şifre sıfırlama (şifremi unuttum)
+    sifre_token = db.Column(db.String(128), index=True)
+    sifre_token_expiry = db.Column(db.DateTime)
     
     # İlişkiler
     roles = db.relationship('Role', secondary=user_roles, backref=db.backref('users', lazy='dynamic'))
@@ -71,7 +75,29 @@ class User(db.Model, UserMixin, TimestampMixin, SoftDeleteMixin):
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-    
+
+    def sifre_token_olustur(self, gecerlilik_saat=1):
+        """Şifre sıfırlama token'ı üretir ve son geçerlilik tarihini ayarlar.
+        Üretilen ham token'ı döner."""
+        import secrets
+        from datetime import datetime, timedelta
+        token = secrets.token_urlsafe(32)
+        self.sifre_token = token
+        self.sifre_token_expiry = datetime.utcnow() + timedelta(hours=gecerlilik_saat)
+        return token
+
+    def sifre_token_gecerli_mi(self):
+        """Token mevcut ve süresi dolmamış mı?"""
+        from datetime import datetime
+        if not self.sifre_token or not self.sifre_token_expiry:
+            return False
+        return datetime.utcnow() <= self.sifre_token_expiry
+
+    def sifre_token_temizle(self):
+        """Token bilgisini sıfırlar (kullanıldıktan sonra)."""
+        self.sifre_token = None
+        self.sifre_token_expiry = None
+
     def has_permission(self, permission_code):
         """Kullanıcının belirli bir yetkisi var mı kontrol eder"""
         # Admin her şeye erişir

@@ -30,6 +30,9 @@ AVAILABLE_VARIABLES = {
         'ad_soyad', 'tc_kimlik', 'planlanan_baslangic', 'proje', 'pozisyon',
         'lokasyon', 'telefon', 'email', 'aday_url',
     ],
+    'SIFRE_SIFIRLAMA': [
+        'ad_soyad', 'reset_url', 'gecerlilik',
+    ],
 }
 
 
