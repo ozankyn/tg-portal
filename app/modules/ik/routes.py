@@ -1034,6 +1034,14 @@ def aday_sgk_girisi_yapildi(id):
     _aday_log(aday, 'sgk_giris', 'SGK girişi yapıldı, giriş bildirgesi yüklendi.', 'sgk_girisi_yapildi')
     aday.durum = 'sgk_girisi_yapildi'
     db.session.commit()
+
+    # İK'ya bilgilendirme bildirimi
+    try:
+        from app.services.notification import notify_sgk_girisi_yapildi
+        notify_sgk_girisi_yapildi(aday)
+    except Exception as e:
+        current_app.logger.warning(f"SGK girişi yapıldı bildirimi gönderilemedi: {e}")
+
     flash('SGK girişi kaydedildi. Aday çalışana dönüştürülmeye hazır.', 'success')
     return redirect(url_for('ik.aday_detay', id=id))
 

@@ -132,6 +132,7 @@ def enum_choices(enum_class):
 _FULL_ACCESS_ROLES = {
     'Sistem Yoneticisi', 'Ajans Baskani', 'Direktor',
     'Direktor Yardimcisi', 'Departman Muduru', 'IK Uzmani',
+    'Muhasebe Uzmani',
 }
 _COORDINATOR_ROLES = {'Proje Koordinatoru', 'Saha Koordinatoru'}
 _TEAM_LEAD_ROLES = {'Takim Lideri'}

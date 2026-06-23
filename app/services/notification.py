@@ -435,8 +435,46 @@ def notify_sgk_giris_talebi(aday):
         'telefon': aday.telefon or '-',
         'email': aday.email or '-',
         'aday_url': aday_url,
+        'aday_link': aday_url,  # alias - sablonda {aday_link} olarak da kullanilabilir
     }
     return send_bildirim('SGK_GIRIS_TALEBI', degiskenler, proje_id=proje_id)
+
+
+def notify_sgk_girisi_yapildi(aday, sgk_giris_tarihi=None):
+    """SGK girişi yapıldığında İK'ya bildirim (sablon: SGK_GIRISI_YAPILDI)"""
+    from datetime import date
+
+    proje_adi = '-'
+    pozisyon_adi = '-'
+    lokasyon = '-'
+    proje_id = None
+    if aday.kadro:
+        pozisyon_adi = aday.kadro.pozisyon_adi or '-'
+        if aday.kadro.proje:
+            proje_adi = aday.kadro.proje.ad
+            proje_id = aday.kadro.proje.id
+        if aday.kadro.il:
+            lokasyon = aday.kadro.il
+
+    try:
+        aday_url = url_for('ik.aday_detay', id=aday.id, _external=True)
+    except Exception:
+        aday_url = '#'
+
+    tarih = sgk_giris_tarihi or date.today()
+    tarih_str = tarih.strftime('%d.%m.%Y') if hasattr(tarih, 'strftime') else str(tarih)
+
+    degiskenler = {
+        'ad_soyad': aday.full_name,
+        'tc_kimlik': aday.tc_kimlik or '-',
+        'proje': proje_adi,
+        'pozisyon': pozisyon_adi,
+        'lokasyon': lokasyon,
+        'sgk_giris_tarihi': tarih_str,
+        'aday_url': aday_url,
+        'aday_link': aday_url,
+    }
+    return send_bildirim('SGK_GIRISI_YAPILDI', degiskenler, proje_id=proje_id)
 
 
 def notify_ise_giris(calisan):
