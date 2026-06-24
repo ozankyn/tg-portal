@@ -1274,7 +1274,7 @@ def sgk_bekleyen_export():
     ws = wb.active
     ws.title = 'SGK Bekleyen'
 
-    headers = ['Ad Soyad', 'TC Kimlik', 'Proje', 'Kadro', 'İl',
+    headers = ['Ad Soyad', 'TC Kimlik', 'Eğitim Durumu', 'Proje', 'Kadro', 'İl',
                'Planlanan Başlangıç', 'SGK Talep Tarihi', 'Telefon', 'Email']
     ws.append(headers)
 
@@ -1289,6 +1289,7 @@ def sgk_bekleyen_export():
         ws.append([
             a.full_name,
             a.tc_kimlik or '',
+            a.egitim_durumu_label or '',
             a.kadro.proje.ad if a.kadro and a.kadro.proje else '',
             a.kadro.pozisyon_adi if a.kadro else '',
             (a.kadro.il if a.kadro and a.kadro.il else (a.il or '')),
@@ -1298,7 +1299,7 @@ def sgk_bekleyen_export():
             a.email or '',
         ])
 
-    widths = [26, 14, 22, 24, 14, 18, 18, 16, 28]
+    widths = [26, 14, 14, 22, 24, 14, 18, 18, 16, 28]
     for idx, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = w
 

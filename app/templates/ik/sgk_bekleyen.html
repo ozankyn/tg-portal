@@ -63,6 +63,7 @@
                 <tr class="text-left text-text-muted dark:text-text-muted-dark border-b border-border-light dark:border-border-dark">
                     <th class="px-5 py-3 font-medium">Ad Soyad</th>
                     <th class="px-5 py-3 font-medium">TC Kimlik</th>
+                    <th class="px-5 py-3 font-medium">Eğitim Durumu</th>
                     <th class="px-5 py-3 font-medium">Proje</th>
                     <th class="px-5 py-3 font-medium">Kadro/Pozisyon</th>
                     <th class="px-5 py-3 font-medium">İl</th>
@@ -91,6 +92,7 @@
                         <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="font-medium text-blue-600 dark:text-blue-400 hover:underline">{{ aday.full_name }}</a>
                     </td>
                     <td class="px-5 py-3 text-text-primary dark:text-text-primary-dark">{{ aday.tc_kimlik or '-' }}</td>
+                    <td class="px-5 py-3 text-text-primary dark:text-text-primary-dark">{{ aday.egitim_durumu_label or '-' }}</td>
                     <td class="px-5 py-3 text-text-primary dark:text-text-primary-dark">{{ aday.kadro.proje.ad if aday.kadro and aday.kadro.proje else '-' }}</td>
                     <td class="px-5 py-3 text-text-primary dark:text-text-primary-dark">{{ aday.kadro.pozisyon_adi if aday.kadro else '-' }}</td>
                     <td class="px-5 py-3 text-text-primary dark:text-text-primary-dark">{{ aday.kadro.il if aday.kadro and aday.kadro.il else (aday.il or '-') }}</td>

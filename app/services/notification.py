@@ -428,6 +428,7 @@ def notify_sgk_giris_talebi(aday):
     degiskenler = {
         'ad_soyad': aday.full_name,
         'tc_kimlik': aday.tc_kimlik or '-',
+        'egitim_durumu': aday.egitim_durumu_label or '-',
         'planlanan_baslangic': aday.planlanan_baslangic.strftime('%d.%m.%Y') if aday.planlanan_baslangic else '-',
         'proje': proje_adi,
         'pozisyon': pozisyon_adi,
@@ -467,6 +468,7 @@ def notify_sgk_girisi_yapildi(aday, sgk_giris_tarihi=None):
     degiskenler = {
         'ad_soyad': aday.full_name,
         'tc_kimlik': aday.tc_kimlik or '-',
+        'egitim_durumu': aday.egitim_durumu_label or '-',
         'proje': proje_adi,
         'pozisyon': pozisyon_adi,
         'lokasyon': lokasyon,

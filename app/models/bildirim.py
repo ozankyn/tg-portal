@@ -27,11 +27,11 @@ AVAILABLE_VARIABLES = {
         'toplam_sayi', 'liste_html',
     ],
     'SGK_GIRIS_TALEBI': [
-        'ad_soyad', 'tc_kimlik', 'planlanan_baslangic', 'proje', 'pozisyon',
+        'ad_soyad', 'tc_kimlik', 'egitim_durumu', 'planlanan_baslangic', 'proje', 'pozisyon',
         'lokasyon', 'telefon', 'email', 'aday_url', 'aday_link',
     ],
     'SGK_GIRISI_YAPILDI': [
-        'ad_soyad', 'tc_kimlik', 'proje', 'pozisyon', 'lokasyon',
+        'ad_soyad', 'tc_kimlik', 'egitim_durumu', 'proje', 'pozisyon', 'lokasyon',
         'sgk_giris_tarihi', 'aday_url', 'aday_link',
     ],
     'SIFRE_SIFIRLAMA': [

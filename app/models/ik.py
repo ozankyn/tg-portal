@@ -359,6 +359,24 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     def full_name(self):
         return f'{self.ad} {self.soyad}'
 
+    # Eğitim durumu kodu -> okunabilir etiket
+    EGITIM_DURUMU_LABELS = {
+        'ilkokul': 'İlkokul',
+        'ortaokul': 'Ortaokul',
+        'lise': 'Lise',
+        'onlisans': 'Ön Lisans',
+        'lisans': 'Lisans',
+        'yukseklisans': 'Yüksek Lisans',
+        'doktora': 'Doktora',
+    }
+
+    @property
+    def egitim_durumu_label(self):
+        """Eğitim durumu kodunu okunabilir etikete çevirir."""
+        if not self.egitim_durumu:
+            return ''
+        return self.EGITIM_DURUMU_LABELS.get(self.egitim_durumu, self.egitim_durumu)
+
     @property
     def blacklist_calisan(self):
         """TC ile eski çalışan kaydını bulur — kara/gri liste kontrolü için.
