@@ -50,17 +50,6 @@
                 <span class="material-symbols-outlined text-gray-400 group-hover:text-blue-600 transition-colors">download</span>
             </a>
             {% endfor %}
-            <a href="{{ url_for('kariyer.kvkk_indir', token=token) }}"
-               class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors group">
-                <div class="flex items-center gap-3">
-                    <span class="material-symbols-outlined text-blue-600">verified_user</span>
-                    <div>
-                        <p class="text-sm font-medium text-gray-900">KVKK Aydınlatma Metni</p>
-                        <p class="text-xs text-gray-500">Kişisel verilerin korunması</p>
-                    </div>
-                </div>
-                <span class="material-symbols-outlined text-gray-400 group-hover:text-blue-600 transition-colors">download</span>
-            </a>
         </div>
     </div>
     {% endif %}
