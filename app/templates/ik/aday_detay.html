@@ -361,6 +361,56 @@
             </div>
         </div>
 
+        <!-- SGK Giriş Bildirgesi -->
+        {% if aday.sgk_bildirgesi %}
+        {% set sgk_dosya_adi = aday.sgk_bildirgesi.rsplit('/', 1)[-1] %}
+        {% set sgk_uzanti = (aday.sgk_bildirgesi.rsplit('.', 1)[-1]|lower) if '.' in aday.sgk_bildirgesi else '' %}
+        {% set sgk_url = url_for('uploaded_file', filename=aday.sgk_bildirgesi) %}
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-indigo-600">verified</span>
+                    SGK Giriş Bildirgesi
+                </h3>
+            </div>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <!-- Thumbnail -->
+                <a href="{{ sgk_url }}" target="_blank"
+                   class="block w-full sm:w-40 h-40 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#111418] border border-border-light dark:border-border-dark">
+                    {% if sgk_uzanti in ['jpg', 'jpeg', 'png', 'webp'] %}
+                    <img src="{{ sgk_url }}" alt="SGK Bildirgesi" class="w-full h-full object-cover hover:scale-105 transition-transform">
+                    {% elif sgk_uzanti == 'pdf' %}
+                    <embed src="{{ sgk_url }}#toolbar=0&navpanes=0&view=FitH" type="application/pdf" class="w-full h-full pointer-events-none">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center">
+                        <span class="material-symbols-outlined text-5xl text-text-muted dark:text-text-muted-dark">draft</span>
+                    </div>
+                    {% endif %}
+                </a>
+                <!-- Bilgi & İşlemler -->
+                <div class="flex-1 min-w-0 flex flex-col justify-center gap-3">
+                    <div class="flex items-center gap-2 text-[#111418] dark:text-white">
+                        <span class="material-symbols-outlined text-indigo-600">description</span>
+                        <span class="text-sm font-medium truncate" title="{{ sgk_dosya_adi }}">{{ sgk_dosya_adi }}</span>
+                        {% if sgk_uzanti %}
+                        <span class="px-2 py-0.5 bg-gray-100 dark:bg-[#111418] text-[10px] font-bold rounded uppercase text-text-muted dark:text-text-muted-dark">{{ sgk_uzanti }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ sgk_url }}" target="_blank"
+                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors">
+                            <span class="material-symbols-outlined text-lg">visibility</span> Görüntüle
+                        </a>
+                        <a href="{{ sgk_url }}" download="{{ sgk_dosya_adi }}"
+                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-[#111418] hover:bg-gray-200 dark:hover:bg-[#252b36] text-sm font-bold rounded-lg transition-colors text-[#111418] dark:text-white">
+                            <span class="material-symbols-outlined text-lg">download</span> İndir
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Fotoğraflar & Videolar -->
         {% if has_permission('ik.view') %}
         {% set fotos = aday.medyalar.filter_by(tip='foto').all() %}
