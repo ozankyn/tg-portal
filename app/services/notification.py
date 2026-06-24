@@ -479,6 +479,49 @@ def notify_sgk_girisi_yapildi(aday, sgk_giris_tarihi=None):
     return send_bildirim('SGK_GIRISI_YAPILDI', degiskenler, proje_id=proje_id)
 
 
+# Aday onaylandiginda 3 gun icinde evrak yuklemesi icin gonderilecek SMS metni (DB sablonu yoksa fallback)
+ADAY_ONAY_SMS_VARSAYILAN = (
+    "Tebrikler! Team Guerilla basvurunuz onaylandi. "
+    "Lutfen evraklarinizi {gun_sayisi} gun icinde yukleyiniz: {evrak_link}"
+)
+
+
+def notify_aday_onay_sms(aday, gun_sayisi=3):
+    """Aday onaylandiginda adaya evrak yukleme linkli SMS gonderir.
+
+    SMS metni DB'deki ADAY_ONAY_SMS sablonundan (icerik_sablonu) okunur,
+    sablon yoksa varsayilan metin kullanilir. NetGSM uzerinden gonderilir.
+    """
+    from app.models.bildirim import BildirimSablonu
+    from app.modules.basvuru.routes import send_netgsm_sms
+
+    if not aday.telefon:
+        current_app.logger.warning(f"Aday onay SMS: telefon yok (aday_id={aday.id})")
+        return {'success': False, 'error': 'Telefon yok'}
+
+    # Evrak yukleme linki - token yoksa olustur
+    if not aday.davet_token:
+        aday.generate_token()
+        db.session.commit()
+
+    try:
+        evrak_link = url_for('kariyer.evrak_yukle_sayfa', token=aday.davet_token, _external=True)
+    except Exception:
+        evrak_link = f"https://portal.teamguerilla.com/kariyer/evrak/{aday.davet_token}"
+
+    degiskenler = {
+        'ad_soyad': aday.full_name,
+        'evrak_link': evrak_link,
+        'gun_sayisi': gun_sayisi,
+    }
+
+    sablon = BildirimSablonu.query.filter_by(kod='ADAY_ONAY_SMS', aktif=True).first()
+    metin_sablonu = sablon.icerik_sablonu if sablon else ADAY_ONAY_SMS_VARSAYILAN
+    mesaj = render_sablon(metin_sablonu, degiskenler)
+
+    return send_netgsm_sms(aday.telefon, mesaj)
+
+
 def notify_ise_giris(calisan):
     """Ise giris bildirimi - sablonu ISE_GIRIS"""
     print(f">>> NOTIFY_ISE_GIRIS TETIKLENDI: {calisan.ad} {calisan.soyad} (id={calisan.id})", flush=True)

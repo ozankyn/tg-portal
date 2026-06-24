@@ -37,6 +37,10 @@ AVAILABLE_VARIABLES = {
     'SIFRE_SIFIRLAMA': [
         'ad_soyad', 'reset_url', 'gecerlilik',
     ],
+    # SMS sablonu - icerik_sablonu SMS metni olarak kullanilir (konu kullanilmaz)
+    'ADAY_ONAY_SMS': [
+        'ad_soyad', 'evrak_link', 'gun_sayisi',
+    ],
 }
 
 

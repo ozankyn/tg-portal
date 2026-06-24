@@ -1117,7 +1117,22 @@ def aday_onayla(id):
               'onaylandi')
     aday.durum = 'onaylandi'
     db.session.commit()
-    flash('Aday onaylandı.', 'success')
+
+    # Adaya evrak yükleme linkli onay SMS'i gönder (başarısız olsa bile onay akışı devam eder)
+    sms_uyari = None
+    try:
+        from app.services.notification import notify_aday_onay_sms
+        sonuc = notify_aday_onay_sms(aday)
+        if not sonuc.get('success'):
+            sms_uyari = sonuc.get('error', 'Bilinmeyen hata')
+    except Exception as e:
+        current_app.logger.warning(f"Aday onay SMS gönderilemedi (aday_id={aday.id}): {e}")
+        sms_uyari = str(e)
+
+    if sms_uyari:
+        flash(f'Aday onaylandı ancak onay SMS\'i gönderilemedi: {sms_uyari}', 'warning')
+    else:
+        flash('Aday onaylandı ve evrak yükleme SMS\'i gönderildi.', 'success')
     return redirect(url_for('ik.aday_detay', id=id))
 
 
