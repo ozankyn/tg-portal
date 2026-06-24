@@ -787,6 +787,7 @@ def _aday_liste_query():
             db.or_(
                 Aday.ad.ilike(search_filter),
                 Aday.soyad.ilike(search_filter),
+                Aday.tc_kimlik.ilike(search_filter),
                 Aday.telefon.ilike(search_filter),
                 Aday.email.ilike(search_filter)
             )

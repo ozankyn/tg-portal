@@ -28,16 +28,34 @@
     </div>
     <div class="p-5">
         <form method="GET" class="flex flex-wrap items-end gap-4">
+            <div class="w-64">
+                <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Ara</label>
+                <input type="text" name="search" value="{{ request.args.get('search', '') }}"
+                       placeholder="Ad, soyad, TC veya telefon"
+                       class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
             <div class="w-48">
                 <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Durum</label>
                 <select name="durum" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">Tümü</option>
                     <option value="basvurdu" {% if request.args.get('durum') == 'basvurdu' %}selected{% endif %}>Başvurdu</option>
-                    <option value="degerlendiriliyor" {% if request.args.get('durum') == 'degerlendiriliyor' %}selected{% endif %}>Değerlendiriliyor</option>
-                    <option value="mulakat" {% if request.args.get('durum') == 'mulakat' %}selected{% endif %}>Mülakat</option>
-                    <option value="teklif" {% if request.args.get('durum') == 'teklif' %}selected{% endif %}>Teklif</option>
-                    <option value="ise_alindi" {% if request.args.get('durum') == 'ise_alindi' %}selected{% endif %}>İşe Alındı</option>
-                    <option value="red" {% if request.args.get('durum') == 'red' %}selected{% endif %}>Reddedildi</option>
+                    <option value="inceleniyor" {% if request.args.get('durum') == 'inceleniyor' %}selected{% endif %}>İnceleniyor</option>
+                    <option value="onaylandi" {% if request.args.get('durum') == 'onaylandi' %}selected{% endif %}>Onaylandı</option>
+                    <option value="sgk_giris_talebi" {% if request.args.get('durum') == 'sgk_giris_talebi' %}selected{% endif %}>SGK Giriş Talebi</option>
+                    <option value="sgk_girisi_yapildi" {% if request.args.get('durum') == 'sgk_girisi_yapildi' %}selected{% endif %}>SGK Girişi Yapıldı</option>
+                    <option value="calisana_donusturuldu" {% if request.args.get('durum') == 'calisana_donusturuldu' %}selected{% endif %}>Çalışana Dönüştürüldü</option>
+                    <option value="reddedildi" {% if request.args.get('durum') == 'reddedildi' %}selected{% endif %}>Reddedildi</option>
+                    <optgroup label="Eski Durumlar">
+                        <option value="davet_gonderildi" {% if request.args.get('durum') == 'davet_gonderildi' %}selected{% endif %}>Davet Gönderildi</option>
+                        <option value="kvkk_bekleniyor" {% if request.args.get('durum') == 'kvkk_bekleniyor' %}selected{% endif %}>KVKK Onayı Bekleniyor</option>
+                        <option value="form_bekleniyor" {% if request.args.get('durum') == 'form_bekleniyor' %}selected{% endif %}>Form Bekleniyor</option>
+                        <option value="degerlendiriliyor" {% if request.args.get('durum') == 'degerlendiriliyor' %}selected{% endif %}>Değerlendiriliyor</option>
+                        <option value="mulakat" {% if request.args.get('durum') == 'mulakat' %}selected{% endif %}>Mülakat</option>
+                        <option value="teklif" {% if request.args.get('durum') == 'teklif' %}selected{% endif %}>Teklif</option>
+                        <option value="ise_alindi" {% if request.args.get('durum') == 'ise_alindi' %}selected{% endif %}>İşe Alındı</option>
+                        <option value="red" {% if request.args.get('durum') == 'red' %}selected{% endif %}>Reddedildi (eski)</option>
+                        <option value="iptal" {% if request.args.get('durum') == 'iptal' %}selected{% endif %}>İptal Edildi</option>
+                    </optgroup>
                 </select>
             </div>
             <div class="w-56">
@@ -130,6 +148,18 @@
                     <td class="px-4 py-3">
                         {% if aday.durum == 'basvurdu' %}
                         <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Başvurdu</span>
+                        {% elif aday.durum == 'inceleniyor' %}
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">İnceleniyor</span>
+                        {% elif aday.durum == 'onaylandi' %}
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Onaylandı</span>
+                        {% elif aday.durum == 'sgk_giris_talebi' %}
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">SGK Giriş Talebi</span>
+                        {% elif aday.durum == 'sgk_girisi_yapildi' %}
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">SGK Girişi Yapıldı</span>
+                        {% elif aday.durum == 'calisana_donusturuldu' %}
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Çalışana Dönüştürüldü</span>
+                        {% elif aday.durum in ('red', 'reddedildi') %}
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Reddedildi</span>
                         {% elif aday.durum == 'degerlendiriliyor' %}
                         <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Değerlendiriliyor</span>
                         {% elif aday.durum == 'mulakat' %}
@@ -138,10 +168,8 @@
                         <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Teklif</span>
                         {% elif aday.durum == 'ise_alindi' %}
                         <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">İşe Alındı</span>
-                        {% elif aday.durum == 'red' %}
-                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Reddedildi</span>
                         {% else %}
-                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">{{ aday.durum }}</span>
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">{{ aday.basvuru_durumu_text }}</span>
                         {% endif %}
                     </td>
                     <td class="px-4 py-3">
