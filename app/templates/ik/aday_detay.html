@@ -128,7 +128,7 @@
                 </div>
 
                 {% elif can_edit and aday.durum == 'basvurdu' %}
-                <form action="{{ url_for('ik.aday_incele', id=aday.id) }}" method="POST">
+                <form action="{{ url_for('ik.aday_incele', id=aday.id) }}" method="POST" class="js-once-submit">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="w-full bg-primary hover:bg-primary-dark text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined text-lg">search</span> İncelemeye Al
@@ -834,7 +834,7 @@
 <div id="redModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full p-6">
         <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-4">Adayı Reddet</h3>
-        <form action="{{ url_for('ik.aday_reddet', id=aday.id) }}" method="POST">
+        <form action="{{ url_for('ik.aday_reddet', id=aday.id) }}" method="POST" class="js-once-submit">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Red Nedeni <span class="text-red-500">*</span></label>
             <textarea name="red_nedeni" class="w-full bg-gray-50 dark:bg-[#111418] border-border-light dark:border-border-dark rounded-lg p-3 text-sm min-h-[100px]" placeholder="Red sebebini yazın..." required></textarea>
@@ -854,7 +854,7 @@
 <div id="onayModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full p-6">
         <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-4">Adayı Onayla</h3>
-        <form action="{{ url_for('ik.aday_onayla', id=aday.id) }}" method="POST">
+        <form action="{{ url_for('ik.aday_onayla', id=aday.id) }}" method="POST" class="js-once-submit">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Planlı Başlangıç Tarihi <span class="text-red-500">*</span></label>
             <input type="date" name="planlanan_baslangic" required value="{{ aday.planlanan_baslangic.strftime('%Y-%m-%d') if aday.planlanan_baslangic else '' }}"
@@ -872,7 +872,7 @@
     <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full p-6">
         <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-2">SGK Giriş Talebi Oluştur</h3>
         <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">Bordro/muhasebe ekibine bildirim gönderilecektir.</p>
-        <form action="{{ url_for('ik.aday_sgk_talep', id=aday.id) }}" method="POST">
+        <form action="{{ url_for('ik.aday_sgk_talep', id=aday.id) }}" method="POST" class="js-once-submit">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Planlı Başlangıç Tarihi <span class="text-red-500">*</span></label>
             <input type="date" name="planlanan_baslangic" {% if not aday.planlanan_baslangic %}required{% endif %} value="{{ aday.planlanan_baslangic.strftime('%Y-%m-%d') if aday.planlanan_baslangic else '' }}"
@@ -890,7 +890,7 @@
     <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full p-6">
         <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-2">SGK Girişi Yapıldı</h3>
         <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">SGK giriş bildirgesini (PDF) yükleyiniz.</p>
-        <form action="{{ url_for('ik.aday_sgk_girisi_yapildi', id=aday.id) }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ url_for('ik.aday_sgk_girisi_yapildi', id=aday.id) }}" method="POST" enctype="multipart/form-data" class="js-once-submit">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">SGK Giriş Bildirgesi <span class="text-red-500">*</span></label>
             <input type="file" name="sgk_bildirgesi" required accept=".pdf,.jpg,.jpeg,.png"
@@ -903,4 +903,19 @@
         </form>
     </div>
 </div>
+
+<script>
+// Durum geçiş formlarında çift tıklama / çift gönderim koruması.
+// Form geçerli olup gerçekten gönderilirken submit butonu pasifleştirilir.
+document.querySelectorAll('form.js-once-submit').forEach(function (form) {
+    form.addEventListener('submit', function () {
+        var btn = form.querySelector('button[type="submit"]');
+        if (!btn || btn.disabled) return;
+        btn.disabled = true;
+        btn.dataset.originalHtml = btn.innerHTML;
+        btn.innerHTML = '<span class="material-symbols-outlined text-lg animate-spin">progress_activity</span> İşleniyor...';
+        btn.classList.add('opacity-70', 'cursor-not-allowed');
+    });
+});
+</script>
 {% endblock %}

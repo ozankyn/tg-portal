@@ -1090,6 +1090,9 @@ def aday_incele(id):
     if not aday_in_scope(aday):
         flash('Bu adaya erişim yetkiniz yok.', 'danger')
         return redirect(url_for('ik.aday_liste'))
+    if aday.durum == 'inceleniyor':
+        flash('Aday zaten incelemeye alınmış.', 'info')
+        return redirect(url_for('ik.aday_detay', id=id))
     _aday_log(aday, 'incele', 'İncelemeye alındı.', 'inceleniyor')
     aday.durum = 'inceleniyor'
     db.session.commit()
@@ -1106,6 +1109,10 @@ def aday_onayla(id):
     if not aday_in_scope(aday):
         flash('Bu adaya erişim yetkiniz yok.', 'danger')
         return redirect(url_for('ik.aday_liste'))
+
+    if aday.durum == 'onaylandi':
+        flash('Aday zaten onaylanmış.', 'info')
+        return redirect(url_for('ik.aday_detay', id=id))
 
     planlanan = request.form.get('planlanan_baslangic')
     if not planlanan:
@@ -1147,6 +1154,12 @@ def aday_sgk_talep(id):
         flash('Bu adaya erişim yetkiniz yok.', 'danger')
         return redirect(url_for('ik.aday_liste'))
 
+    # Zaten talep oluşturulmuşsa (veya sonraki aşamadaysa) tekrar işlem yapma:
+    # mail tekrar gitmesin, log tekrar eklenmesin.
+    if aday.durum in ('sgk_giris_talebi', 'sgk_girisi_yapildi', 'calisana_donusturuldu'):
+        flash('SGK giriş talebi zaten oluşturulmuş.', 'info')
+        return redirect(url_for('ik.aday_detay', id=id))
+
     # Planlı başlangıç tarihi formdan da gelebilir
     if request.form.get('planlanan_baslangic'):
         aday.planlanan_baslangic = datetime.strptime(request.form['planlanan_baslangic'], '%Y-%m-%d').date()
@@ -1181,6 +1194,10 @@ def aday_sgk_girisi_yapildi(id):
         return redirect(url_for('ik.aday_detay', id=id))
 
     aday = Aday.query.get_or_404(id)
+
+    if aday.durum in ('sgk_girisi_yapildi', 'calisana_donusturuldu'):
+        flash('SGK girişi zaten kaydedilmiş.', 'info')
+        return redirect(url_for('ik.aday_detay', id=id))
 
     dosya = request.files.get('sgk_bildirgesi')
     if not dosya or not dosya.filename:
@@ -1355,6 +1372,10 @@ def aday_reddet(id):
     if not aday_in_scope(aday):
         flash('Bu adaya erişim yetkiniz yok.', 'danger')
         return redirect(url_for('ik.aday_liste'))
+
+    if aday.durum == 'reddedildi':
+        flash('Aday zaten reddedilmiş.', 'info')
+        return redirect(url_for('ik.aday_detay', id=id))
 
     red_nedeni = (request.form.get('red_nedeni') or request.form.get('red_sebebi') or '').strip()
     if not red_nedeni:
