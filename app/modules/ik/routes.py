@@ -13,6 +13,7 @@ from app.models.sirket import SgkDosya
 from app.models.proje import HedefKadro, Proje
 from app.models.base import CalisanDurumu, ListeDurumu
 from werkzeug.utils import secure_filename
+from sqlalchemy.exc import IntegrityError
 import os
 
 from app import db
@@ -1714,12 +1715,73 @@ def eksik_evraklar():
 # ADAY → ÇALIŞAN DÖNÜŞÜMÜ
 # ============================================================
 
+def _aday_donustur_eksikler(aday):
+    """Çalışana dönüştürme için zorunlu alanların eksik olup olmadığını kontrol eder.
+    Her eksik alan için spesifik (kullanıcı dostu) mesaj döndürür."""
+    eksikler = []
+    if not aday.kadro_id:
+        eksikler.append('Adayın kadro bilgisi eksik, lütfen önce kadro atayın.')
+    if not (aday.tc_kimlik and aday.tc_kimlik.strip()):
+        eksikler.append('TC kimlik numarası eksik.')
+    if not (aday.ad and aday.ad.strip()) or not (aday.soyad and aday.soyad.strip()):
+        eksikler.append('Ad veya soyad bilgisi eksik.')
+    return eksikler
+
+
+def _tc_cakisan_calisan(aday):
+    """Aynı TC ile mevcut (silinmemiş) çalışan kaydı varsa döndürür, yoksa None."""
+    if not (aday.tc_kimlik and aday.tc_kimlik.strip()):
+        return None
+    return Calisan.query.filter(
+        Calisan.tc_kimlik == aday.tc_kimlik.strip(),
+        Calisan.is_deleted == False
+    ).first()
+
+
+def _integrity_cakisan_alan(e):
+    """IntegrityError mesajından hangi benzersiz alanın çakıştığını tespit eder."""
+    msg = str(getattr(e, 'orig', e)).lower()
+    if 'tc_kimlik' in msg:
+        return 'TC kimlik numarası'
+    if 'sicil_no' in msg:
+        return 'Sicil numarası'
+    if 'email' in msg:
+        return 'E-posta adresi'
+    return None
+
+
+def _aday_evraklarini_kopyala(aday, calisan):
+    """Adayın onaylı evraklarını çalışan kaydına kopyalar."""
+    for aday_evrak in aday.evraklar.filter_by(durum='onaylandi').all():
+        db.session.add(CalisanEvrak(
+            calisan_id=calisan.id,
+            evrak_tipi_id=aday_evrak.evrak_tipi_id,
+            dosya_adi=aday_evrak.dosya_adi,
+            dosya_yolu=aday_evrak.dosya_yolu,
+            dosya_boyut=aday_evrak.dosya_boyut,
+            mime_type=aday_evrak.mime_type,
+            gecerlilik_bitis=aday_evrak.gecerlilik_bitis
+        ))
+
+
 @ik_bp.route('/aday/<int:id>/calisana-donustur', methods=['GET', 'POST'])
 @login_required
 @permission_required('ik.create')
 def aday_calisana_donustur(id):
-    """Adayı çalışana dönüştür"""
+    """Adayı çalışana dönüştür - akıllı hata yönetimi ile"""
     aday = Aday.query.get_or_404(id)
+
+    # 1) Durum zaten 'calisana_donusturuldu' ise -> tekrar dönüştürmeyi engelle
+    if aday.durum == 'calisana_donusturuldu':
+        flash('Bu aday zaten çalışana dönüştürülmüş.', 'warning')
+        return redirect(url_for('ik.aday_detay', id=id))
+
+    # 2) calisan_id zaten doluysa -> mevcut çalışan kaydına bağlı, tekrarı engelle
+    if aday.calisan_id:
+        mevcut = Calisan.query.get(aday.calisan_id)
+        ad = mevcut.full_name if mevcut else f'#{aday.calisan_id}'
+        flash(f'Bu aday zaten çalışan kaydına bağlı: {ad}', 'warning')
+        return redirect(url_for('ik.aday_detay', id=id))
 
     # Faz 3 akışı: yalnızca SGK girişi yapıldıktan sonra çalışana dönüştürülebilir
     if aday.durum != 'sgk_girisi_yapildi':
@@ -1730,72 +1792,135 @@ def aday_calisana_donustur(id):
         flash('KVKK onayı alınmadan işe alım yapılamaz.', 'danger')
         return redirect(url_for('ik.aday_detay', id=id))
 
+    # 2) Eksik bilgi kontrolü - her eksik için spesifik flash
+    eksikler = _aday_donustur_eksikler(aday)
+    if eksikler:
+        for m in eksikler:
+            flash(m, 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
+    # 1) TC çakışması var mı? (panelde gösterilir; GET'te de görünür)
+    tc_cakisan = _tc_cakisan_calisan(aday)
+    tc_cakisma_tipi = None
+    if tc_cakisan:
+        tc_cakisma_tipi = 'ayrildi' if tc_cakisan.durum == CalisanDurumu.AYRILDI else 'aktif'
+
     if request.method == 'POST':
-        ise_baslama_form = request.form.get('ise_baslama')
-        ise_baslama = (datetime.strptime(ise_baslama_form, '%Y-%m-%d').date()
-                       if ise_baslama_form else aday.planlanan_baslangic)
-        # Yeni çalışan oluştur (aday bilgileri aktarılır)
-        calisan = Calisan(
-            ad=aday.ad,
-            soyad=aday.soyad,
-            tc_kimlik=aday.tc_kimlik,
-            dogum_tarihi=aday.dogum_tarihi,
-            dogum_yeri=aday.dogum_yeri,
-            cinsiyet=aday.cinsiyet,
-            medeni_durum=aday.medeni_durum,
-            telefon=aday.telefon,
-            email=aday.email,
-            adres=aday.adres,
-            il=aday.il,
-            ilce=aday.ilce,
-            egitim_durumu=aday.egitim_durumu,
-            beden=aday.ust_beden,
-            kargo_subesi=aday.kargo_subesi,
-            pozisyon_id=aday.pozisyon_id,
-            kadro_id=aday.kadro_id,
-            sicil_no=None if request.form.get('sicil_no', '').strip() in ('', 'None', 'none') else request.form.get('sicil_no', '').strip(),
-            ise_baslama=ise_baslama,
-            calisma_tipi=request.form.get('calisma_tipi', 'tam_zamanli'),
-            durum=CalisanDurumu.AKTIF,
-            created_by=current_user.id
+        tc_action = request.form.get('tc_action', '').strip()
+
+        # 4) Her dönüştürme girişimini logla (kim, hangi aday, çakışma durumu)
+        current_app.logger.info(
+            "Çalışana dönüştürme girişimi: aday_id=%s (%s), kullanici_id=%s (%s), "
+            "tc_action=%r, tc_cakisan_id=%s",
+            aday.id, aday.full_name, current_user.id, current_user.email,
+            tc_action or None, (tc_cakisan.id if tc_cakisan else None)
         )
-        db.session.add(calisan)
-        db.session.flush()  # ID almak için
 
-        # Aday durumunu güncelle + çalışana bağla + logla
-        _aday_log(aday, 'donustur',
-                  f'Çalışana dönüştürüldü (Çalışan #{calisan.id}).', 'calisana_donusturuldu')
-        aday.durum = 'calisana_donusturuldu'
-        aday.calisan_id = calisan.id
+        # İptal seçildiyse
+        if tc_action == 'iptal':
+            flash('İşlem iptal edildi.', 'info')
+            return redirect(url_for('ik.aday_detay', id=id))
 
-        # Onaylı evrakları kopyala
-        for aday_evrak in aday.evraklar.filter_by(durum='onaylandi').all():
-            calisan_evrak = CalisanEvrak(
-                calisan_id=calisan.id,
-                evrak_tipi_id=aday_evrak.evrak_tipi_id,
-                dosya_adi=aday_evrak.dosya_adi,
-                dosya_yolu=aday_evrak.dosya_yolu,
-                dosya_boyut=aday_evrak.dosya_boyut,
-                mime_type=aday_evrak.mime_type,
-                gecerlilik_bitis=aday_evrak.gecerlilik_bitis
-            )
-            db.session.add(calisan_evrak)
-        
-        db.session.commit()
+        # TC çakışması varsa kullanıcı bir çözüm seçmek zorunda
+        if tc_cakisan and tc_action not in ('baglan', 'yeni_tcsiz'):
+            flash('Aynı TC ile mevcut bir çalışan kaydı var. Lütfen nasıl devam edileceğini seçin.', 'warning')
+        else:
+            ise_baslama_form = request.form.get('ise_baslama')
+            ise_baslama = (datetime.strptime(ise_baslama_form, '%Y-%m-%d').date()
+                           if ise_baslama_form else aday.planlanan_baslangic)
+            sicil_raw = request.form.get('sicil_no', '').strip()
+            sicil_no = None if sicil_raw in ('', 'None', 'none') else sicil_raw
 
-        # İşe giriş bildirimi gönder
-        print(f"[İşe Giriş - Aday Dönüşüm] Çalışan: {calisan.ad} {calisan.soyad}")
-        try:
-            from app.services.notification import notify_ise_giris
-            sonuc = notify_ise_giris(calisan)
-            print(f"[İşe Giriş - Aday Dönüşüm] Bildirim sonucu: {sonuc}")
-        except Exception as e:
-            print(f"[İşe Giriş - Aday Dönüşüm] Bildirim HATA: {e}")
-            import traceback
-            traceback.print_exc()
+            try:
+                if tc_cakisan and tc_action == 'baglan':
+                    # Mevcut kaydı bağla + güncelle (yeniden işe alım)
+                    calisan = tc_cakisan
+                    if aday.kadro_id:
+                        calisan.kadro_id = aday.kadro_id
+                    if aday.pozisyon_id:
+                        calisan.pozisyon_id = aday.pozisyon_id
+                    if ise_baslama:
+                        calisan.ise_baslama = ise_baslama
+                    if sicil_no:
+                        calisan.sicil_no = sicil_no
+                    calisan.durum = CalisanDurumu.AKTIF
+                    db.session.flush()
+                else:
+                    # Yeni çalışan oluştur. Çakışma varsa "TC'siz" seçeneği TC'yi boş bırakır.
+                    yeni_tc = None if (tc_cakisan and tc_action == 'yeni_tcsiz') else aday.tc_kimlik
+                    calisan = Calisan(
+                        ad=aday.ad,
+                        soyad=aday.soyad,
+                        tc_kimlik=yeni_tc,
+                        dogum_tarihi=aday.dogum_tarihi,
+                        dogum_yeri=aday.dogum_yeri,
+                        cinsiyet=aday.cinsiyet,
+                        medeni_durum=aday.medeni_durum,
+                        telefon=aday.telefon,
+                        email=aday.email,
+                        adres=aday.adres,
+                        il=aday.il,
+                        ilce=aday.ilce,
+                        egitim_durumu=aday.egitim_durumu,
+                        beden=aday.ust_beden,
+                        kargo_subesi=aday.kargo_subesi,
+                        pozisyon_id=aday.pozisyon_id,
+                        kadro_id=aday.kadro_id,
+                        sicil_no=sicil_no,
+                        ise_baslama=ise_baslama,
+                        calisma_tipi=request.form.get('calisma_tipi', 'tam_zamanli'),
+                        durum=CalisanDurumu.AKTIF,
+                        created_by=current_user.id
+                    )
+                    db.session.add(calisan)
+                    db.session.flush()  # ID almak için
 
-        flash(f'{calisan.full_name} başarıyla çalışan olarak kaydedildi.', 'success')
-        return redirect(url_for('ik.detay', id=calisan.id))
+                # Aday durumunu güncelle + çalışana bağla + logla
+                _aday_log(aday, 'donustur',
+                          f'Çalışana dönüştürüldü (Çalışan #{calisan.id}).', 'calisana_donusturuldu')
+                aday.durum = 'calisana_donusturuldu'
+                aday.calisan_id = calisan.id
+
+                _aday_evraklarini_kopyala(aday, calisan)
+                db.session.commit()
+                current_app.logger.info(
+                    "Çalışana dönüştürme başarılı: aday_id=%s -> calisan_id=%s, "
+                    "kullanici_id=%s, tc_action=%r",
+                    aday.id, calisan.id, current_user.id, tc_action or None
+                )
+
+            except IntegrityError as e:
+                db.session.rollback()
+                current_app.logger.error(
+                    "Çalışana dönüştürme IntegrityError: aday_id=%s, kullanici_id=%s, hata=%s",
+                    id, current_user.id, e
+                )
+                alan = _integrity_cakisan_alan(e)
+                if alan:
+                    flash(f'Kayıt oluşturulamadı: "{alan}" başka bir kayıtla çakışıyor. '
+                          f'Lütfen bu bilgiyi kontrol edin veya farklı bir değer girin.', 'danger')
+                else:
+                    flash('Kayıt oluşturulurken bir veritabanı kısıtı ihlal edildi. '
+                          'Lütfen girdiğiniz bilgileri kontrol edin.', 'danger')
+                return redirect(url_for('ik.aday_detay', id=id))
+            except Exception as e:
+                db.session.rollback()
+                current_app.logger.error(f"Aday->Çalışan dönüşüm hatası (aday_id={id}): {e}")
+                flash('Çalışana dönüştürme sırasında beklenmeyen bir hata oluştu. İşlem geri alındı.', 'danger')
+                return redirect(url_for('ik.aday_detay', id=id))
+
+            # İşe giriş bildirimi gönder (başarısız olsa bile akış devam eder)
+            try:
+                from app.services.notification import notify_ise_giris
+                notify_ise_giris(calisan)
+            except Exception as e:
+                current_app.logger.warning(f"İşe giriş bildirimi gönderilemedi (calisan_id={calisan.id}): {e}")
+
+            if tc_cakisan and tc_action == 'baglan':
+                flash(f'{calisan.full_name} mevcut çalışan kaydına bağlandı ve yeniden işe alındı.', 'success')
+            else:
+                flash(f'{calisan.full_name} başarıyla çalışan olarak kaydedildi.', 'success')
+            return redirect(url_for('ik.detay', id=calisan.id))
 
     departmanlar = Departman.query.filter_by(aktif=True).order_by(Departman.ad).all()
     pozisyonlar = Pozisyon.query.filter_by(aktif=True).order_by(Pozisyon.ad).all()
@@ -1803,7 +1928,9 @@ def aday_calisana_donustur(id):
     return render_template('ik/aday_calisana_donustur.html',
                           aday=aday,
                           departmanlar=departmanlar,
-                          pozisyonlar=pozisyonlar)
+                          pozisyonlar=pozisyonlar,
+                          tc_cakisan=tc_cakisan,
+                          tc_cakisma_tipi=tc_cakisma_tipi)
 
 
 # ============================================================
