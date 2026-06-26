@@ -176,12 +176,31 @@ def _ise_alim_dashboard_data(secili_proje_id=None):
         elif cinsiyet == 'erkek':
             ozet['erkek'] += adet
 
+    # "İşe Başlayan" = kadroya bağlı aktif çalışan sayısı (durum AKTIF/IZINLI).
+    # Aday tablosundaki 'calisana_donusturuldu' yerine çalışan tablosundan
+    # sayılır ki proje detay sayfasıyla tutarlı olsun.
+    kadro_ids = [k.id for k in kadrolar]
+    calisan_sayilari = {}
+    if kadro_ids:
+        calisan_q = db.session.query(
+            Calisan.kadro_id,
+            db.func.count(Calisan.id),
+        ).filter(
+            Calisan.is_deleted == False,
+            Calisan.kadro_id.in_(kadro_ids),
+            Calisan.durum.in_([CalisanDurumu.AKTIF, CalisanDurumu.IZINLI]),
+        ).group_by(Calisan.kadro_id)
+        calisan_sayilari = {kid: adet for kid, adet in calisan_q.all()}
+
     # Kadro bazlı detay satırları + proje bazlı toplama
     kadro_detay = []
     proje_ozet = {}  # proje_id -> {ad, ozet}
     for k in kadrolar:
         o = kadro_ozet.get(k.id, _bos_ozet())
         hedef = k.hedef_sayi or 0
+        # İşe başlayan: aday değil, kadrodaki aktif/izinli çalışan sayısı.
+        # o['donusturuldu']'yu da güncelle ki proje ve genel toplamlar tutarlı olsun.
+        o['donusturuldu'] = calisan_sayilari.get(k.id, 0)
         donusturuldu = o['donusturuldu']
         aktif_aday = _aktif_aday(o)
 
