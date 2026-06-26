@@ -909,7 +909,7 @@ def soru_sil(id):
     """Soru sil (soft delete)"""
     soru = Soru.query.get_or_404(id)
     soru.is_deleted = True
-    soru.deleted_at = datetime.utcnow()
+    soru.deleted_at = datetime.now()
     db.session.commit()
     
     flash('Soru silindi.', 'success')
@@ -1147,11 +1147,11 @@ def test_baslat(id):
     if devam_eden:
         # Süre kontrolü
         if test.sure_dakika:
-            gecen_sure = (datetime.utcnow() - devam_eden.baslangic_zamani).total_seconds()
+            gecen_sure = (datetime.now() - devam_eden.baslangic_zamani).total_seconds()
             if gecen_sure > test.sure_dakika * 60:
                 # Süre dolmuş, otomatik bitir
                 devam_eden.tamamlandi = True
-                devam_eden.bitis_zamani = datetime.utcnow()
+                devam_eden.bitis_zamani = datetime.now()
                 devam_eden.gecen_sure_saniye = int(gecen_sure)
                 _hesapla_sonuc(devam_eden)
                 db.session.commit()
@@ -1196,13 +1196,13 @@ def test_coz(sonuc_id):
     # Süre kontrolü
     kalan_sure = None
     if test.sure_dakika:
-        gecen_sure = (datetime.utcnow() - sonuc.baslangic_zamani).total_seconds()
+        gecen_sure = (datetime.now() - sonuc.baslangic_zamani).total_seconds()
         kalan_sure = max(0, test.sure_dakika * 60 - int(gecen_sure))
         
         if kalan_sure <= 0:
             # Süre doldu
             sonuc.tamamlandi = True
-            sonuc.bitis_zamani = datetime.utcnow()
+            sonuc.bitis_zamani = datetime.now()
             sonuc.gecen_sure_saniye = test.sure_dakika * 60
             _hesapla_sonuc(sonuc)
             db.session.commit()
@@ -1247,7 +1247,7 @@ def test_coz(sonuc_id):
         # Bitir mi?
         if request.form.get('bitir'):
             sonuc.tamamlandi = True
-            sonuc.bitis_zamani = datetime.utcnow()
+            sonuc.bitis_zamani = datetime.now()
             sonuc.gecen_sure_saniye = int((sonuc.bitis_zamani - sonuc.baslangic_zamani).total_seconds())
             _hesapla_sonuc(sonuc)
             db.session.commit()

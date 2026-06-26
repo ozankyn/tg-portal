@@ -1394,7 +1394,7 @@ def aday_reddet(id):
         return redirect(url_for('ik.aday_detay', id=id))
 
     aday.red_nedeni = red_nedeni
-    aday.red_tarihi = datetime.utcnow()
+    aday.red_tarihi = datetime.now()
     _aday_log(aday, 'reddet', red_nedeni, 'reddedildi')
     aday.durum = 'reddedildi'
     db.session.commit()
@@ -1423,7 +1423,7 @@ def aday_havuza_al(id):
         return redirect(url_for('ik.aday_detay', id=id))
 
     aday.havuz_notu = havuz_notu
-    aday.havuza_alinma_tarihi = datetime.utcnow()
+    aday.havuza_alinma_tarihi = datetime.now()
     _aday_log(aday, 'havuza_al', havuz_notu, 'havuzda')
     aday.durum = 'havuzda'
     db.session.commit()
@@ -1447,7 +1447,7 @@ def aday_kendisi_reddetti(id):
 
     aciklama = (request.form.get('red_nedeni') or '').strip()
     aday.red_nedeni = aciklama or None
-    aday.red_tarihi = datetime.utcnow()
+    aday.red_tarihi = datetime.now()
     _aday_log(aday, 'aday_reddetti', aciklama or 'Aday işi reddetti', 'aday_reddetti')
     aday.durum = 'aday_reddetti'
     db.session.commit()
@@ -1647,7 +1647,7 @@ def evrak_onayla(id):
     evrak = AdayEvrak.query.get_or_404(id)
     evrak.durum = 'onaylandi'
     evrak.onaylayan_id = current_user.id
-    evrak.onay_tarihi = datetime.utcnow()
+    evrak.onay_tarihi = datetime.now()
     db.session.commit()
     
     return jsonify({'success': True, 'message': 'Evrak onaylandı'})
@@ -1663,7 +1663,7 @@ def evrak_reddet(id):
     evrak.durum = 'reddedildi'
     evrak.red_sebebi = data.get('sebep', '')
     evrak.onaylayan_id = current_user.id
-    evrak.onay_tarihi = datetime.utcnow()
+    evrak.onay_tarihi = datetime.now()
     db.session.commit()
     
     return jsonify({'success': True, 'message': 'Evrak reddedildi'})
@@ -2185,7 +2185,7 @@ def isten_cikis_baslat(id):
             if calisan.liste_durumu != yeni_liste or yeni_liste != ListeDurumu.TEMIZ:
                 calisan.liste_durumu = yeni_liste
                 calisan.liste_nedeni = request.form.get('liste_nedeni', '').strip() or None
-                calisan.liste_tarihi = datetime.utcnow()
+                calisan.liste_tarihi = datetime.now()
                 calisan.listeye_alan_id = current_user.id
 
         db.session.add(cikis)
@@ -2314,7 +2314,7 @@ def izin_onayla(id):
     izin = Izin.query.get_or_404(id)
     izin.durum = 'onaylandi'
     izin.onaylayan_id = current_user.id
-    izin.onay_tarihi = datetime.utcnow()
+    izin.onay_tarihi = datetime.now()
     db.session.commit()
     
     flash('İzin talebi onaylandı.', 'success')
@@ -2330,7 +2330,7 @@ def izin_reddet(id):
     izin.durum = 'reddedildi'
     izin.red_nedeni = request.form.get('red_nedeni')
     izin.onaylayan_id = current_user.id
-    izin.onay_tarihi = datetime.utcnow()
+    izin.onay_tarihi = datetime.now()
     db.session.commit()
     
     flash('İzin talebi reddedildi.', 'success')
@@ -2653,7 +2653,7 @@ def aday_ekle():
             durum='basvurdu',
             basvuru_tarihi=date.today(),
             kvkk_onay=True,  # Manuel girişte KVKK zaten alınmış kabul edilir
-            kvkk_onay_tarihi=datetime.utcnow(),
+            kvkk_onay_tarihi=datetime.now(),
             davet_eden_id=current_user.id
         )
         

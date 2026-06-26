@@ -9,8 +9,8 @@ from app import db
 
 class TimestampMixin:
     """Oluşturma ve güncelleme zamanı için mixin"""
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.now, onupdate=datetime.now, nullable=False)
 
 
 class SoftDeleteMixin:
@@ -21,7 +21,7 @@ class SoftDeleteMixin:
     
     def soft_delete(self, user_id=None):
         self.is_deleted = True
-        self.deleted_at = datetime.utcnow()
+        self.deleted_at = datetime.now()
         self.deleted_by = user_id
 
 

@@ -78,7 +78,7 @@
         """Token hala geçerli mi?"""
         if not self.davet_token or not self.davet_token_expires:
             return False
-        return datetime.utcnow() < self.davet_token_expires
+        return datetime.now() < self.davet_token_expires
     
     @property
     def basvuru_durumu_text(self):

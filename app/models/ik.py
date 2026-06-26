@@ -413,7 +413,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
         """Token hala geçerli mi?"""
         if not self.davet_token or not self.davet_token_expires:
             return False
-        return datetime.utcnow() < self.davet_token_expires
+        return datetime.now() < self.davet_token_expires
     
     @property
     def basvuru_durumu_text(self):
@@ -507,7 +507,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
         """Benzersiz davet token'ı oluştur"""
         import secrets
         self.davet_token = secrets.token_urlsafe(32)
-        self.davet_token_expires = datetime.utcnow() + timedelta(hours=72)
+        self.davet_token_expires = datetime.now() + timedelta(hours=72)
         return self.davet_token
     
     def generate_otp(self):
@@ -516,7 +516,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
         from datetime import datetime, timedelta
         
         self.telefon_dogrulama_kodu = str(random.randint(100000, 999999))
-        self.telefon_dogrulama_kodu_expires = datetime.utcnow() + timedelta(minutes=5)
+        self.telefon_dogrulama_kodu_expires = datetime.now() + timedelta(minutes=5)
         self.telefon_dogrulama_deneme = 0
         return self.telefon_dogrulama_kodu
     
@@ -525,7 +525,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
         '''OTP hala geçerli mi?'''
         if not self.telefon_dogrulama_kodu or not self.telefon_dogrulama_kodu_expires:
             return False
-        return datetime.utcnow() < self.telefon_dogrulama_kodu_expires
+        return datetime.now() < self.telefon_dogrulama_kodu_expires
     
     def verify_otp(self, kod):
         '''OTP doğrula'''
@@ -543,7 +543,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
         
         # Başarılı
         self.telefon_dogrulandi = True
-        self.telefon_dogrulama_tarihi = datetime.utcnow()
+        self.telefon_dogrulama_tarihi = datetime.now()
         self.telefon_dogrulama_kodu = None  # Kodu temizle
         return True, 'Telefon doğrulandı'
     
@@ -571,7 +571,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
         from datetime import datetime, timedelta
         
         self.telefon_dogrulama_kodu = str(random.randint(100000, 999999))
-        self.telefon_dogrulama_kodu_expires = datetime.utcnow() + timedelta(minutes=5)
+        self.telefon_dogrulama_kodu_expires = datetime.now() + timedelta(minutes=5)
         self.telefon_dogrulama_deneme = 0
         return self.telefon_dogrulama_kodu
     
@@ -581,7 +581,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
         if not self.telefon_dogrulama_kodu or not self.telefon_dogrulama_kodu_expires:
             return False
         from datetime import datetime
-        return datetime.utcnow() < self.telefon_dogrulama_kodu_expires
+        return datetime.now() < self.telefon_dogrulama_kodu_expires
     
     def verify_otp(self, kod):
         """OTP doğrula"""
@@ -598,7 +598,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
             return False, f'Yanlış kod. {3 - self.telefon_dogrulama_deneme} deneme hakkınız kaldı.'
         
         self.telefon_dogrulandi = True
-        self.telefon_dogrulama_tarihi = datetime.utcnow()
+        self.telefon_dogrulama_tarihi = datetime.now()
         self.telefon_dogrulama_kodu = None
         return True, 'Telefon doğrulandı'
 

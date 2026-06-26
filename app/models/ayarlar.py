@@ -89,7 +89,7 @@ class AktiviteLog(db.Model):
     ip_adresi = db.Column(db.String(50))
     user_agent = db.Column(db.String(255))
     
-    tarih = db.Column(db.DateTime, default=datetime.utcnow)
+    tarih = db.Column(db.DateTime, default=datetime.now)
     
     # İlişki
     kullanici = db.relationship('User', backref=db.backref('aktiviteler', lazy='dynamic'))

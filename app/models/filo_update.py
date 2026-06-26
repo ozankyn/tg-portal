@@ -20,7 +20,7 @@ class AracTeslim(db.Model, TimestampMixin, AuditMixin):
     
     # Teslim Tipi
     islem_tipi = db.Column(db.String(20), nullable=False)  # teslim, iade
-    tarih = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    tarih = db.Column(db.DateTime, nullable=False, default=datetime.now)
     
     # Kilometre ve Yakıt
     km = db.Column(db.Integer, nullable=False)

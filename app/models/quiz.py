@@ -229,7 +229,7 @@ class TestSonuc(db.Model, TimestampMixin):
     calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'), nullable=False)
     
     # Zamanlama
-    baslangic_zamani = db.Column(db.DateTime, default=datetime.utcnow)
+    baslangic_zamani = db.Column(db.DateTime, default=datetime.now)
     bitis_zamani = db.Column(db.DateTime)
     gecen_sure_saniye = db.Column(db.Integer)  # Saniye cinsinden
     

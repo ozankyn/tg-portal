@@ -473,7 +473,7 @@ def sil(id):
     sozlesme = Sozlesme.query.get_or_404(id)
     
     sozlesme.is_deleted = True
-    sozlesme.deleted_at = datetime.utcnow()
+    sozlesme.deleted_at = datetime.now()
     db.session.commit()
     
     flash('Sözleşme silindi.', 'success')

@@ -173,13 +173,13 @@ def talep_iptal(id):
         return redirect(url_for('onay.talep_detay', id=id))
     
     talep.durum = 'iptal'
-    talep.sonuc_tarihi = datetime.utcnow()
+    talep.sonuc_tarihi = datetime.now()
     talep.sonuc_notu = 'Talep eden tarafından iptal edildi.'
     
     # Bekleyen kayıtları da iptal et
     for kayit in talep.kayitlar.filter_by(durum='bekliyor').all():
         kayit.durum = 'atlandi'
-        kayit.islem_tarihi = datetime.utcnow()
+        kayit.islem_tarihi = datetime.now()
     
     db.session.commit()
     flash('Talep iptal edildi.', 'info')

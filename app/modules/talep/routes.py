@@ -137,7 +137,7 @@ def yeni():
         kategori = TalepKategorisi.query.get(talep.kategori_id)
         if kategori and kategori.varsayilan_atanan_id:
             talep.atanan_id = kategori.varsayilan_atanan_id
-            talep.atanma_tarihi = datetime.utcnow()
+            talep.atanma_tarihi = datetime.now()
             talep.durum = 'atandi'
         
         db.session.add(talep)
@@ -254,7 +254,7 @@ def yorum_ekle(id):
     
     # İlk yanıt tarihini güncelle
     if is_destek and not talep.ilk_yanit_tarihi:
-        talep.ilk_yanit_tarihi = datetime.utcnow()
+        talep.ilk_yanit_tarihi = datetime.now()
     
     db.session.commit()
     
@@ -280,10 +280,10 @@ def durum_degistir(id):
         
         # Özel durumlar
         if yeni_durum == 'cozuldu':
-            talep.cozum_tarihi = datetime.utcnow()
+            talep.cozum_tarihi = datetime.now()
             talep.cozum_notu = request.form.get('cozum_notu', '').strip() or None
         elif yeni_durum == 'kapatildi':
-            talep.kapatma_tarihi = datetime.utcnow()
+            talep.kapatma_tarihi = datetime.now()
         
         # Durum değişikliği notu
         if eski_durum != yeni_durum:
@@ -317,7 +317,7 @@ def ata(id):
     
     if atanan_id:
         talep.atanan_id = atanan_id
-        talep.atanma_tarihi = datetime.utcnow()
+        talep.atanma_tarihi = datetime.now()
         if talep.durum == 'acik':
             talep.durum = 'atandi'
         

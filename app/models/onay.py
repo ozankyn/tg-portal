@@ -136,7 +136,7 @@ class OnayTalebi(db.Model, TimestampMixin, SoftDeleteMixin):
     
     # Talep eden
     talep_eden_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    talep_tarihi = db.Column(db.DateTime, default=datetime.utcnow)
+    talep_tarihi = db.Column(db.DateTime, default=datetime.now)
     
     # Durum
     durum = db.Column(db.String(20), default='bekliyor')
@@ -459,7 +459,7 @@ class OnayServisi:
         
         # Onayla
         kayit.durum = 'onaylandi'
-        kayit.islem_tarihi = datetime.utcnow()
+        kayit.islem_tarihi = datetime.now()
         kayit.not_ = not_
         
         # Sonraki adıma geç
@@ -488,13 +488,13 @@ class OnayServisi:
         
         # Reddet
         kayit.durum = 'reddedildi'
-        kayit.islem_tarihi = datetime.utcnow()
+        kayit.islem_tarihi = datetime.now()
         kayit.not_ = not_
         
         # Talebi reddet
         talep = kayit.talep
         talep.durum = 'reddedildi'
-        talep.sonuc_tarihi = datetime.utcnow()
+        talep.sonuc_tarihi = datetime.now()
         talep.sonuc_notu = not_
         
         # Referans kaydı güncelle
@@ -514,7 +514,7 @@ class OnayServisi:
         if not mevcut_kayitlar:
             # Adım yok, talebi onayla
             talep.durum = 'onaylandi'
-            talep.sonuc_tarihi = datetime.utcnow()
+            talep.sonuc_tarihi = datetime.now()
             return
         
         # Bekleyen var mı?
@@ -535,7 +535,7 @@ class OnayServisi:
                 # Diğer bekleyenleri atla
                 for k in bekleyenler:
                     k.durum = 'atlandi'
-                    k.islem_tarihi = datetime.utcnow()
+                    k.islem_tarihi = datetime.now()
                 # Sonraki adıma geç
                 OnayServisi._sonraki_adima_gec(talep)
     
@@ -553,7 +553,7 @@ class OnayServisi:
         else:
             # Son adımdı, talebi onayla
             talep.durum = 'onaylandi'
-            talep.sonuc_tarihi = datetime.utcnow()
+            talep.sonuc_tarihi = datetime.now()
     
 
     @staticmethod

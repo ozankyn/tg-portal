@@ -42,7 +42,7 @@ def login():
                 return render_template('core/login.html')
             
             login_user(user, remember=remember)
-            user.last_login = datetime.utcnow()
+            user.last_login = datetime.now()
             db.session.commit()
 
             # Audit log

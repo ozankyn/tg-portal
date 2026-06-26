@@ -11,6 +11,7 @@ services:
       - uploads_data:/app/uploads
     environment:
       - FLASK_ENV=development
+      - TZ=Europe/Istanbul
       - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
       - DATABASE_URL=postgresql://tgportal:tgportal123@db:5432/tgportal
       - REDIS_URL=redis://redis:6379/0

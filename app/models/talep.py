@@ -139,7 +139,7 @@ class Talep(db.Model, TimestampMixin, SoftDeleteMixin):
         """Oluşturulma tarihinden bu yana geçen süre (saat)"""
         if not self.created_at:
             return 0
-        delta = datetime.utcnow() - self.created_at
+        delta = datetime.now() - self.created_at
         return int(delta.total_seconds() / 3600)
     
     @property

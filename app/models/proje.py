@@ -68,7 +68,7 @@ koordinator_projeler = db.Table(
     'koordinator_projeler',
     db.Column('koordinator_calisan_id', db.Integer, db.ForeignKey('calisanlar.id'), primary_key=True),
     db.Column('proje_id', db.Integer, db.ForeignKey('projeler.id'), primary_key=True),
-    db.Column('created_at', db.DateTime, default=datetime.utcnow),
+    db.Column('created_at', db.DateTime, default=datetime.now),
 )
 
 

@@ -83,7 +83,7 @@ class User(db.Model, UserMixin, TimestampMixin, SoftDeleteMixin):
         from datetime import datetime, timedelta
         token = secrets.token_urlsafe(32)
         self.sifre_token = token
-        self.sifre_token_expiry = datetime.utcnow() + timedelta(hours=gecerlilik_saat)
+        self.sifre_token_expiry = datetime.now() + timedelta(hours=gecerlilik_saat)
         return token
 
     def sifre_token_gecerli_mi(self):
@@ -91,7 +91,7 @@ class User(db.Model, UserMixin, TimestampMixin, SoftDeleteMixin):
         from datetime import datetime
         if not self.sifre_token or not self.sifre_token_expiry:
             return False
-        return datetime.utcnow() <= self.sifre_token_expiry
+        return datetime.now() <= self.sifre_token_expiry
 
     def sifre_token_temizle(self):
         """Token bilgisini sıfırlar (kullanıldıktan sonra)."""

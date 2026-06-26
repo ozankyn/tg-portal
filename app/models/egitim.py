@@ -141,7 +141,7 @@ class EgitimKatilimci(db.Model, TimestampMixin):
     durum = db.Column(db.String(20), default='davetli')  # davetli, katildi, gecti, kaldi, iptal, mazeret
     
     # Davet
-    davet_tarihi = db.Column(db.DateTime, default=datetime.utcnow)
+    davet_tarihi = db.Column(db.DateTime, default=datetime.now)
     davet_eden_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     
     # Katılım

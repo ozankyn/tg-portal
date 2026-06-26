@@ -46,7 +46,7 @@ def _otp_valid(bsv):
     if not bsv.get('otp_kod') or not bsv.get('otp_expires'):
         return False
     exp = _parse_dt(bsv.get('otp_expires'))
-    return bool(exp) and datetime.utcnow() < exp
+    return bool(exp) and datetime.now() < exp
 
 
 def _verify_session_otp(bsv, kod):
@@ -135,7 +135,7 @@ def kvkk_onayla(kadro_id):
     session[SESSION_KEY] = {
         'kadro_id': kadro_id,
         'kvkk_onay': True,
-        'kvkk_onay_tarihi': datetime.utcnow().isoformat(),
+        'kvkk_onay_tarihi': datetime.now().isoformat(),
         'kvkk_onay_ip': request.headers.get('X-Forwarded-For', request.remote_addr),
         'telefon': None,
         'telefon_dogrulandi': False,
@@ -181,7 +181,7 @@ def telefon_dogrula(kadro_id):
             kod = str(random.randint(100000, 999999))
             bsv['telefon'] = telefon
             bsv['otp_kod'] = kod
-            bsv['otp_expires'] = (datetime.utcnow() + timedelta(minutes=5)).isoformat()
+            bsv['otp_expires'] = (datetime.now() + timedelta(minutes=5)).isoformat()
             bsv['otp_deneme'] = 0
             session[SESSION_KEY] = bsv
 
@@ -228,7 +228,7 @@ def kod_tekrar_gonder(kadro_id):
 
     kod = str(random.randint(100000, 999999))
     bsv['otp_kod'] = kod
-    bsv['otp_expires'] = (datetime.utcnow() + timedelta(minutes=5)).isoformat()
+    bsv['otp_expires'] = (datetime.now() + timedelta(minutes=5)).isoformat()
     bsv['otp_deneme'] = 0
     session[SESSION_KEY] = bsv
 
@@ -318,16 +318,16 @@ def basvuru_form(kadro_id):
             kaynak='acik_basvuru',
             durum='basvurdu',
             kvkk_onay=True,
-            kvkk_onay_tarihi=_parse_dt(bsv.get('kvkk_onay_tarihi')) or datetime.utcnow(),
+            kvkk_onay_tarihi=_parse_dt(bsv.get('kvkk_onay_tarihi')) or datetime.now(),
             kvkk_onay_ip=bsv.get('kvkk_onay_ip'),
             aydinlatma_metni_versiyonu='1.0',
             telefon_dogrulandi=bool(bsv.get('telefon_dogrulandi')),
             basvuru_tamamlandi=True,
-            basvuru_tarihi=datetime.utcnow(),
+            basvuru_tarihi=datetime.now(),
         )
         aday.generate_token()
         if bsv.get('telefon_dogrulandi'):
-            aday.telefon_dogrulama_tarihi = datetime.utcnow()
+            aday.telefon_dogrulama_tarihi = datetime.now()
             aday.telefon_dogrulama_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
 
         # Kişisel bilgiler
@@ -525,7 +525,7 @@ def evrak_yukle_sayfa(token):
         return redirect(url_for('kariyer.basvuru'))
     
     # Token süresi kontrolü (opsiyonel - evrak için daha uzun süre verilebilir)
-    # if aday.davet_token_expires and aday.davet_token_expires < datetime.utcnow():
+    # if aday.davet_token_expires and aday.davet_token_expires < datetime.now():
     #     flash('Link süresi dolmuş.', 'danger')
     #     return redirect(url_for('kariyer.basvuru'))
     

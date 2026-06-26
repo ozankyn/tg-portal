@@ -12,6 +12,16 @@ from flask_migrate import Migrate
 from flask_wtf.csrf import CSRFProtect
 from flask_mail import Mail
 import os
+import time
+
+# Sunucu saat dilimi - Türkiye (Europe/Istanbul).
+# datetime.now(), date.today(), time.localtime() ve loglar bu saat dilimini kullanır.
+# Tüm zaman damgaları datetime.now() ile (yerel saat) saklanır; utcnow KULLANILMAZ.
+os.environ['TZ'] = 'Europe/Istanbul'
+try:
+    time.tzset()  # Unix; Windows'ta mevcut değil
+except AttributeError:
+    pass
 
 # Extensions
 db = SQLAlchemy()
@@ -36,6 +46,9 @@ def create_app(config_name=None):
         'pool_pre_ping': True,
         'pool_recycle': 300,
     }
+
+    # Saat dilimi (Türkiye)
+    app.config['TIMEZONE'] = 'Europe/Istanbul'
     
     # Upload settings
     app.config['UPLOAD_FOLDER'] = os.path.join(app.root_path, '..', 'uploads')

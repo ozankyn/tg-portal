@@ -199,7 +199,7 @@ def kvkk_onayla(token):
     
     # KVKK onayını kaydet
     aday.kvkk_onay = True
-    aday.kvkk_onay_tarihi = datetime.utcnow()
+    aday.kvkk_onay_tarihi = datetime.now()
     aday.kvkk_onay_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
     aday.aydinlatma_metni_versiyonu = '1.0'
     aday.durum = 'form_bekleniyor'
@@ -303,7 +303,7 @@ def basvuru_form(token):
         
         # Başvuruyu tamamla
         aday.basvuru_tamamlandi = True
-        aday.basvuru_tarihi = datetime.utcnow()
+        aday.basvuru_tarihi = datetime.now()
         aday.durum = 'basvurdu'
         
         db.session.commit()
@@ -371,7 +371,7 @@ def aday_davet(kadro_id):
         
         # Token oluştur
         aday.generate_token()
-        aday.davet_gonderim_tarihi = datetime.utcnow()
+        aday.davet_gonderim_tarihi = datetime.now()
         
         db.session.add(aday)
         db.session.commit()
@@ -436,7 +436,7 @@ def toplu_davet(kadro_id):
                     aday.telefon = iletisim
                 
                 aday.generate_token()
-                aday.davet_gonderim_tarihi = datetime.utcnow()
+                aday.davet_gonderim_tarihi = datetime.now()
                 
                 db.session.add(aday)
                 db.session.flush()  # ID al
@@ -471,7 +471,7 @@ def davet_tekrar(aday_id):
     
     # Yeni token oluştur
     aday.generate_token()
-    aday.davet_gonderim_tarihi = datetime.utcnow()
+    aday.davet_gonderim_tarihi = datetime.now()
     aday.durum = 'davet_gonderildi'
     aday.davet_eden_id = current_user.id
     

@@ -407,7 +407,7 @@ def sil(id):
         return redirect(url_for('masraf.detay', id=id))
     
     masraf.is_deleted = True
-    masraf.deleted_at = datetime.utcnow()
+    masraf.deleted_at = datetime.now()
     db.session.commit()
     
     flash('Masraf silindi.', 'success')
@@ -866,7 +866,7 @@ def rapor_onayla(id):
     
     rapor.durum = 'onaylandi'
     rapor.onaylayan_id = current_user.id
-    rapor.onay_tarihi = datetime.utcnow()
+    rapor.onay_tarihi = datetime.now()
     rapor.onay_notu = request.form.get('not', '').strip() or None
     db.session.commit()
     
@@ -902,7 +902,7 @@ def rapor_reddet(id):
     
     rapor.durum = 'reddedildi'
     rapor.onaylayan_id = current_user.id
-    rapor.onay_tarihi = datetime.utcnow()
+    rapor.onay_tarihi = datetime.now()
     rapor.onay_notu = request.form.get('not', '').strip() or None
     db.session.commit()
     

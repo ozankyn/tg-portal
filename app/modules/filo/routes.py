@@ -329,7 +329,7 @@ def sil(id):
     """Araç sil (soft delete)"""
     arac = Arac.query.get_or_404(id)
     arac.is_deleted = True
-    arac.deleted_at = datetime.utcnow()
+    arac.deleted_at = datetime.now()
     arac.deleted_by = current_user.id
     db.session.commit()
     flash('Araç silindi.', 'success')
@@ -361,7 +361,7 @@ def yakit_ekle(id):
         # Araç km güncelle
         if kayit.km and int(kayit.km) > (arac.km or 0):
             arac.km = kayit.km
-            arac.son_km_guncelleme = datetime.utcnow()
+            arac.son_km_guncelleme = datetime.now()
         
         db.session.add(kayit)
         db.session.commit()
@@ -398,7 +398,7 @@ def islem_ekle(id):
         # Araç km güncelle
         if islem.km and int(islem.km) > (arac.km or 0):
             arac.km = islem.km
-            arac.son_km_guncelleme = datetime.utcnow()
+            arac.son_km_guncelleme = datetime.now()
         
         db.session.add(islem)
         db.session.commit()
@@ -667,7 +667,7 @@ def km_import():
                             tarih = None
 
                 arac.km = yeni_km
-                arac.son_km_guncelleme = tarih or datetime.utcnow()
+                arac.son_km_guncelleme = tarih or datetime.now()
                 guncellenen += 1
 
             except Exception as e:

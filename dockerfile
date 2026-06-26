@@ -7,6 +7,7 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_APP=app.py
+ENV TZ=Europe/Istanbul
 
 # Install system dependencies
 # - gcc/libpq-dev: psycopg2 build
@@ -25,7 +26,11 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     shared-mime-info \
     fonts-dejavu \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
+
+# Saat dilimini Türkiye'ye ayarla (Europe/Istanbul)
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Install Python dependencies
 COPY requirements.txt .
