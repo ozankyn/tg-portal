@@ -90,7 +90,7 @@ class Calisan(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     is_grubu = db.Column(db.String(100))  # İş grup adı
     yemek_karti = db.Column(db.String(50))  # Yemek kartı numarası
     beden = db.Column(db.String(10))  # Kıyafet bedeni (S, M, L, XL, XXL)
-    kargo_subesi = db.Column(db.String(100))  # Kargo şubesi
+    kargo_subesi = db.Column(db.String(500))  # Kargo şubesi
     
     ise_baslama = db.Column(db.Date)
     isten_ayrilma = db.Column(db.Date)
