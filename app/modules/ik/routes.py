@@ -523,11 +523,19 @@ def detay(id):
 
     izinler = calisan.izinler.order_by(Izin.baslangic.desc()).limit(10).all()
     evraklar = calisan.evraklar.all() if hasattr(calisan, 'evraklar') else []
-    
+
+    # Adayken yüklenen bilgiler - bağlı Aday kaydı (varsa)
+    aday = Aday.query.filter_by(calisan_id=calisan.id, is_deleted=False).first()
+    aday_gecmis = aday.islem_gecmisi.all() if aday else []
+    aday_evraklar = aday.evraklar.all() if aday else []
+
     return render_template('ik/detay.html',
                           calisan=calisan,
                           izinler=izinler,
-                          evraklar=evraklar)
+                          evraklar=evraklar,
+                          aday=aday,
+                          aday_gecmis=aday_gecmis,
+                          aday_evraklar=aday_evraklar)
 
 
 @ik_bp.route('/ekle', methods=['GET', 'POST'])

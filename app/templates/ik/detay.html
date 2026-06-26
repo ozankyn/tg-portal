@@ -446,6 +446,205 @@
             </div>
         </div>
         
+        {# ==================== BAŞVURU GEÇMİŞİ (Adayken yüklenen bilgiler) ==================== #}
+        {% if aday %}
+        <!-- Başvuru Bilgileri -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">how_to_reg</span> Başvuru Geçmişi
+                </h3>
+                <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
+                    <span class="material-symbols-outlined text-lg">badge</span>
+                    Aday Kaydını Görüntüle
+                </a>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Başvuru Tarihi</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ (aday.basvuru_tarihi or aday.created_at).strftime('%d.%m.%Y') if (aday.basvuru_tarihi or aday.created_at) else '-' }}</span>
+                </div>
+                {% if aday.basvuru_kaynak %}
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Bize Nereden Ulaştı</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ aday.basvuru_kaynak_text }}</span>
+                </div>
+                {% endif %}
+                {% if aday.kaynak %}
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Başvuru Kaynağı</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ aday.kaynak_text }}</span>
+                </div>
+                {% endif %}
+                {% if aday.egitim_durumu %}
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Eğitim Durumu</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ aday.egitim_durumu_label }}</span>
+                </div>
+                {% endif %}
+                {% if aday.ust_beden or aday.alt_beden %}
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Beden (Üst / Alt)</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ aday.ust_beden or '-' }} / {{ aday.alt_beden or '-' }}</span>
+                </div>
+                {% endif %}
+                {% if aday.ayakkabi_no %}
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Ayakkabı No</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ aday.ayakkabi_no }}</span>
+                </div>
+                {% endif %}
+                {% if aday.kargo_subesi %}
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Kargo Şubesi</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ aday.kargo_subesi }}</span>
+                </div>
+                {% endif %}
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">TG'de Çalıştı mı?</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ 'Evet' if aday.tg_calistimi else 'Hayır' }}</span>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Seyahat Engeli</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ 'Var' if aday.seyahat_engeli else 'Yok' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- SGK Giriş Bildirgesi -->
+        {% if aday.sgk_bildirgesi %}
+        {% set sgk_dosya_adi = aday.sgk_bildirgesi.rsplit('/', 1)[-1] %}
+        {% set sgk_uzanti = (aday.sgk_bildirgesi.rsplit('.', 1)[-1]|lower) if '.' in aday.sgk_bildirgesi else '' %}
+        {% set sgk_url = url_for('uploaded_file', filename=aday.sgk_bildirgesi) %}
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2 mb-4">
+                <span class="material-symbols-outlined text-indigo-600">verified</span>
+                SGK Giriş Bildirgesi
+            </h3>
+            <div class="flex flex-col sm:flex-row gap-4">
+                <a href="{{ sgk_url }}" target="_blank"
+                   class="block w-full sm:w-40 h-40 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#111418] border border-border-light dark:border-border-dark">
+                    {% if sgk_uzanti in ['jpg', 'jpeg', 'png', 'webp'] %}
+                    <img src="{{ sgk_url }}" alt="SGK Bildirgesi" class="w-full h-full object-cover hover:scale-105 transition-transform">
+                    {% elif sgk_uzanti == 'pdf' %}
+                    <embed src="{{ sgk_url }}#toolbar=0&navpanes=0&view=FitH" type="application/pdf" class="w-full h-full pointer-events-none">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center">
+                        <span class="material-symbols-outlined text-5xl text-text-muted dark:text-text-muted-dark">draft</span>
+                    </div>
+                    {% endif %}
+                </a>
+                <div class="flex-1 min-w-0 flex flex-col justify-center gap-3">
+                    <div class="flex items-center gap-2 text-[#111418] dark:text-white">
+                        <span class="material-symbols-outlined text-indigo-600">description</span>
+                        <span class="text-sm font-medium truncate" title="{{ sgk_dosya_adi }}">{{ sgk_dosya_adi }}</span>
+                        {% if sgk_uzanti %}
+                        <span class="px-2 py-0.5 bg-gray-100 dark:bg-[#111418] text-[10px] font-bold rounded uppercase text-text-muted dark:text-text-muted-dark">{{ sgk_uzanti }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ sgk_url }}" target="_blank"
+                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-lg transition-colors">
+                            <span class="material-symbols-outlined text-lg">visibility</span> Görüntüle
+                        </a>
+                        <a href="{{ sgk_url }}" download="{{ sgk_dosya_adi }}"
+                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-[#111418] hover:bg-gray-200 dark:hover:bg-[#252b36] text-sm font-bold rounded-lg transition-colors text-[#111418] dark:text-white">
+                            <span class="material-symbols-outlined text-lg">download</span> İndir
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Aday Evrakları (adayken yüklenen) -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
+            <div class="p-6 border-b border-border-light dark:border-border-dark">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white">Aday Evrakları</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-50 dark:bg-[#111418] text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">
+                        <tr>
+                            <th class="px-6 py-4">Belge Adı</th>
+                            <th class="px-6 py-4 hidden sm:table-cell">Yükleme Tarihi</th>
+                            <th class="px-6 py-4">Durum</th>
+                            <th class="px-6 py-4 text-right">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for evrak in aday_evraklar %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined {% if evrak.durum == 'onaylandi' %}text-green-500{% elif evrak.durum == 'yuklendi' %}text-amber-500{% else %}text-gray-400{% endif %}">description</span>
+                                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ evrak.evrak_tipi.ad if evrak.evrak_tipi else (evrak.dosya_adi or 'Evrak') }}</span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-text-muted dark:text-text-muted-dark hidden sm:table-cell">
+                                {{ evrak.created_at.strftime('%d.%m.%Y') if evrak.created_at else '-' }}
+                            </td>
+                            <td class="px-6 py-4">
+                                {% if evrak.durum == 'onaylandi' %}
+                                <span class="px-2 py-1 bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold rounded uppercase">Onaylandı</span>
+                                {% elif evrak.durum == 'reddedildi' %}
+                                <span class="px-2 py-1 bg-red-500/10 text-red-600 dark:text-red-400 text-[10px] font-bold rounded uppercase">Reddedildi</span>
+                                {% else %}
+                                <span class="px-2 py-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold rounded uppercase">Yüklendi</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <div class="flex items-center justify-end gap-2">
+                                    {% if evrak.dosya_yolu %}
+                                    <a href="{{ url_for('ik.evrak_indir', id=evrak.id, goster=1) }}" target="_blank" class="w-8 h-8 rounded bg-gray-100 dark:bg-[#111418] flex items-center justify-center hover:text-primary transition-colors" title="Görüntüle">
+                                        <span class="material-symbols-outlined text-lg">visibility</span>
+                                    </a>
+                                    <a href="{{ url_for('ik.evrak_indir', id=evrak.id) }}" class="w-8 h-8 rounded bg-gray-100 dark:bg-[#111418] flex items-center justify-center hover:text-primary transition-colors" title="İndir">
+                                        <span class="material-symbols-outlined text-lg">download</span>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-8 text-center text-text-muted dark:text-text-muted-dark">
+                                <span class="material-symbols-outlined text-3xl mb-2 opacity-50">folder_off</span>
+                                <p>Adayken evrak yüklenmemiş</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Süreç Geçmişi (timeline) -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined">history</span> Süreç Geçmişi
+            </h3>
+            {% if aday_gecmis %}
+            <ol class="relative border-l border-border-light dark:border-border-dark ml-2">
+                {% for log in aday_gecmis %}
+                <li class="mb-5 ml-5">
+                    <span class="absolute -left-1.5 w-3 h-3 rounded-full {% if log.islem in ('reddet', 'aday_reddetti') %}bg-red-500{% elif log.islem == 'donustur' %}bg-green-500{% elif log.islem == 'havuza_al' %}bg-blue-500{% else %}bg-primary{% endif %}"></span>
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <p class="text-sm font-bold text-[#111418] dark:text-white">{{ log.islem_etiket }}</p>
+                        <span class="text-xs text-text-muted dark:text-text-muted-dark">{{ log.created_at.strftime('%d.%m.%Y %H:%M') }}</span>
+                    </div>
+                    {% if log.aciklama %}<p class="text-sm text-text-muted dark:text-text-muted-dark mt-0.5">{{ log.aciklama }}</p>{% endif %}
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-0.5">{{ log.kullanici.full_name if log.kullanici else 'Sistem' }}</p>
+                </li>
+                {% endfor %}
+            </ol>
+            {% else %}
+            <p class="text-sm text-text-muted dark:text-text-muted-dark">Henüz işlem kaydı yok.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+        {# ==================== /BAŞVURU GEÇMİŞİ ==================== #}
+
         <!-- Notes -->
         {% if calisan.notlar %}
         <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
