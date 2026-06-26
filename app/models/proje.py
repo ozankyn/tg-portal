@@ -9,6 +9,15 @@ from app import db
 from app.models.base import TimestampMixin, SoftDeleteMixin
 
 
+# Aktif işe alım sürecindeki aday durumları.
+# Hariç: reddedildi, aday_reddetti, havuzda, calisana_donusturuldu (ve davet/kvkk/form/iptal).
+# İşe alım dashboard'ındaki mantıkla tutarlı (legacy durumlar dahil).
+AKTIF_SUREC_DURUMLARI = [
+    'basvurdu', 'inceleniyor', 'degerlendiriliyor', 'mulakat',
+    'onaylandi', 'teklif', 'sgk_giris_talebi', 'sgk_girisi_yapildi',
+]
+
+
 class Direktorluk(db.Model, TimestampMixin, SoftDeleteMixin):
     """Direktörlük - Üst bölge/birim tanımı"""
     __tablename__ = 'direktorlukler'
@@ -284,17 +293,18 @@ class HedefKadro(db.Model, TimestampMixin, SoftDeleteMixin):
         from app.models.ik import Aday
         return self.adaylar.filter(
             Aday.is_deleted == False,
-            Aday.durum.in_(['basvurdu', 'degerlendiriliyor', 'mulakat'])
+            Aday.durum.in_(AKTIF_SUREC_DURUMLARI)
         ).count()
 
     @property
     def aktif_aday_sayisi(self):
-        """Bu kadroya bagli aday sayisi.
-        Sadece calisana donusturulen adaylar haric tutulur."""
+        """Bu kadroya bagli aktif surecteki aday sayisi.
+        Reddedilen, havuza alinan, isi reddeden ve calisana donusturulen adaylar haric.
+        Ise alim dashboard'indaki aktif aday mantigiyla tutarlidir."""
         from app.models.ik import Aday
         return self.adaylar.filter(
             Aday.is_deleted == False,
-            Aday.durum != 'calisana_donusturuldu'
+            Aday.durum.in_(AKTIF_SUREC_DURUMLARI)
         ).count()
 
     @property
