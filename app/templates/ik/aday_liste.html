@@ -44,7 +44,9 @@
                     <option value="sgk_giris_talebi" {% if request.args.get('durum') == 'sgk_giris_talebi' %}selected{% endif %}>SGK Giriş Talebi</option>
                     <option value="sgk_girisi_yapildi" {% if request.args.get('durum') == 'sgk_girisi_yapildi' %}selected{% endif %}>SGK Girişi Yapıldı</option>
                     <option value="calisana_donusturuldu" {% if request.args.get('durum') == 'calisana_donusturuldu' %}selected{% endif %}>Çalışana Dönüştürüldü</option>
+                    <option value="havuzda" {% if request.args.get('durum') == 'havuzda' %}selected{% endif %}>Havuzda</option>
                     <option value="reddedildi" {% if request.args.get('durum') == 'reddedildi' %}selected{% endif %}>Reddedildi</option>
+                    <option value="aday_reddetti" {% if request.args.get('durum') == 'aday_reddetti' %}selected{% endif %}>Aday Reddetti</option>
                     <optgroup label="Eski Durumlar">
                         <option value="davet_gonderildi" {% if request.args.get('durum') == 'davet_gonderildi' %}selected{% endif %}>Davet Gönderildi</option>
                         <option value="kvkk_bekleniyor" {% if request.args.get('durum') == 'kvkk_bekleniyor' %}selected{% endif %}>KVKK Onayı Bekleniyor</option>

@@ -257,6 +257,7 @@
                                 <span class="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full">{{ sgk_bekleyen_adet }}</span>
                                 {% endif %}
                             </a>
+                            <a href="{{ url_for('ik.aday_havuzu') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.aday_havuzu' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Aday Havuzu</a>
                             <a href="{{ url_for('ik.eksik_evraklar') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.eksik_evraklar' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Eksik Evraklar</a>
                             <a href="{{ url_for('proje.kadro_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'kadro' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Kadrolar & Davet</a>
                         </div>

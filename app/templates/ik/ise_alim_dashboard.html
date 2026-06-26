@@ -47,7 +47,7 @@
 </div>
 
 <!-- 1. GENEL ÖZET KARTLARI -->
-<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
+<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3 mb-6">
     <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4">
         <p class="text-xs text-text-muted dark:text-text-muted-dark mb-1">Toplam Açık Kadro</p>
         <p class="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{{ genel.hedef }}</p>
@@ -56,6 +56,10 @@
         <p class="text-xs text-text-muted dark:text-text-muted-dark mb-1">Toplam Aday</p>
         <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ genel.aktif_aday }}</p>
     </div>
+    <a href="{{ url_for('ik.aday_havuzu') }}" class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4 hover:border-blue-400 transition-colors">
+        <p class="text-xs text-text-muted dark:text-text-muted-dark mb-1">Havuzdaki Adaylar</p>
+        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ genel.havuzda }}</p>
+    </a>
     <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark p-4">
         <p class="text-xs text-text-muted dark:text-text-muted-dark mb-1">Onaylanan</p>
         <p class="text-2xl font-bold text-text-primary dark:text-text-primary-dark">{{ genel.onaylanan }}</p>

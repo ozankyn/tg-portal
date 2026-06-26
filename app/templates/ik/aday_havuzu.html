@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Aday Havuzu - TG Portal{% endblock %}
+{% block page_title %}Aday Havuzu{% endblock %}
+
+{% block content %}
+<div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+        <div class="flex items-center gap-2 text-text-primary dark:text-text-primary-dark">
+            <span class="material-symbols-outlined text-lg">inventory_2</span>
+            Havuzdaki Adaylar
+            <span class="ml-1 inline-flex items-center justify-center min-w-[24px] h-6 px-2 text-xs font-bold text-blue-700 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 rounded-full">{{ adaylar|length }}</span>
+        </div>
+        <a href="{{ url_for('ik.aday_havuzu_export') }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-colors">
+            <span class="material-symbols-outlined text-sm">download</span>
+            Excel'e Aktar
+        </a>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b border-border-light dark:border-border-dark text-left text-text-muted dark:text-text-muted-dark">
+                    <th class="px-5 py-3 font-medium">Ad Soyad</th>
+                    <th class="px-5 py-3 font-medium">TC Kimlik</th>
+                    <th class="px-5 py-3 font-medium">Telefon</th>
+                    <th class="px-5 py-3 font-medium">Önceki Kadro/Proje</th>
+                    <th class="px-5 py-3 font-medium">Not</th>
+                    <th class="px-5 py-3 font-medium">Havuza Alınma</th>
+                    <th class="px-5 py-3 font-medium text-right">İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for aday in adaylar %}
+                <tr class="border-b border-border-light dark:border-border-dark hover:bg-gray-50 dark:hover:bg-[#1a1f29]">
+                    <td class="px-5 py-3">
+                        <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="font-medium text-blue-600 hover:underline">{{ aday.full_name }}</a>
+                    </td>
+                    <td class="px-5 py-3 text-text-muted dark:text-text-muted-dark">{{ aday.tc_kimlik or '-' }}</td>
+                    <td class="px-5 py-3 text-text-muted dark:text-text-muted-dark">{{ aday.telefon or '-' }}</td>
+                    <td class="px-5 py-3 text-text-muted dark:text-text-muted-dark">
+                        {% if aday.kadro %}
+                            {{ aday.kadro.pozisyon_adi or aday.kadro.full_title }}
+                            {% if aday.kadro.proje %}<span class="text-xs"> / {{ aday.kadro.proje.ad }}</span>{% endif %}
+                        {% else %}-{% endif %}
+                    </td>
+                    <td class="px-5 py-3 text-text-muted dark:text-text-muted-dark max-w-xs">{{ aday.havuz_notu or '-' }}</td>
+                    <td class="px-5 py-3 text-text-muted dark:text-text-muted-dark whitespace-nowrap">
+                        {{ aday.havuza_alinma_tarihi.strftime('%d.%m.%Y') if aday.havuza_alinma_tarihi else '-' }}
+                    </td>
+                    <td class="px-5 py-3 text-right">
+                        {% if has_permission('ik.edit') %}
+                        <button onclick="document.getElementById('ataModal-{{ aday.id }}').classList.remove('hidden')"
+                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700 transition-colors">
+                            <span class="material-symbols-outlined text-sm">how_to_reg</span>
+                            Kadroya Ata
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="px-5 py-10 text-center text-text-muted dark:text-text-muted-dark">
+                        Havuzda aday bulunmuyor.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if has_permission('ik.edit') %}
+{% for aday in adaylar %}
+<!-- Kadroya Ata Modal -->
+<div id="ataModal-{{ aday.id }}" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full p-6">
+        <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-1">Kadroya Ata</h3>
+        <p class="text-xs text-text-muted dark:text-text-muted-dark mb-4">{{ aday.full_name }} adayını bir kadroya atayın. Durum "Başvurdu" olarak güncellenir.</p>
+        <form action="{{ url_for('ik.aday_havuzdan_ata', id=aday.id) }}" method="POST" class="js-once-submit">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Kadro <span class="text-red-500">*</span></label>
+            <select name="kadro_id" required class="w-full bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg p-3 text-sm">
+                <option value="">-- Kadro seçin --</option>
+                {% for k in kadrolar %}
+                <option value="{{ k.id }}" {% if aday.kadro_id == k.id %}selected{% endif %}>
+                    {{ (k.proje.ad ~ ' - ') if k.proje else '' }}{{ k.full_title }}
+                </option>
+                {% endfor %}
+            </select>
+            <div class="flex justify-end gap-3 mt-4">
+                <button type="button" onclick="document.getElementById('ataModal-{{ aday.id }}').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-[#111418] rounded-lg font-medium text-sm hover:bg-gray-200 dark:hover:bg-[#252b36] transition-colors">
+                    İptal
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors">
+                    Kadroya Ata
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endfor %}
+{% endif %}
+{% endblock %}

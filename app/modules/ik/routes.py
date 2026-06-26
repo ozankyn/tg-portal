@@ -99,14 +99,14 @@ def dashboard():
 
 # Aday durumlarının dashboard bucket'larına eşlenmesi (legacy değerler dahil)
 _ISE_ALIM_BASVURU_DURUMLAR = ['basvurdu', 'inceleniyor', 'degerlendiriliyor', 'mulakat']
-_ISE_ALIM_RED_DURUMLAR = ['red', 'reddedildi', 'iptal']
+_ISE_ALIM_RED_DURUMLAR = ['red', 'reddedildi', 'aday_reddetti', 'iptal']
 
 
 def _bos_ozet():
     return {
         'hedef': 0, 'basvuru': 0, 'onaylanan': 0, 'sgk_talebi': 0,
         'sgk_yapildi': 0, 'donusturuldu': 0, 'reddedilen': 0,
-        'kadin': 0, 'erkek': 0, 'toplam_aday': 0,
+        'havuzda': 0, 'kadin': 0, 'erkek': 0, 'toplam_aday': 0,
     }
 
 
@@ -166,6 +166,8 @@ def _ise_alim_dashboard_data(secili_proje_id=None):
             ozet['sgk_yapildi'] += adet
         elif durum == 'calisana_donusturuldu':
             ozet['donusturuldu'] += adet
+        elif durum == 'havuzda':
+            ozet['havuzda'] += adet
         elif durum in _ISE_ALIM_RED_DURUMLAR:
             ozet['reddedilen'] += adet
         # cinsiyet (red/iptal hariç toplam kadın-erkek dağılımı)
@@ -198,6 +200,7 @@ def _ise_alim_dashboard_data(secili_proje_id=None):
             'sgk_yapildi': o['sgk_yapildi'],
             'donusturuldu': donusturuldu,
             'reddedilen': o['reddedilen'],
+            'havuzda': o['havuzda'],
             'kadin': o['kadin'],
             'erkek': o['erkek'],
             'kadin_oran': _oran(o['kadin'], o['kadin'] + o['erkek']),
@@ -214,7 +217,7 @@ def _ise_alim_dashboard_data(secili_proje_id=None):
         for key in ('hedef',):
             po['ozet']['hedef'] += hedef
         for key in ('basvuru', 'onaylanan', 'sgk_talebi', 'sgk_yapildi',
-                    'donusturuldu', 'reddedilen', 'kadin', 'erkek', 'toplam_aday'):
+                    'donusturuldu', 'reddedilen', 'havuzda', 'kadin', 'erkek', 'toplam_aday'):
             po['ozet'][key] += o[key]
 
     # Proje özet listesi (doluluk hesaplı)
@@ -253,6 +256,7 @@ def _ise_alim_dashboard_data(secili_proje_id=None):
         genel['sgk_yapildi'] += d['sgk_yapildi']
         genel['donusturuldu'] += d['donusturuldu']
         genel['reddedilen'] += d['reddedilen']
+        genel['havuzda'] += d['havuzda']
         genel['kadin'] += d['kadin']
         genel['erkek'] += d['erkek']
     # Toplam başvuru = scope'taki aktif kadrolara bağlı tüm adaylar
@@ -910,6 +914,9 @@ def adaylar_export():
         'teklif': 'Teklif',
         'ise_alindi': 'İşe Alındı',
         'red': 'Reddedildi',
+        'reddedildi': 'Reddedildi',
+        'havuzda': 'Havuzda',
+        'aday_reddetti': 'Aday Reddetti',
         'iptal': 'İptal',
     }
 
@@ -1393,6 +1400,171 @@ def aday_reddet(id):
     db.session.commit()
     flash('Aday reddedildi.', 'success')
     return redirect(url_for('ik.aday_detay', id=id))
+
+
+@ik_bp.route('/aday/<int:id>/havuza-al', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def aday_havuza_al(id):
+    """Adayı havuza al (bu kadro için değil ama potansiyeli var). Not zorunlu, SMS yok.
+    Kadro bağlantısı korunur (nereden geldiği belli olsun)."""
+    aday = Aday.query.get_or_404(id)
+    if not aday_in_scope(aday):
+        flash('Bu adaya erişim yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_liste'))
+
+    if aday.durum == 'havuzda':
+        flash('Aday zaten havuzda.', 'info')
+        return redirect(url_for('ik.aday_detay', id=id))
+
+    havuz_notu = (request.form.get('havuz_notu') or '').strip()
+    if not havuz_notu:
+        flash('Havuza alma notu zorunludur (hangi tür pozisyona uygun, neden havuza alındı).', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
+    aday.havuz_notu = havuz_notu
+    aday.havuza_alinma_tarihi = datetime.utcnow()
+    _aday_log(aday, 'havuza_al', havuz_notu, 'havuzda')
+    aday.durum = 'havuzda'
+    db.session.commit()
+    flash('Aday havuza alındı.', 'success')
+    return redirect(url_for('ik.aday_detay', id=id))
+
+
+@ik_bp.route('/aday/<int:id>/aday-reddetti', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def aday_kendisi_reddetti(id):
+    """Aday işi kendisi reddetti. Not opsiyonel, SMS yok."""
+    aday = Aday.query.get_or_404(id)
+    if not aday_in_scope(aday):
+        flash('Bu adaya erişim yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_liste'))
+
+    if aday.durum == 'aday_reddetti':
+        flash('Aday zaten "aday reddetti" olarak işaretlenmiş.', 'info')
+        return redirect(url_for('ik.aday_detay', id=id))
+
+    aciklama = (request.form.get('red_nedeni') or '').strip()
+    aday.red_nedeni = aciklama or None
+    aday.red_tarihi = datetime.utcnow()
+    _aday_log(aday, 'aday_reddetti', aciklama or 'Aday işi reddetti', 'aday_reddetti')
+    aday.durum = 'aday_reddetti'
+    db.session.commit()
+    flash('Aday "aday reddetti" olarak işaretlendi.', 'success')
+    return redirect(url_for('ik.aday_detay', id=id))
+
+
+@ik_bp.route('/aday-havuzu')
+@login_required
+@permission_required('ik.view')
+def aday_havuzu():
+    """Havuzdaki (rezerve) adaylar listesi."""
+    adaylar = apply_aday_scope(
+        Aday.query.filter_by(is_deleted=False, durum='havuzda')
+    ).order_by(Aday.havuza_alinma_tarihi.desc().nullslast(), Aday.created_at.desc()).all()
+    # Kadroya atama için scope'taki aktif kadrolar
+    proje_ids = [p.id for p in user_scoped_projeler()]
+    kadrolar = HedefKadro.query.filter_by(is_deleted=False, aktif=True).filter(
+        HedefKadro.proje_id.in_(proje_ids) if proje_ids else False
+    ).all()
+    kadrolar.sort(key=lambda k: (k.proje.ad if k.proje else '', k.full_title))
+    return render_template('ik/aday_havuzu.html', adaylar=adaylar,
+                           kadrolar=kadrolar, active='ik-aday-havuzu')
+
+
+@ik_bp.route('/aday-havuzu/export')
+@login_required
+@permission_required('ik.view')
+def aday_havuzu_export():
+    """Havuzdaki adayları Excel olarak indir."""
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, PatternFill
+    from io import BytesIO
+    from flask import Response
+
+    adaylar = apply_aday_scope(
+        Aday.query.filter_by(is_deleted=False, durum='havuzda')
+    ).order_by(Aday.havuza_alinma_tarihi.desc().nullslast(), Aday.created_at.desc()).all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Aday Havuzu'
+
+    headers = ['Ad Soyad', 'TC Kimlik', 'Telefon', 'Önceki Kadro/Proje',
+               'Not', 'Havuza Alınma Tarihi']
+    ws.append(headers)
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='137FEC')
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+
+    for a in adaylar:
+        if a.kadro:
+            proje_ad = a.kadro.proje.ad if a.kadro.proje else ''
+            kadro_pozisyon = a.kadro.pozisyon_adi or ''
+            onceki = ' / '.join(filter(None, [kadro_pozisyon, proje_ad]))
+        else:
+            onceki = ''
+        ws.append([
+            f'{a.ad or ""} {a.soyad or ""}'.strip(),
+            a.tc_kimlik or '',
+            a.telefon or '',
+            onceki,
+            a.havuz_notu or '',
+            a.havuza_alinma_tarihi.strftime('%d.%m.%Y %H:%M') if a.havuza_alinma_tarihi else '',
+        ])
+
+    widths = [28, 13, 16, 34, 40, 18]
+    for idx, w in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(idx)].width = w
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    filename = f"aday_havuzu_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+
+
+@ik_bp.route('/aday/<int:id>/havuzdan-ata', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def aday_havuzdan_ata(id):
+    """Havuzdaki adayı bir kadroya ata: durum 'basvurdu', yeni kadro_id."""
+    aday = Aday.query.get_or_404(id)
+    if not aday_in_scope(aday):
+        flash('Bu adaya erişim yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_liste'))
+
+    if aday.durum != 'havuzda':
+        flash('Bu aday havuzda değil.', 'warning')
+        return redirect(url_for('ik.aday_havuzu'))
+
+    kadro_id = request.form.get('kadro_id', type=int)
+    if not kadro_id:
+        flash('Kadro seçimi zorunludur.', 'danger')
+        return redirect(url_for('ik.aday_havuzu'))
+
+    kadro = HedefKadro.query.filter_by(id=kadro_id, is_deleted=False).first()
+    if not kadro:
+        flash('Seçilen kadro bulunamadı.', 'danger')
+        return redirect(url_for('ik.aday_havuzu'))
+
+    aciklama = f'Havuzdan kadroya atandı: {kadro.full_title}'
+    _aday_log(aday, 'havuzdan_ata', aciklama, 'basvurdu')
+    aday.kadro_id = kadro.id
+    aday.durum = 'basvurdu'
+    db.session.commit()
+    flash(f'Aday "{kadro.full_title}" kadrosuna atandı.', 'success')
+    return redirect(url_for('ik.aday_detay', id=aday.id))
 
 
 @ik_bp.route('/aday/<int:id>/sil', methods=['POST'])

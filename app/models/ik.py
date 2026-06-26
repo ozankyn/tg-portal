@@ -341,6 +341,10 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     red_nedeni = db.Column(db.Text)
     red_tarihi = db.Column(db.DateTime)
 
+    # ==================== Havuz (Rezerve Aday) ====================
+    havuz_notu = db.Column(db.Text)               # Hangi tür pozisyona uygun / neden havuza alındı
+    havuza_alinma_tarihi = db.Column(db.DateTime)
+
     # ==================== İşe Alım Süreci (Faz 3) ====================
     planlanan_baslangic = db.Column(db.Date)          # Planlı işe başlangıç tarihi (onayda zorunlu)
     sgk_bildirgesi = db.Column(db.String(255))        # SGK giriş bildirgesi PDF dosya yolu
@@ -431,6 +435,8 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
             'ise_alindi': 'İşe Alındı',
             'red': 'Reddedildi',
             'reddedildi': 'Reddedildi',
+            'havuzda': 'Havuzda',
+            'aday_reddetti': 'Aday Reddetti',
             'iptal': 'İptal Edildi'
         }
         return durum_map.get(self.durum, self.durum)
@@ -454,6 +460,8 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
             'ise_alindi': 'success',
             'red': 'danger',
             'reddedildi': 'danger',
+            'havuzda': 'info',         # mavi
+            'aday_reddetti': 'warning',  # turuncu
             'iptal': 'secondary'
         }
         return renk_map.get(self.durum, 'secondary')
@@ -461,6 +469,10 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     @property
     def is_reddedildi(self):
         return self.durum in ('red', 'reddedildi')
+
+    @property
+    def is_havuzda(self):
+        return self.durum == 'havuzda'
 
     @property
     def akis_adim_index(self):
@@ -748,6 +760,9 @@ class AdayIslemGecmisi(db.Model, TimestampMixin):
         'sgk_giris': 'SGK Girişi Yapıldı',
         'donustur': 'Çalışana Dönüştürüldü',
         'reddet': 'Reddedildi',
+        'havuza_al': 'Havuza Alındı',
+        'aday_reddetti': 'Aday İşi Reddetti',
+        'havuzdan_ata': 'Havuzdan Kadroya Atandı',
         'durum': 'Durum Güncellendi',
     }
 
