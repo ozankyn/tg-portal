@@ -887,7 +887,7 @@ def adaylar_export():
     ws = wb.active
     ws.title = 'Adaylar'
 
-    headers = ['Ad Soyad', 'Telefon', 'Email', 'Başvuru Tarihi',
+    headers = ['Ad Soyad', 'TC Kimlik', 'Cinsiyet', 'Telefon', 'Email', 'Başvuru Tarihi',
                'Proje', 'Direktörlük', 'Müdürlük', 'Kadro/Pozisyon', 'Durum',
                'İl', 'İlçe', 'Üst Beden', 'Alt Beden', 'Ayakkabı No',
                'Kargo Şubesi', 'TG\'de Çalıştı', 'Seyahat Engeli',
@@ -913,6 +913,8 @@ def adaylar_export():
         'iptal': 'İptal',
     }
 
+    cinsiyet_etiket = {'erkek': 'Erkek', 'kadin': 'Kadın'}
+
     for a in adaylar:
         proje_ad = a.kadro.proje.ad if a.kadro and a.kadro.proje else ''
         if a.kadro and a.kadro.pozisyon_adi:
@@ -924,6 +926,8 @@ def adaylar_export():
         direktorluk, mudurluk = _aday_org_bilgisi(a)
         ws.append([
             f'{a.ad or ""} {a.soyad or ""}'.strip(),
+            a.tc_kimlik or '',
+            cinsiyet_etiket.get(a.cinsiyet, a.cinsiyet or ''),
             a.telefon or '',
             a.email or '',
             a.basvuru_tarihi.strftime('%d.%m.%Y') if a.basvuru_tarihi else '',
@@ -944,7 +948,7 @@ def adaylar_export():
             a.basvuru_kaynak_text if a.basvuru_kaynak else '',
         ])
 
-    widths = [28, 16, 28, 14, 22, 22, 22, 24, 18,
+    widths = [28, 13, 9, 16, 28, 14, 22, 22, 22, 24, 18,
               14, 14, 10, 10, 10, 26, 12, 14, 12, 18]
     for idx, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = w
