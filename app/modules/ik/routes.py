@@ -1108,6 +1108,12 @@ def aday_durum_degistir(id):
     """Aday durumunu manuel değiştir (genel)"""
     aday = Aday.query.get_or_404(id)
     yeni = request.form.get('durum')
+
+    # Çalışana dönüştürülmüş adayın durumu geriye alınamaz
+    if (aday.durum == 'calisana_donusturuldu' or aday.calisan_id) and yeni != 'calisana_donusturuldu':
+        flash('Bu aday çalışana dönüştürülmüş, durumu değiştirilemez.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
     if request.form.get('degerlendirme_notu'):
         aday.degerlendirme_notu = request.form.get('degerlendirme_notu')
     if yeni and yeni != aday.durum:
@@ -1411,6 +1417,10 @@ def aday_reddet(id):
         flash('Bu adaya erişim yetkiniz yok.', 'danger')
         return redirect(url_for('ik.aday_liste'))
 
+    if aday.calisan_id:
+        flash('Bu aday çalışana dönüştürülmüş, reddedilemez.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
     if aday.durum == 'reddedildi':
         flash('Aday zaten reddedilmiş.', 'info')
         return redirect(url_for('ik.aday_detay', id=id))
@@ -1440,6 +1450,10 @@ def aday_havuza_al(id):
         flash('Bu adaya erişim yetkiniz yok.', 'danger')
         return redirect(url_for('ik.aday_liste'))
 
+    if aday.calisan_id:
+        flash('Bu aday çalışana dönüştürülmüş, havuza alınamaz.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
     if aday.durum == 'havuzda':
         flash('Aday zaten havuzda.', 'info')
         return redirect(url_for('ik.aday_detay', id=id))
@@ -1467,6 +1481,10 @@ def aday_kendisi_reddetti(id):
     if not aday_in_scope(aday):
         flash('Bu adaya erişim yetkiniz yok.', 'danger')
         return redirect(url_for('ik.aday_liste'))
+
+    if aday.calisan_id:
+        flash('Bu aday çalışana dönüştürülmüş, "aday reddetti" olarak işaretlenemez.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
 
     if aday.durum == 'aday_reddetti':
         flash('Aday zaten "aday reddetti" olarak işaretlenmiş.', 'info')
