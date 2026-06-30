@@ -84,6 +84,14 @@
                     <option value="">Tüm İlçeler</option>
                 </select>
             </div>
+            <div class="w-40">
+                <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Cinsiyet</label>
+                <select name="cinsiyet" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tümü</option>
+                    <option value="erkek" {% if request.args.get('cinsiyet') == 'erkek' %}selected{% endif %}>Erkek</option>
+                    <option value="kadin" {% if request.args.get('cinsiyet') == 'kadin' %}selected{% endif %}>Kadın</option>
+                </select>
+            </div>
             <div class="flex gap-2">
                 <button type="submit" class="inline-flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     <span class="material-symbols-outlined text-sm">search</span>

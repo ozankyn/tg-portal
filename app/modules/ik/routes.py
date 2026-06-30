@@ -795,6 +795,7 @@ def _aday_liste_query():
     """Aday listesi query builder - liste ve export icin ortak filtre mantigi"""
     durum = request.args.get('durum')
     kaynak = request.args.get('kaynak')
+    cinsiyet = request.args.get('cinsiyet')
     proje_id = request.args.get('proje_id', type=int)
     il = request.args.get('il', '').strip()
     ilce = request.args.get('ilce', '').strip()
@@ -807,6 +808,8 @@ def _aday_liste_query():
         query = query.filter(Aday.durum == durum)
     if kaynak:
         query = query.filter(Aday.kaynak == kaynak)
+    if cinsiyet:
+        query = query.filter(Aday.cinsiyet == cinsiyet)
     if proje_id:
         query = query.join(HedefKadro, Aday.kadro_id == HedefKadro.id).filter(HedefKadro.proje_id == proje_id)
     if il:
@@ -920,6 +923,7 @@ def adaylar_export():
 
     headers = ['Ad Soyad', 'TC Kimlik', 'Cinsiyet', 'Telefon', 'Email', 'Başvuru Tarihi',
                'Proje', 'Direktörlük', 'Müdürlük', 'Kadro/Pozisyon', 'Durum',
+               'Planlı Başlangıç Tarihi',
                'İl', 'İlçe', 'Üst Beden', 'Alt Beden', 'Ayakkabı No',
                'Kargo Şubesi', 'TG\'de Çalıştı', 'Seyahat Engeli',
                'Askerlik', 'Başvuru Kaynağı']
@@ -970,6 +974,7 @@ def adaylar_export():
             mudurluk,
             kadro_pozisyon,
             durum_etiket.get(a.durum, a.durum or ''),
+            a.planlanan_baslangic.strftime('%d.%m.%Y') if a.planlanan_baslangic else '',
             a.il or '',
             a.ilce or '',
             a.ust_beden or '',
@@ -982,7 +987,7 @@ def adaylar_export():
             a.basvuru_kaynak_text if a.basvuru_kaynak else '',
         ])
 
-    widths = [28, 13, 9, 16, 28, 14, 22, 22, 22, 24, 18,
+    widths = [28, 13, 9, 16, 28, 14, 22, 22, 22, 24, 18, 18,
               14, 14, 10, 10, 10, 26, 12, 14, 12, 18]
     for idx, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = w
