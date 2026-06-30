@@ -11,7 +11,7 @@ from app.models.ik import (
     Aday, KAYNAK_TURLERI, BASVURU_KAYNAK_TURLERI, BEDEN_SECENEKLERI,
     EvrakTipi, AdayEvrak, AdayMedya, SozlesmeSablonu,
 )
-from app.models.proje import HedefKadro, Proje, Musteri
+from app.models.proje import HedefKadro, Proje, Musteri, Il, Ilce
 
 kariyer_bp = Blueprint('kariyer', __name__)
 
@@ -272,6 +272,13 @@ def basvuru_form(kadro_id):
             'Telefon': request.form.get('telefon'),
             'İl': request.form.get('il'),
         }
+        # İlçe zorunlu — ancak yalnızca seçilen ilin DB'de ilçesi varsa
+        # (ilçe verisi eksik iller için başvuruyu bloklamamak adına)
+        secili_il = (request.form.get('il') or '').strip()
+        if secili_il:
+            il_obj = Il.query.filter_by(ad=secili_il).first()
+            if il_obj and il_obj.ilceler.count() > 0:
+                zorunlu_alanlar['İlçe'] = request.form.get('ilce')
         eksikler = [etiket for etiket, deger in zorunlu_alanlar.items() if not deger]
         if eksikler:
             flash('Lütfen zorunlu alanları doldurun: ' + ', '.join(eksikler), 'danger')
@@ -497,9 +504,22 @@ def basvuru_form(kadro_id):
         telefon=bsv.get('telefon'),
         telefon_dogrulandi=bool(bsv.get('telefon_dogrulandi')),
     )
+    iller = Il.query.order_by(Il.ad).all()
     return render_template('kariyer/form.html', aday=form_aday, kadro=kadro,
                            basvuru_kaynak_turleri=BASVURU_KAYNAK_TURLERI,
-                           beden_secenekleri=BEDEN_SECENEKLERI)
+                           beden_secenekleri=BEDEN_SECENEKLERI,
+                           iller=iller)
+
+
+@kariyer_bp.route('/api/ilceler')
+def api_ilceler():
+    """İl ID'sine göre ilçeleri getir (public - başvuru formu AJAX için)"""
+    il_id = request.args.get('il_id', type=int)
+    if not il_id:
+        return jsonify([])
+
+    ilceler = Ilce.query.filter_by(il_id=il_id).order_by(Ilce.ad).all()
+    return jsonify([{'id': i.id, 'ad': i.ad} for i in ilceler])
 
 
 @kariyer_bp.route('/basvur/tamam/<token>')

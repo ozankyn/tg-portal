@@ -165,13 +165,21 @@
                     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
                         <div class="md:col-span-3">
                             <label class="block text-sm font-medium text-gray-700 mb-1">İl <span class="text-red-500">*</span></label>
-                            <input type="text" name="il" required value="{{ aday.il or '' }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <select name="il" id="il" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Seçiniz</option>
+                                {% for il in iller %}
+                                <option value="{{ il.ad }}" data-id="{{ il.id }}" {% if aday.il == il.ad %}selected{% endif %}>{{ il.ad }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                         <div class="md:col-span-3">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">İlçe</label>
-                            <input type="text" name="ilce" value="{{ aday.ilce or '' }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">İlçe <span class="text-red-500">*</span></label>
+                            <select name="ilce" id="ilce" required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100"
+                                    data-secili="{{ aday.ilce or '' }}" disabled>
+                                <option value="">Önce il seçiniz</option>
+                            </select>
                         </div>
                         <div class="md:col-span-6">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Açık Adres</label>
@@ -456,6 +464,55 @@
         if (cinsiyet && askerlik) {
             cinsiyet.addEventListener('change', guncelle);
             guncelle();
+        }
+    })();
+
+    // İl seçilince ilçeleri yükle (cascading dropdown)
+    (function () {
+        const ilSelect = document.getElementById('il');
+        const ilceSelect = document.getElementById('ilce');
+        if (!ilSelect || !ilceSelect) return;
+
+        const seciliIlce = ilceSelect.dataset.secili || '';
+
+        async function ilceleriYukle(ilId, secili) {
+            ilceSelect.innerHTML = '<option value="">Yükleniyor...</option>';
+            ilceSelect.disabled = true;
+            if (!ilId) {
+                ilceSelect.innerHTML = '<option value="">Önce il seçiniz</option>';
+                return;
+            }
+            try {
+                const res = await fetch(`{{ url_for('kariyer.api_ilceler') }}?il_id=${ilId}`);
+                const ilceler = await res.json();
+                if (!ilceler.length) {
+                    ilceSelect.innerHTML = '<option value="">İlçe bulunamadı</option>';
+                    ilceSelect.disabled = true;
+                    return;
+                }
+                let html = '<option value="">Seçiniz</option>';
+                ilceler.forEach(i => {
+                    const sel = (i.ad === secili) ? 'selected' : '';
+                    html += `<option value="${i.ad}" ${sel}>${i.ad}</option>`;
+                });
+                ilceSelect.innerHTML = html;
+                ilceSelect.disabled = false;
+            } catch (e) {
+                ilceSelect.innerHTML = '<option value="">İlçe yüklenemedi</option>';
+                ilceSelect.disabled = true;
+            }
+        }
+
+        function seciliIlId() {
+            const opt = ilSelect.options[ilSelect.selectedIndex];
+            return opt ? opt.dataset.id : '';
+        }
+
+        ilSelect.addEventListener('change', () => ilceleriYukle(seciliIlId(), ''));
+
+        // Sayfa açılışında il seçiliyse ilçeleri (varsa önceki seçimle) yükle
+        if (ilSelect.value) {
+            ilceleriYukle(seciliIlId(), seciliIlce);
         }
     })();
 </script>
