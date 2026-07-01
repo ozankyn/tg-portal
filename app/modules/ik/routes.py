@@ -1114,9 +1114,10 @@ def aday_durum_degistir(id):
     aday = Aday.query.get_or_404(id)
     yeni = request.form.get('durum')
 
-    # Çalışana dönüştürülmüş adayın durumu geriye alınamaz
-    if (aday.durum == 'calisana_donusturuldu' or aday.calisan_id) and yeni != 'calisana_donusturuldu':
-        flash('Bu aday çalışana dönüştürülmüş, durumu değiştirilemez.', 'danger')
+    # Aktif çalışana dönüştürülmüş adayın durumu geriye alınamaz.
+    # Çalışan ayrılmış/askıya alınmışsa (tekrar işe alım) durum değiştirilebilir.
+    if aday.donusum_kilitli and yeni != 'calisana_donusturuldu':
+        flash('Bu aday aktif çalışana dönüştürülmüş, durumu değiştirilemez.', 'danger')
         return redirect(url_for('ik.aday_detay', id=id))
 
     if request.form.get('degerlendirme_notu'):
@@ -1257,6 +1258,15 @@ def aday_sgk_girisi_yapildi(id):
     if ext not in ('pdf', 'jpg', 'jpeg', 'png'):
         flash('Geçersiz format. PDF, JPG veya PNG yükleyiniz.', 'danger')
         return redirect(url_for('ik.aday_detay', id=id))
+
+    # Tekrar işe alımda eski bildirge dosyası varsa sil (yenisi yükleniyor)
+    if aday.sgk_bildirgesi:
+        try:
+            eski_yol = os.path.join(current_app.config['UPLOAD_FOLDER'], aday.sgk_bildirgesi)
+            if os.path.isfile(eski_yol):
+                os.remove(eski_yol)
+        except Exception as e:
+            current_app.logger.warning(f"Eski SGK bildirgesi silinemedi (aday_id={aday.id}): {e}")
 
     sgk_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'adaylar', str(aday.id), 'sgk')
     os.makedirs(sgk_dir, exist_ok=True)
@@ -1422,8 +1432,8 @@ def aday_reddet(id):
         flash('Bu adaya erişim yetkiniz yok.', 'danger')
         return redirect(url_for('ik.aday_liste'))
 
-    if aday.calisan_id:
-        flash('Bu aday çalışana dönüştürülmüş, reddedilemez.', 'danger')
+    if aday.donusum_kilitli:
+        flash('Bu aday aktif çalışana dönüştürülmüş, reddedilemez.', 'danger')
         return redirect(url_for('ik.aday_detay', id=id))
 
     if aday.durum == 'reddedildi':
@@ -1455,8 +1465,8 @@ def aday_havuza_al(id):
         flash('Bu adaya erişim yetkiniz yok.', 'danger')
         return redirect(url_for('ik.aday_liste'))
 
-    if aday.calisan_id:
-        flash('Bu aday çalışana dönüştürülmüş, havuza alınamaz.', 'danger')
+    if aday.donusum_kilitli:
+        flash('Bu aday aktif çalışana dönüştürülmüş, havuza alınamaz.', 'danger')
         return redirect(url_for('ik.aday_detay', id=id))
 
     if aday.durum == 'havuzda':
@@ -1487,8 +1497,8 @@ def aday_kendisi_reddetti(id):
         flash('Bu adaya erişim yetkiniz yok.', 'danger')
         return redirect(url_for('ik.aday_liste'))
 
-    if aday.calisan_id:
-        flash('Bu aday çalışana dönüştürülmüş, "aday reddetti" olarak işaretlenemez.', 'danger')
+    if aday.donusum_kilitli:
+        flash('Bu aday aktif çalışana dönüştürülmüş, "aday reddetti" olarak işaretlenemez.', 'danger')
         return redirect(url_for('ik.aday_detay', id=id))
 
     if aday.durum == 'aday_reddetti':
@@ -2023,12 +2033,17 @@ def aday_calisana_donustur(id):
         flash('Bu aday zaten çalışana dönüştürülmüş.', 'warning')
         return redirect(url_for('ik.aday_detay', id=id))
 
-    # 2) calisan_id zaten doluysa -> mevcut çalışan kaydına bağlı, tekrarı engelle
+    # 2) calisan_id zaten doluysa:
+    #    - Bağlı çalışan AKTIF/İZİNLİ ise -> tekrarı engelle
+    #    - Bağlı çalışan AYRILDI/ASKIYA_ALINDI ise -> tekrar işe alım: mevcut kayıt
+    #      yeniden aktifleştirilecek (aşağıda), yeni kayıt oluşturulmayacak.
+    tekrar_calisan = None
     if aday.calisan_id:
-        mevcut = Calisan.query.get(aday.calisan_id)
-        ad = mevcut.full_name if mevcut else f'#{aday.calisan_id}'
-        flash(f'Bu aday zaten çalışan kaydına bağlı: {ad}', 'warning')
-        return redirect(url_for('ik.aday_detay', id=id))
+        mevcut = aday.donusen_calisan
+        if mevcut and mevcut.durum in (CalisanDurumu.AKTIF, CalisanDurumu.IZINLI):
+            flash(f'Bu aday zaten aktif çalışan kaydına bağlı: {mevcut.full_name}', 'warning')
+            return redirect(url_for('ik.aday_detay', id=id))
+        tekrar_calisan = mevcut  # ayrılmış/askıdaki kayıt (varsa) -> yeniden aktifleştirilecek
 
     # Faz 3 akışı: yalnızca SGK girişi yapıldıktan sonra çalışana dönüştürülebilir
     if aday.durum != 'sgk_girisi_yapildi':
@@ -2068,8 +2083,9 @@ def aday_calisana_donustur(id):
             flash('İşlem iptal edildi.', 'info')
             return redirect(url_for('ik.aday_detay', id=id))
 
-        # TC çakışması varsa kullanıcı bir çözüm seçmek zorunda
-        if tc_cakisan and tc_action not in ('baglan', 'yeni_tcsiz'):
+        # TC çakışması varsa kullanıcı bir çözüm seçmek zorunda.
+        # Tekrar işe alımda (tekrar_calisan) çözüm otomatiktir: mevcut kayıt yeniden aktifleştirilir.
+        if tc_cakisan and tekrar_calisan is None and tc_action not in ('baglan', 'yeni_tcsiz'):
             flash('Aynı TC ile mevcut bir çalışan kaydı var. Lütfen nasıl devam edileceğini seçin.', 'warning')
         else:
             ise_baslama_form = request.form.get('ise_baslama')
@@ -2079,9 +2095,10 @@ def aday_calisana_donustur(id):
             sicil_no = None if sicil_raw in ('', 'None', 'none') else sicil_raw
 
             try:
-                if tc_cakisan and tc_action == 'baglan':
-                    # Mevcut kaydı bağla + güncelle (yeniden işe alım)
-                    calisan = tc_cakisan
+                if tekrar_calisan is not None or (tc_cakisan and tc_action == 'baglan'):
+                    # Mevcut kaydı bağla + güncelle (yeniden işe alım).
+                    # Tekrar işe alımda aday zaten bu kayda bağlı; yeni kayıt açılmaz.
+                    calisan = tekrar_calisan if tekrar_calisan is not None else tc_cakisan
                     if aday.kadro_id:
                         calisan.kadro_id = aday.kadro_id
                     if aday.pozisyon_id:
@@ -2090,6 +2107,9 @@ def aday_calisana_donustur(id):
                         calisan.ise_baslama = ise_baslama
                     if sicil_no:
                         calisan.sicil_no = sicil_no
+                    # Ayrılış bilgilerini temizle, aktif yap
+                    calisan.isten_ayrilma = None
+                    calisan.ayrilma_nedeni = None
                     calisan.durum = CalisanDurumu.AKTIF
                     db.session.flush()
                 else:
@@ -2163,7 +2183,7 @@ def aday_calisana_donustur(id):
             except Exception as e:
                 current_app.logger.warning(f"İşe giriş bildirimi gönderilemedi (calisan_id={calisan.id}): {e}")
 
-            if tc_cakisan and tc_action == 'baglan':
+            if tekrar_calisan is not None or (tc_cakisan and tc_action == 'baglan'):
                 flash(f'{calisan.full_name} mevcut çalışan kaydına bağlandı ve yeniden işe alındı.', 'success')
             else:
                 flash(f'{calisan.full_name} başarıyla çalışan olarak kaydedildi.', 'success')

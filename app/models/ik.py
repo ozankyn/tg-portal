@@ -475,6 +475,28 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
         return self.durum == 'havuzda'
 
     @property
+    def donusum_kilitli(self):
+        """Aday çalışana dönüştürülmüş VE bağlı çalışan hâlâ AKTIF/İZİNLİ ise
+        durum değişiklikleri (reddet, havuza al, manuel durum vb.) kilitlidir.
+        Çalışan AYRILDI/ASKIYA_ALINDI ise tekrar işe alım için kilit açılır."""
+        if not self.calisan_id:
+            return False
+        c = self.donusen_calisan
+        if not c:
+            # Çalışan kaydı bulunamıyorsa (silinmiş) kilitleme
+            return False
+        return c.durum in (CalisanDurumu.AKTIF, CalisanDurumu.IZINLI)
+
+    @property
+    def tekrar_ise_alim_uygun(self):
+        """calisan_id dolu ama bağlı çalışan AYRILDI/ASKIYA_ALINDI ise
+        → tekrar işe alım süreci başlatılabilir."""
+        if not self.calisan_id:
+            return False
+        c = self.donusen_calisan
+        return bool(c) and c.durum in (CalisanDurumu.AYRILDI, CalisanDurumu.ASKIYA_ALINDI)
+
+    @property
     def akis_adim_index(self):
         """ADAY_DURUM_AKISI içindeki sıra (0-bazlı); akışta değilse -1."""
         kodlar = [k for k, _ in ADAY_DURUM_AKISI]
