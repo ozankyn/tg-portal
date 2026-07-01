@@ -441,6 +441,54 @@ def notify_sgk_giris_talebi(aday):
     return send_bildirim('SGK_GIRIS_TALEBI', degiskenler, proje_id=proje_id)
 
 
+def notify_sgk_giris_talebi_calisan(calisan, planlanan_baslangic=None):
+    """Tekrar işe alım - çalışan için SGK giriş talebi (sablon: SGK_GIRIS_TALEBI).
+    Ayrılmış çalışan yeniden işe alınırken bordro/muhasebe ekibine bildirim gönderir."""
+    proje_adi = '-'
+    pozisyon_adi = '-'
+    lokasyon = '-'
+    proje_id = None
+    if calisan.kadro_id:
+        from app.models.proje import HedefKadro
+        kadro = HedefKadro.query.get(calisan.kadro_id)
+        if kadro:
+            pozisyon_adi = kadro.pozisyon_adi or '-'
+            if kadro.proje:
+                proje_adi = kadro.proje.ad
+                proje_id = kadro.proje.id
+            if kadro.il:
+                lokasyon = kadro.il
+    if calisan.pozisyon and pozisyon_adi == '-':
+        pozisyon_adi = calisan.pozisyon.ad
+    if calisan.il and lokasyon == '-':
+        lokasyon = calisan.il
+
+    try:
+        calisan_url = url_for('ik.detay', id=calisan.id, _external=True)
+    except Exception:
+        calisan_url = '#'
+
+    # Çalışanda egitim_durumu_label property yok - Aday etiket haritasını kullan
+    from app.models.ik import Aday
+    egitim = Aday.EGITIM_DURUMU_LABELS.get(calisan.egitim_durumu, calisan.egitim_durumu) if calisan.egitim_durumu else '-'
+
+    baslangic = planlanan_baslangic or calisan.ise_baslama
+    degiskenler = {
+        'ad_soyad': calisan.full_name,
+        'tc_kimlik': calisan.tc_kimlik or '-',
+        'egitim_durumu': egitim or '-',
+        'planlanan_baslangic': baslangic.strftime('%d.%m.%Y') if baslangic else '-',
+        'proje': proje_adi,
+        'pozisyon': pozisyon_adi,
+        'lokasyon': lokasyon,
+        'telefon': calisan.telefon or '-',
+        'email': calisan.email or '-',
+        'aday_url': calisan_url,
+        'aday_link': calisan_url,
+    }
+    return send_bildirim('SGK_GIRIS_TALEBI', degiskenler, proje_id=proje_id)
+
+
 def notify_sgk_girisi_yapildi(aday, sgk_giris_tarihi=None):
     """SGK girişi yapıldığında İK'ya bildirim (sablon: SGK_GIRISI_YAPILDI)"""
     from datetime import date

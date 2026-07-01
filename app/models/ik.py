@@ -139,6 +139,16 @@ class Calisan(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
         return (end_date - self.ise_baslama).days // 365
 
     @property
+    def tekrar_ise_alinabilir(self):
+        """Ayrılmış/askıya alınmış çalışan tekrar işe alınabilir."""
+        return self.durum in (CalisanDurumu.AYRILDI, CalisanDurumu.ASKIYA_ALINDI)
+
+    @property
+    def sgk_giris_bekliyor(self):
+        """Tekrar işe alım başlatıldı, SGK girişi bekleniyor (ara durum)."""
+        return self.durum == CalisanDurumu.SGK_BEKLIYOR
+
+    @property
     def sozlesme_kalan_gun(self):
         if not self.sozlesme_bitis:
             return None

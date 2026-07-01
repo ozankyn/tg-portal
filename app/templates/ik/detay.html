@@ -95,6 +95,22 @@
                     <span class="bg-gray-100 dark:bg-[#111418] text-sm font-bold py-2 rounded-lg text-center text-gray-400">İşten Çıkış</span>
                     {% endif %}
                 </div>
+
+                {% if calisan.tekrar_ise_alinabilir and has_permission('ik.edit') %}
+                <button type="button" onclick="document.getElementById('tekrarIseAlModal').classList.remove('hidden')" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">person_add</span>
+                    Tekrar İşe Al
+                </button>
+                {% elif calisan.sgk_giris_bekliyor and (has_permission('ik.edit') or has_permission('masraf.edit')) %}
+                <div class="flex items-start gap-2 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2 text-amber-700 dark:text-amber-300">
+                    <span class="material-symbols-outlined text-base">hourglass_top</span>
+                    <span>Tekrar işe alım sürecinde. SGK girişi yapıldıktan sonra aşağıdaki butonla bildirgeyi yükleyin.</span>
+                </div>
+                <button type="button" onclick="document.getElementById('sgkGirisModal').classList.remove('hidden')" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">how_to_reg</span>
+                    SGK Girişi Yaptım
+                </button>
+                {% endif %}
             </div>
         </div>
         
@@ -118,6 +134,16 @@
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">
                         <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
                         Ayrıldı
+                    </span>
+                    {% elif calisan.durum.value == 'sgk_bekliyor' %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                        SGK Bekliyor
+                    </span>
+                    {% elif calisan.durum.value == 'askiya_alindi' %}
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                        Askıya Alındı
                     </span>
                     {% else %}
                     <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">
@@ -692,4 +718,91 @@
         </div>
     </div>
 </div>
+
+{% if calisan.tekrar_ise_alinabilir and has_permission('ik.edit') %}
+<!-- Tekrar İşe Al Modal -->
+<div id="tekrarIseAlModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-green-600">person_add</span>
+                Tekrar İşe Al
+            </h3>
+        </div>
+        <form method="POST" action="{{ url_for('ik.tekrar_ise_al', id=calisan.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">
+                    <strong>{{ calisan.ad }} {{ calisan.soyad }}</strong> için tekrar işe alım başlatılacak.
+                    Durum "SGK Bekliyor" olarak güncellenecek ve bordro/muhasebe ekibine SGK giriş talebi gönderilecek.
+                </p>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Planlı Başlangıç Tarihi <span class="text-red-500">*</span></label>
+                    <input type="date" name="planlanan_baslangic" required
+                           class="w-full bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg p-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Kadro</label>
+                    <select name="kadro_id"
+                            class="w-full bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg p-2 text-sm">
+                        <option value="">— Mevcut kadro korunsun —</option>
+                        {% for k in kadrolar %}
+                        <option value="{{ k.id }}" {% if calisan.kadro_id == k.id %}selected{% endif %}>
+                            {{ k.proje.ad if k.proje else '-' }} - {{ k.pozisyon_adi }}{% if k.il %} ({{ k.il }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Not (opsiyonel)</label>
+                    <textarea name="not" rows="2"
+                              class="w-full bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg p-2 text-sm"
+                              placeholder="Tekrar işe alım notu"></textarea>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('tekrarIseAlModal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-colors">İptal</button>
+                <button type="submit" class="px-4 py-2 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors">Başlat</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+{% if calisan.sgk_giris_bekliyor and (has_permission('ik.edit') or has_permission('masraf.edit')) %}
+<!-- SGK Girişi Yaptım Modal -->
+<div id="sgkGirisModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-indigo-600">how_to_reg</span>
+                SGK Girişi Yapıldı
+            </h3>
+        </div>
+        <form method="POST" action="{{ url_for('ik.sgk_girisi_yaptim', id=calisan.id) }}" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-text-muted dark:text-text-muted-dark">
+                    <strong>{{ calisan.ad }} {{ calisan.soyad }}</strong> için SGK giriş bildirgesini yükleyin. Çalışan aktifleştirilecek.
+                </p>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">SGK Giriş Bildirgesi <span class="text-red-500">*</span></label>
+                    <input type="file" name="sgk_bildirgesi" required accept=".pdf,.jpg,.jpeg,.png"
+                           class="w-full bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg p-2 text-sm">
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">PDF, JPG veya PNG</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">İşe Başlama Tarihi</label>
+                    <input type="date" name="ise_baslama" value="{{ calisan.ise_baslama.strftime('%Y-%m-%d') if calisan.ise_baslama else '' }}"
+                           class="w-full bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg p-2 text-sm">
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3">
+                <button type="button" onclick="document.getElementById('sgkGirisModal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg transition-colors">İptal</button>
+                <button type="submit" class="px-4 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
 {% endblock %}

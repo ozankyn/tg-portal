@@ -140,6 +140,80 @@
     {% endif %}
 </div>
 
+<!-- Tekrar İşe Alım - SGK Bekleyen Çalışanlar -->
+{% if calisanlar %}
+<div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark mt-6">
+    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex items-center gap-2 text-text-primary dark:text-text-primary-dark font-medium">
+        <span class="material-symbols-outlined text-lg">history</span>
+        Tekrar İşe Alım - SGK Bekleyen Çalışanlar
+        <span class="ml-1 px-2 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">{{ calisanlar|length }}</span>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="text-left text-text-muted dark:text-text-muted-dark border-b border-border-light dark:border-border-dark">
+                    <th class="px-5 py-3 font-medium">Ad Soyad</th>
+                    <th class="px-5 py-3 font-medium">TC Kimlik</th>
+                    <th class="px-5 py-3 font-medium">Pozisyon</th>
+                    <th class="px-5 py-3 font-medium">İl</th>
+                    <th class="px-5 py-3 font-medium">Planlanan Başlangıç</th>
+                    <th class="px-5 py-3 font-medium text-right">İşlem</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for c in calisanlar %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+                    <td class="px-5 py-3">
+                        <a href="{{ url_for('ik.detay', id=c.id) }}" class="font-medium text-blue-600 dark:text-blue-400 hover:underline">{{ c.full_name }}</a>
+                    </td>
+                    <td class="px-5 py-3 text-text-primary dark:text-text-primary-dark">{{ c.tc_kimlik or '-' }}</td>
+                    <td class="px-5 py-3 text-text-primary dark:text-text-primary-dark">{{ c.pozisyon.ad if c.pozisyon else '-' }}</td>
+                    <td class="px-5 py-3 text-text-primary dark:text-text-primary-dark">{{ c.il or '-' }}</td>
+                    <td class="px-5 py-3 text-text-primary dark:text-text-primary-dark whitespace-nowrap">
+                        {{ c.ise_baslama.strftime('%d.%m.%Y') if c.ise_baslama else '-' }}
+                    </td>
+                    <td class="px-5 py-3 text-right whitespace-nowrap">
+                        {% if has_permission('ik.edit') or has_permission('masraf.edit') %}
+                        <button type="button"
+                                onclick="sgkGirisCalisanAc({{ c.id }}, '{{ c.full_name|e }}')"
+                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition-colors">
+                            <span class="material-symbols-outlined text-sm">how_to_reg</span>
+                            SGK Girişi Yaptım
+                        </button>
+                        {% else %}
+                        <span class="text-xs text-text-muted dark:text-text-muted-dark">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- SGK Girişi Yaptım Modal - Çalışan (tekrar işe alım) -->
+<div id="sgkGirisCalisanModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full p-6">
+        <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-1">SGK Girişi Yapıldı</h3>
+        <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">
+            <span id="sgkCalisanAd" class="font-medium"></span> için SGK giriş bildirgesini yükleyiniz. Çalışan aktifleştirilecek.
+        </p>
+        <form id="sgkGirisCalisanForm" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="sgk_bekleyen">
+            <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">SGK Giriş Bildirgesi <span class="text-red-500">*</span></label>
+            <input type="file" name="sgk_bildirgesi" required accept=".pdf,.jpg,.jpeg,.png"
+                   class="w-full bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg p-2 text-sm">
+            <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">PDF, JPG veya PNG</p>
+            <div class="flex justify-end gap-3 mt-4">
+                <button type="button" onclick="document.getElementById('sgkGirisCalisanModal').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-[#111418] rounded-lg font-medium text-sm hover:bg-gray-200 dark:hover:bg-[#252b36] transition-colors">İptal</button>
+                <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition-colors">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
 <!-- SGK Girişi Yaptım Modal (bildirge PDF zorunlu) -->
 <div id="sgkGirisModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full p-6">
@@ -168,6 +242,13 @@
         form.action = "{{ url_for('ik.aday_sgk_girisi_yapildi', id=0) }}".replace('/0/', '/' + adayId + '/');
         document.getElementById('sgkAdayAd').textContent = adayAd;
         document.getElementById('sgkGirisModal').classList.remove('hidden');
+    }
+
+    function sgkGirisCalisanAc(calisanId, calisanAd) {
+        const form = document.getElementById('sgkGirisCalisanForm');
+        form.action = "{{ url_for('ik.sgk_girisi_yaptim', id=0) }}".replace('/0/', '/' + calisanId + '/');
+        document.getElementById('sgkCalisanAd').textContent = calisanAd;
+        document.getElementById('sgkGirisCalisanModal').classList.remove('hidden');
     }
 </script>
 {% endblock %}

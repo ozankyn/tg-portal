@@ -76,6 +76,7 @@ class CalisanDurumu(enum.Enum):
     IZINLI = 'izinli'
     ASKIYA_ALINDI = 'askiya_alindi'
     AYRILDI = 'ayrildi'
+    SGK_BEKLIYOR = 'sgk_bekliyor'  # Tekrar işe alım: SGK girişi bekleniyor (ara durum)
 
 
 class ListeDurumu(enum.Enum):

@@ -279,6 +279,7 @@
                         <option value="aktif" {% if calisan and calisan.durum and calisan.durum.value == 'aktif' %}selected{% endif %}>Aktif</option>
                         <option value="izinli" {% if calisan and calisan.durum and calisan.durum.value == 'izinli' %}selected{% endif %}>İzinli</option>
                         <option value="askiya_alindi" {% if calisan and calisan.durum and calisan.durum.value == 'askiya_alindi' %}selected{% endif %}>Askıya Alındı</option>
+                        <option value="sgk_bekliyor" {% if calisan and calisan.durum and calisan.durum.value == 'sgk_bekliyor' %}selected{% endif %}>SGK Bekliyor</option>
                         <option value="ayrildi" {% if calisan and calisan.durum and calisan.durum.value == 'ayrildi' %}selected{% endif %}>Ayrıldı</option>
                     </select>
                 </div>

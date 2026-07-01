@@ -548,13 +548,22 @@ def detay(id):
     aday_gecmis = aday.islem_gecmisi.all() if aday else []
     aday_evraklar = aday.evraklar.all() if aday else []
 
+    # Tekrar işe alım modalı için aktif kadrolar (yalnızca gerekince yükle)
+    kadrolar = []
+    if calisan.tekrar_ise_alinabilir:
+        kadrolar = (HedefKadro.query
+                    .filter_by(is_deleted=False, aktif=True)
+                    .join(Proje, HedefKadro.proje_id == Proje.id)
+                    .order_by(Proje.ad, HedefKadro.pozisyon_adi).all())
+
     return render_template('ik/detay.html',
                           calisan=calisan,
                           izinler=izinler,
                           evraklar=evraklar,
                           aday=aday,
                           aday_gecmis=aday_gecmis,
-                          aday_evraklar=aday_evraklar)
+                          aday_evraklar=aday_evraklar,
+                          kadrolar=kadrolar)
 
 
 @ik_bp.route('/ekle', methods=['GET', 'POST'])
@@ -1315,6 +1324,12 @@ def _sgk_bekleyen_query():
     return apply_aday_scope(q)
 
 
+def _sgk_bekleyen_calisan_query():
+    """Tekrar işe alımda SGK girişi bekleyen çalışanlar - scope filtreli."""
+    q = Calisan.query.filter_by(is_deleted=False, durum=CalisanDurumu.SGK_BEKLIYOR)
+    return apply_calisan_scope(q)
+
+
 @ik_bp.route('/sgk-bekleyen')
 @login_required
 @permission_required('ik.view')
@@ -1338,8 +1353,13 @@ def sgk_bekleyen():
         if a.planlanan_baslangic and bugun <= a.planlanan_baslangic <= hafta_sonu
     )
 
+    # Tekrar işe alım - SGK bekleyen çalışanlar
+    calisanlar = _sgk_bekleyen_calisan_query().all()
+    calisanlar.sort(key=lambda c: (c.ise_baslama is None, c.ise_baslama or date.max))
+
     return render_template('ik/sgk_bekleyen.html',
                            adaylar=adaylar,
+                           calisanlar=calisanlar,
                            talep_tarihleri=talep_tarihleri,
                            bugun=bugun,
                            toplam=toplam,
@@ -1415,7 +1435,7 @@ def inject_sgk_bekleyen_count():
         if not current_user.is_authenticated:
             return 0
         try:
-            return _sgk_bekleyen_query().count()
+            return _sgk_bekleyen_query().count() + _sgk_bekleyen_calisan_query().count()
         except Exception:
             db.session.rollback()
             return 0
@@ -2268,6 +2288,149 @@ def isten_cikis_baslat(id):
     return render_template('ik/isten_cikis_baslat.html',
                            calisan=calisan,
                            sgk_kodlari=sgk_kodlari)
+
+
+# ============================================================
+# TEKRAR İŞE ALIM (Ayrılmış/askıdaki çalışanı yeniden işe al)
+# ============================================================
+
+def _sgk_giris_evrak_tipi():
+    """SGK Giriş Bildirgesi evrak tipini bulur, yoksa oluşturur."""
+    tip = EvrakTipi.query.filter_by(kod='SGK_GIRIS_BILDIRGESI').first()
+    if not tip:
+        tip = EvrakTipi(
+            ad='SGK Giriş Bildirgesi',
+            kod='SGK_GIRIS_BILDIRGESI',
+            kategori='sozlesme',
+            aciklama='SGK işe giriş bildirgesi',
+            zorunlu=False,
+            aktif=True,
+        )
+        db.session.add(tip)
+        db.session.flush()
+    return tip
+
+
+@ik_bp.route('/<int:id>/tekrar-ise-al', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def tekrar_ise_al(id):
+    """Ayrılmış/askıdaki çalışan için tekrar işe alım başlat.
+    Planlı başlangıç + kadro alınır, durum SGK_BEKLIYOR'a çekilir,
+    bordro/muhasebeye SGK giriş talebi maili gönderilir."""
+    calisan = Calisan.query.get_or_404(id)
+    if not calisan_in_scope(calisan):
+        flash('Bu çalışan için işlem yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.liste'))
+
+    if not calisan.tekrar_ise_alinabilir:
+        flash('Yalnızca ayrılmış veya askıya alınmış çalışanlar tekrar işe alınabilir.', 'danger')
+        return redirect(url_for('ik.detay', id=id))
+
+    tarih_str = (request.form.get('planlanan_baslangic') or '').strip()
+    if not tarih_str:
+        flash('Planlı başlangıç tarihi zorunludur.', 'danger')
+        return redirect(url_for('ik.detay', id=id))
+    try:
+        planlanan = datetime.strptime(tarih_str, '%Y-%m-%d').date()
+    except ValueError:
+        flash('Geçersiz tarih formatı.', 'danger')
+        return redirect(url_for('ik.detay', id=id))
+
+    # Kadro seçimi (opsiyonel; mevcut kadro korunur veya değiştirilir)
+    kadro_id = request.form.get('kadro_id', type=int)
+    if kadro_id:
+        calisan.kadro_id = kadro_id
+
+    not_metni = (request.form.get('not') or '').strip()
+    if not_metni:
+        onceki = (calisan.notlar or '').strip()
+        etiket = f"[Tekrar işe alım {date.today().strftime('%d.%m.%Y')}] {not_metni}"
+        calisan.notlar = f"{onceki}\n{etiket}".strip() if onceki else etiket
+
+    # Planlı başlangıcı işe başlama olarak yaz, ara duruma çek
+    calisan.ise_baslama = planlanan
+    calisan.durum = CalisanDurumu.SGK_BEKLIYOR
+    db.session.commit()
+
+    # Bordro/muhasebe ekibine SGK giriş talebi bildirimi
+    try:
+        from app.services.notification import notify_sgk_giris_talebi_calisan
+        notify_sgk_giris_talebi_calisan(calisan, planlanan_baslangic=planlanan)
+    except Exception as e:
+        current_app.logger.warning(f"Tekrar işe alım SGK talebi bildirimi gönderilemedi (calisan_id={id}): {e}")
+
+    flash('Tekrar işe alım başlatıldı; SGK giriş talebi bordro/muhasebe ekibine iletildi.', 'success')
+    return redirect(url_for('ik.detay', id=id))
+
+
+@ik_bp.route('/<int:id>/sgk-girisi-yaptim', methods=['POST'])
+@login_required
+def sgk_girisi_yaptim(id):
+    """Tekrar işe alımda SGK girişi yapıldı: bildirge yükle, çalışanı AKTIF yap.
+    Bordro/muhasebe (masraf.edit) veya İK (ik.edit) yapabilir."""
+    if not (current_user.has_permission('ik.edit') or current_user.has_permission('masraf.edit')):
+        flash('Bu işlem için yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.detay', id=id))
+
+    calisan = Calisan.query.get_or_404(id)
+
+    if calisan.durum != CalisanDurumu.SGK_BEKLIYOR:
+        flash('Bu çalışan SGK giriş bekleme aşamasında değil.', 'info')
+        return redirect(url_for('ik.detay', id=id))
+
+    dosya = request.files.get('sgk_bildirgesi')
+    if not dosya or not dosya.filename:
+        flash('SGK giriş bildirgesi yüklemek zorunludur.', 'danger')
+        return redirect(url_for('ik.detay', id=id))
+
+    ext = dosya.filename.rsplit('.', 1)[1].lower() if '.' in dosya.filename else ''
+    if ext not in ('pdf', 'jpg', 'jpeg', 'png'):
+        flash('Geçersiz format. PDF, JPG veya PNG yükleyiniz.', 'danger')
+        return redirect(url_for('ik.detay', id=id))
+
+    # Dosyayı çalışan evrak klasörüne kaydet
+    upload_folder = os.path.join(current_app.config['UPLOAD_FOLDER'], 'evraklar', 'calisanlar', str(id))
+    os.makedirs(upload_folder, exist_ok=True)
+    new_filename = f"calisan_{id}_sgk_giris_{datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}"
+    filepath = os.path.join(upload_folder, new_filename)
+    dosya.save(filepath)
+
+    # Çalışan evraklarına kaydet
+    tip = _sgk_giris_evrak_tipi()
+    db.session.add(CalisanEvrak(
+        calisan_id=id,
+        evrak_tipi_id=tip.id,
+        dosya_adi=secure_filename(dosya.filename),
+        dosya_yolu=filepath,
+        dosya_boyut=os.path.getsize(filepath),
+        mime_type=dosya.content_type,
+    ))
+
+    # İşe başlama tarihi güncelle (opsiyonel override)
+    if request.form.get('ise_baslama'):
+        try:
+            calisan.ise_baslama = datetime.strptime(request.form['ise_baslama'], '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    # Aktifleştir, ayrılış bilgilerini temizle
+    calisan.durum = CalisanDurumu.AKTIF
+    calisan.isten_ayrilma = None
+    calisan.ayrilma_nedeni = None
+    db.session.commit()
+
+    # İşe giriş bildirimi gönder
+    try:
+        from app.services.notification import notify_ise_giris
+        notify_ise_giris(calisan)
+    except Exception as e:
+        current_app.logger.warning(f"Tekrar işe alım - işe giriş bildirimi gönderilemedi (calisan_id={id}): {e}")
+
+    flash('SGK girişi kaydedildi, çalışan yeniden aktifleştirildi.', 'success')
+    if request.form.get('next') == 'sgk_bekleyen':
+        return redirect(url_for('ik.sgk_bekleyen'))
+    return redirect(url_for('ik.detay', id=id))
 
 
 @ik_bp.route('/isten-cikis/<int:id>')
