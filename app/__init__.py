@@ -9,7 +9,7 @@ from datetime import timedelta
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, CSRFError
 from flask_mail import Mail
 import os
 import time
@@ -147,6 +147,13 @@ def create_app(config_name=None):
     from app.modules.onay.routes import onay_bp
     app.register_blueprint(onay_bp, url_prefix="/onay")
     
+    # CSRF token süresi dolduğunda çirkin "Bad Request" yerine flash + geri yönlendir
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        from flask import flash, redirect, request, url_for
+        flash('Oturum süreniz dolmuş, lütfen tekrar deneyin.', 'warning')
+        return redirect(request.referrer or url_for('core.dashboard'))
+
     # Bozuk transaction temizleme
     @app.before_request
     def cleanup_db_session():
