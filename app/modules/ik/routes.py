@@ -1140,6 +1140,64 @@ def aday_durum_degistir(id):
     return redirect(url_for('ik.aday_detay', id=id))
 
 
+@ik_bp.route('/aday/<int:id>/planli-tarih-degistir', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def aday_planli_tarih_degistir(id):
+    """Planlı başlangıç tarihini değiştir.
+
+    Bu bir DURUM değişikliği DEĞİLDİR; sadece planlı tarih güncellenir. Bu yüzden
+    aday çalışana dönüştürülmüş (aktif çalışan) olsa bile değiştirilebilir."""
+    aday = Aday.query.get_or_404(id)
+    if not aday_in_scope(aday):
+        flash('Bu adaya erişim yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_liste'))
+
+    # Değişiklik sonrası nereye dönülecek (çalışan kartından çağrılabilir)
+    next_url = request.form.get('next')
+    if not (next_url and next_url.startswith('/')):
+        next_url = url_for('ik.aday_detay', id=id)
+
+    yeni_str = request.form.get('planlanan_baslangic')
+    if not yeni_str:
+        flash('Yeni planlı başlangıç tarihi zorunludur.', 'danger')
+        return redirect(next_url)
+
+    try:
+        yeni_tarih = datetime.strptime(yeni_str, '%Y-%m-%d').date()
+    except ValueError:
+        flash('Geçersiz tarih formatı.', 'danger')
+        return redirect(next_url)
+
+    eski_tarih = aday.planlanan_baslangic
+    if eski_tarih == yeni_tarih:
+        flash('Planlı başlangıç tarihi zaten aynı.', 'info')
+        return redirect(next_url)
+
+    neden = (request.form.get('degisiklik_nedeni') or '').strip()
+
+    eski_g = eski_tarih.strftime('%d.%m.%Y') if eski_tarih else '-'
+    yeni_g = yeni_tarih.strftime('%d.%m.%Y')
+    aciklama = f'Planlı başlangıç: {eski_g} → {yeni_g}'
+    if neden:
+        aciklama += f' (Neden: {neden})'
+
+    # Durum değişmez; sadece tarih güncellenir.
+    _aday_log(aday, 'planli_tarih', aciklama)
+    aday.planlanan_baslangic = yeni_tarih
+    db.session.commit()
+
+    # İlgili birimlere bildirim (SGK giriş talebi ile aynı alıcı listesi)
+    try:
+        from app.services.notification import notify_planli_tarih_degisikligi
+        notify_planli_tarih_degisikligi(aday, eski_tarih, yeni_tarih, neden)
+    except Exception as e:
+        current_app.logger.warning(f"Planlı tarih değişikliği bildirimi gönderilemedi: {e}")
+
+    flash('Planlı başlangıç tarihi güncellendi ve ilgili birimlere bildirim gönderildi.', 'success')
+    return redirect(next_url)
+
+
 @ik_bp.route('/aday/<int:id>/incele', methods=['POST'])
 @login_required
 @permission_required('ik.edit')

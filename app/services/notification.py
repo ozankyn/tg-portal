@@ -441,6 +441,46 @@ def notify_sgk_giris_talebi(aday):
     return send_bildirim('SGK_GIRIS_TALEBI', degiskenler, proje_id=proje_id)
 
 
+def notify_planli_tarih_degisikligi(aday, eski_tarih, yeni_tarih, neden=None):
+    """Planlı başlangıç tarihi değiştiğinde ilgili birimlere bildirim
+    (sablon: PLANLI_TARIH_DEGISIKLIGI). Alıcılar SGK giriş talebi ile aynı:
+    muhasebe, bordro, İK, ozankayan."""
+    proje_adi = '-'
+    pozisyon_adi = '-'
+    lokasyon = '-'
+    proje_id = None
+    if aday.kadro:
+        pozisyon_adi = aday.kadro.pozisyon_adi or '-'
+        if aday.kadro.proje:
+            proje_adi = aday.kadro.proje.ad
+            proje_id = aday.kadro.proje.id
+        if aday.kadro.il:
+            lokasyon = aday.kadro.il
+
+    try:
+        aday_url = url_for('ik.aday_detay', id=aday.id, _external=True)
+    except Exception:
+        aday_url = '#'
+
+    degiskenler = {
+        'ad_soyad': aday.full_name,
+        'tc_kimlik': aday.tc_kimlik or '-',
+        'eski_tarih': eski_tarih.strftime('%d.%m.%Y') if eski_tarih else '-',
+        'yeni_tarih': yeni_tarih.strftime('%d.%m.%Y') if yeni_tarih else '-',
+        # SGK şablonlarıyla uyum için alias
+        'planlanan_baslangic': yeni_tarih.strftime('%d.%m.%Y') if yeni_tarih else '-',
+        'degisiklik_nedeni': neden or '-',
+        'proje': proje_adi,
+        'pozisyon': pozisyon_adi,
+        'lokasyon': lokasyon,
+        'telefon': aday.telefon or '-',
+        'email': aday.email or '-',
+        'aday_url': aday_url,
+        'aday_link': aday_url,
+    }
+    return send_bildirim('PLANLI_TARIH_DEGISIKLIGI', degiskenler, proje_id=proje_id)
+
+
 def notify_sgk_giris_talebi_calisan(calisan, planlanan_baslangic=None):
     """Tekrar işe alım - çalışan için SGK giriş talebi (sablon: SGK_GIRIS_TALEBI).
     Ayrılmış çalışan yeniden işe alınırken bordro/muhasebe ekibine bildirim gönderir."""

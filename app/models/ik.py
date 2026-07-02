@@ -796,6 +796,7 @@ class AdayIslemGecmisi(db.Model, TimestampMixin):
         'aday_reddetti': 'Aday İşi Reddetti',
         'havuzdan_ata': 'Havuzdan Kadroya Atandı',
         'durum': 'Durum Güncellendi',
+        'planli_tarih': 'Planlı Başlangıç Tarihi Değiştirildi',
     }
 
     @property

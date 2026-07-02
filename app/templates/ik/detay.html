@@ -480,10 +480,19 @@
                 <h3 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2">
                     <span class="material-symbols-outlined text-primary">how_to_reg</span> Başvuru Geçmişi
                 </h3>
-                <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
-                    <span class="material-symbols-outlined text-lg">badge</span>
-                    Aday Kaydını Görüntüle
-                </a>
+                <div class="flex items-center gap-4 flex-wrap">
+                    {% if has_permission('ik.edit') and aday.planlanan_baslangic %}
+                    <button type="button" onclick="document.getElementById('planliTarihModalCalisan').classList.remove('hidden')"
+                            class="text-blue-600 dark:text-blue-300 text-sm font-bold flex items-center gap-1 hover:underline">
+                        <span class="material-symbols-outlined text-lg">edit_calendar</span>
+                        Planlı Tarihi Değiştir ({{ aday.planlanan_baslangic.strftime('%d.%m.%Y') }})
+                    </button>
+                    {% endif %}
+                    <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="text-primary text-sm font-bold flex items-center gap-1 hover:underline">
+                        <span class="material-symbols-outlined text-lg">badge</span>
+                        Aday Kaydını Görüntüle
+                    </a>
+                </div>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div class="flex flex-col gap-1">
@@ -536,6 +545,30 @@
                 </div>
             </div>
         </div>
+
+        {% if has_permission('ik.edit') and aday.planlanan_baslangic %}
+        <!-- Planlı Başlangıç Tarihi Değiştir Modal (aday kaydı üzerinden) -->
+        <div id="planliTarihModalCalisan" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full p-6">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-2">Planlı Başlangıç Tarihini Değiştir</h3>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">Planlı başlangıç tarihi aday kaydında tutulur. Değişiklik bordro/muhasebe/İK ekibine bildirilecektir.</p>
+                <form action="{{ url_for('ik.aday_planli_tarih_degistir', id=aday.id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="next" value="{{ url_for('ik.detay', id=calisan.id) }}">
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Yeni Planlı Başlangıç Tarihi <span class="text-red-500">*</span></label>
+                    <input type="date" name="planlanan_baslangic" required value="{{ aday.planlanan_baslangic.strftime('%Y-%m-%d') }}"
+                           class="w-full bg-gray-50 dark:bg-[#111418] border-border-light dark:border-border-dark rounded-lg p-2.5 text-sm">
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1 mt-4">Değişiklik Nedeni <span class="text-text-muted dark:text-text-muted-dark font-normal">(opsiyonel)</span></label>
+                    <textarea name="degisiklik_nedeni" rows="2" placeholder="Örn. Proje başlangıcı ertelendi"
+                              class="w-full bg-gray-50 dark:bg-[#111418] border-border-light dark:border-border-dark rounded-lg p-2.5 text-sm"></textarea>
+                    <div class="flex justify-end gap-3 mt-4">
+                        <button type="button" onclick="document.getElementById('planliTarihModalCalisan').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-[#111418] rounded-lg font-medium text-sm hover:bg-gray-200 dark:hover:bg-[#252b36] transition-colors">İptal</button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition-colors">Kaydet</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- SGK Giriş Bildirgesi -->
         {% if aday.sgk_bildirgesi %}
