@@ -134,7 +134,7 @@ _FULL_ACCESS_ROLES = {
     'Direktor Yardimcisi', 'Departman Muduru', 'IK Uzmani',
     'Muhasebe Uzmani',
 }
-_COORDINATOR_ROLES = {'Proje Koordinatoru', 'Saha Koordinatoru'}
+_COORDINATOR_ROLES = {'Proje Koordinatoru', 'Saha Koordinatoru', 'supervizor'}
 _TEAM_LEAD_ROLES = {'Takim Lideri'}
 
 
