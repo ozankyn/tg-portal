@@ -729,6 +729,49 @@ def notify_isten_cikis(calisan, cikis_tarihi, cikis_nedeni, zimmet_teslim=None,
     return send_bildirim('ISTEN_CIKIS', degiskenler, proje_id=proje_id)
 
 
+def notify_isten_cikis_bildirimi(bildirim):
+    """SPV/Koordinatör işten çıkış bildirimi - İK+Bordro ekibine (sablon: ISTEN_CIKIS_BILDIRIMI)
+
+    Args:
+        bildirim: IstenCikisBildirimi instance
+    """
+    calisan = bildirim.calisan
+
+    proje_adi = '-'
+    pozisyon_adi = '-'
+    proje_id = None
+    if calisan.kadro_id:
+        from app.models.proje import HedefKadro
+        kadro = HedefKadro.query.get(calisan.kadro_id)
+        if kadro:
+            pozisyon_adi = kadro.pozisyon_adi or '-'
+            if kadro.proje:
+                proje_adi = kadro.proje.ad
+                proje_id = kadro.proje.id
+
+    if calisan.pozisyon and pozisyon_adi == '-':
+        pozisyon_adi = calisan.pozisyon.ad
+
+    try:
+        calisan_url = url_for('ik.detay', id=calisan.id, _external=True)
+    except Exception:
+        calisan_url = '#'
+
+    degiskenler = {
+        'ad_soyad': calisan.full_name,
+        'tc_kimlik': calisan.tc_kimlik or '-',
+        'proje': proje_adi,
+        'pozisyon': pozisyon_adi,
+        'cikis_nedeni': bildirim.cikis_nedeni_text,
+        'son_calisma_gunu': bildirim.son_calisma_gunu.strftime('%d.%m.%Y') if bildirim.son_calisma_gunu else '-',
+        'bildiren': bildirim.bildiren.full_name if bildirim.bildiren else '-',
+        'aciklama': bildirim.aciklama or '-',
+        'telefon': calisan.telefon or '-',
+        'calisan_url': calisan_url,
+    }
+    return send_bildirim('ISTEN_CIKIS_BILDIRIMI', degiskenler, proje_id=proje_id)
+
+
 # ============================================================
 # SÖZLEŞME BİTİŞ UYARISI
 # ============================================================

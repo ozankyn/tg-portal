@@ -924,6 +924,66 @@ class IstenCikis(db.Model, TimestampMixin):
         return int((sum(items) / len(items)) * 100)
 
 
+class IstenCikisBildirimi(db.Model, TimestampMixin):
+    """SPV / Koordinatör tarafından İK + Bordro ekibine gönderilen işten çıkış ön bildirimi.
+
+    Resmi işten çıkış sürecinden (IstenCikis) önce; sahadaki yetkili çalışanın
+    ayrılacak personeli İK'ya bildirmesini sağlar. İK bu bildirimi işleme alıp
+    resmi çıkış sürecini başlatır.
+    """
+    __tablename__ = 'isten_cikis_bildirimleri'
+
+    id = db.Column(db.Integer, primary_key=True)
+    calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'), nullable=False, index=True)
+    bildiren_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    cikis_nedeni = db.Column(db.String(30), nullable=False)  # istifa, devamsizlik, performans, sozlesme_bitimi, diger
+    son_calisma_gunu = db.Column(db.Date, nullable=False)
+    aciklama = db.Column(db.Text)  # opsiyonel not/açıklama
+
+    # beklemede -> isleme_alindi -> tamamlandi
+    durum = db.Column(db.String(20), default='beklemede', nullable=False)
+
+    # İlişkiler
+    calisan = db.relationship('Calisan', backref=db.backref(
+        'cikis_bildirimleri', lazy='dynamic',
+        order_by='IstenCikisBildirimi.created_at.desc()'))
+    bildiren = db.relationship('User', backref='gonderdigi_cikis_bildirimleri')
+
+    CIKIS_NEDENLERI = [
+        ('istifa', 'İstifa'),
+        ('devamsizlik', 'Devamsızlık'),
+        ('performans', 'Performans'),
+        ('sozlesme_bitimi', 'Sözleşme Bitimi'),
+        ('diger', 'Diğer'),
+    ]
+
+    DURUMLAR = {
+        'beklemede': 'Beklemede',
+        'isleme_alindi': 'İşleme Alındı',
+        'tamamlandi': 'Tamamlandı',
+    }
+
+    def __repr__(self):
+        return f'<IstenCikisBildirimi {self.calisan_id}-{self.durum}>'
+
+    @property
+    def cikis_nedeni_text(self):
+        return dict(self.CIKIS_NEDENLERI).get(self.cikis_nedeni, self.cikis_nedeni)
+
+    @property
+    def durum_text(self):
+        return self.DURUMLAR.get(self.durum, self.durum)
+
+    @property
+    def durum_renk(self):
+        return {
+            'beklemede': 'warning',
+            'isleme_alindi': 'info',
+            'tamamlandi': 'success',
+        }.get(self.durum, 'secondary')
+
+
 # ============================================================
 # ADAY MODELİNE EVRAK HELPER'LARI EKLENMELİ
 # Mevcut Aday class'ına şu property'leri ekleyin:

@@ -274,11 +274,18 @@
                         </span>
                         <span class="material-symbols-outlined text-sm transition-transform" id="calisanlarMenuIcon">expand_more</span>
                     </button>
-                    <div id="calisanlarMenu" class="sidebar-submenu {% if request.endpoint in ['ik.liste', 'ik.detay', 'ik.ekle', 'ik.duzenle'] %}open{% endif %}">
+                    <div id="calisanlarMenu" class="sidebar-submenu {% if request.endpoint in ['ik.liste', 'ik.detay', 'ik.ekle', 'ik.duzenle', 'ik.isten_cikis_liste', 'ik.isten_cikis_bildirimleri'] %}open{% endif %}">
                         <div class="pl-12 py-1 space-y-1">
                             <a href="{{ url_for('ik.liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Çalışan Listesi</a>
                             <a href="{{ url_for('ik.ekle') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.ekle' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Yeni Çalışan</a>
                             <a href="{{ url_for('ik.isten_cikis_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.isten_cikis_liste' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">İşten Çıkışlar</a>
+                            {% set cikis_bildirimi_adet = cikis_bildirimi_bekleyen_count() %}
+                            <a href="{{ url_for('ik.isten_cikis_bildirimleri') }}" class="flex items-center justify-between px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.isten_cikis_bildirimleri' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">
+                                <span>Çıkış Bildirimleri</span>
+                                {% if cikis_bildirimi_adet > 0 %}
+                                <span class="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-orange-500 rounded-full">{{ cikis_bildirimi_adet }}</span>
+                                {% endif %}
+                            </a>
                         </div>
                     </div>
                 </div>

@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}İşten Çıkış Bildirimleri - TG Portal{% endblock %}
+{% block page_title %}İşten Çıkış Bildirimleri{% endblock %}
+
+{% block content %}
+<!-- Özet Kartları -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4">
+        <p class="text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark tracking-wider">Toplam</p>
+        <p class="text-2xl font-bold text-[#111418] dark:text-white mt-1">{{ sayilar.toplam }}</p>
+    </div>
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4">
+        <p class="text-xs font-bold uppercase text-amber-600 dark:text-amber-400 tracking-wider">Beklemede</p>
+        <p class="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">{{ sayilar.beklemede }}</p>
+    </div>
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4">
+        <p class="text-xs font-bold uppercase text-blue-600 dark:text-blue-400 tracking-wider">İşleme Alındı</p>
+        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">{{ sayilar.isleme_alindi }}</p>
+    </div>
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4">
+        <p class="text-xs font-bold uppercase text-emerald-600 dark:text-emerald-400 tracking-wider">Tamamlandı</p>
+        <p class="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">{{ sayilar.tamamlandi }}</p>
+    </div>
+</div>
+
+<div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
+    <!-- Filtreler -->
+    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex flex-wrap justify-between items-center gap-3">
+        <div class="flex items-center gap-1">
+            <a href="{{ url_for('ik.isten_cikis_bildirimleri', proje_id=secili_proje_id) }}" class="px-3 py-1.5 text-sm rounded-lg {% if not secili_durum %}bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Tümü</a>
+            <a href="{{ url_for('ik.isten_cikis_bildirimleri', durum='beklemede', proje_id=secili_proje_id) }}" class="px-3 py-1.5 text-sm rounded-lg {% if secili_durum == 'beklemede' %}bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Beklemede</a>
+            <a href="{{ url_for('ik.isten_cikis_bildirimleri', durum='isleme_alindi', proje_id=secili_proje_id) }}" class="px-3 py-1.5 text-sm rounded-lg {% if secili_durum == 'isleme_alindi' %}bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">İşleme Alındı</a>
+            <a href="{{ url_for('ik.isten_cikis_bildirimleri', durum='tamamlandi', proje_id=secili_proje_id) }}" class="px-3 py-1.5 text-sm rounded-lg {% if secili_durum == 'tamamlandi' %}bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Tamamlandı</a>
+        </div>
+        <form method="GET" class="flex items-center gap-2">
+            {% if secili_durum %}<input type="hidden" name="durum" value="{{ secili_durum }}">{% endif %}
+            <select name="proje_id" onchange="this.form.submit()"
+                    class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg px-3 py-1.5 text-sm">
+                <option value="">Tüm Projeler</option>
+                {% for p in projeler %}
+                <option value="{{ p.id }}" {% if secili_proje_id == p.id %}selected{% endif %}>{{ p.ad }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50 dark:bg-[#252b36] text-xs text-text-muted dark:text-text-muted-dark uppercase">
+                <tr>
+                    <th class="px-4 py-3 text-left font-medium">Çalışan</th>
+                    <th class="px-4 py-3 text-left font-medium">Proje / Kadro</th>
+                    <th class="px-4 py-3 text-left font-medium">Çıkış Nedeni</th>
+                    <th class="px-4 py-3 text-left font-medium">Son Çalışma Günü</th>
+                    <th class="px-4 py-3 text-left font-medium">Bildiren</th>
+                    <th class="px-4 py-3 text-left font-medium">Tarih</th>
+                    <th class="px-4 py-3 text-left font-medium">Durum</th>
+                    {% if has_permission('ik.edit') %}<th class="px-4 py-3 text-right font-medium">İşlem</th>{% endif %}
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for b in bildirimler %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                    <td class="px-4 py-3">
+                        <a href="{{ url_for('ik.detay', id=b.calisan_id) }}" class="font-semibold text-blue-600 hover:text-blue-700">
+                            {{ b.calisan.full_name }}
+                        </a>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark">{{ b.calisan.tc_kimlik or '-' }}</p>
+                    </td>
+                    <td class="px-4 py-3 text-sm">
+                        <span class="text-[#111418] dark:text-white">{{ b.calisan.pozisyon.ad if b.calisan.pozisyon else '-' }}</span>
+                    </td>
+                    <td class="px-4 py-3 text-sm">{{ b.cikis_nedeni_text }}</td>
+                    <td class="px-4 py-3 text-sm">{{ b.son_calisma_gunu.strftime('%d.%m.%Y') }}</td>
+                    <td class="px-4 py-3 text-sm">{{ b.bildiren.full_name if b.bildiren else '-' }}</td>
+                    <td class="px-4 py-3 text-sm text-text-muted dark:text-text-muted-dark">{{ b.created_at.strftime('%d.%m.%Y %H:%M') if b.created_at else '-' }}</td>
+                    <td class="px-4 py-3">
+                        <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full
+                            {% if b.durum == 'beklemede' %}bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400
+                            {% elif b.durum == 'isleme_alindi' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400
+                            {% else %}bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400{% endif %}">
+                            {{ b.durum_text }}
+                        </span>
+                        {% if b.aciklama %}
+                        <span class="material-symbols-outlined text-sm text-text-muted dark:text-text-muted-dark align-middle ml-1" title="{{ b.aciklama }}">sticky_note_2</span>
+                        {% endif %}
+                    </td>
+                    {% if has_permission('ik.edit') %}
+                    <td class="px-4 py-3 text-right">
+                        {% if b.durum != 'tamamlandi' %}
+                        <form method="POST" action="{{ url_for('ik.isten_cikis_bildirimi_durum', id=b.id) }}" class="inline-flex items-center gap-1.5">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <select name="durum" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg px-2 py-1 text-xs">
+                                <option value="beklemede" {% if b.durum == 'beklemede' %}selected{% endif %}>Beklemede</option>
+                                <option value="isleme_alindi" {% if b.durum == 'isleme_alindi' %}selected{% endif %}>İşleme Alındı</option>
+                                <option value="tamamlandi">Tamamlandı</option>
+                            </select>
+                            <button type="submit" class="px-2.5 py-1 text-xs font-bold text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors">Güncelle</button>
+                        </form>
+                        {% else %}
+                        <span class="text-xs text-text-muted dark:text-text-muted-dark">—</span>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="{% if has_permission('ik.edit') %}8{% else %}7{% endif %}" class="px-4 py-12 text-center text-text-muted dark:text-text-muted-dark">
+                        İşten çıkış bildirimi bulunmuyor
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

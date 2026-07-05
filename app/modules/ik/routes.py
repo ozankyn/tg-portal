@@ -20,6 +20,7 @@ from app import db
 from app.models.ik import (
     Departman, Pozisyon, Calisan, Izin, Aday,
     EvrakTipi, AdayEvrak, AdayMedya, CalisanEvrak, IstenCikis,
+    IstenCikisBildirimi,
     SozlesmeSablonu, AdayIslemGecmisi, ADAY_DURUM_AKISI
 )
 from app.models.base import CalisanDurumu
@@ -556,6 +557,9 @@ def detay(id):
                     .join(Proje, HedefKadro.proje_id == Proje.id)
                     .order_by(Proje.ad, HedefKadro.pozisyon_adi).all())
 
+    # İşten çıkış bildirimleri (SPV/koordinatör ön bildirimleri)
+    cikis_bildirimleri = calisan.cikis_bildirimleri.all()
+
     return render_template('ik/detay.html',
                           calisan=calisan,
                           izinler=izinler,
@@ -563,6 +567,8 @@ def detay(id):
                           aday=aday,
                           aday_gecmis=aday_gecmis,
                           aday_evraklar=aday_evraklar,
+                          cikis_bildirimleri=cikis_bildirimleri,
+                          cikis_nedenleri=IstenCikisBildirimi.CIKIS_NEDENLERI,
                           kadrolar=kadrolar)
 
 
@@ -2523,9 +2529,154 @@ def isten_cikis_guncelle(id):
         cikis.durum = 'devam_ediyor'
     
     db.session.commit()
-    
+
     flash('İşten çıkış bilgileri güncellendi.', 'success')
     return redirect(url_for('ik.isten_cikis_detay', id=id))
+
+
+# ============================================================
+# İŞTEN ÇIKIŞ BİLDİRİMİ (SPV / Koordinatör -> İK + Bordro)
+# ============================================================
+
+@ik_bp.route('/<int:id>/isten-cikis-bildirimi', methods=['POST'])
+@login_required
+@permission_required('ik.view')
+def isten_cikis_bildirimi_gonder(id):
+    """SPV/Koordinatör çalışan detayından işten çıkış bildirimi gönderir.
+    ik.view yeterli; ekip (scope) kontrolü yapılır. İK+Bordro'ya mail gider."""
+    calisan = Calisan.query.get_or_404(id)
+
+    if not calisan_in_scope(calisan):
+        flash('Bu çalışan için işlem yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.liste'))
+
+    if calisan.durum != CalisanDurumu.AKTIF:
+        flash('İşten çıkış bildirimi yalnızca aktif çalışanlar için gönderilebilir.', 'danger')
+        return redirect(url_for('ik.detay', id=id))
+
+    cikis_nedeni = (request.form.get('cikis_nedeni') or '').strip()
+    gecerli_nedenler = [k for k, _ in IstenCikisBildirimi.CIKIS_NEDENLERI]
+    if cikis_nedeni not in gecerli_nedenler:
+        flash('Geçerli bir çıkış nedeni seçiniz.', 'danger')
+        return redirect(url_for('ik.detay', id=id))
+
+    tarih_str = (request.form.get('son_calisma_gunu') or '').strip()
+    if not tarih_str:
+        flash('Son çalışma günü zorunludur.', 'danger')
+        return redirect(url_for('ik.detay', id=id))
+    try:
+        son_calisma_gunu = datetime.strptime(tarih_str, '%Y-%m-%d').date()
+    except ValueError:
+        flash('Geçersiz tarih formatı.', 'danger')
+        return redirect(url_for('ik.detay', id=id))
+
+    bildirim = IstenCikisBildirimi(
+        calisan_id=calisan.id,
+        bildiren_user_id=current_user.id,
+        cikis_nedeni=cikis_nedeni,
+        son_calisma_gunu=son_calisma_gunu,
+        aciklama=(request.form.get('aciklama') or '').strip() or None,
+        durum='beklemede',
+    )
+    db.session.add(bildirim)
+    db.session.commit()
+
+    # İK + Bordro ekibine bildirim maili
+    try:
+        from app.services.notification import notify_isten_cikis_bildirimi
+        notify_isten_cikis_bildirimi(bildirim)
+    except Exception as e:
+        current_app.logger.warning(f"İşten çıkış bildirimi maili gönderilemedi (calisan_id={id}): {e}")
+
+    flash('İşten çıkış bildirimi İK ve bordro ekibine iletildi.', 'success')
+    return redirect(url_for('ik.detay', id=id))
+
+
+@ik_bp.route('/isten-cikis-bildirimleri')
+@login_required
+@permission_required('ik.view')
+def isten_cikis_bildirimleri():
+    """Tüm işten çıkış bildirimleri listesi (scope filtreli). Filtre: durum, proje."""
+    durum = request.args.get('durum')
+    proje_id = request.args.get('proje_id', type=int)
+
+    # Scope: kullanıcı yalnızca erişebildiği çalışanların bildirimlerini görür
+    scoped_calisan_ids = apply_calisan_scope(db.session.query(Calisan.id))
+
+    query = IstenCikisBildirimi.query.filter(
+        IstenCikisBildirimi.calisan_id.in_(scoped_calisan_ids)
+    )
+
+    if durum in ('beklemede', 'isleme_alindi', 'tamamlandi'):
+        query = query.filter(IstenCikisBildirimi.durum == durum)
+
+    if proje_id:
+        kadro_ids = db.session.query(HedefKadro.id).filter(HedefKadro.proje_id == proje_id)
+        query = query.join(Calisan, IstenCikisBildirimi.calisan_id == Calisan.id).filter(
+            Calisan.kadro_id.in_(kadro_ids)
+        )
+
+    bildirimler = query.order_by(IstenCikisBildirimi.created_at.desc()).all()
+    projeler = user_scoped_projeler()
+
+    # Durum bazlı sayaçlar (scope'lu, filtresiz temel üzerinden)
+    temel = IstenCikisBildirimi.query.filter(
+        IstenCikisBildirimi.calisan_id.in_(apply_calisan_scope(db.session.query(Calisan.id)))
+    )
+    sayilar = {
+        'toplam': temel.count(),
+        'beklemede': temel.filter(IstenCikisBildirimi.durum == 'beklemede').count(),
+        'isleme_alindi': temel.filter(IstenCikisBildirimi.durum == 'isleme_alindi').count(),
+        'tamamlandi': temel.filter(IstenCikisBildirimi.durum == 'tamamlandi').count(),
+    }
+
+    return render_template('ik/isten_cikis_bildirimleri.html',
+                           bildirimler=bildirimler,
+                           projeler=projeler,
+                           sayilar=sayilar,
+                           secili_durum=durum,
+                           secili_proje_id=proje_id,
+                           active='ik-isten-cikis-bildirimleri')
+
+
+@ik_bp.route('/isten-cikis-bildirimi/<int:id>/durum', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def isten_cikis_bildirimi_durum(id):
+    """İK bildirimin durumunu günceller: beklemede -> isleme_alindi -> tamamlandi."""
+    bildirim = IstenCikisBildirimi.query.get_or_404(id)
+
+    yeni_durum = (request.form.get('durum') or '').strip()
+    if yeni_durum not in IstenCikisBildirimi.DURUMLAR:
+        flash('Geçersiz durum.', 'danger')
+        return redirect(url_for('ik.isten_cikis_bildirimleri'))
+
+    bildirim.durum = yeni_durum
+    db.session.commit()
+
+    flash('Bildirim durumu güncellendi.', 'success')
+    next_url = request.form.get('next')
+    if next_url == 'detay':
+        return redirect(url_for('ik.detay', id=bildirim.calisan_id))
+    return redirect(url_for('ik.isten_cikis_bildirimleri'))
+
+
+@ik_bp.app_context_processor
+def inject_cikis_bildirimi_count():
+    """Sidebar rozeti için beklemedeki işten çıkış bildirimi sayısı (scope filtreli)."""
+    def cikis_bildirimi_bekleyen_count():
+        if not current_user.is_authenticated:
+            return 0
+        try:
+            scoped_ids = apply_calisan_scope(db.session.query(Calisan.id))
+            return IstenCikisBildirimi.query.filter(
+                IstenCikisBildirimi.calisan_id.in_(scoped_ids),
+                IstenCikisBildirimi.durum == 'beklemede',
+            ).count()
+        except Exception:
+            db.session.rollback()
+            return 0
+    return dict(cikis_bildirimi_bekleyen_count=cikis_bildirimi_bekleyen_count)
 
 
 @ik_bp.route('/isten-cikis/<int:id>/tamamla', methods=['POST'])
