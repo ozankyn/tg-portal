@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <!-- Otomatik yenileme: 30 sn (query string / filtreler korunur) -->
+    <meta http-equiv="refresh" content="30"/>
+    <title>Saha Dashboard{% if secili_proje %} - {{ secili_proje.ad }}{% endif %} - TG Portal</title>
+
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: {
+                colors: { "primary": "#137fec", "primary-dark": "#0f67be" },
+                fontFamily: { "display": ["Manrope", "sans-serif"] },
+            } },
+        }
+    </script>
+    <style>
+        body { font-family: 'Manrope', sans-serif; }
+        .material-symbols-outlined { font-size: 18px; line-height: 1; vertical-align: middle; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+
+    <!-- Üst Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+        <div class="px-3 sm:px-5 py-3 flex flex-wrap items-center gap-3 justify-between">
+            <div class="flex items-center gap-3">
+                <a href="{{ url_for('core.dashboard') }}" class="text-slate-400 hover:text-primary transition-colors" title="Portala Dön">
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+                <div>
+                    <h1 class="text-lg sm:text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">monitoring</span>
+                        Saha Dashboard
+                    </h1>
+                    <p class="text-xs text-slate-500">
+                        {{ secili_proje.ad if secili_proje else 'Proje seçilmedi' }} ·
+                        <span class="text-slate-400">{{ tarih.strftime('%d.%m.%Y') }} · 30 sn'de bir yenilenir</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Filtreler -->
+            <form method="GET" class="flex flex-wrap items-center gap-2">
+                <select name="proje_id" onchange="this.form.mudurluk.value='Tümü'; this.form.submit()"
+                        class="rounded-lg border-slate-300 text-sm py-1.5 pl-3 pr-8 focus:border-primary focus:ring-primary">
+                    {% for p in projeler %}
+                    <option value="{{ p.id }}" {% if secili_proje_id == p.id %}selected{% endif %}>{{ p.ad }}</option>
+                    {% else %}
+                    <option value="">Proje yok</option>
+                    {% endfor %}
+                </select>
+                <select name="mudurluk" onchange="this.form.submit()"
+                        class="rounded-lg border-slate-300 text-sm py-1.5 pl-3 pr-8 focus:border-primary focus:ring-primary">
+                    <option value="Tümü" {% if secili_mudurluk == 'Tümü' %}selected{% endif %}>Tüm Müdürlükler</option>
+                    {% for m in mudurlukler %}
+                    <option value="{{ m }}" {% if secili_mudurluk == m %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                </select>
+                <input type="date" name="tarih" value="{{ tarih.strftime('%Y-%m-%d') }}" onchange="this.form.submit()"
+                       class="rounded-lg border-slate-300 text-sm py-1.5 px-3 focus:border-primary focus:ring-primary">
+                <a href="{{ url_for('ik.saha_dashboard_export', proje_id=secili_proje_id, mudurluk=secili_mudurluk, tarih=tarih.strftime('%Y-%m-%d')) }}"
+                   class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-1.5 px-3 transition-colors">
+                    <span class="material-symbols-outlined">download</span>
+                    <span class="hidden sm:inline">Excel</span>
+                </a>
+            </form>
+        </div>
+    </header>
+
+    <main class="px-3 sm:px-5 py-4 space-y-4">
+
+        <!-- Özet Kartlar -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-2 sm:gap-3">
+            <div class="bg-white rounded-xl border border-slate-200 p-3">
+                <p class="text-[11px] font-bold uppercase text-slate-400 tracking-wider">Hedef Kadro</p>
+                <p class="text-2xl font-extrabold text-slate-900 mt-0.5">{{ ozet.hedef }}</p>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-3">
+                <p class="text-[11px] font-bold uppercase text-slate-400 tracking-wider">Mevcut Çalışan</p>
+                <p class="text-2xl font-extrabold text-slate-900 mt-0.5">{{ ozet.mevcut }}</p>
+            </div>
+            <div class="bg-white rounded-xl border border-slate-200 p-3">
+                <p class="text-[11px] font-bold uppercase text-slate-400 tracking-wider">Doluluk</p>
+                <p class="text-2xl font-extrabold mt-0.5
+                    {% if ozet.doluluk >= 80 %}text-emerald-600{% elif ozet.doluluk >= 50 %}text-amber-500{% else %}text-red-600{% endif %}">%{{ ozet.doluluk }}</p>
+            </div>
+            <div class="bg-emerald-50 rounded-xl border border-emerald-200 p-3">
+                <p class="text-[11px] font-bold uppercase text-emerald-700 tracking-wider">🟢 Bugün Giriş</p>
+                <p class="text-2xl font-extrabold text-emerald-700 mt-0.5">{{ ozet.bugun_giris }}</p>
+            </div>
+            <div class="bg-red-50 rounded-xl border border-red-200 p-3">
+                <p class="text-[11px] font-bold uppercase text-red-700 tracking-wider">🔴 Bugün Çıkış</p>
+                <p class="text-2xl font-extrabold text-red-700 mt-0.5">{{ ozet.bugun_cikis }}</p>
+            </div>
+            <div class="bg-amber-50 rounded-xl border border-amber-200 p-3">
+                <p class="text-[11px] font-bold uppercase text-amber-700 tracking-wider">🟡 Toplam Aday</p>
+                <p class="text-2xl font-extrabold text-amber-700 mt-0.5">{{ ozet.toplam_aday }}</p>
+            </div>
+            <div class="bg-blue-50 rounded-xl border border-blue-200 p-3">
+                <p class="text-[11px] font-bold uppercase text-blue-700 tracking-wider">🔵 SGK Bekleyen</p>
+                <p class="text-2xl font-extrabold text-blue-700 mt-0.5">{{ ozet.sgk_bekleyen }}</p>
+            </div>
+        </div>
+
+        <!-- Kadro Bazlı Tablo -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+                <h2 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">table_rows</span>
+                    Kadro Bazlı Durum
+                </h2>
+                <span class="text-xs text-slate-400">{{ kadro_rows|length }} kadro</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 text-[11px] uppercase text-slate-500">
+                        <tr>
+                            <th class="px-3 py-2 text-left font-bold">Kadro</th>
+                            <th class="px-3 py-2 text-left font-bold">İl</th>
+                            <th class="px-2 py-2 text-center font-bold">Hedef</th>
+                            <th class="px-2 py-2 text-center font-bold">Mevcut</th>
+                            <th class="px-2 py-2 text-center font-bold">Giriş</th>
+                            <th class="px-2 py-2 text-center font-bold">Çıkış</th>
+                            <th class="px-2 py-2 text-center font-bold">Aday</th>
+                            <th class="px-3 py-2 text-left font-bold w-40">Doluluk</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for r in kadro_rows %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-3 py-2 font-semibold text-slate-800">{{ r.pozisyon }}</td>
+                            <td class="px-3 py-2 text-slate-600">{{ r.il }}</td>
+                            <td class="px-2 py-2 text-center font-bold text-slate-700">{{ r.hedef }}</td>
+                            <td class="px-2 py-2 text-center font-bold text-slate-900">{{ r.mevcut }}</td>
+                            <td class="px-2 py-2 text-center">{% if r.giris %}<span class="font-bold text-emerald-600">+{{ r.giris }}</span>{% else %}<span class="text-slate-300">–</span>{% endif %}</td>
+                            <td class="px-2 py-2 text-center">{% if r.cikis %}<span class="font-bold text-red-600">−{{ r.cikis }}</span>{% else %}<span class="text-slate-300">–</span>{% endif %}</td>
+                            <td class="px-2 py-2 text-center">{% if r.aday %}<span class="font-bold text-amber-600">{{ r.aday }}</span>{% else %}<span class="text-slate-300">–</span>{% endif %}</td>
+                            <td class="px-3 py-2">
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1 bg-slate-100 rounded-full h-2 min-w-[60px]">
+                                        <div class="h-2 rounded-full {% if r.doluluk >= 80 %}bg-emerald-500{% elif r.doluluk >= 50 %}bg-amber-400{% else %}bg-red-500{% endif %}" style="width: {{ [r.doluluk, 100]|min }}%"></div>
+                                    </div>
+                                    <span class="text-xs font-bold w-10 text-right {% if r.doluluk >= 80 %}text-emerald-600{% elif r.doluluk >= 50 %}text-amber-600{% else %}text-red-600{% endif %}">%{{ r.doluluk }}</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="px-3 py-10 text-center text-slate-400">Bu filtreye uygun kadro bulunamadı</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Detay Tablo: Bugünkü Hareketler + Adaylar -->
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div class="px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+                <h2 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary">bolt</span>
+                    Bugünkü Hareketler & Adaylar
+                </h2>
+                <span class="text-xs text-slate-400">{{ detay_rows|length }} kayıt</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-slate-50 text-[11px] uppercase text-slate-500">
+                        <tr>
+                            <th class="px-3 py-2 text-left font-bold">Tip</th>
+                            <th class="px-3 py-2 text-left font-bold">Ad Soyad</th>
+                            <th class="px-3 py-2 text-left font-bold">Telefon</th>
+                            <th class="px-3 py-2 text-left font-bold">Kadro / Pozisyon</th>
+                            <th class="px-3 py-2 text-left font-bold">İl</th>
+                            <th class="px-2 py-2 text-center font-bold">C.</th>
+                            <th class="px-3 py-2 text-left font-bold">Planlı Tarih</th>
+                            <th class="px-3 py-2 text-left font-bold">Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for r in detay_rows %}
+                        <tr class="{% if r.tip == 'giris' %}bg-emerald-50 hover:bg-emerald-100{% elif r.tip == 'cikis' %}bg-red-50 hover:bg-red-100{% elif r.tip == 'sgk' %}bg-blue-50 hover:bg-blue-100{% else %}bg-amber-50 hover:bg-amber-100{% endif %} transition-colors">
+                            <td class="px-3 py-1.5 whitespace-nowrap font-bold text-xs
+                                {% if r.tip == 'giris' %}text-emerald-700{% elif r.tip == 'cikis' %}text-red-700{% elif r.tip == 'sgk' %}text-blue-700{% else %}text-amber-700{% endif %}">
+                                {% if r.tip == 'giris' %}🟢{% elif r.tip == 'cikis' %}🔴{% elif r.tip == 'sgk' %}🔵{% else %}🟡{% endif %}
+                                {{ r.tip_text }}
+                            </td>
+                            <td class="px-3 py-1.5 font-semibold text-slate-800 whitespace-nowrap">{{ r.ad_soyad }}</td>
+                            <td class="px-3 py-1.5 text-slate-600 whitespace-nowrap">{{ r.telefon }}</td>
+                            <td class="px-3 py-1.5 text-slate-600">{{ r.pozisyon }}</td>
+                            <td class="px-3 py-1.5 text-slate-600 whitespace-nowrap">{{ r.il }}</td>
+                            <td class="px-2 py-1.5 text-center font-bold text-slate-500">{{ r.cinsiyet }}</td>
+                            <td class="px-3 py-1.5 text-slate-600 whitespace-nowrap">{{ r.tarih.strftime('%d.%m.%Y') if r.tarih else '-' }}</td>
+                            <td class="px-3 py-1.5 text-slate-600 whitespace-nowrap">{{ r.durum }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="px-3 py-10 text-center text-slate-400">Bugün için hareket veya aktif aday bulunmuyor</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <p class="text-center text-xs text-slate-400 pb-4">TG Portal · Saha Dashboard · Son güncelleme sunucu saatiyle sayfa yüklendiğinde</p>
+    </main>
+</body>
+</html>

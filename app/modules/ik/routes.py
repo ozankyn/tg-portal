@@ -2720,6 +2720,279 @@ def isten_cikis_tamamla(id):
 
 
 # ============================================================
+# SAHA DASHBOARD (Müdürlük Bazlı Canlı Ekran / "Borsa Ekranı")
+# ============================================================
+
+def _parse_mudurluk(pozisyon_adi):
+    """HedefKadro.pozisyon_adi'ndaki ilk ' - ' öncesi kısmı müdürlük olarak döndürür.
+    Örn: 'Akdeniz Md. - Antalya - P.T Sniper' -> 'Akdeniz Md.'
+    ' - ' yoksa None."""
+    if not pozisyon_adi:
+        return None
+    parts = pozisyon_adi.split(' - ')
+    if len(parts) >= 2:
+        return parts[0].strip() or None
+    return None
+
+
+def _cinsiyet_kisa(deger):
+    return {'kadin': 'K', 'erkek': 'E'}.get((deger or '').lower(), (deger or '')[:1].upper() or '-')
+
+
+def _saha_dashboard_verileri():
+    """Saha dashboard için tüm veriyi hesaplar (sayfa + Excel export ortak kullanır).
+    request.args'tan proje_id / mudurluk / tarih okur, scope uygular."""
+    from sqlalchemy import func
+    from app.models.proje import AKTIF_SUREC_DURUMLARI
+
+    projeler = user_scoped_projeler()
+    proje_ids = [p.id for p in projeler]
+
+    # Seçili proje - varsayılan 500 Ek Sniper (proje 12), scope'ta değilse ilk proje
+    secili_proje_id = request.args.get('proje_id', type=int)
+    if secili_proje_id not in proje_ids:
+        secili_proje_id = 12 if 12 in proje_ids else (proje_ids[0] if proje_ids else None)
+
+    secili_mudurluk = (request.args.get('mudurluk') or 'Tümü').strip() or 'Tümü'
+
+    tarih_str = request.args.get('tarih')
+    try:
+        tarih = datetime.strptime(tarih_str, '%Y-%m-%d').date() if tarih_str else date.today()
+    except ValueError:
+        tarih = date.today()
+
+    secili_proje = next((p for p in projeler if p.id == secili_proje_id), None)
+
+    # Projenin tüm kadroları (müdürlük dropdown'ı bunlardan doldurulur)
+    tum_kadrolar = []
+    if secili_proje_id:
+        tum_kadrolar = HedefKadro.query.filter_by(
+            proje_id=secili_proje_id, is_deleted=False, aktif=True
+        ).all()
+
+    mudurlukler = sorted({m for m in (_parse_mudurluk(k.pozisyon_adi) for k in tum_kadrolar) if m})
+
+    # Müdürlük filtresi
+    if secili_mudurluk != 'Tümü':
+        kadrolar = [k for k in tum_kadrolar if _parse_mudurluk(k.pozisyon_adi) == secili_mudurluk]
+    else:
+        kadrolar = tum_kadrolar
+
+    kadro_ids = [k.id for k in kadrolar]
+    kadro_by_id = {k.id: k for k in kadrolar}
+
+    # Aktif süreç aday durumları (sgk_giris_talebi hariç -> ayrı gösterilir)
+    aday_durumlari = list(AKTIF_SUREC_DURUMLARI)
+    aday_durumlari_sgk_haric = [d for d in aday_durumlari if d != 'sgk_giris_talebi']
+
+    def _grup(query):
+        return dict(query.all()) if kadro_ids else {}
+
+    mevcut_map, giris_map, cikis_map, aday_map = {}, {}, {}, {}
+    if kadro_ids:
+        mevcut_map = _grup(db.session.query(Calisan.kadro_id, func.count(Calisan.id)).filter(
+            Calisan.kadro_id.in_(kadro_ids), Calisan.is_deleted == False,
+            Calisan.durum.in_([CalisanDurumu.AKTIF, CalisanDurumu.IZINLI])
+        ).group_by(Calisan.kadro_id))
+
+        giris_map = _grup(db.session.query(Calisan.kadro_id, func.count(Calisan.id)).filter(
+            Calisan.kadro_id.in_(kadro_ids), Calisan.is_deleted == False,
+            Calisan.ise_baslama == tarih, Calisan.durum == CalisanDurumu.AKTIF
+        ).group_by(Calisan.kadro_id))
+
+        cikis_map = _grup(db.session.query(Calisan.kadro_id, func.count(Calisan.id)).filter(
+            Calisan.kadro_id.in_(kadro_ids), Calisan.is_deleted == False,
+            Calisan.isten_ayrilma == tarih, Calisan.durum == CalisanDurumu.AYRILDI
+        ).group_by(Calisan.kadro_id))
+
+        aday_map = _grup(db.session.query(Aday.kadro_id, func.count(Aday.id)).filter(
+            Aday.kadro_id.in_(kadro_ids), Aday.is_deleted == False,
+            Aday.durum.in_(aday_durumlari)
+        ).group_by(Aday.kadro_id))
+
+    # Kadro bazlı satırlar
+    kadro_rows = []
+    for k in kadrolar:
+        hedef = k.hedef_sayi or 0
+        mevcut = mevcut_map.get(k.id, 0)
+        doluluk = round((mevcut / hedef) * 100) if hedef else 0
+        kadro_rows.append({
+            'pozisyon': k.pozisyon_adi,
+            'il': k.il_adi or '-',
+            'mudurluk': _parse_mudurluk(k.pozisyon_adi) or '-',
+            'hedef': hedef,
+            'mevcut': mevcut,
+            'giris': giris_map.get(k.id, 0),
+            'cikis': cikis_map.get(k.id, 0),
+            'aday': aday_map.get(k.id, 0),
+            'doluluk': doluluk,
+        })
+    # En düşük doluluk üstte (dikkat çekmesi için)
+    kadro_rows.sort(key=lambda r: r['doluluk'])
+
+    # SGK bekleyen (kadro bazlı sayı - özet için)
+    sgk_bekleyen_sayi = 0
+    if kadro_ids:
+        sgk_bekleyen_sayi = Aday.query.filter(
+            Aday.kadro_id.in_(kadro_ids), Aday.is_deleted == False,
+            Aday.durum == 'sgk_giris_talebi'
+        ).count()
+
+    hedef_top = sum(r['hedef'] for r in kadro_rows)
+    mevcut_top = sum(r['mevcut'] for r in kadro_rows)
+    ozet = {
+        'hedef': hedef_top,
+        'mevcut': mevcut_top,
+        'doluluk': round((mevcut_top / hedef_top) * 100) if hedef_top else 0,
+        'bugun_giris': sum(r['giris'] for r in kadro_rows),
+        'bugun_cikis': sum(r['cikis'] for r in kadro_rows),
+        'toplam_aday': sum(r['aday'] for r in kadro_rows),
+        'sgk_bekleyen': sgk_bekleyen_sayi,
+    }
+
+    # ---- Detay satırları (bugünkü hareketler + adaylar) ----
+    detay_rows = []
+
+    def _il_of(rec, kadro):
+        return (getattr(rec, 'il', None) or (kadro.il_adi if kadro else None) or '-')
+
+    if kadro_ids:
+        # 🟢 GİRİŞ
+        for c in Calisan.query.filter(
+            Calisan.kadro_id.in_(kadro_ids), Calisan.is_deleted == False,
+            Calisan.ise_baslama == tarih, Calisan.durum == CalisanDurumu.AKTIF
+        ).all():
+            kadro = kadro_by_id.get(c.kadro_id)
+            detay_rows.append({
+                'order': 0, 'tip': 'giris', 'tip_text': 'GİRİŞ',
+                'ad_soyad': c.full_name, 'telefon': c.telefon or '-',
+                'pozisyon': kadro.pozisyon_adi if kadro else (c.pozisyon.ad if c.pozisyon else '-'),
+                'il': _il_of(c, kadro), 'cinsiyet': _cinsiyet_kisa(c.cinsiyet),
+                'tarih': c.ise_baslama, 'durum': 'İşe Başladı',
+            })
+        # 🔴 ÇIKIŞ
+        for c in Calisan.query.filter(
+            Calisan.kadro_id.in_(kadro_ids), Calisan.is_deleted == False,
+            Calisan.isten_ayrilma == tarih, Calisan.durum == CalisanDurumu.AYRILDI
+        ).all():
+            kadro = kadro_by_id.get(c.kadro_id)
+            detay_rows.append({
+                'order': 1, 'tip': 'cikis', 'tip_text': 'ÇIKIŞ',
+                'ad_soyad': c.full_name, 'telefon': c.telefon or '-',
+                'pozisyon': kadro.pozisyon_adi if kadro else (c.pozisyon.ad if c.pozisyon else '-'),
+                'il': _il_of(c, kadro), 'cinsiyet': _cinsiyet_kisa(c.cinsiyet),
+                'tarih': c.isten_ayrilma, 'durum': 'Ayrıldı',
+            })
+        # 🔵 SGK BEKLİYOR
+        for a in Aday.query.filter(
+            Aday.kadro_id.in_(kadro_ids), Aday.is_deleted == False,
+            Aday.durum == 'sgk_giris_talebi'
+        ).all():
+            kadro = kadro_by_id.get(a.kadro_id)
+            detay_rows.append({
+                'order': 2, 'tip': 'sgk', 'tip_text': 'SGK BEKLİYOR',
+                'ad_soyad': a.full_name, 'telefon': a.telefon or '-',
+                'pozisyon': kadro.pozisyon_adi if kadro else '-',
+                'il': _il_of(a, kadro), 'cinsiyet': _cinsiyet_kisa(a.cinsiyet),
+                'tarih': a.planlanan_baslangic, 'durum': a.basvuru_durumu_text,
+            })
+        # 🟡 ADAY (aktif süreç, sgk hariç)
+        for a in Aday.query.filter(
+            Aday.kadro_id.in_(kadro_ids), Aday.is_deleted == False,
+            Aday.durum.in_(aday_durumlari_sgk_haric)
+        ).all():
+            kadro = kadro_by_id.get(a.kadro_id)
+            detay_rows.append({
+                'order': 3, 'tip': 'aday', 'tip_text': 'ADAY',
+                'ad_soyad': a.full_name, 'telefon': a.telefon or '-',
+                'pozisyon': kadro.pozisyon_adi if kadro else '-',
+                'il': _il_of(a, kadro), 'cinsiyet': _cinsiyet_kisa(a.cinsiyet),
+                'tarih': a.planlanan_baslangic, 'durum': a.basvuru_durumu_text,
+            })
+
+    detay_rows.sort(key=lambda r: (r['order'], r['ad_soyad']))
+
+    return {
+        'projeler': projeler,
+        'secili_proje': secili_proje,
+        'secili_proje_id': secili_proje_id,
+        'mudurlukler': mudurlukler,
+        'secili_mudurluk': secili_mudurluk,
+        'tarih': tarih,
+        'ozet': ozet,
+        'kadro_rows': kadro_rows,
+        'detay_rows': detay_rows,
+    }
+
+
+@ik_bp.route('/saha-dashboard')
+@login_required
+@permission_required('ik.view')
+def saha_dashboard():
+    """Müdürlük bazlı canlı saha dashboard (borsa ekranı). 30sn otomatik yenilenir."""
+    veri = _saha_dashboard_verileri()
+    return render_template('ik/saha_dashboard.html', active='ik-saha-dashboard', **veri)
+
+
+@ik_bp.route('/saha-dashboard/export')
+@login_required
+@permission_required('ik.view')
+def saha_dashboard_export():
+    """Saha dashboard - kadro özeti + hareketler Excel export."""
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, PatternFill
+    from io import BytesIO
+    from flask import Response
+
+    veri = _saha_dashboard_verileri()
+
+    wb = Workbook()
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='137FEC')
+
+    # Sayfa 1: Kadro Özet
+    ws1 = wb.active
+    ws1.title = 'Kadro Özet'
+    h1 = ['Müdürlük', 'Pozisyon', 'İl', 'Hedef', 'Mevcut', 'Bugün Giriş', 'Bugün Çıkış', 'Aktif Aday', 'Doluluk %']
+    ws1.append(h1)
+    for cell in ws1[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+    for r in veri['kadro_rows']:
+        ws1.append([r['mudurluk'], r['pozisyon'], r['il'], r['hedef'], r['mevcut'],
+                    r['giris'], r['cikis'], r['aday'], r['doluluk']])
+    for idx, w in enumerate([18, 30, 14, 8, 8, 12, 12, 11, 10], start=1):
+        ws1.column_dimensions[get_column_letter(idx)].width = w
+
+    # Sayfa 2: Hareketler
+    ws2 = wb.create_sheet('Hareketler')
+    h2 = ['Tip', 'Ad Soyad', 'Telefon', 'Pozisyon', 'İl', 'Cinsiyet', 'Planlı Tarih', 'Durum']
+    ws2.append(h2)
+    for cell in ws2[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+    for r in veri['detay_rows']:
+        ws2.append([r['tip_text'], r['ad_soyad'], r['telefon'], r['pozisyon'], r['il'],
+                    r['cinsiyet'], r['tarih'].strftime('%d.%m.%Y') if r['tarih'] else '',
+                    r['durum']])
+    for idx, w in enumerate([14, 26, 16, 30, 14, 9, 14, 20], start=1):
+        ws2.column_dimensions[get_column_letter(idx)].width = w
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    proje_ad = (veri['secili_proje'].ad if veri['secili_proje'] else 'saha').replace(' ', '_')
+    filename = f"saha_dashboard_{proje_ad}_{veri['tarih'].strftime('%Y%m%d')}.xlsx"
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+
+
+# ============================================================
 # İZİN YÖNETİMİ
 # ============================================================
 
