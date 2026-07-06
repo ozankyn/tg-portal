@@ -17,6 +17,7 @@
     <!-- Tarama formu -->
     <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm mb-6">
         <form method="POST" action="{{ url_for('ik.iban_tara') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <label class="flex items-center gap-3 mb-4 cursor-pointer">
                 <input type="checkbox" name="sadece_eksik" value="1" {% if sadece_eksik %}checked{% endif %}
                        class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary">
@@ -62,6 +63,7 @@
             <h3 class="text-lg font-bold text-[#111418] dark:text-white">Sonuçlar</h3>
             {% if sonuclar %}
             <form method="POST" action="{{ url_for('ik.iban_tara_export') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="sonuc_json" value="{{ sonuclar | tojson | forceescape }}">
                 <button type="submit"
                         class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 transition-colors">
