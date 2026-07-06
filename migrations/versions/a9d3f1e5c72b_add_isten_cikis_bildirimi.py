@@ -87,7 +87,7 @@ def upgrade():
             'kod': 'ISTEN_CIKIS_BILDIRIMI',
             'ad': 'İşten Çıkış Bildirimi (SPV)',
             'aciklama': 'SPV/Koordinatör çalışan detayından işten çıkış bildirimi gönderdiğinde İK ve Bordro ekibine iletilen bildirim.',
-            'konu_sablonu': 'İşten Çıkış Bildirimi - {ad_soyad}',
+            'konu_sablonu': 'İşten Çıkış Bildirimi - {ad_soyad} (Son Çalışma Günü: {son_calisma_gunu})',
             'icerik_sablonu': ISTEN_CIKIS_BILDIRIMI_ICERIK,
             'alicilar': ['ik@teamguerilla.com', 'bordro@teamguerilla.com',
                          'ozankayan@teamguerilla.com'],
