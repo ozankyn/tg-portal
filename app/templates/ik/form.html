@@ -149,6 +149,15 @@
                 </div>
                 <div class="md:col-span-2">
                     <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        IBAN
+                    </label>
+                    <input type="text" name="iban" maxlength="34" placeholder="TR00 0000 0000 0000 0000 0000 00"
+                           value="{{ calisan.iban if calisan else '' }}"
+                           class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm font-mono focus:ring-primary focus:border-primary block w-full p-2.5 uppercase">
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">TR ile başlayan 26 karakter. Aday evrağından otomatik okunmuş olabilir.</p>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
                         Adres
                     </label>
                     <textarea name="adres" rows="2" placeholder="Açık adres"

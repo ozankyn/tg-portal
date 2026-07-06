@@ -68,6 +68,12 @@
                             <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Adres</label>
                             <textarea name="adres" rows="2" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ aday.adres if aday else '' }}</textarea>
                         </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">IBAN</label>
+                            <input type="text" name="iban" maxlength="34" placeholder="TR00 0000 0000 0000 0000 0000 00" value="{{ aday.iban if aday else '' }}"
+                                   class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg font-mono uppercase focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">IBAN / Hesap bilgisi evrağı yüklenirse otomatik okunur.</p>
+                        </div>
                         <div>
                             <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">İl</label>
                             <input type="text" name="il" value="{{ aday.il if aday else '' }}"

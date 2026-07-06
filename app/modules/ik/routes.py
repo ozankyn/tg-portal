@@ -714,6 +714,7 @@ def duzenle(id):
         calisan.cinsiyet = request.form.get('cinsiyet') or None
         calisan.email = request.form.get('email', '').strip() or None
         calisan.telefon = request.form.get('telefon', '').strip() or None
+        calisan.iban = request.form.get('iban', '').strip().replace(' ', '').upper() or None
         calisan.adres = request.form.get('adres', '').strip() or None
         calisan.il = request.form.get('il', '').strip() or None
         calisan.ilce = request.form.get('ilce', '').strip() or None
@@ -1046,6 +1047,7 @@ def aday_duzenle(id):
         aday.soyad = request.form.get('soyad', '').strip()
         aday.telefon = telefon
         aday.email = request.form.get('email', '').strip() or None
+        aday.iban = request.form.get('iban', '').strip().replace(' ', '').upper() or None
         aday.tc_kimlik = request.form.get('tc_kimlik', '').strip() or None
         aday.dogum_tarihi = datetime.strptime(request.form.get('dogum_tarihi'), '%Y-%m-%d').date() if request.form.get('dogum_tarihi') else None
         aday.cinsiyet = request.form.get('cinsiyet') or None
@@ -1728,6 +1730,18 @@ def aday_sil(id):
 # EVRAK YÖNETİMİ
 # ============================================================
 
+def _is_iban_evrak_tipi(evrak_tipi):
+    """Evrak tipinin IBAN / hesap bilgisi belgesi olup olmadığını belirler.
+    Kod 'IBAN' ise veya ad/aciklama içinde 'iban' geçiyorsa True.
+    """
+    if not evrak_tipi:
+        return False
+    if (evrak_tipi.kod or '').strip().upper() == 'IBAN':
+        return True
+    metin = f"{evrak_tipi.ad or ''} {evrak_tipi.kod or ''}".lower()
+    return 'iban' in metin
+
+
 @ik_bp.route('/aday/<int:id>/evrak', methods=['POST'])
 @login_required
 @permission_required('ik.edit')
@@ -1775,11 +1789,30 @@ def aday_evrak_yukle(id):
         )
         db.session.add(evrak)
         db.session.commit()
-        
+
         flash('Evrak başarıyla yüklendi.', 'success')
+
+        # IBAN / Hesap bilgisi evrağı ise IBAN'ı otomatik oku ve adaya kaydet
+        evrak_tipi = EvrakTipi.query.get(evrak_tipi_id)
+        if _is_iban_evrak_tipi(evrak_tipi):
+            try:
+                from app.services.ocr_service import extract_iban_from_image
+                okunan = extract_iban_from_image(filepath)
+                if okunan:
+                    if aday.iban and aday.iban != okunan:
+                        flash(f'Görselden IBAN okundu: {okunan} '
+                              f'(Kayıtlı IBAN farklı: {aday.iban} - manuel kontrol edin.)', 'warning')
+                    else:
+                        aday.iban = okunan
+                        db.session.commit()
+                        flash(f'IBAN otomatik okundu ve kaydedildi: {okunan}', 'success')
+                else:
+                    flash('IBAN belgesinden numara okunamadı, lütfen manuel girin.', 'warning')
+            except Exception as e:
+                current_app.logger.warning(f"IBAN otomatik okuma hatası (aday_id={id}): {e}")
     else:
         flash('Geçersiz dosya formatı. (PDF, JPG, PNG, DOC, DOCX)', 'danger')
-    
+
     return redirect(url_for('ik.aday_detay', id=id))
 
 
@@ -1837,6 +1870,182 @@ def evrak_indir(id):
 
     inline = request.args.get('goster') == '1'
     return send_file(full_path, as_attachment=not inline, download_name=evrak.dosya_adi)
+
+
+# ============================================================
+# TOPLU IBAN TARAMA (Mevcut IBAN evraklarından IBAN okuma)
+# ============================================================
+
+def _evrak_tam_yol(dosya_yolu):
+    """AdayEvrak/CalisanEvrak dosya_yolu değerini tam dosya yoluna çözer."""
+    yol = dosya_yolu or ''
+    if not yol:
+        return None
+    if os.path.isabs(yol):
+        return yol
+    return os.path.join(current_app.config['UPLOAD_FOLDER'], yol)
+
+
+def _iban_evrak_tipi_idleri():
+    """IBAN tipli evrak tiplerinin id listesini döndürür."""
+    return [t.id for t in EvrakTipi.query.all() if _is_iban_evrak_tipi(t)]
+
+
+def _iban_tara_calistir(sadece_eksik=True):
+    """Mevcut IBAN tipli evrakları tarar, IBAN çıkarır, çalışan/adaya kaydeder.
+
+    Returns: (sonuclar, ozet)
+      sonuclar: her belge için {'tip','kayit_id','ad_soyad','evrak_adi','iban','durum','mesaj'}
+      ozet: {'basarili','bulunamadi','hatali','toplam'}
+    """
+    from app.services.ocr_service import extract_iban_from_image
+
+    tip_idleri = _iban_evrak_tipi_idleri()
+    sonuclar = []
+    ozet = {'basarili': 0, 'bulunamadi': 0, 'hatali': 0, 'toplam': 0}
+
+    if not tip_idleri:
+        return sonuclar, ozet
+
+    def _islet(tip_adi, sahip, evrak):
+        ozet['toplam'] += 1
+        satir = {
+            'tip': tip_adi,
+            'kayit_id': sahip.id,
+            'ad_soyad': sahip.full_name,
+            'evrak_adi': evrak.dosya_adi or '',
+            'iban': sahip.iban or '',
+            'durum': '',
+            'mesaj': '',
+        }
+        tam_yol = _evrak_tam_yol(evrak.dosya_yolu)
+        if not tam_yol or not os.path.exists(tam_yol):
+            satir['durum'] = 'hatali'
+            satir['mesaj'] = 'Dosya bulunamadı'
+            ozet['hatali'] += 1
+            sonuclar.append(satir)
+            return
+        try:
+            okunan = extract_iban_from_image(tam_yol)
+        except Exception as e:
+            satir['durum'] = 'hatali'
+            satir['mesaj'] = str(e)
+            ozet['hatali'] += 1
+            sonuclar.append(satir)
+            return
+
+        if okunan:
+            satir['iban'] = okunan
+            if not sahip.iban:
+                sahip.iban = okunan
+                satir['mesaj'] = 'Okundu ve kaydedildi'
+            elif sahip.iban == okunan:
+                satir['mesaj'] = 'Zaten kayıtlı (aynı)'
+            else:
+                satir['mesaj'] = f'Farklı IBAN kayıtlı ({sahip.iban}) - kaydedilmedi'
+            satir['durum'] = 'basarili'
+            ozet['basarili'] += 1
+        else:
+            satir['durum'] = 'bulunamadi'
+            satir['mesaj'] = 'IBAN okunamadı'
+            ozet['bulunamadi'] += 1
+        sonuclar.append(satir)
+
+    # Aday evrakları
+    aday_q = AdayEvrak.query.filter(AdayEvrak.evrak_tipi_id.in_(tip_idleri))
+    for evrak in aday_q.all():
+        aday = evrak.aday
+        if not aday or aday.is_deleted:
+            continue
+        if sadece_eksik and aday.iban:
+            continue
+        _islet('Aday', aday, evrak)
+
+    # Çalışan evrakları
+    cal_q = CalisanEvrak.query.filter(CalisanEvrak.evrak_tipi_id.in_(tip_idleri))
+    for evrak in cal_q.all():
+        calisan = evrak.calisan
+        if not calisan or calisan.is_deleted:
+            continue
+        if sadece_eksik and calisan.iban:
+            continue
+        _islet('Çalışan', calisan, evrak)
+
+    db.session.commit()
+    return sonuclar, ozet
+
+
+@ik_bp.route('/iban-tara', methods=['GET', 'POST'])
+@login_required
+@permission_required('ik.edit')
+def iban_tara():
+    """Mevcut IBAN evraklarını toplu tarar ve çalışan/adaylara kaydeder."""
+    if request.method == 'POST':
+        sadece_eksik = request.form.get('sadece_eksik') == '1'
+        sonuclar, ozet = _iban_tara_calistir(sadece_eksik=sadece_eksik)
+        flash(f"Tarama tamamlandı. Başarılı: {ozet['basarili']}, "
+              f"Bulunamadı: {ozet['bulunamadi']}, Hatalı: {ozet['hatali']}.", 'info')
+        return render_template('ik/iban_tara.html',
+                               sonuclar=sonuclar, ozet=ozet, tamamlandi=True,
+                               sadece_eksik=sadece_eksik)
+
+    return render_template('ik/iban_tara.html',
+                           sonuclar=None, ozet=None, tamamlandi=False,
+                           sadece_eksik=True)
+
+
+@ik_bp.route('/iban-tara/export', methods=['POST'])
+@login_required
+@permission_required('ik.view')
+def iban_tara_export():
+    """Tarama sonuçlarını Excel olarak dışa aktar (yeniden tarama yapmaz)."""
+    import json as _json
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from io import BytesIO
+    from flask import Response
+
+    try:
+        sonuclar = _json.loads(request.form.get('sonuc_json', '[]'))
+    except (ValueError, TypeError):
+        sonuclar = []
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'IBAN Tarama'
+
+    basliklar = ['Tip', 'Kayıt ID', 'Ad Soyad', 'Evrak', 'IBAN', 'Durum', 'Açıklama']
+    ws.append(basliklar)
+    baslik_font = Font(bold=True, color='FFFFFF')
+    baslik_dolgu = PatternFill(start_color='2563EB', end_color='2563EB', fill_type='solid')
+    for cell in ws[1]:
+        cell.font = baslik_font
+        cell.fill = baslik_dolgu
+
+    durum_etiket = {'basarili': 'Başarılı', 'bulunamadi': 'Bulunamadı', 'hatali': 'Hatalı'}
+    for s in sonuclar:
+        ws.append([
+            s.get('tip', ''),
+            s.get('kayit_id', ''),
+            s.get('ad_soyad', ''),
+            s.get('evrak_adi', ''),
+            s.get('iban', ''),
+            durum_etiket.get(s.get('durum', ''), s.get('durum', '')),
+            s.get('mesaj', ''),
+        ])
+
+    for i, genislik in enumerate([10, 10, 28, 30, 30, 14, 40], start=1):
+        ws.column_dimensions[chr(64 + i)].width = genislik
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    filename = f"iban_tarama_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
 
 
 # ============================================================
@@ -2191,6 +2400,8 @@ def aday_calisana_donustur(id):
                         calisan.ise_baslama = ise_baslama
                     if sicil_no:
                         calisan.sicil_no = sicil_no
+                    if aday.iban and not calisan.iban:
+                        calisan.iban = aday.iban
                     # Ayrılış bilgilerini temizle, aktif yap
                     calisan.isten_ayrilma = None
                     calisan.ayrilma_nedeni = None
@@ -2212,6 +2423,7 @@ def aday_calisana_donustur(id):
                         adres=aday.adres,
                         il=aday.il,
                         ilce=aday.ilce,
+                        iban=aday.iban,
                         egitim_durumu=aday.egitim_durumu,
                         beden=aday.ust_beden,
                         kargo_subesi=aday.kargo_subesi,
@@ -3363,6 +3575,7 @@ def aday_ekle():
             adres=request.form.get('adres', '').strip() or None,
             il=request.form.get('il', '').strip() or None,
             ilce=request.form.get('ilce', '').strip() or None,
+            iban=request.form.get('iban', '').strip().replace(' ', '').upper() or None,
             pozisyon_id=int(request.form.get('pozisyon_id')) if request.form.get('pozisyon_id') else None,
             kaynak=request.form.get('kaynak', 'manuel'),
             durum='basvurdu',

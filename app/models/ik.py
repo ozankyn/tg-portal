@@ -71,6 +71,9 @@ class Calisan(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     adres = db.Column(db.Text)
     il = db.Column(db.String(50))
     ilce = db.Column(db.String(50))
+
+    # Banka
+    iban = db.Column(db.String(30))  # TR + 24 hane (otomatik okuma veya manuel)
     
     # Acil Durum
     acil_kisi_ad = db.Column(db.String(100))
@@ -163,6 +166,7 @@ class Calisan(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
             'full_name': self.full_name,
             'email': self.email,
             'telefon': self.telefon,
+            'iban': self.iban,
             'departman': self.departman.ad if self.departman else None,
             'pozisyon': self.pozisyon.ad if self.pozisyon else None,
             'durum': self.durum.value if self.durum else None
@@ -276,6 +280,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     adres = db.Column(db.Text)
     il = db.Column(db.String(50))
     ilce = db.Column(db.String(50))
+    iban = db.Column(db.String(30))  # TR + 24 hane (evraktan otomatik okunur veya manuel)
 
     # ==================== Fiziksel Bilgiler ====================
     ust_beden = db.Column(db.String(10))    # XS, S, M, L, XL, XXL, 3XL
@@ -588,6 +593,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
             'full_name': self.full_name,
             'email': self.email,
             'telefon': self.telefon,
+            'iban': self.iban,
             'durum': self.durum,
             'durum_text': self.basvuru_durumu_text,
             'kaynak': self.kaynak,

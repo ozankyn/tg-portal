@@ -266,6 +266,9 @@
                             </a>
                             <a href="{{ url_for('ik.aday_havuzu') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.aday_havuzu' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Aday Havuzu</a>
                             <a href="{{ url_for('ik.eksik_evraklar') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.eksik_evraklar' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Eksik Evraklar</a>
+                            {% if has_permission('ik.edit') %}
+                            <a href="{{ url_for('ik.iban_tara') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if request.endpoint == 'ik.iban_tara' %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">IBAN Tarama</a>
+                            {% endif %}
                             <a href="{{ url_for('proje.kadro_liste') }}" class="block px-3 py-2 text-sm rounded-lg transition-colors {% if 'kadro' in request.path %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36]{% endif %}">Kadrolar & Davet</a>
                         </div>
                     </div>
