@@ -4,7 +4,7 @@ IBAN otomatik okuma özelliği için calisanlar ve adaylar tablolarına iban kol
 Ayrıca aday evrak yüklemede otomatik IBAN okuması için 'IBAN' evrak tipini seed eder.
 
 Revision ID: c2e5f8a1b703
-Revises: b1c4e2f7a908
+Revises: a9d3f1e5c72b
 Create Date: 2026-07-06 12:00:00.000000
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 
 revision = 'c2e5f8a1b703'
-down_revision = 'b1c4e2f7a908'
+down_revision = 'a9d3f1e5c72b'
 branch_labels = None
 depends_on = None
 
