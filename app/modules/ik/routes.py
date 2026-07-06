@@ -2582,10 +2582,18 @@ def isten_cikis_baslat(id):
         flash('İşten çıkış süreci başlatıldı.', 'success')
         return redirect(url_for('ik.isten_cikis_detay', id=cikis.id))
 
+    # SPV/Koordinatör işten çıkış bildirimi varsa son çalışma gününü forma öner
+    onerilen_cikis_tarihi = None
+    son_bildirim = calisan.cikis_bildirimleri.filter(
+        IstenCikisBildirimi.durum != 'tamamlandi').first() or calisan.cikis_bildirimleri.first()
+    if son_bildirim:
+        onerilen_cikis_tarihi = son_bildirim.son_calisma_gunu
+
     sgk_kodlari = SgkCikisKodu.query.filter_by(aktif=True).order_by(SgkCikisKodu.kod).all()
     return render_template('ik/isten_cikis_baslat.html',
                            calisan=calisan,
-                           sgk_kodlari=sgk_kodlari)
+                           sgk_kodlari=sgk_kodlari,
+                           onerilen_cikis_tarihi=onerilen_cikis_tarihi)
 
 
 # ============================================================
@@ -2886,6 +2894,14 @@ def isten_cikis_bildirimi_durum(id):
         return redirect(url_for('ik.isten_cikis_bildirimleri'))
 
     bildirim.durum = yeni_durum
+
+    # Bildirim "Tamamlandı" yapıldığında, SPV'nin bildirdiği son çalışma gününü
+    # çalışanın ayrılış tarihine yaz (yalnızca alan boşsa - mevcut resmi tarihi ezmez).
+    if yeni_durum == 'tamamlandi' and bildirim.son_calisma_gunu:
+        calisan = bildirim.calisan
+        if calisan and not calisan.isten_ayrilma:
+            calisan.isten_ayrilma = bildirim.son_calisma_gunu
+
     db.session.commit()
 
     flash('Bildirim durumu güncellendi.', 'success')
