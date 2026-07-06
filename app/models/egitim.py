@@ -326,6 +326,7 @@ class EgitimKatilimLog(db.Model, TimestampMixin):
     calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'))  # eşleşirse
     aday_id = db.Column(db.Integer, db.ForeignKey('adaylar.id'))        # onaylı aday eşleşirse
     giris_zamani = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    ayrilma_zamani = db.Column(db.DateTime)  # eğitim sonlandırılınca set edilir
     ip = db.Column(db.String(45))
 
     egitim = db.relationship('Egitim', backref=db.backref(
@@ -333,6 +334,25 @@ class EgitimKatilimLog(db.Model, TimestampMixin):
         order_by='EgitimKatilimLog.giris_zamani.desc()'))
     calisan = db.relationship('Calisan')
     aday = db.relationship('Aday')
+
+    @property
+    def kalma_suresi_dk(self):
+        """Kalma süresi (dakika). Ayrılış yoksa None."""
+        if not self.giris_zamani or not self.ayrilma_zamani:
+            return None
+        fark = (self.ayrilma_zamani - self.giris_zamani).total_seconds()
+        if fark < 0:
+            return 0
+        return int(round(fark / 60))
+
+    @property
+    def eslesme_tipi(self):
+        """Eşleşme tipi: 'Çalışan', 'Aday' veya 'Yok'."""
+        if self.calisan_id:
+            return 'Çalışan'
+        if self.aday_id:
+            return 'Aday'
+        return 'Yok'
 
     def __repr__(self):
         return f'<EgitimKatilimLog {self.egitim_id}-{self.telefon}>'

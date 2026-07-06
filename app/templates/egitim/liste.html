@@ -113,9 +113,11 @@
                             <a href="{{ url_for('egitim.detay', id=egitim.id) }}" class="p-1.5 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg" title="Detay">
                                 <span class="material-symbols-outlined text-xl">visibility</span>
                             </a>
+                            {% if egitim_yonetebilir(egitim) %}
                             <a href="{{ url_for('egitim.duzenle', id=egitim.id) }}" class="p-1.5 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg" title="Düzenle">
                                 <span class="material-symbols-outlined text-xl">edit</span>
                             </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>

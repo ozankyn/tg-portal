@@ -29,6 +29,45 @@ from app.services.jitsi import JitsiService
 
 egitim_bp = Blueprint('egitim', __name__)
 
+# Eğitim yönetim yetkisi olan roller (bunlara ek olarak eğitimi oluşturan da yönetebilir)
+EGITIM_YONETICI_ROLLER = {'Sistem Yoneticisi', 'Ajans Baskani', 'Direktor', 'Egitim Uzmani'}
+
+
+def _egitim_yonetebilir(egitim, user=None):
+    """Kullanıcı bu eğitimi yönetebilir mi? (admin roller / Egitim Uzmani / oluşturan)."""
+    user = user or current_user
+    if not getattr(user, 'is_authenticated', False):
+        return False
+    if getattr(user, 'is_admin', False):
+        return True
+    if egitim is not None and egitim.olusturan_id and egitim.olusturan_id == user.id:
+        return True
+    return bool({r.name for r in user.roles} & EGITIM_YONETICI_ROLLER)
+
+
+def _yonetim_yetki_hatasi(egitim):
+    """Yetki yoksa flash + redirect döndürür, varsa None."""
+    if _egitim_yonetebilir(egitim):
+        return None
+    flash('Bu eğitimi yönetme yetkiniz yok. Yalnızca görüntüleyebilirsiniz.', 'danger')
+    return redirect(url_for('egitim.detay', id=egitim.id))
+
+
+@egitim_bp.app_context_processor
+def inject_egitim_yetki():
+    """Template'lerde {% if egitim_yonetebilir(egitim) %} kullanımı için."""
+    return dict(egitim_yonetebilir=_egitim_yonetebilir)
+
+
+def _katilim_loglarini_kapat(egitim_id):
+    """Eğitim sonlandırılınca ayrılış zamanı boş olan katılım loglarını now() ile kapatır.
+    commit çağıranın sorumluluğunda."""
+    EgitimKatilimLog.query.filter(
+        EgitimKatilimLog.egitim_id == egitim_id,
+        EgitimKatilimLog.ayrilma_zamani.is_(None),
+    ).update({EgitimKatilimLog.ayrilma_zamani: datetime.now()}, synchronize_session=False)
+
+
 ALLOWED_EXTENSIONS = {
     'pdf': 'dokuman',
     'ppt': 'sunum',
@@ -221,7 +260,11 @@ def ekle():
 def duzenle(id):
     """Eğitim düzenle"""
     egitim = Egitim.query.get_or_404(id)
-    
+
+    hata = _yonetim_yetki_hatasi(egitim)
+    if hata:
+        return hata
+
     if request.method == 'POST':
         egitim.egitim_tipi_id = int(request.form['egitim_tipi_id'])
         egitim.baslik = request.form.get('baslik', '').strip()
@@ -299,19 +342,28 @@ def detay(id):
 def durum_degistir(id, durum):
     """Eğitim durumunu değiştir"""
     egitim = Egitim.query.get_or_404(id)
-    
+
+    hata = _yonetim_yetki_hatasi(egitim)
+    if hata:
+        return hata
+
     if durum not in ['planli', 'devam_ediyor', 'tamamlandi', 'iptal']:
         flash('Geçersiz durum.', 'danger')
         return redirect(url_for('egitim.detay', id=id))
-    
+
     egitim.durum = durum
-    
+
     if durum == 'tamamlandi' and not egitim.bitis_tarihi:
         egitim.bitis_tarihi = datetime.now()
-    
+
     if durum == 'iptal':
         egitim.iptal_nedeni = request.form.get('iptal_nedeni')
-    
+
+    # Eğitim sonlandırıldıysa: canlı yayını kapat + aktif katılımcıların ayrılış zamanını işaretle
+    if durum in ('tamamlandi', 'iptal'):
+        egitim.jitsi_aktif = False
+        _katilim_loglarini_kapat(egitim.id)
+
     db.session.commit()
     
     flash(f'Eğitim durumu güncellendi: {durum}', 'success')
@@ -328,7 +380,11 @@ def durum_degistir(id, durum):
 def katilimci_ekle(id):
     """Eğitime katılımcı ekle"""
     egitim = Egitim.query.get_or_404(id)
-    
+
+    hata = _yonetim_yetki_hatasi(egitim)
+    if hata:
+        return hata
+
     calisan_ids = request.form.getlist('calisan_ids')
     
     eklenen = 0
@@ -360,7 +416,10 @@ def katilimci_ekle(id):
 def katilimci_durum(id):
     """Katılımcı durumunu güncelle"""
     katilimci = EgitimKatilimci.query.get_or_404(id)
-    
+
+    if not _egitim_yonetebilir(katilimci.egitim):
+        return jsonify({'success': False, 'error': 'Yetki yok'}), 403
+
     durum = request.form.get('durum')
     if durum:
         katilimci.durum = durum
@@ -397,7 +456,11 @@ def katilimci_sil(id):
     """Katılımcıyı sil"""
     katilimci = EgitimKatilimci.query.get_or_404(id)
     egitim_id = katilimci.egitim_id
-    
+
+    if not _egitim_yonetebilir(katilimci.egitim):
+        flash('Bu eğitimi yönetme yetkiniz yok.', 'danger')
+        return redirect(url_for('egitim.detay', id=egitim_id))
+
     db.session.delete(katilimci)
     db.session.commit()
     
@@ -415,7 +478,11 @@ def katilimci_sil(id):
 def toplu_katilimci(id):
     """Proje veya kadrodan toplu katılımcı ekle"""
     egitim = Egitim.query.get_or_404(id)
-    
+
+    hata = _yonetim_yetki_hatasi(egitim)
+    if hata:
+        return hata
+
     kaynak = request.form.get('kaynak')  # proje, kadro
     kaynak_id = request.form.get('kaynak_id', type=int)
     
@@ -1376,6 +1443,10 @@ def jitsi_baslat(id):
     """Online eğitimi başlat - Jitsi odası oluştur"""
     egitim = Egitim.query.get_or_404(id)
 
+    hata = _yonetim_yetki_hatasi(egitim)
+    if hata:
+        return hata
+
     if egitim.lokasyon_tipi not in ['online', 'hibrit']:
         flash('Bu eğitim online değil.', 'warning')
         return redirect(url_for('egitim.detay', id=id))
@@ -1399,11 +1470,69 @@ def jitsi_durdur(id):
     """Online eğitimi durdur"""
     egitim = Egitim.query.get_or_404(id)
 
+    hata = _yonetim_yetki_hatasi(egitim)
+    if hata:
+        return hata
+
     egitim.jitsi_aktif = False
+    # Aktif katılımcıların ayrılış zamanını işaretle (kalma süresi hesabı için)
+    _katilim_loglarini_kapat(egitim.id)
     db.session.commit()
 
     flash('Online eğitim durduruldu.', 'info')
     return redirect(url_for('egitim.detay', id=id))
+
+
+@egitim_bp.route('/<int:id>/katilim-log-export')
+@login_required
+@permission_required('egitim.view')
+def katilim_log_export(id):
+    """Eğitim katılım logunu Excel olarak indir."""
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, PatternFill
+    from io import BytesIO
+    from flask import Response
+
+    egitim = Egitim.query.get_or_404(id)
+    loglar = egitim.katilim_loglari.all()
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Katilim Logu'
+
+    headers = ['Ad Soyad', 'Telefon', 'Eşleşme', 'Giriş Zamanı',
+               'Ayrılış Zamanı', 'Süre (dk)', 'IP']
+    ws.append(headers)
+    hf = Font(bold=True, color='FFFFFF')
+    hfill = PatternFill('solid', fgColor='137FEC')
+    for c in ws[1]:
+        c.font = hf
+        c.fill = hfill
+
+    for log in loglar:
+        ws.append([
+            log.ad_soyad or '',
+            ('0' + log.telefon) if log.telefon else '',
+            log.eslesme_tipi,
+            log.giris_zamani.strftime('%d.%m.%Y %H:%M') if log.giris_zamani else '',
+            log.ayrilma_zamani.strftime('%d.%m.%Y %H:%M') if log.ayrilma_zamani else '',
+            log.kalma_suresi_dk if log.kalma_suresi_dk is not None else '',
+            log.ip or '',
+        ])
+
+    for i, w in enumerate([28, 15, 12, 18, 18, 10, 16], start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    filename = f"katilim_log_{id}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={filename}'},
+    )
 
 
 # ============================================================
