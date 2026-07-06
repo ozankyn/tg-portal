@@ -9,69 +9,75 @@
         <div>
             <h1 class="text-2xl font-bold text-[#111418] dark:text-white">Toplu IBAN Tarama</h1>
             <p class="text-sm text-text-muted dark:text-text-muted-dark">
-                Yüklenmiş IBAN / Hesap bilgisi evraklarını yapay zeka ile tarar, IBAN'ı çıkarıp çalışan/adaya kaydeder.
+                Yüklenmiş IBAN / Hesap bilgisi evrakları yapay zeka ile tek tek taranır, IBAN çıkarılıp çalışan/adaya kaydedilir.
             </p>
         </div>
     </div>
 
-    <!-- Tarama formu -->
+    <!-- Tarama ayarları -->
     <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm mb-6">
-        <form method="POST" action="{{ url_for('ik.iban_tara') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <label class="flex items-center gap-3 mb-4 cursor-pointer">
-                <input type="checkbox" name="sadece_eksik" value="1" {% if sadece_eksik %}checked{% endif %}
-                       class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary">
-                <span class="text-sm font-medium text-[#111418] dark:text-white">
-                    Sadece IBAN'ı boş olan kayıtları tara (önerilir - API maliyetini azaltır)
-                </span>
-            </label>
-            <button type="submit"
+        <label class="flex items-center gap-3 mb-4 cursor-pointer">
+            <input type="checkbox" id="sadeceEksik" checked
+                   class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary">
+            <span class="text-sm font-medium text-[#111418] dark:text-white">
+                Sadece IBAN'ı boş olan kayıtları tara (önerilir - API maliyetini azaltır)
+            </span>
+        </label>
+        <div class="flex flex-wrap items-center gap-3">
+            <button id="baslatBtn" type="button"
                     class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-bold rounded-lg hover:opacity-90 transition-opacity">
                 <span class="material-symbols-outlined text-lg">search</span>
                 Taramayı Başlat
             </button>
-            <p class="text-xs text-text-muted dark:text-text-muted-dark mt-3">
-                Not: Tarama her belge için bir yapay zeka çağrısı yapar ve birkaç dakika sürebilir.
-            </p>
-        </form>
-    </div>
-
-    {% if tamamlandi %}
-    <!-- Özet -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-4 text-center">
-            <div class="text-2xl font-bold text-[#111418] dark:text-white">{{ ozet.toplam }}</div>
-            <div class="text-xs text-text-muted dark:text-text-muted-dark uppercase font-bold">Toplam</div>
-        </div>
-        <div class="bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-200 dark:border-green-800 p-4 text-center">
-            <div class="text-2xl font-bold text-green-700 dark:text-green-400">{{ ozet.basarili }}</div>
-            <div class="text-xs text-green-700 dark:text-green-400 uppercase font-bold">Başarılı</div>
-        </div>
-        <div class="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl border border-yellow-200 dark:border-yellow-800 p-4 text-center">
-            <div class="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{{ ozet.bulunamadi }}</div>
-            <div class="text-xs text-yellow-700 dark:text-yellow-400 uppercase font-bold">Bulunamadı</div>
-        </div>
-        <div class="bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800 p-4 text-center">
-            <div class="text-2xl font-bold text-red-700 dark:text-red-400">{{ ozet.hatali }}</div>
-            <div class="text-xs text-red-700 dark:text-red-400 uppercase font-bold">Hatalı</div>
-        </div>
-    </div>
-
-    <!-- Sonuç tablosu -->
-    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
-        <div class="p-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
-            <h3 class="text-lg font-bold text-[#111418] dark:text-white">Sonuçlar</h3>
-            {% if sonuclar %}
-            <form method="POST" action="{{ url_for('ik.iban_tara_export') }}">
+            <button id="durdurBtn" type="button"
+                    class="hidden inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white text-sm font-bold rounded-lg hover:bg-red-700 transition-colors">
+                <span class="material-symbols-outlined text-lg">stop</span>
+                Durdur
+            </button>
+            <form id="exportForm" method="POST" action="{{ url_for('ik.iban_tara_export') }}" class="ml-auto">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="sonuc_json" value="{{ sonuclar | tojson | forceescape }}">
-                <button type="submit"
-                        class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 transition-colors">
+                <input type="hidden" name="sonuc_json" id="sonucJson" value="[]">
+                <button id="exportBtn" type="submit" disabled
+                        class="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                     <span class="material-symbols-outlined text-lg">download</span>
                     Excel'e Aktar
                 </button>
             </form>
-            {% endif %}
+        </div>
+        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-3">
+            Her belge ayrı bir yapay zeka çağrısı ile taranır. İşlem sırasında sayfadan ayrılmayın; istediğiniz an "Durdur" ile durdurabilirsiniz.
+        </p>
+    </div>
+
+    <!-- İlerleme -->
+    <div id="ilerlemeKart" class="hidden bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm mb-6">
+        <div class="flex items-center justify-between mb-2">
+            <span id="ilerlemeMetin" class="text-sm font-bold text-[#111418] dark:text-white">0 / 0 tarandı</span>
+            <span id="ilerlemeYuzde" class="text-sm text-text-muted dark:text-text-muted-dark">%0</span>
+        </div>
+        <div class="w-full h-3 bg-gray-200 dark:bg-[#111418] rounded-full overflow-hidden">
+            <div id="ilerlemeBar" class="h-full bg-primary transition-all duration-200" style="width:0%"></div>
+        </div>
+        <div class="grid grid-cols-3 gap-4 mt-4">
+            <div class="text-center">
+                <div id="sayacToplam" class="text-xl font-bold text-[#111418] dark:text-white">0</div>
+                <div class="text-xs text-text-muted dark:text-text-muted-dark uppercase font-bold">Toplam</div>
+            </div>
+            <div class="text-center">
+                <div id="sayacBasarili" class="text-xl font-bold text-green-600 dark:text-green-400">0</div>
+                <div class="text-xs text-text-muted dark:text-text-muted-dark uppercase font-bold">Bulundu</div>
+            </div>
+            <div class="text-center">
+                <div id="sayacHatali" class="text-xl font-bold text-red-600 dark:text-red-400">0</div>
+                <div class="text-xs text-text-muted dark:text-text-muted-dark uppercase font-bold">Bulunamadı / Hata</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sonuç tablosu -->
+    <div id="sonucKart" class="hidden bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
+        <div class="p-4 border-b border-border-light dark:border-border-dark">
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white">Sonuçlar</h3>
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-left">
@@ -85,36 +91,150 @@
                         <th class="px-4 py-3 hidden sm:table-cell">Açıklama</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-border-light dark:divide-border-dark text-sm">
-                    {% for s in sonuclar %}
-                    <tr>
-                        <td class="px-4 py-3 text-[#111418] dark:text-white">{{ s.tip }}</td>
-                        <td class="px-4 py-3 font-medium text-[#111418] dark:text-white">{{ s.ad_soyad }}</td>
-                        <td class="px-4 py-3 hidden md:table-cell text-text-muted dark:text-text-muted-dark">{{ s.evrak_adi }}</td>
-                        <td class="px-4 py-3 font-mono text-[#111418] dark:text-white">{{ s.iban or '-' }}</td>
-                        <td class="px-4 py-3">
-                            {% if s.durum == 'basarili' %}
-                            <span class="px-2 py-1 rounded text-xs font-bold bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">Başarılı</span>
-                            {% elif s.durum == 'bulunamadi' %}
-                            <span class="px-2 py-1 rounded text-xs font-bold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">Bulunamadı</span>
-                            {% else %}
-                            <span class="px-2 py-1 rounded text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">Hatalı</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-3 hidden sm:table-cell text-text-muted dark:text-text-muted-dark">{{ s.mesaj }}</td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">
-                            Taranacak IBAN evrağı bulunamadı.
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+                <tbody id="sonucTablo" class="divide-y divide-border-light dark:divide-border-dark text-sm"></tbody>
             </table>
         </div>
     </div>
-    {% endif %}
 
 </div>
+
+<script>
+(function () {
+    const CSRF = "{{ csrf_token() }}";
+    const LISTE_URL = "{{ url_for('ik.iban_tara_liste') }}";
+    const TEK_URL = "{{ url_for('ik.iban_tara_tek') }}";
+
+    const baslatBtn = document.getElementById('baslatBtn');
+    const durdurBtn = document.getElementById('durdurBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const sadeceEksik = document.getElementById('sadeceEksik');
+    const sonucJson = document.getElementById('sonucJson');
+
+    const ilerlemeKart = document.getElementById('ilerlemeKart');
+    const ilerlemeBar = document.getElementById('ilerlemeBar');
+    const ilerlemeMetin = document.getElementById('ilerlemeMetin');
+    const ilerlemeYuzde = document.getElementById('ilerlemeYuzde');
+    const sayacToplam = document.getElementById('sayacToplam');
+    const sayacBasarili = document.getElementById('sayacBasarili');
+    const sayacHatali = document.getElementById('sayacHatali');
+    const sonucKart = document.getElementById('sonucKart');
+    const sonucTablo = document.getElementById('sonucTablo');
+
+    let durduruldu = false;
+    let calisiyor = false;
+    let sonuclar = [];
+
+    function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = (s === null || s === undefined) ? '' : String(s);
+        return d.innerHTML;
+    }
+
+    function ilerlemeGuncelle(taranan, toplam, basarili, hatali) {
+        const yuzde = toplam ? Math.round((taranan / toplam) * 100) : 0;
+        ilerlemeBar.style.width = yuzde + '%';
+        ilerlemeMetin.textContent = taranan + ' / ' + toplam + ' tarandı';
+        ilerlemeYuzde.textContent = '%' + yuzde;
+        sayacToplam.textContent = toplam;
+        sayacBasarili.textContent = basarili;
+        sayacHatali.textContent = hatali;
+    }
+
+    function satirEkle(r) {
+        const basarili = r.durum === 'basarili';
+        const rozet = basarili
+            ? '<span class="px-2 py-1 rounded text-xs font-bold bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">Bulundu</span>'
+            : (r.durum === 'bulunamadi'
+                ? '<span class="px-2 py-1 rounded text-xs font-bold bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300">Bulunamadı</span>'
+                : '<span class="px-2 py-1 rounded text-xs font-bold bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">Hata</span>');
+        const tr = document.createElement('tr');
+        tr.className = basarili ? 'bg-green-50/40 dark:bg-green-900/10' : 'bg-red-50/30 dark:bg-red-900/10';
+        tr.innerHTML =
+            '<td class="px-4 py-3 text-[#111418] dark:text-white">' + esc(r.tip) + '</td>' +
+            '<td class="px-4 py-3 font-medium text-[#111418] dark:text-white">' + esc(r.ad_soyad) + '</td>' +
+            '<td class="px-4 py-3 hidden md:table-cell text-text-muted dark:text-text-muted-dark">' + esc(r.evrak_adi) + '</td>' +
+            '<td class="px-4 py-3 font-mono text-[#111418] dark:text-white">' + esc(r.iban || '-') + '</td>' +
+            '<td class="px-4 py-3">' + rozet + '</td>' +
+            '<td class="px-4 py-3 hidden sm:table-cell text-text-muted dark:text-text-muted-dark">' + esc(r.mesaj || r.hata || '') + '</td>';
+        sonucTablo.appendChild(tr);
+    }
+
+    async function tekTara(evrakId) {
+        const resp = await fetch(TEK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({ evrak_id: evrakId })
+        });
+        return await resp.json();
+    }
+
+    async function baslat() {
+        if (calisiyor) return;
+        calisiyor = true;
+        durduruldu = false;
+        sonuclar = [];
+        sonucTablo.innerHTML = '';
+        exportBtn.disabled = true;
+        sonucJson.value = '[]';
+        baslatBtn.disabled = true;
+        durdurBtn.classList.remove('hidden');
+        ilerlemeKart.classList.remove('hidden');
+        sonucKart.classList.remove('hidden');
+
+        let liste;
+        try {
+            const url = LISTE_URL + '?sadece_eksik=' + (sadeceEksik.checked ? '1' : '0');
+            const resp = await fetch(url, { headers: { 'X-CSRFToken': CSRF } });
+            liste = await resp.json();
+        } catch (e) {
+            alert('Evrak listesi alınamadı: ' + e);
+            bitir();
+            return;
+        }
+
+        const evraklar = liste.evraklar || [];
+        const toplam = evraklar.length;
+        let taranan = 0, basarili = 0, hatali = 0;
+        ilerlemeGuncelle(0, toplam, 0, 0);
+
+        if (toplam === 0) {
+            ilerlemeMetin.textContent = 'Taranacak IBAN evrağı bulunamadı.';
+            bitir();
+            return;
+        }
+
+        for (const ev of evraklar) {
+            if (durduruldu) break;
+            let r;
+            try {
+                r = await tekTara(ev.id);
+            } catch (e) {
+                r = { tip: ev.tip, ad_soyad: ev.sahip_ad, evrak_adi: ev.dosya,
+                      iban: '', durum: 'hatali', mesaj: 'Bağlantı hatası' };
+            }
+            taranan++;
+            if (r.durum === 'basarili') basarili++; else hatali++;
+            sonuclar.push(r);
+            satirEkle(r);
+            ilerlemeGuncelle(taranan, toplam, basarili, hatali);
+        }
+
+        bitir();
+    }
+
+    function bitir() {
+        calisiyor = false;
+        baslatBtn.disabled = false;
+        durdurBtn.classList.add('hidden');
+        sonucJson.value = JSON.stringify(sonuclar);
+        exportBtn.disabled = sonuclar.length === 0;
+        if (durduruldu) {
+            ilerlemeMetin.textContent += ' (durduruldu)';
+        }
+    }
+
+    baslatBtn.addEventListener('click', baslat);
+    durdurBtn.addEventListener('click', function () { durduruldu = true; });
+})();
+</script>
 {% endblock %}

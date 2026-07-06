@@ -1893,107 +1893,127 @@ def _iban_evrak_tipi_idleri():
     return [t.id for t in EvrakTipi.query.all() if _is_iban_evrak_tipi(t)]
 
 
-def _iban_tara_calistir(sadece_eksik=True):
-    """Mevcut IBAN tipli evrakları tarar, IBAN çıkarır, çalışan/adaya kaydeder.
-
-    Returns: (sonuclar, ozet)
-      sonuclar: her belge için {'tip','kayit_id','ad_soyad','evrak_adi','iban','durum','mesaj'}
-      ozet: {'basarili','bulunamadi','hatali','toplam'}
-    """
-    from app.services.ocr_service import extract_iban_from_image
-
-    tip_idleri = _iban_evrak_tipi_idleri()
-    sonuclar = []
-    ozet = {'basarili': 0, 'bulunamadi': 0, 'hatali': 0, 'toplam': 0}
-
-    if not tip_idleri:
-        return sonuclar, ozet
-
-    def _islet(tip_adi, sahip, evrak):
-        ozet['toplam'] += 1
-        satir = {
-            'tip': tip_adi,
-            'kayit_id': sahip.id,
-            'ad_soyad': sahip.full_name,
-            'evrak_adi': evrak.dosya_adi or '',
-            'iban': sahip.iban or '',
-            'durum': '',
-            'mesaj': '',
-        }
-        tam_yol = _evrak_tam_yol(evrak.dosya_yolu)
-        if not tam_yol or not os.path.exists(tam_yol):
-            satir['durum'] = 'hatali'
-            satir['mesaj'] = 'Dosya bulunamadı'
-            ozet['hatali'] += 1
-            sonuclar.append(satir)
-            return
-        try:
-            okunan = extract_iban_from_image(tam_yol)
-        except Exception as e:
-            satir['durum'] = 'hatali'
-            satir['mesaj'] = str(e)
-            ozet['hatali'] += 1
-            sonuclar.append(satir)
-            return
-
-        if okunan:
-            satir['iban'] = okunan
-            if not sahip.iban:
-                sahip.iban = okunan
-                satir['mesaj'] = 'Okundu ve kaydedildi'
-            elif sahip.iban == okunan:
-                satir['mesaj'] = 'Zaten kayıtlı (aynı)'
-            else:
-                satir['mesaj'] = f'Farklı IBAN kayıtlı ({sahip.iban}) - kaydedilmedi'
-            satir['durum'] = 'basarili'
-            ozet['basarili'] += 1
-        else:
-            satir['durum'] = 'bulunamadi'
-            satir['mesaj'] = 'IBAN okunamadı'
-            ozet['bulunamadi'] += 1
-        sonuclar.append(satir)
-
-    # Aday evrakları
-    aday_q = AdayEvrak.query.filter(AdayEvrak.evrak_tipi_id.in_(tip_idleri))
-    for evrak in aday_q.all():
-        aday = evrak.aday
-        if not aday or aday.is_deleted:
-            continue
-        if sadece_eksik and aday.iban:
-            continue
-        _islet('Aday', aday, evrak)
-
-    # Çalışan evrakları
-    cal_q = CalisanEvrak.query.filter(CalisanEvrak.evrak_tipi_id.in_(tip_idleri))
-    for evrak in cal_q.all():
-        calisan = evrak.calisan
-        if not calisan or calisan.is_deleted:
-            continue
-        if sadece_eksik and calisan.iban:
-            continue
-        _islet('Çalışan', calisan, evrak)
-
-    db.session.commit()
-    return sonuclar, ozet
+def _iban_evrak_coz(evrak_id):
+    """Kodlu evrak_id ('A123' aday, 'C123' çalışan) -> (tip_adi, evrak, sahip) veya None."""
+    if not evrak_id or len(evrak_id) < 2:
+        return None
+    onek, ham = evrak_id[0].upper(), evrak_id[1:]
+    if not ham.isdigit():
+        return None
+    eid = int(ham)
+    if onek == 'A':
+        evrak = AdayEvrak.query.get(eid)
+        return ('Aday', evrak, evrak.aday) if evrak else None
+    if onek == 'C':
+        evrak = CalisanEvrak.query.get(eid)
+        return ('Çalışan', evrak, evrak.calisan) if evrak else None
+    return None
 
 
-@ik_bp.route('/iban-tara', methods=['GET', 'POST'])
+@ik_bp.route('/iban-tara')
 @login_required
 @permission_required('ik.edit')
 def iban_tara():
-    """Mevcut IBAN evraklarını toplu tarar ve çalışan/adaylara kaydeder."""
-    if request.method == 'POST':
-        sadece_eksik = request.form.get('sadece_eksik') == '1'
-        sonuclar, ozet = _iban_tara_calistir(sadece_eksik=sadece_eksik)
-        flash(f"Tarama tamamlandı. Başarılı: {ozet['basarili']}, "
-              f"Bulunamadı: {ozet['bulunamadi']}, Hatalı: {ozet['hatali']}.", 'info')
-        return render_template('ik/iban_tara.html',
-                               sonuclar=sonuclar, ozet=ozet, tamamlandi=True,
-                               sadece_eksik=sadece_eksik)
+    """IBAN toplu tarama sayfası (tarama JavaScript ile tek tek yapılır)."""
+    return render_template('ik/iban_tara.html')
 
-    return render_template('ik/iban_tara.html',
-                           sonuclar=None, ozet=None, tamamlandi=False,
-                           sadece_eksik=True)
+
+@ik_bp.route('/iban-tara/liste')
+@login_required
+@permission_required('ik.edit')
+def iban_tara_liste():
+    """Taranacak IBAN evraklarının id listesini JSON döndürür."""
+    sadece_eksik = request.args.get('sadece_eksik', '1') == '1'
+    tip_idleri = _iban_evrak_tipi_idleri()
+    evraklar = []
+    if tip_idleri:
+        for evrak in AdayEvrak.query.filter(AdayEvrak.evrak_tipi_id.in_(tip_idleri)).all():
+            aday = evrak.aday
+            if not aday or aday.is_deleted:
+                continue
+            if sadece_eksik and aday.iban:
+                continue
+            evraklar.append({
+                'id': f'A{evrak.id}',
+                'tip': 'Aday',
+                'sahip_ad': aday.full_name,
+                'dosya': evrak.dosya_adi or '',
+            })
+        for evrak in CalisanEvrak.query.filter(CalisanEvrak.evrak_tipi_id.in_(tip_idleri)).all():
+            calisan = evrak.calisan
+            if not calisan or calisan.is_deleted:
+                continue
+            if sadece_eksik and calisan.iban:
+                continue
+            evraklar.append({
+                'id': f'C{evrak.id}',
+                'tip': 'Çalışan',
+                'sahip_ad': calisan.full_name,
+                'dosya': evrak.dosya_adi or '',
+            })
+    return jsonify({'evraklar': evraklar, 'toplam': len(evraklar)})
+
+
+@ik_bp.route('/iban-tara/tek', methods=['POST'])
+@login_required
+@permission_required('ik.edit')
+def iban_tara_tek():
+    """Tek bir IBAN evrağını tarar, IBAN'ı çıkarır ve sahibine kaydeder."""
+    from app.services.ocr_service import extract_iban_from_image
+
+    data = request.get_json(silent=True) or {}
+    evrak_id = (data.get('evrak_id') or '').strip()
+
+    cozum = _iban_evrak_coz(evrak_id)
+    if not cozum:
+        return jsonify({'basarili': False, 'durum': 'hatali',
+                        'hata': 'Evrak bulunamadı', 'mesaj': 'Evrak bulunamadı',
+                        'evrak_adi': '', 'ad_soyad': '', 'tip': '', 'iban': ''}), 404
+
+    tip_adi, evrak, sahip = cozum
+    if not sahip or getattr(sahip, 'is_deleted', False):
+        return jsonify({'basarili': False, 'durum': 'hatali',
+                        'hata': 'Kayıt bulunamadı', 'mesaj': 'Kayıt bulunamadı',
+                        'evrak_adi': evrak.dosya_adi or '', 'ad_soyad': '',
+                        'tip': tip_adi, 'iban': ''})
+
+    sonuc = {
+        'tip': tip_adi,
+        'kayit_id': sahip.id,
+        'ad_soyad': sahip.full_name,
+        'evrak_adi': evrak.dosya_adi or '',
+        'iban': sahip.iban or '',
+    }
+
+    tam_yol = _evrak_tam_yol(evrak.dosya_yolu)
+    if not tam_yol or not os.path.exists(tam_yol):
+        sonuc.update({'basarili': False, 'durum': 'hatali',
+                      'hata': 'Dosya bulunamadı', 'mesaj': 'Dosya bulunamadı'})
+        return jsonify(sonuc)
+
+    try:
+        okunan = extract_iban_from_image(tam_yol)
+    except Exception as e:
+        current_app.logger.warning(f"IBAN tek tarama hatası (evrak={evrak_id}): {e}")
+        sonuc.update({'basarili': False, 'durum': 'hatali',
+                      'hata': 'Okuma hatası', 'mesaj': str(e)})
+        return jsonify(sonuc)
+
+    if okunan:
+        sonuc['iban'] = okunan
+        if not sahip.iban:
+            sahip.iban = okunan
+            db.session.commit()
+            mesaj = 'Okundu ve kaydedildi'
+        elif sahip.iban == okunan:
+            mesaj = 'Zaten kayıtlı (aynı)'
+        else:
+            mesaj = f'Farklı IBAN kayıtlı ({sahip.iban}) - kaydedilmedi'
+        sonuc.update({'basarili': True, 'durum': 'basarili', 'mesaj': mesaj})
+    else:
+        sonuc.update({'basarili': False, 'durum': 'bulunamadi',
+                      'hata': 'IBAN bulunamadı', 'mesaj': 'IBAN okunamadı'})
+    return jsonify(sonuc)
 
 
 @ik_bp.route('/iban-tara/export', methods=['POST'])
