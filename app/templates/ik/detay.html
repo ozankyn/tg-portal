@@ -377,6 +377,10 @@
                     <span class="text-sm font-medium text-[#111418] dark:text-white font-mono">{{ calisan.tc_kimlik }}</span>
                 </div>
                 {% endif %}
+                <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">IBAN</span>
+                    <span class="text-sm font-medium font-mono text-[#111418] dark:text-white">{{ calisan.iban or '—' }}</span>
+                </div>
                 {% if calisan.dogum_tarihi %}
                 <div class="flex flex-col gap-1">
                     <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Doğum Tarihi</span>
@@ -412,10 +416,6 @@
                     <span class="text-sm font-medium text-[#111418] dark:text-white">{{ calisan.adres }}</span>
                 </div>
                 {% endif %}
-                <div class="flex flex-col gap-1 md:col-span-2">
-                    <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">IBAN</span>
-                    <span class="text-sm font-medium font-mono text-[#111418] dark:text-white">{{ calisan.iban or '—' }}</span>
-                </div>
             </div>
         </div>
         

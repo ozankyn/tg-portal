@@ -486,7 +486,7 @@ def calisanlar_export():
     ws.title = 'Çalışanlar'
 
     headers = ['Sicil No', 'Ad Soyad', 'Proje', 'Kadro', 'Pozisyon',
-               'Departman', 'Durum', 'İşe Başlama', 'Telefon', 'Email']
+               'Departman', 'Durum', 'İşe Başlama', 'Telefon', 'Email', 'IBAN']
     ws.append(headers)
 
     header_font = Font(bold=True, color='FFFFFF')
@@ -512,9 +512,10 @@ def calisanlar_export():
             c.ise_baslama.strftime('%d.%m.%Y') if c.ise_baslama else '',
             c.telefon or '',
             c.email or '',
+            c.iban or '',
         ])
 
-    widths = [12, 28, 22, 22, 22, 20, 12, 14, 16, 28]
+    widths = [12, 28, 22, 22, 22, 20, 12, 14, 16, 28, 28]
     for idx, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = w
 
@@ -937,7 +938,7 @@ def adaylar_export():
     ws = wb.active
     ws.title = 'Adaylar'
 
-    headers = ['Ad Soyad', 'TC Kimlik', 'Cinsiyet', 'Telefon', 'Email', 'Başvuru Tarihi',
+    headers = ['Ad Soyad', 'TC Kimlik', 'IBAN', 'Cinsiyet', 'Telefon', 'Email', 'Başvuru Tarihi',
                'Proje', 'Direktörlük', 'Müdürlük', 'Kadro/Pozisyon', 'Durum',
                'Planlı Başlangıç Tarihi',
                'İl', 'İlçe', 'Üst Beden', 'Alt Beden', 'Ayakkabı No',
@@ -981,6 +982,7 @@ def adaylar_export():
         ws.append([
             f'{a.ad or ""} {a.soyad or ""}'.strip(),
             a.tc_kimlik or '',
+            a.iban or '',
             cinsiyet_etiket.get(a.cinsiyet, a.cinsiyet or ''),
             a.telefon or '',
             a.email or '',
@@ -1003,7 +1005,7 @@ def adaylar_export():
             a.basvuru_kaynak_text if a.basvuru_kaynak else '',
         ])
 
-    widths = [28, 13, 9, 16, 28, 14, 22, 22, 22, 24, 18, 18,
+    widths = [28, 13, 28, 9, 16, 28, 14, 22, 22, 22, 24, 18, 18,
               14, 14, 10, 10, 10, 26, 12, 14, 12, 18]
     for idx, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = w
