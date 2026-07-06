@@ -10,17 +10,18 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import os
 import random
+import re
 
 from app import db
 from app.models.egitim import (
-    EgitimTipi, Egitim, EgitimKatilimci, EgitimMateryali,
+    EgitimTipi, Egitim, EgitimKatilimci, EgitimKatilimLog, EgitimMateryali,
     CalisanZorunluEgitim, PozisyonZorunluEgitim
 )
 from app.models.quiz import (
     SoruKategorisi, Soru, SoruSecenegi,
     Test, TestSorusu, TestSonuc, TestCevap
 )
-from app.models.ik import Calisan, Pozisyon
+from app.models.ik import Calisan, Pozisyon, Aday
 from app.models.proje import Proje, HedefKadro
 from app.models.base import CalisanDurumu
 from app.utils import permission_required, paginate_query
@@ -278,11 +279,14 @@ def detay(id):
         ~Calisan.id.in_(mevcut_calisan_ids) if mevcut_calisan_ids else True
     ).order_by(Calisan.ad).all()
     
+    katilim_loglari = egitim.katilim_loglari.limit(500).all()
+
     return render_template('egitim/detay.html',
                           egitim=egitim,
                           katilimcilar=katilimcilar,
                           materyaller=materyaller,
-                          eklenebilir_calisanlar=eklenebilir_calisanlar)
+                          eklenebilir_calisanlar=eklenebilir_calisanlar,
+                          katilim_loglari=katilim_loglari)
 
 
 # ============================================================
@@ -1400,6 +1404,168 @@ def jitsi_durdur(id):
 
     flash('Online eğitim durduruldu.', 'info')
     return redirect(url_for('egitim.detay', id=id))
+
+
+# ============================================================
+# DIŞ KATILIM (Public - login gerektirmez, telefon eşleştirmeli)
+# ============================================================
+
+class _MisafirKullanici:
+    """JitsiService için basit kullanıcı objesi (full_name + email)."""
+    def __init__(self, full_name, email=''):
+        self.full_name = full_name
+        self.email = email or ''
+
+
+def _istek_ip():
+    """Nginx arkasında gerçek IP (X-Forwarded-For ilk değer)."""
+    xff = request.headers.get('X-Forwarded-For', '')
+    if xff:
+        return xff.split(',')[0].strip()
+    return request.remote_addr or ''
+
+
+def _normalize_tel(ham):
+    """Telefonu son 10 haneye normalize eder (5XXXXXXXXX).
+
+    Geçersiz Türk cep numarası ise None döner (5 ile başlayan 10 hane şartı).
+    """
+    if not ham:
+        return None
+    digits = re.sub(r'\D', '', ham)
+    if digits.startswith('90') and len(digits) == 12:
+        digits = digits[2:]
+    if len(digits) == 11 and digits.startswith('0'):
+        digits = digits[1:]
+    if len(digits) < 10:
+        return None
+    digits = digits[-10:]
+    if not digits.startswith('5'):
+        return None
+    return digits
+
+
+def _telefon_eslesme(norm10):
+    """norm10 (10 hane) ile önce Calisan, yoksa onaylı Aday eşleştirir.
+
+    Returns (calisan, aday) - en fazla biri dolu.
+    """
+    if not norm10:
+        return None, None
+    # DB tarafında telefonu rakamlaştırıp son 10 haneyi karşılaştır (format bağımsız)
+    cal_norm = db.func.right(db.func.regexp_replace(Calisan.telefon, r'[^0-9]', '', 'g'), 10)
+    calisan = Calisan.query.filter(
+        Calisan.is_deleted == False,
+        Calisan.telefon.isnot(None),
+        cal_norm == norm10,
+    ).first()
+    if calisan:
+        return calisan, None
+
+    aday_norm = db.func.right(db.func.regexp_replace(Aday.telefon, r'[^0-9]', '', 'g'), 10)
+    aday = Aday.query.filter(
+        Aday.is_deleted == False,
+        Aday.calisan_id.is_(None),  # henüz çalışana dönüşmemiş
+        Aday.telefon.isnot(None),
+        Aday.durum.in_(['onaylandi', 'sgk_giris_talebi', 'sgk_girisi_yapildi']),
+        aday_norm == norm10,
+    ).first()
+    return None, aday
+
+
+def _rate_limit_ok(anahtar, limit=5, pencere=60):
+    """Redis ile IP başına pencere içindeki istek limiti. Redis yoksa izin verir (fail-open)."""
+    try:
+        import redis as _redis
+        url = os.environ.get('REDIS_URL') or current_app.config.get('REDIS_URL') or 'redis://redis:6379/0'
+        r = _redis.from_url(url)
+        sayi = r.incr(anahtar)
+        if sayi == 1:
+            r.expire(anahtar, pencere)
+        return sayi <= limit
+    except Exception as e:
+        current_app.logger.warning(f"Rate limit kontrolü yapılamadı, izin veriliyor: {e}")
+        return True
+
+
+@egitim_bp.route('/katil/<int:id>', methods=['GET', 'POST'])
+def katil(id):
+    """Online eğitime dış katılım (login gerektirmez).
+
+    Ad Soyad + Telefon alınır; telefon ile çalışan/aday eşleştirilir,
+    JWT üretilip Jitsi odasına yönlendirilir. Her giriş loglanır.
+    """
+    egitim = Egitim.query.get_or_404(id)
+
+    # Sadece aktif/canlı eğitimler için link çalışsın
+    kapali = (egitim.is_deleted or egitim.durum == 'iptal'
+              or not egitim.jitsi_aktif or not egitim.jitsi_room_name)
+    if kapali:
+        return render_template('egitim/katil.html', egitim=egitim, kapali=True)
+
+    if request.method == 'POST':
+        ip = _istek_ip()
+
+        # Rate limit: aynı IP'den dakikada max 5 istek
+        if not _rate_limit_ok(f'egitim_katil:{id}:{ip}', limit=5, pencere=60):
+            return render_template(
+                'egitim/katil.html', egitim=egitim,
+                hata='Çok fazla deneme yaptınız. Lütfen bir dakika sonra tekrar deneyin.',
+                ad_soyad=request.form.get('ad_soyad', ''),
+                telefon=request.form.get('telefon', '')), 429
+
+        ad_soyad = (request.form.get('ad_soyad') or '').strip()
+        telefon = (request.form.get('telefon') or '').strip()
+        norm10 = _normalize_tel(telefon)
+
+        if len(ad_soyad) < 3 or not norm10:
+            return render_template(
+                'egitim/katil.html', egitim=egitim,
+                hata='Lütfen adınızı ve geçerli bir cep telefonu numarası girin (5XX XXX XX XX).',
+                ad_soyad=ad_soyad, telefon=telefon)
+
+        calisan, aday = _telefon_eslesme(norm10)
+
+        # Eşleşirse resmi ad/email kullan
+        goruntu_ad = ad_soyad
+        email = ''
+        if calisan:
+            goruntu_ad = calisan.full_name
+            email = calisan.email or ''
+        elif aday:
+            goruntu_ad = aday.full_name
+            email = aday.email or ''
+
+        # Katılım logu
+        db.session.add(EgitimKatilimLog(
+            egitim_id=egitim.id,
+            ad_soyad=goruntu_ad,
+            telefon=norm10,
+            calisan_id=calisan.id if calisan else None,
+            aday_id=aday.id if aday else None,
+            giris_zamani=datetime.now(),
+            ip=ip,
+        ))
+
+        # Çalışansa varsa katılımcı kaydını da 'katildi' yap
+        if calisan:
+            katilimci = EgitimKatilimci.query.filter_by(
+                egitim_id=egitim.id, calisan_id=calisan.id).first()
+            if katilimci and katilimci.durum in ('davetli', None):
+                katilimci.durum = 'katildi'
+                katilimci.katilim_tarihi = datetime.now()
+
+        db.session.commit()
+
+        # JWT üret + Jitsi'ye yönlendir
+        meeting_url = JitsiService.get_meeting_url(
+            egitim.jitsi_room_name,
+            _MisafirKullanici(goruntu_ad, email),
+            is_moderator=False,
+        )
+        return redirect(meeting_url)
+
+    return render_template('egitim/katil.html', egitim=egitim)
 
 
 @egitim_bp.route('/<int:id>/jitsi/katil')

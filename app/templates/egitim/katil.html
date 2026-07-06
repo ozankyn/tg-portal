@@ -1,0 +1,79 @@
+{% extends "basvuru/base_public.html" %}
+{% block title %}Eğitime Katıl{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+
+        <!-- Başlık -->
+        <div class="bg-gradient-to-r from-blue-600 to-blue-500 p-6 text-center">
+            <h4 class="text-white text-xl font-bold flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">videocam</span>
+                Online Eğitime Katıl
+            </h4>
+            {% if egitim %}
+            <p class="text-blue-100 text-sm mt-1">{{ egitim.ad }}</p>
+            {% endif %}
+        </div>
+
+        <div class="p-6">
+            {% if kapali %}
+            <!-- Eğitim aktif değil -->
+            <div class="text-center py-6">
+                <span class="material-symbols-outlined text-5xl text-gray-300">event_busy</span>
+                <h5 class="text-lg font-bold text-gray-800 mt-3">Yayın Aktif Değil</h5>
+                <p class="text-gray-500 text-sm mt-2">
+                    Bu eğitimin canlı yayını şu an aktif değil. Lütfen eğitmeninizin yayını başlatmasını bekleyin
+                    veya bağlantıyı daha sonra tekrar deneyin.
+                </p>
+            </div>
+            {% else %}
+
+            {% if hata %}
+            <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 mb-4 text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-red-500">error</span>
+                <span>{{ hata }}</span>
+            </div>
+            {% endif %}
+
+            <p class="text-center text-gray-600 text-sm mb-6">
+                Eğitime katılmak için ad soyad ve cep telefonu numaranızı girin.
+                Sistemde kayıtlıysanız bilgileriniz otomatik eşleştirilir.
+            </p>
+
+            <form method="POST" action="{{ url_for('egitim.katil', id=egitim.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="mb-4">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Ad Soyad</label>
+                    <input type="text" name="ad_soyad" required minlength="3"
+                           value="{{ ad_soyad or '' }}"
+                           placeholder="Adınız Soyadınız"
+                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div class="mb-6">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Cep Telefonu</label>
+                    <div class="flex">
+                        <span class="inline-flex items-center px-4 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg text-gray-600 text-sm">
+                            🇹🇷 +90
+                        </span>
+                        <input type="tel" name="telefon" required
+                               value="{{ telefon or '' }}"
+                               placeholder="5XX XXX XX XX"
+                               pattern="[0-9\s]{10,15}"
+                               class="flex-1 p-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Başında 0 olmadan 10 haneli numaranızı girin (5XX XXX XX XX)</p>
+                </div>
+
+                <button type="submit"
+                        class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">login</span>
+                    Eğitime Katıl
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

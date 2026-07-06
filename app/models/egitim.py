@@ -307,5 +307,32 @@ class PozisyonZorunluEgitim(db.Model):
     zorunlu = db.Column(db.Boolean, default=True)
     oncelik = db.Column(db.Integer, default=1)  # İşe başlamadan önce (1) veya sonra (2)
     sure_gun = db.Column(db.Integer)  # İşe başladıktan kaç gün içinde tamamlanmalı
-    
+
     egitim_tipi = db.relationship('EgitimTipi')
+
+
+class EgitimKatilimLog(db.Model, TimestampMixin):
+    """Online eğitime dış katılım logu (guest oturum yok - telefon eşleştirmeli).
+
+    /egitim/katil/<id> public linkinden giren her kişi buraya loglanır.
+    Telefon ile çalışan eşleşirse calisan_id, onaylı aday eşleşirse aday_id bağlanır.
+    """
+    __tablename__ = 'egitim_katilim_loglari'
+
+    id = db.Column(db.Integer, primary_key=True)
+    egitim_id = db.Column(db.Integer, db.ForeignKey('egitimler.id'), nullable=False, index=True)
+    ad_soyad = db.Column(db.String(120), nullable=False)
+    telefon = db.Column(db.String(20), nullable=False, index=True)  # normalize (son 10 hane)
+    calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'))  # eşleşirse
+    aday_id = db.Column(db.Integer, db.ForeignKey('adaylar.id'))        # onaylı aday eşleşirse
+    giris_zamani = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    ip = db.Column(db.String(45))
+
+    egitim = db.relationship('Egitim', backref=db.backref(
+        'katilim_loglari', lazy='dynamic',
+        order_by='EgitimKatilimLog.giris_zamani.desc()'))
+    calisan = db.relationship('Calisan')
+    aday = db.relationship('Aday')
+
+    def __repr__(self):
+        return f'<EgitimKatilimLog {self.egitim_id}-{self.telefon}>'

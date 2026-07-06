@@ -45,6 +45,7 @@ from app.models.egitim import (
     EgitimTipi,
     Egitim,
     EgitimKatilimci,
+    EgitimKatilimLog,
     EgitimMateryali,
     CalisanZorunluEgitim,
     PozisyonZorunluEgitim
@@ -93,7 +94,7 @@ from app.models.ayarlar import (
 )
 
 from app.models.egitim import (
-        EgitimTipi, Egitim, EgitimKatilimci, EgitimMateryali,
+        EgitimTipi, Egitim, EgitimKatilimci, EgitimKatilimLog, EgitimMateryali,
         CalisanZorunluEgitim, PozisyonZorunluEgitim
     )
 
@@ -138,6 +139,7 @@ __all__ = [
     'EgitimTipi',
     'Egitim',
     'EgitimKatilimci',
+    'EgitimKatilimLog',
     'EgitimMateryali',
     'CalisanZorunluEgitim',
     'PozisyonZorunluEgitim',

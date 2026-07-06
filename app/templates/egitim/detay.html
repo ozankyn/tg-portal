@@ -141,6 +141,20 @@
                         Eğitime Katıl
                     </a>
                     {% if current_user.has_permission('egitim.edit') %}
+                    <div class="mt-4 pt-4 border-t border-border-light dark:border-border-dark text-left">
+                        <label class="block text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase mb-1">Dış Katılım Linki (paylaşılabilir)</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="disKatilimLink" readonly
+                                   value="{{ url_for('egitim.katil', id=egitim.id, _external=True) }}"
+                                   class="flex-1 text-sm bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg px-3 py-2 font-mono">
+                            <button type="button" onclick="disKatilimKopyala(this)"
+                                    class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg flex items-center gap-1">
+                                <span class="material-symbols-outlined text-base">content_copy</span>
+                                Kopyala
+                            </button>
+                        </div>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Login gerektirmez; katılımcı ad-soyad + telefon girerek katılır.</p>
+                    </div>
                     <form method="POST" action="{{ url_for('egitim.jitsi_durdur', id=egitim.id) }}" class="mt-3">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="text-sm text-rose-500 hover:text-rose-600 font-medium">
@@ -382,6 +396,60 @@
     </div>
 </div>
 
+<!-- Katılım Logu (dış katılım linkinden girenler) -->
+<div class="mt-6 bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+        <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">how_to_reg</span>
+            Katılım Logu
+            <span class="ml-1 px-2 py-0.5 bg-gray-100 dark:bg-[#111418] text-text-muted dark:text-text-muted-dark text-xs rounded-full">{{ katilim_loglari|length }}</span>
+        </h6>
+    </div>
+    {% if katilim_loglari %}
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm">
+            <thead class="bg-gray-50 dark:bg-[#111418] text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">
+                <tr>
+                    <th class="px-5 py-3">Ad Soyad</th>
+                    <th class="px-5 py-3">Telefon</th>
+                    <th class="px-5 py-3">Eşleşme</th>
+                    <th class="px-5 py-3">Giriş Zamanı</th>
+                    <th class="px-5 py-3 hidden md:table-cell">IP</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                {% for log in katilim_loglari %}
+                <tr>
+                    <td class="px-5 py-3 font-medium text-[#111418] dark:text-white">{{ log.ad_soyad }}</td>
+                    <td class="px-5 py-3 font-mono text-text-muted dark:text-text-muted-dark">0{{ log.telefon }}</td>
+                    <td class="px-5 py-3">
+                        {% if log.calisan %}
+                        <a href="{{ url_for('ik.detay', id=log.calisan_id) }}" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                            <span class="material-symbols-outlined text-sm">badge</span> Çalışan
+                        </a>
+                        {% elif log.aday %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            <span class="material-symbols-outlined text-sm">person_add</span> Aday
+                        </span>
+                        {% else %}
+                        <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">Eşleşmedi</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-5 py-3 text-text-muted dark:text-text-muted-dark">{{ log.giris_zamani.strftime('%d.%m.%Y %H:%M') if log.giris_zamani else '' }}</td>
+                    <td class="px-5 py-3 hidden md:table-cell font-mono text-xs text-text-muted dark:text-text-muted-dark">{{ log.ip or '' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="py-10 text-center">
+        <span class="material-symbols-outlined text-4xl text-gray-300 dark:text-gray-600 mb-2">how_to_reg</span>
+        <p class="text-text-muted dark:text-text-muted-dark">Henüz dış katılım linkinden giriş yapılmadı.</p>
+    </div>
+    {% endif %}
+</div>
+
 <!-- Katılımcı Ekle Modal -->
 <div id="katilimciEkleModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-card-dark rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
@@ -531,6 +599,18 @@ function updateKatilimci(id, durum) {
         body: `durum=${durum}`
     }).then(response => {
         if (response.ok) location.reload();
+    });
+}
+
+function disKatilimKopyala(btn) {
+    const el = document.getElementById('disKatilimLink');
+    if (!el) return;
+    el.select();
+    el.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(el.value).then(() => {
+        const eski = btn.innerHTML;
+        btn.innerHTML = '<span class="material-symbols-outlined text-base">check</span> Kopyalandı';
+        setTimeout(() => { btn.innerHTML = eski; }, 1500);
     });
 }
 </script>
