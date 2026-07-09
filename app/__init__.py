@@ -37,6 +37,8 @@ def create_app(config_name=None):
     
     # Configuration
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
+    # CSRF token süresi - public formlar (başvuru/kariyer) uzun süre açık kalabiliyor
+    app.config['WTF_CSRF_TIME_LIMIT'] = 86400  # 24 saat (varsayılan 3600)
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
         'DATABASE_URL', 
         'postgresql://tgportal:tgportal123@localhost:5432/tgportal'
