@@ -247,13 +247,13 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     telefon_dogrulama_kodu = db.Column(db.String(6))
     telefon_dogrulama_kodu_expires = db.Column(db.DateTime)
     telefon_dogrulama_tarihi = db.Column(db.DateTime)
-    telefon_dogrulama_ip = db.Column(db.String(45))
+    telefon_dogrulama_ip = db.Column(db.String(200))  # IPv6 + Cloudflare proxy zinciri için geniş tutuldu
     telefon_dogrulama_deneme = db.Column(db.Integer, default=0)
     
     # ==================== KVKK Onay ====================
     kvkk_onay = db.Column(db.Boolean, default=False)
     kvkk_onay_tarihi = db.Column(db.DateTime)
-    kvkk_onay_ip = db.Column(db.String(45))  # IPv6 için 45 karakter
+    kvkk_onay_ip = db.Column(db.String(200))  # IPv6 + Cloudflare proxy zinciri için geniş tutuldu
     aydinlatma_metni_versiyonu = db.Column(db.String(10), default='1.0')  # Hangi versiyon onaylandı
 
     # ==================== Telefon Doğrulama (OTP) ====================
@@ -261,7 +261,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     telefon_dogrulama_kodu = db.Column(db.String(6))  # 6 haneli kod
     telefon_dogrulama_kodu_expires = db.Column(db.DateTime)  # Kod geçerlilik süresi (5 dk)
     telefon_dogrulama_tarihi = db.Column(db.DateTime)
-    telefon_dogrulama_ip = db.Column(db.String(45))
+    telefon_dogrulama_ip = db.Column(db.String(200))  # IPv6 + Cloudflare proxy zinciri için geniş tutuldu
     telefon_dogrulama_deneme = db.Column(db.Integer, default=0)  # Yanlış deneme sayısı (max 3)
     
     # ==================== Başvuru Durumu ====================

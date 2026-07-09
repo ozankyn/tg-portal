@@ -571,6 +571,14 @@ def aday_ise_al(id):
         return redirect(url_for('ik.aday_detay', id=aday.id))
 
     if request.method == 'POST':
+        # sicil_no boş bırakılırsa unique constraint çakışmasını önlemek için None yaz
+        # (PostgreSQL birden fazla NULL'a izin verir ama '' tekrarına izin vermez)
+        sicil_raw = request.form.get('sicil_no', '').strip()
+        sicil_no = None if sicil_raw in ('', 'None', 'none') else sicil_raw
+        # tc_kimlik de unique; boş string yerine None
+        tc_raw = request.form.get('tc_kimlik', '').strip()
+        tc_kimlik = None if tc_raw in ('', 'None', 'none') else tc_raw
+
         # Yeni çalışan oluştur
         calisan = Calisan(
             ad=aday.ad,
@@ -579,8 +587,8 @@ def aday_ise_al(id):
             telefon=aday.telefon,
             kadro_id=aday.kadro_id,
             pozisyon_id=aday.pozisyon_id,
-            sicil_no=request.form.get('sicil_no'),
-            tc_kimlik=request.form.get('tc_kimlik'),
+            sicil_no=sicil_no,
+            tc_kimlik=tc_kimlik,
             ise_baslama=datetime.strptime(request.form.get('ise_baslama'), '%Y-%m-%d').date() if request.form.get('ise_baslama') else date.today(),
             calisma_tipi=request.form.get('calisma_tipi', 'tam_zamanli'),
             durum=CalisanDurumu.AKTIF
