@@ -44,6 +44,20 @@
                 <p class="text-sm text-slate-300 mt-1">{% if kadro.proje.musteri.kariyer_gorunum_adi %}{{ kadro.proje.musteri.kariyer_gorunum_adi }} - {% endif %}{{ kadro.pozisyon_adi }}{% if kadro.il %} · {{ kadro.il }}{% endif %}</p>
             </div>
             <div class="p-6">
+                {% if form_hatalari %}
+                <div id="formHatalari" class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
+                    <div class="flex items-center gap-2 text-red-700 font-semibold mb-2">
+                        <span class="material-symbols-outlined">error</span>
+                        Başvurunuz gönderilemedi
+                    </div>
+                    <ul class="list-disc list-inside space-y-1 text-sm text-red-600">
+                        {% for h in form_hatalari %}
+                        <li>{{ h }}</li>
+                        {% endfor %}
+                    </ul>
+                    <p class="text-xs text-red-400 mt-2">Girdiğiniz bilgiler korundu. Yalnızca eksik alanları tamamlayıp tekrar gönderin. (Dosyaları yeniden seçmeniz gerekebilir.)</p>
+                </div>
+                {% endif %}
                 <form method="POST" enctype="multipart/form-data" id="basvuruForm">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -65,7 +79,7 @@
                         </div>
                         <div class="md:col-span-4">
                             <label class="block text-sm font-medium text-gray-700 mb-1">T.C. Kimlik No <span class="text-red-500">*</span></label>
-                            <input type="text" name="tc_kimlik" required maxlength="11" pattern="[0-9]{11}" value="{{ aday.tc_kimlik or '' }}"
+                            <input type="text" name="tc_kimlik" required maxlength="11" pattern="[0-9]{11}" inputmode="numeric" value="{{ aday.tc_kimlik or '' }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div class="md:col-span-4">
@@ -107,7 +121,7 @@
                                 Doğrulanmış numara
                             </p>
                             {% else %}
-                            <input type="tel" name="telefon" required placeholder="05XX XXX XX XX" value="{{ aday.telefon or '' }}"
+                            <input type="tel" name="telefon" required inputmode="tel" placeholder="05XX XXX XX XX" value="{{ aday.telefon or '' }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             {% endif %}
                         </div>
@@ -392,7 +406,7 @@
                     </h5>
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 flex items-center gap-2">
                         <span class="material-symbols-outlined text-blue-600">info</span>
-                        <span class="text-sm text-blue-800">Diğer belgeler (kimlik, diploma vb.) işe alım sürecinde ayrıca talep edilecektir. Maksimum dosya boyutu: 5MB</span>
+                        <span class="text-sm text-blue-800">Diğer belgeler (kimlik, diploma vb.) işe alım sürecinde ayrıca talep edilecektir. CV için maksimum dosya boyutu: 10MB</span>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div>
@@ -514,6 +528,92 @@
         if (ilSelect.value) {
             ilceleriYukle(seciliIlId(), seciliIlce);
         }
+    })();
+
+    // ---- Dosya boyutu/format kontrolü + gönderim loading overlay ----
+    (function () {
+        const form = document.getElementById('basvuruForm');
+        if (!form) return;
+
+        const MB = 1024 * 1024;
+        const KURALLAR = {
+            cv_dosya:    { max: 10 * MB,  exts: ['pdf', 'doc', 'docx'],        etiket: 'CV',       multi: false },
+            medya_fotos: { max: 10 * MB,  exts: ['jpg', 'jpeg', 'png', 'webp'], etiket: 'Fotoğraf', multi: true  },
+            medya_video: { max: 100 * MB, exts: ['mp4', 'mov', 'webm'],         etiket: 'Video',    multi: false },
+        };
+
+        function uzanti(ad) {
+            return ad.includes('.') ? ad.split('.').pop().toLowerCase() : '';
+        }
+        function mb(bayt) {
+            return (bayt / MB).toFixed(1);
+        }
+
+        function dosyalariDogrula() {
+            const hatalar = [];
+            for (const [alan, kural] of Object.entries(KURALLAR)) {
+                const input = form.querySelector(`input[name="${alan}"]`);
+                if (!input || !input.files || !input.files.length) continue;
+                for (const f of input.files) {
+                    const ext = uzanti(f.name);
+                    if (kural.exts.indexOf(ext) === -1) {
+                        hatalar.push(`${kural.etiket}: "${f.name}" desteklenmeyen format (izin verilen: ${kural.exts.join(', ').toUpperCase()})`);
+                    } else if (f.size > kural.max) {
+                        hatalar.push(`${kural.etiket}: "${f.name}" çok büyük (${mb(f.size)}MB) — en fazla ${Math.round(kural.max / MB)}MB olabilir`);
+                    }
+                }
+            }
+            return hatalar;
+        }
+
+        function hatalariGoster(hatalar) {
+            let kutu = document.getElementById('formHatalari');
+            if (!kutu) {
+                kutu = document.createElement('div');
+                kutu.id = 'formHatalari';
+                kutu.className = 'mb-6 rounded-lg border border-red-200 bg-red-50 p-4';
+                form.parentNode.insertBefore(kutu, form);
+            }
+            kutu.innerHTML =
+                '<div class="flex items-center gap-2 text-red-700 font-semibold mb-2">' +
+                '<span class="material-symbols-outlined">error</span>Dosyalarda sorun var</div>' +
+                '<ul class="list-disc list-inside space-y-1 text-sm text-red-600">' +
+                hatalar.map(h => `<li>${h}</li>`).join('') + '</ul>';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Loading overlay (gönderim sırasında)
+        function overlayGoster() {
+            let ov = document.getElementById('gonderimOverlay');
+            if (!ov) {
+                ov = document.createElement('div');
+                ov.id = 'gonderimOverlay';
+                ov.className = 'fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm';
+                ov.innerHTML =
+                    '<div class="bg-white rounded-2xl px-8 py-7 text-center shadow-xl max-w-xs mx-4">' +
+                    '<span class="material-symbols-outlined text-blue-600 animate-spin" style="font-size:44px;">progress_activity</span>' +
+                    '<p class="mt-3 font-semibold text-gray-900">Başvurunuz gönderiliyor…</p>' +
+                    '<p id="gonderimAltNot" class="mt-1 text-sm text-gray-500">Dosyalar yükleniyor, lütfen sayfayı kapatmayın.</p>' +
+                    '</div>';
+                document.body.appendChild(ov);
+            }
+            ov.classList.remove('hidden');
+            // 30 sn sonra hâlâ bekliyorsak bağlantı uyarısı göster
+            setTimeout(function () {
+                const not = document.getElementById('gonderimAltNot');
+                if (not) not.innerHTML = '<span class="text-amber-600">Bağlantınız yavaş olabilir. Video gibi büyük dosyalar zaman alabilir; lütfen bekleyin.</span>';
+            }, 30000);
+        }
+
+        form.addEventListener('submit', function (e) {
+            const hatalar = dosyalariDogrula();
+            if (hatalar.length) {
+                e.preventDefault();
+                hatalariGoster(hatalar);
+                return;
+            }
+            overlayGoster();
+        });
     })();
 </script>
 {% endblock %}

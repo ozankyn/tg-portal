@@ -81,7 +81,9 @@ def create_app(config_name=None):
     app.config['COMPANY_NAME'] = os.environ.get('COMPANY_NAME', '')
     app.config['COMPANY_SUBTITLE'] = os.environ.get('COMPANY_SUBTITLE', 'ERP Sistemi')
     app.config['COMPANY_LOGO'] = os.environ.get('COMPANY_LOGO', 'logo.png')
-    
+    # Public hata sayfalarında gösterilecek WhatsApp destek numarası (boşsa gizlenir)
+    app.config['COMPANY_WHATSAPP'] = os.environ.get('COMPANY_WHATSAPP', '')
+
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
@@ -149,12 +151,74 @@ def create_app(config_name=None):
     from app.modules.onay.routes import onay_bp
     app.register_blueprint(onay_bp, url_prefix="/onay")
     
-    # CSRF token süresi dolduğunda çirkin "Bad Request" yerine flash + geri yönlendir
+    # ============================================================
+    # HATA YÖNETİMİ
+    # Public sayfalarda (/kariyer, /basvuru) aday dostu hata ekranları göster.
+    # Diğer sayfalarda Flask/Werkzeug varsayılan davranışı korunur.
+    # ============================================================
+    def _public_path():
+        from flask import request
+        p = request.path or ''
+        return p.startswith('/kariyer') or p.startswith('/basvuru')
+
+    def _public_error(kod, baslik, mesaj, whatsapp=False):
+        from flask import render_template
+        wa = app.config.get('COMPANY_WHATSAPP') if whatsapp else None
+        return render_template('public/hata.html', kod=kod, baslik=baslik,
+                               mesaj=mesaj, whatsapp=wa), kod
+
+    # CSRF token süresi dolduğunda: public'te otomatik yenilenen sayfa, diğerlerinde flash + geri dön
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
-        from flask import flash, redirect, request, url_for
+        from flask import flash, redirect, request, url_for, render_template
+        if _public_path():
+            return render_template('public/csrf.html',
+                                   geri_url=request.referrer or request.path), 400
         flash('Oturum süreniz dolmuş, lütfen tekrar deneyin.', 'warning')
         return redirect(request.referrer or url_for('core.dashboard'))
+
+    @app.errorhandler(400)
+    def handle_400(e):
+        if _public_path():
+            return _public_error(400, 'Formda bir sorun oluştu',
+                                 'Formda bir sorun oluştu. Sayfayı yenileyip tekrar deneyin.')
+        return e
+
+    @app.errorhandler(403)
+    def handle_403(e):
+        if _public_path():
+            return _public_error(403, 'Erişim izniniz yok',
+                                 'Bu sayfaya erişim izniniz yok.')
+        return e
+
+    @app.errorhandler(404)
+    def handle_404(e):
+        if _public_path():
+            return _public_error(404, 'Sayfa bulunamadı',
+                                 'Aradığınız sayfa bulunamadı.')
+        return e
+
+    @app.errorhandler(413)
+    def handle_413(e):
+        if _public_path():
+            return _public_error(413, 'Dosya çok büyük',
+                                 "Yüklemeye çalıştığınız dosya çok büyük. Lütfen 50MB'den küçük dosya yükleyin.")
+        return e
+
+    @app.errorhandler(500)
+    def handle_500(e):
+        # Bozuk transaction'ı temizle (aday hata sayfası DB'ye dokunmaz)
+        try:
+            db.session.rollback()
+        except Exception:
+            pass
+        if _public_path():
+            return _public_error(500, 'Bir hata oluştu',
+                                 'Bir hata oluştu. Sayfayı yenileyip tekrar deneyin. '
+                                 'Sorun devam ederse WhatsApp ile bize ulaşın.',
+                                 whatsapp=True)
+        from werkzeug.exceptions import InternalServerError
+        return InternalServerError()
 
     # Bozuk transaction temizleme
     @app.before_request

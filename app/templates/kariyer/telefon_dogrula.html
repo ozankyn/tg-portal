@@ -126,11 +126,28 @@
 
             <div class="border-t border-gray-200 pt-4 text-center">
                 <p class="text-gray-500 text-xs mb-2">Kod gelmedi mi?</p>
-                <a href="{{ url_for('kariyer.kod_tekrar_gonder', kadro_id=kadro.id) }}"
+                <a id="tekrarGonder"
+                   href="{{ url_for('kariyer.kod_tekrar_gonder', kadro_id=kadro.id) }}"
+                   data-href="{{ url_for('kariyer.kod_tekrar_gonder', kadro_id=kadro.id) }}"
                    class="inline-flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-600 hover:bg-gray-50 transition-colors">
                     <span class="material-symbols-outlined text-base">refresh</span>
-                    Tekrar Gönder
+                    <span id="tekrarGonderMetin">Tekrar Gönder</span>
                 </a>
+
+                <!-- SMS almadım yardımı -->
+                <details class="mt-4 text-left">
+                    <summary class="cursor-pointer text-xs text-blue-600 hover:text-blue-700 flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-sm">help</span>
+                        SMS almadım, ne yapmalıyım?
+                    </summary>
+                    <ul class="mt-2 text-xs text-gray-500 space-y-1 list-disc list-inside bg-gray-50 rounded-lg p-3">
+                        <li>Telefon numaranızı doğru girdiğinizden emin olun.</li>
+                        <li>SMS'in ulaşması 1-2 dakika sürebilir, biraz bekleyin.</li>
+                        <li>Sinyalinizin zayıf olmadığından emin olun.</li>
+                        <li>Yukarıdaki <strong>Tekrar Gönder</strong> ile yeni kod isteyin.</li>
+                        <li>Sorun devam ederse İK ekibimizle iletişime geçin.</li>
+                    </ul>
+                </details>
             </div>
             {% endif %}
 
@@ -157,5 +174,37 @@ document.querySelector('input[name="telefon"]')?.addEventListener('input', funct
 document.querySelector('input[name="kod"]')?.addEventListener('input', function(e) {
     this.value = this.value.replace(/[^0-9]/g, '').substring(0, 6);
 });
+
+// "Tekrar Gönder" için 60 saniyelik geri sayım — kod yeni gönderildiğinde kilitli başlar
+(function () {
+    const link = document.getElementById('tekrarGonder');
+    const metin = document.getElementById('tekrarGonderMetin');
+    if (!link || !metin) return;
+
+    const hedef = link.dataset.href;
+    let kalan = 60;
+
+    function kilitle() {
+        link.classList.add('opacity-50', 'pointer-events-none');
+        link.removeAttribute('href');
+    }
+    function ac() {
+        link.classList.remove('opacity-50', 'pointer-events-none');
+        link.setAttribute('href', hedef);
+        metin.textContent = 'Tekrar Gönder';
+    }
+
+    kilitle();
+    metin.textContent = `Tekrar Gönder (${kalan})`;
+    const t = setInterval(function () {
+        kalan -= 1;
+        if (kalan <= 0) {
+            clearInterval(t);
+            ac();
+        } else {
+            metin.textContent = `Tekrar Gönder (${kalan})`;
+        }
+    }, 1000);
+})();
 </script>
 {% endblock %}

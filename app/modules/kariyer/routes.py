@@ -41,6 +41,14 @@ def _parse_dt(s):
         return None
 
 
+def _parse_date(s):
+    """'YYYY-MM-DD' string -> date (hatalıysa None). Form re-render için."""
+    try:
+        return datetime.strptime(s, '%Y-%m-%d').date() if s else None
+    except (ValueError, TypeError):
+        return None
+
+
 def _otp_valid(bsv):
     """Session'daki OTP hâlâ geçerli mi?"""
     if not bsv.get('otp_kod') or not bsv.get('otp_expires'):
@@ -65,18 +73,35 @@ def _verify_session_otp(bsv, kod):
 
 class _FormAday:
     """kariyer/form.html render'ı için geçici placeholder (DB'ye yazılmaz).
-    Tanımsız alanlar None döner; böylece form boş render edilir."""
-    def __init__(self, telefon=None, telefon_dogrulandi=False):
-        self.telefon = telefon
-        self.telefon_dogrulandi = telefon_dogrulandi
-        self.vardiyali_calisabilir = True
-        self.toplam_tecrube_yil = 0
+    GET'te boş form render edilir; POST doğrulama hatasında ise girilen
+    değerlerle yeniden doldurulur (aday veri kaybı yaşamaz).
+    Tanımsız alanlar None döner."""
+
+    # Template'te .strftime() ile kullanılan tarih alanları → date/None dönmeli
+    _TARIH_ALANLARI = {
+        'dogum_tarihi', 'ehliyet_tarihi', 'son_is_baslangic',
+        'son_is_bitis', 'askerlik_tecil_tarihi',
+    }
+
+    def __init__(self, form=None, telefon=None, telefon_dogrulandi=False):
+        # __getattr__ ile çakışmamak için doğrudan __dict__'e yazıyoruz
+        self.__dict__['_form'] = form or {}
+        self.__dict__['telefon'] = telefon or (form.get('telefon') if form else None)
+        self.__dict__['telefon_dogrulandi'] = telefon_dogrulandi
+        # İlk GET (form yok) → makul varsayılanlar
+        if not form:
+            self.__dict__['vardiyali_calisabilir'] = True
+            self.__dict__['toplam_tecrube_yil'] = 0
 
     def __getattr__(self, name):
         # Dunder/özel isimler için normal AttributeError davranışı korunur
         if name.startswith('__') and name.endswith('__'):
             raise AttributeError(name)
-        return None
+        form = self.__dict__.get('_form') or {}
+        val = form.get(name)
+        if name in _FormAday._TARIH_ALANLARI:
+            return _parse_date(val)
+        return val if val not in (None, '') else None
 
 
 @kariyer_bp.route('/')
@@ -259,6 +284,10 @@ def basvuru_form(kadro_id):
         return redirect(url_for('kariyer.telefon_dogrula', kadro_id=kadro_id))
 
     if request.method == 'POST':
+        # Doğrulama hatalarını topla — redirect yerine formu girilen verilerle
+        # yeniden gösteriyoruz (aday veri kaybı yaşamaz).
+        hatalar = []
+
         # Zorunlu alan kontrolü — tüm bilgiler tek seferde alınır
         ad = (request.form.get('ad') or '').strip()
         soyad = (request.form.get('soyad') or '').strip()
@@ -281,41 +310,50 @@ def basvuru_form(kadro_id):
                 zorunlu_alanlar['İlçe'] = request.form.get('ilce')
         eksikler = [etiket for etiket, deger in zorunlu_alanlar.items() if not deger]
         if eksikler:
-            flash('Lütfen zorunlu alanları doldurun: ' + ', '.join(eksikler), 'danger')
-            return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
+            hatalar.append('Lütfen şu zorunlu alanları doldurun: ' + ', '.join(eksikler))
 
         if request.form.get('cinsiyet') == 'erkek' and not request.form.get('askerlik_durumu'):
-            flash('Askerlik durumu erkek adaylar için zorunludur.', 'danger')
-            return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
+            hatalar.append('Askerlik durumu erkek adaylar için zorunludur.')
 
         # Kadro flag'lerine göre foto/video zorunlu kontrolü (aday oluşturmadan önce)
         if kadro.foto_gerekli:
             fotos = [f for f in request.files.getlist('medya_fotos') if f and f.filename]
             if not fotos:
-                flash('Bu pozisyon için en az bir fotoğraf yüklemeniz zorunludur.', 'danger')
-                return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
+                hatalar.append('Bu pozisyon için en az bir fotoğraf yüklemeniz zorunludur.')
 
         if kadro.video_gerekli:
             video_file = request.files.get('medya_video')
             if not video_file or not video_file.filename:
-                flash('Bu pozisyon için video yüklemeniz zorunludur.', 'danger')
-                return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
+                hatalar.append('Bu pozisyon için video yüklemeniz zorunludur.')
 
         # Mükerrer başvuru kontrolü — aynı kadroya aynı TC veya telefon ile
         # daha önce başvuru yapılmış mı? (silinmiş kayıtlar sayılmaz)
         tc_kimlik = request.form.get('tc_kimlik')
         telefon = bsv.get('telefon') if bsv.get('telefon_dogrulandi') else request.form.get('telefon')
-        mukerrer = Aday.query.filter(
-            Aday.kadro_id == kadro_id,
-            Aday.is_deleted == False,
-            db.or_(
-                db.and_(tc_kimlik != None, Aday.tc_kimlik == tc_kimlik),
-                db.and_(telefon != None, Aday.telefon == telefon),
-            ),
-        ).first()
-        if mukerrer:
-            flash('Bu pozisyona daha önce başvuru yapmışsınız.', 'danger')
-            return redirect(url_for('kariyer.basvuru_form', kadro_id=kadro_id))
+        if not hatalar:
+            mukerrer = Aday.query.filter(
+                Aday.kadro_id == kadro_id,
+                Aday.is_deleted == False,
+                db.or_(
+                    db.and_(tc_kimlik != None, Aday.tc_kimlik == tc_kimlik),
+                    db.and_(telefon != None, Aday.telefon == telefon),
+                ),
+            ).first()
+            if mukerrer:
+                hatalar.append('Bu pozisyona daha önce başvuru yapmışsınız.')
+
+        # Hata varsa: girilen verileri koruyarak formu yeniden göster (redirect YOK)
+        if hatalar:
+            form_aday = _FormAday(
+                form=request.form,
+                telefon=bsv.get('telefon'),
+                telefon_dogrulandi=bool(bsv.get('telefon_dogrulandi')),
+            )
+            iller = Il.query.order_by(Il.ad).all()
+            return render_template('kariyer/form.html', aday=form_aday, kadro=kadro,
+                                   basvuru_kaynak_turleri=BASVURU_KAYNAK_TURLERI,
+                                   beden_secenekleri=BEDEN_SECENEKLERI,
+                                   iller=iller, form_hatalari=hatalar), 400
 
         # ---- Aday kaydını oluştur (tüm bilgiler tek INSERT) ----
         aday = Aday(
@@ -542,12 +580,12 @@ def evrak_yukle_sayfa(token):
     
     if not aday:
         flash('Geçersiz veya süresi dolmuş link.', 'danger')
-        return redirect(url_for('kariyer.basvuru'))
+        return redirect(url_for('kariyer.pozisyonlar'))
     
     # Token süresi kontrolü (opsiyonel - evrak için daha uzun süre verilebilir)
     # if aday.davet_token_expires and aday.davet_token_expires < datetime.now():
     #     flash('Link süresi dolmuş.', 'danger')
-    #     return redirect(url_for('kariyer.basvuru'))
+    #     return redirect(url_for('kariyer.pozisyonlar'))
     
     evrak_tipleri = EvrakTipi.query.filter_by(aktif=True).order_by(EvrakTipi.sira).all()
     evraklar = aday.evraklar.all()
@@ -604,7 +642,7 @@ def evrak_yukle_post(token):
     
     if not aday:
         flash('Geçersiz link.', 'danger')
-        return redirect(url_for('kariyer.basvuru'))
+        return redirect(url_for('kariyer.pozisyonlar'))
     
     if 'dosya' not in request.files:
         flash('Dosya seçilmedi.', 'danger')
@@ -810,7 +848,7 @@ def kargo_barkod_yukle(token):
     aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first()
     if not aday:
         flash('Geçersiz veya süresi dolmuş link.', 'danger')
-        return redirect(url_for('kariyer.basvuru'))
+        return redirect(url_for('kariyer.pozisyonlar'))
 
     foto = request.files.get('kargo_barkod')
     if not foto or not foto.filename:
@@ -863,7 +901,7 @@ def sirket_evrak_indir(token, sablon_id):
     aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first()
     if not aday:
         flash('Geçersiz veya süresi dolmuş link.', 'danger')
-        return redirect(url_for('kariyer.basvuru'))
+        return redirect(url_for('kariyer.pozisyonlar'))
 
     sablon = SozlesmeSablonu.query.filter_by(id=sablon_id, is_deleted=False, aktif=True).first()
     if not sablon or not sablon.sablon_dosya:
@@ -888,7 +926,7 @@ def kvkk_indir(token):
     aday = Aday.query.filter_by(davet_token=token, is_deleted=False).first()
     if not aday:
         flash('Geçersiz veya süresi dolmuş link.', 'danger')
-        return redirect(url_for('kariyer.basvuru'))
+        return redirect(url_for('kariyer.pozisyonlar'))
 
     html = render_template('kariyer/kvkk_indir.html', aday=aday)
     return Response(

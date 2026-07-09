@@ -414,10 +414,21 @@
 
         function uploadFotos(files) {
             if (!files || !files.length) return;
+            // Yüklemeden önce boyut/format kontrolü
+            const EXTS = ['jpg', 'jpeg', 'png', 'webp'];
+            const gecerli = [], reddedilen = [];
+            for (const f of files) {
+                const ext = f.name.includes('.') ? f.name.split('.').pop().toLowerCase() : '';
+                if (EXTS.indexOf(ext) === -1) { reddedilen.push(`${f.name}: desteklenmeyen format`); continue; }
+                if (f.size > 10 * 1024 * 1024) { reddedilen.push(`${f.name}: 10MB'dan büyük`); continue; }
+                gecerli.push(f);
+            }
+            if (reddedilen.length) alert('Bazı dosyalar yüklenmedi:\n' + reddedilen.join('\n'));
+            if (!gecerli.length) { fotoInput.value = ''; return; }
             const fd = new FormData();
-            for (const f of files) fd.append('fotos', f);
+            for (const f of gecerli) fd.append('fotos', f);
             fotoProgress.classList.remove('hidden');
-            fotoProgress.textContent = `${files.length} dosya yükleniyor...`;
+            fotoProgress.textContent = `${gecerli.length} dosya yükleniyor...`;
             fetch(`/kariyer/evrak/${token}/medya/foto`, {
                 method: 'POST',
                 headers: {'X-CSRFToken': csrfToken},
@@ -455,6 +466,11 @@
         }
 
         function uploadVideo(file) {
+            const vext = file.name.includes('.') ? file.name.split('.').pop().toLowerCase() : '';
+            if (['mp4', 'mov', 'webm'].indexOf(vext) === -1) {
+                alert('Desteklenmeyen video formatı. İzin verilen: MP4, MOV, WEBM.');
+                return;
+            }
             if (file.size > 100 * 1024 * 1024) {
                 alert('Video 100MB\'dan büyük olamaz.');
                 return;
@@ -497,5 +513,46 @@
     })();
     </script>
     {% endif %}
+
+    <!-- Basit form (evrak + kargo barkod) için boyut/format kontrolü + loading -->
+    <script>
+    (function () {
+        const MB = 1024 * 1024;
+        function uzanti(ad) { return ad.includes('.') ? ad.split('.').pop().toLowerCase() : ''; }
+
+        function formKur(fileName, exts, maxMB) {
+            const input = document.querySelector(`input[name="${fileName}"]`);
+            if (!input) return;
+            const form = input.closest('form');
+            if (!form) return;
+            form.addEventListener('submit', function (e) {
+                const f = input.files && input.files[0];
+                if (f) {
+                    const ext = uzanti(f.name);
+                    if (exts.indexOf(ext) === -1) {
+                        e.preventDefault();
+                        alert('Desteklenmeyen dosya formatı. İzin verilen: ' + exts.join(', ').toUpperCase());
+                        return;
+                    }
+                    if (f.size > maxMB * MB) {
+                        e.preventDefault();
+                        alert(`Dosya çok büyük (${(f.size / MB).toFixed(1)}MB). En fazla ${maxMB}MB olabilir.`);
+                        return;
+                    }
+                }
+                // Loading: submit butonunu kilitle
+                const btn = form.querySelector('button[type="submit"]');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-70', 'pointer-events-none');
+                    btn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span> Yükleniyor…';
+                }
+            });
+        }
+
+        formKur('dosya', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'], 10);
+        formKur('kargo_barkod', ['jpg', 'jpeg', 'png', 'webp'], 10);
+    })();
+    </script>
 </div>
 {% endblock %}
