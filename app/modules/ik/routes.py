@@ -2365,10 +2365,6 @@ def aday_calisana_donustur(id):
         flash('Aday yalnızca "SGK Girişi Yapıldı" aşamasında çalışana dönüştürülebilir.', 'danger')
         return redirect(url_for('ik.aday_detay', id=id))
 
-    if not aday.kvkk_onay:
-        flash('KVKK onayı alınmadan işe alım yapılamaz.', 'danger')
-        return redirect(url_for('ik.aday_detay', id=id))
-
     # 2) Eksik bilgi kontrolü - her eksik için spesifik flash
     eksikler = _aday_donustur_eksikler(aday)
     if eksikler:
@@ -2505,6 +2501,13 @@ def aday_calisana_donustur(id):
                 flash(f'{calisan.full_name} mevcut çalışan kaydına bağlandı ve yeniden işe alındı.', 'success')
             else:
                 flash(f'{calisan.full_name} başarıyla çalışan olarak kaydedildi.', 'success')
+
+            if not aday.kvkk_onay:
+                flash('Çalışan oluşturuldu. Dikkat: KVKK onayı henüz alınmamış.', 'warning')
+                current_app.logger.warning(
+                    "KVKK onayı olmadan çalışana dönüştürüldü: aday_id=%s -> calisan_id=%s, kullanici_id=%s",
+                    aday.id, calisan.id, current_user.id
+                )
             return redirect(url_for('ik.detay', id=calisan.id))
 
     departmanlar = Departman.query.filter_by(aktif=True).order_by(Departman.ad).all()

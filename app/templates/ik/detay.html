@@ -13,6 +13,16 @@
     <span class="text-[#111418] dark:text-white font-medium">{{ calisan.ad }} {{ calisan.soyad }}</span>
 </div>
 
+{% if aday and not aday.kvkk_onay %}
+<div class="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 mb-6">
+    <span class="material-symbols-outlined text-amber-600 dark:text-amber-400 text-xl">warning</span>
+    <div class="text-sm text-amber-800 dark:text-amber-300">
+        <p class="font-bold">KVKK onayı alınmamış</p>
+        <p class="mt-0.5">Bu çalışanın aday kaydında KVKK açık rıza onayı bulunmuyor. Lütfen en kısa sürede onayı tamamlayın.</p>
+    </div>
+</div>
+{% endif %}
+
 <!-- Main Content Grid -->
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     
