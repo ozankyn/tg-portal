@@ -78,7 +78,24 @@ class JitsiService:
             str: Tam meeting URL'i (JWT dahil)
         """
         token = cls.generate_token(user, room_name, is_moderator)
-        return f"https://{cls.JITSI_DOMAIN}/{room_name}?jwt={token}"
+        meeting_url = f"https://{cls.JITSI_DOMAIN}/{room_name}?jwt={token}"
+
+        # Moderatör olmayanlarda "End meeting" (toplantıyı sonlandır) butonu gizlensin.
+        # Jitsi URL hash config override ile toolbar'dan 'end-meeting' çıkarılıyor;
+        # 'hangup' (ayrıl) listede kalır, 'end-meeting' yer almaz.
+        if not is_moderator:
+            toolbar_buttons = (
+                '["camera","chat","desktop","filmstrip","fullscreen","hangup",'
+                '"microphone","participants-pane","profile","raisehand",'
+                '"select-background","settings","tileview","toggle-camera","videoquality"]'
+            )
+            meeting_url += (
+                f"#config.toolbarButtons={toolbar_buttons}"
+                f"&interfaceConfig.TOOLBAR_BUTTONS={toolbar_buttons}"
+                "&interfaceConfig.SHOW_PROMOTIONAL_CLOSE_PAGE=false"
+            )
+
+        return meeting_url
 
     @classmethod
     def create_room_name(cls, prefix, unique_id):
