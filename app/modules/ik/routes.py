@@ -1703,6 +1703,12 @@ def aday_reddet(id):
         flash('Aday zaten reddedilmiş.', 'info')
         return redirect(url_for('ik.aday_detay', id=id))
 
+    # Red öncesi en az bir iletişim kaydı zorunlu (sadece şirketin reddettiği durumda)
+    if not _aday_has_iletisim(aday):
+        flash('Bu adayı reddetmek için önce en az bir iletişim kaydı '
+              'eklemelisiniz (arama, SMS vb.).', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
     red_nedeni = (request.form.get('red_nedeni') or request.form.get('red_sebebi') or '').strip()
     if not red_nedeni:
         flash('Red nedeni zorunludur.', 'danger')
