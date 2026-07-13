@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ egitim.baslik if egitim else 'Canlı Eğitim' }} - TG Portal</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #040404;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        #jitsi-container {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+        }
+        #jitsi-container iframe {
+            width: 100% !important;
+            height: 100% !important;
+            border: 0;
+        }
+        #yukleniyor {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            color: #e5e7eb;
+            z-index: 5;
+        }
+        #yukleniyor .spinner {
+            width: 44px;
+            height: 44px;
+            border: 4px solid rgba(255, 255, 255, 0.15);
+            border-top-color: #06b6d4;
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #hata {
+            position: fixed;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            color: #e5e7eb;
+            text-align: center;
+            padding: 24px;
+            z-index: 10;
+        }
+        #hata a {
+            color: #06b6d4;
+            text-decoration: none;
+            font-weight: 600;
+            padding: 10px 20px;
+            border: 1px solid #06b6d4;
+            border-radius: 8px;
+        }
+        #hata a:hover { background: rgba(6, 182, 212, 0.1); }
+    </style>
+</head>
+<body>
+    <div id="yukleniyor">
+        <div class="spinner"></div>
+        <div>Canlı eğitim yükleniyor…</div>
+    </div>
+
+    <div id="hata">
+        <div style="font-size: 18px; font-weight: 600;">Canlı eğitim yüklenemedi</div>
+        <div style="color: #9ca3af;">Bağlantı kurulamadı. Lütfen sayfayı yenileyin.</div>
+        <a href="{{ geri_url }}">Geri dön</a>
+    </div>
+
+    <div id="jitsi-container"></div>
+
+    <script src="https://{{ jitsi_domain }}/external_api.js"></script>
+    <script>
+        (function () {
+            var isModerator = {{ 'true' if is_moderator else 'false' }};
+            var geriUrl = {{ geri_url | tojson }};
+
+            // Moderatör olmayanlar toplantıyı herkes için sonlandıramaz
+            var toolbarButtons = [
+                'microphone', 'camera', 'desktop', 'fullscreen',
+                'fodeviceselection', 'hangup', 'chat', 'raisehand',
+                'videoquality', 'tileview', 'settings', 'participants-pane',
+                'toggle-camera'
+            ];
+            // 'end-meeting' (herkes için bitir) ve yönetim butonları sadece moderatörde
+            if (isModerator) {
+                toolbarButtons.push(
+                    'recording', 'mute-everyone', 'mute-video-everyone',
+                    'security', 'end-meeting'
+                );
+            }
+
+            var options = {
+                roomName: {{ room_name | tojson }},
+                // JWT URL'de değil, API config'inde geçiliyor
+                jwt: {{ jwt_token | tojson }},
+                parentNode: document.getElementById('jitsi-container'),
+                width: '100%',
+                height: '100%',
+                userInfo: {
+                    displayName: {{ user_name | tojson }},
+                    email: {{ (user_email or '') | tojson }}
+                },
+                configOverwrite: {
+                    prejoinPageEnabled: false,
+                    disableDeepLinking: true,
+                    startWithAudioMuted: !isModerator,
+                    startWithVideoMuted: false,
+                    disableInviteFunctions: true,
+                    toolbarButtons: toolbarButtons
+                },
+                interfaceConfigOverwrite: {
+                    SHOW_JITSI_WATERMARK: false,
+                    SHOW_WATERMARK_FOR_GUESTS: false,
+                    SHOW_BRAND_WATERMARK: false,
+                    SHOW_POWERED_BY: false,
+                    DEFAULT_BACKGROUND: '#040404',
+                    DISABLE_JOIN_LEAVE_NOTIFICATIONS: false,
+                    MOBILE_APP_PROMO: false,
+                    HIDE_INVITE_MORE_HEADER: true,
+                    TOOLBAR_BUTTONS: toolbarButtons
+                }
+            };
+
+            var api;
+            try {
+                api = new JitsiMeetExternalAPI({{ jitsi_domain | tojson }}, options);
+            } catch (e) {
+                document.getElementById('yukleniyor').style.display = 'none';
+                document.getElementById('hata').style.display = 'flex';
+                return;
+            }
+
+            api.addEventListener('videoConferenceJoined', function () {
+                var y = document.getElementById('yukleniyor');
+                if (y) y.style.display = 'none';
+            });
+
+            // Kullanıcı toplantıdan ayrılınca portala geri dön
+            api.addEventListener('readyToClose', function () {
+                window.location.href = geriUrl;
+            });
+
+            // Güvenlik ağı: 15sn içinde açılmazsa hata göster
+            setTimeout(function () {
+                var y = document.getElementById('yukleniyor');
+                if (y && y.style.display !== 'none') {
+                    y.style.display = 'none';
+                    document.getElementById('hata').style.display = 'flex';
+                }
+            }, 15000);
+        })();
+    </script>
+</body>
+</html>
