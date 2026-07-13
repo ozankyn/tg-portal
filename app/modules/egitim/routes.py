@@ -1686,11 +1686,10 @@ def katil(id):
 
         db.session.commit()
 
-        # JWT üret + Jitsi'ye yönlendir
-        meeting_url = JitsiService.get_meeting_url(
+        # Dış katılımcı: JWT verme, guest (participant) olarak yönlendir
+        meeting_url = JitsiService.get_guest_url(
             egitim.jitsi_room_name,
-            _MisafirKullanici(goruntu_ad, email),
-            is_moderator=False,
+            goruntu_ad,
         )
         return redirect(meeting_url)
 
@@ -1722,12 +1721,19 @@ def jitsi_katil(id):
     if current_user.has_permission('egitim.edit'):
         is_moderator = True
 
-    # Jitsi URL oluştur (JWT dahil)
-    meeting_url = JitsiService.get_meeting_url(
-        egitim.jitsi_room_name,
-        user_obj,
-        is_moderator
-    )
+    # Moderatör → JWT ile owner olur; katılımcı → JWT'siz guest (participant) kalır
+    if is_moderator:
+        meeting_url = JitsiService.get_meeting_url(
+            egitim.jitsi_room_name,
+            user_obj,
+            is_moderator=True
+        )
+    else:
+        goruntu_ad = getattr(user_obj, 'full_name', None) or getattr(user_obj, 'username', '')
+        meeting_url = JitsiService.get_guest_url(
+            egitim.jitsi_room_name,
+            goruntu_ad
+        )
 
     # Katılım kaydı oluştur/güncelle
     if calisan:

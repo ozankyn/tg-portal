@@ -6,6 +6,7 @@ JWT token üretimi ve meeting yönetimi
 
 import jwt
 import time
+from urllib.parse import quote
 from flask import current_app
 
 
@@ -96,6 +97,29 @@ class JitsiService:
             )
 
         return meeting_url
+
+    @classmethod
+    def get_guest_url(cls, room_name, display_name):
+        """
+        JWT olmadan misafir (guest) meeting URL'i oluştur.
+
+        JWT verilmediği için kullanıcı odaya moderatör (owner) olarak değil,
+        katılımcı (participant) olarak girer; "End meeting" butonu görünmez.
+        Görünen ad URL hash'inde userInfo ile geçilir.
+
+        Args:
+            room_name: Oda adı (URL-safe olmalı)
+            display_name: Katılımcının görünen adı
+
+        Returns:
+            str: JWT'siz meeting URL'i
+        """
+        url = f"https://{cls.JITSI_DOMAIN}/{room_name}"
+        if display_name:
+            # #userInfo.displayName="Ad Soyad" - tırnaklar ve boşluklar encode edilir
+            ad = quote(f'"{display_name}"', safe='')
+            url += f"#userInfo.displayName={ad}"
+        return url
 
     @classmethod
     def create_room_name(cls, prefix, unique_id):
