@@ -1686,23 +1686,13 @@ def katil(id):
 
         db.session.commit()
 
-        # JWT üret (URL'de değil, IFrame API config'inde geçilecek) + iframe içinde göster
-        token = JitsiService.generate_token(
-            _MisafirKullanici(goruntu_ad, email),
+        # JWT üret + Jitsi'ye yönlendir
+        meeting_url = JitsiService.get_meeting_url(
             egitim.jitsi_room_name,
+            _MisafirKullanici(goruntu_ad, email),
             is_moderator=False,
         )
-        return render_template(
-            'egitim/jitsi_room.html',
-            egitim=egitim,
-            jitsi_domain=JitsiService.JITSI_DOMAIN,
-            room_name=egitim.jitsi_room_name,
-            jwt_token=token,
-            user_name=goruntu_ad,
-            user_email=email,
-            is_moderator=False,
-            geri_url=url_for('egitim.katil', id=egitim.id),
-        )
+        return redirect(meeting_url)
 
     return render_template('egitim/katil.html', egitim=egitim)
 
@@ -1732,10 +1722,10 @@ def jitsi_katil(id):
     if current_user.has_permission('egitim.edit'):
         is_moderator = True
 
-    # JWT token üret (URL'de değil, IFrame API config'inde geçilecek)
-    token = JitsiService.generate_token(
-        user_obj,
+    # Jitsi URL oluştur (JWT dahil)
+    meeting_url = JitsiService.get_meeting_url(
         egitim.jitsi_room_name,
+        user_obj,
         is_moderator
     )
 
@@ -1751,20 +1741,7 @@ def jitsi_katil(id):
             katilimci.durum = 'katildi'
             db.session.commit()
 
-    user_name = getattr(user_obj, 'full_name', None) or getattr(user_obj, 'username', '')
-    user_email = getattr(user_obj, 'email', '') or ''
-
-    return render_template(
-        'egitim/jitsi_room.html',
-        egitim=egitim,
-        jitsi_domain=JitsiService.JITSI_DOMAIN,
-        room_name=egitim.jitsi_room_name,
-        jwt_token=token,
-        user_name=user_name,
-        user_email=user_email,
-        is_moderator=is_moderator,
-        geri_url=url_for('egitim.detay', id=egitim.id),
-    )
+    return redirect(meeting_url)
 
 
 @egitim_bp.route('/<int:id>/jitsi/embed')
@@ -1786,24 +1763,13 @@ def jitsi_embed(id):
     if current_user.has_permission('egitim.edit'):
         is_moderator = True
 
-    token = JitsiService.generate_token(
-        user_obj,
+    # Jitsi URL oluştur (JWT dahil) + yönlendir
+    meeting_url = JitsiService.get_meeting_url(
         egitim.jitsi_room_name,
+        user_obj,
         is_moderator
     )
-
-    user_name = getattr(user_obj, 'full_name', None) or getattr(user_obj, 'username', '')
-    user_email = getattr(user_obj, 'email', '') or ''
-
-    return render_template('egitim/jitsi_room.html',
-                          egitim=egitim,
-                          jitsi_domain=JitsiService.JITSI_DOMAIN,
-                          room_name=egitim.jitsi_room_name,
-                          jwt_token=token,
-                          user_name=user_name,
-                          user_email=user_email,
-                          is_moderator=is_moderator,
-                          geri_url=url_for('egitim.detay', id=egitim.id))
+    return redirect(meeting_url)
 
 
 # ============================================================
