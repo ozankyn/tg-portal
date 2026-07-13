@@ -1573,6 +1573,53 @@ def _sgk_bekleyen_calisan_query():
     return apply_calisan_scope(q)
 
 
+# SGK çıkış bildiriminin yasal bildirim süresi (son çalışma gününden itibaren)
+SGK_CIKIS_YASAL_GUN = 10
+
+
+def _sgk_cikis_bekleyen_query():
+    """SGK çıkışı bekleyen: resmi işten çıkışı tamamlanmış (IstenCikis.durum='tamamlandi')
+    ama SGK çıkış bildirgesi henüz yüklenmemiş çalışanların IstenCikis kayıtları.
+    Scope filtreli (çalışan kapsamına göre)."""
+    scoped_ids = apply_calisan_scope(db.session.query(Calisan.id))
+    return IstenCikis.query.join(Calisan, IstenCikis.calisan_id == Calisan.id).filter(
+        IstenCikis.durum == 'tamamlandi',
+        Calisan.is_deleted == False,
+        Calisan.sgk_cikis_bildirgesi.is_(None),
+        IstenCikis.calisan_id.in_(scoped_ids),
+    ).order_by(IstenCikis.created_at.desc())
+
+
+def _sgk_cikis_bekleyen_rows():
+    """SGK çıkış bekleyen kayıtları - çalışan başına en yeni çıkış, en acil (en eski
+    son çalışma günü) üstte."""
+    seen = set()
+    rows = []
+    for cikis in _sgk_cikis_bekleyen_query().all():
+        if cikis.calisan_id in seen:
+            continue
+        seen.add(cikis.calisan_id)
+        rows.append(cikis)
+    rows.sort(key=lambda c: (c.gerceklesen_cikis_tarihi is None, c.gerceklesen_cikis_tarihi or date.max))
+    return rows
+
+
+def _cikis_bildiren_map(calisan_ids):
+    """calisan_id -> en son IstenCikisBildirimi (bildiren SPV / son çalışma günü için)."""
+    if not calisan_ids:
+        return {}
+    alt = db.session.query(
+        IstenCikisBildirimi.calisan_id.label('calisan_id'),
+        db.func.max(IstenCikisBildirimi.id).label('max_id')
+    ).filter(
+        IstenCikisBildirimi.calisan_id.in_(calisan_ids)
+    ).group_by(IstenCikisBildirimi.calisan_id).subquery()
+    kayitlar = db.session.query(IstenCikisBildirimi).join(
+        alt, IstenCikisBildirimi.id == alt.c.max_id
+    ).all()
+    return {b.calisan_id: b for b in kayitlar}
+
+
 @ik_bp.route('/sgk-bekleyen')
 @login_required
 @permission_required('ik.view')
@@ -1600,10 +1647,25 @@ def sgk_bekleyen():
     calisanlar = _sgk_bekleyen_calisan_query().all()
     calisanlar.sort(key=lambda c: (c.ise_baslama is None, c.ise_baslama or date.max))
 
+    # SGK ÇIKIŞ bekleyen (çıkışı tamamlanmış ama bildirge yüklenmemiş)
+    cikis_bekleyen = _sgk_cikis_bekleyen_rows()
+    cikis_bildiren = _cikis_bildiren_map([c.calisan_id for c in cikis_bekleyen])
+    cikis_toplam = len(cikis_bekleyen)
+    cikis_geciken = sum(
+        1 for c in cikis_bekleyen
+        if c.gerceklesen_cikis_tarihi
+        and (bugun - c.gerceklesen_cikis_tarihi).days > SGK_CIKIS_YASAL_GUN
+    )
+
     return render_template('ik/sgk_bekleyen.html',
                            adaylar=adaylar,
                            calisanlar=calisanlar,
                            talep_tarihleri=talep_tarihleri,
+                           cikis_bekleyen=cikis_bekleyen,
+                           cikis_bildiren=cikis_bildiren,
+                           cikis_toplam=cikis_toplam,
+                           cikis_geciken=cikis_geciken,
+                           sgk_cikis_yasal_gun=SGK_CIKIS_YASAL_GUN,
                            bugun=bugun,
                            toplam=toplam,
                            bugun_baslamasi=bugun_baslamasi,
@@ -1675,14 +1737,155 @@ def sgk_bekleyen_export():
 def inject_sgk_bekleyen_count():
     """Sidebar rozeti için SGK bekleyen aday sayısı (scope filtreli)."""
     def sgk_bekleyen_count():
+        # Sidebar rozeti: SGK giriş + tekrar işe alım + SGK çıkış bekleyen toplamı
         if not current_user.is_authenticated:
             return 0
         try:
-            return _sgk_bekleyen_query().count() + _sgk_bekleyen_calisan_query().count()
+            return (_sgk_bekleyen_query().count()
+                    + _sgk_bekleyen_calisan_query().count()
+                    + len(_sgk_cikis_bekleyen_rows()))
         except Exception:
             db.session.rollback()
             return 0
-    return dict(sgk_bekleyen_count=sgk_bekleyen_count)
+
+    def sgk_cikis_bekleyen_count():
+        if not current_user.is_authenticated:
+            return 0
+        try:
+            return len(_sgk_cikis_bekleyen_rows())
+        except Exception:
+            db.session.rollback()
+            return 0
+
+    return dict(sgk_bekleyen_count=sgk_bekleyen_count,
+                sgk_cikis_bekleyen_count=sgk_cikis_bekleyen_count)
+
+
+@ik_bp.route('/<int:id>/sgk-cikis-bildirge-yukle', methods=['POST'])
+@login_required
+def sgk_cikis_bildirge_yukle(id):
+    """SGK çıkışı yapıldı: çıkış bildirgesini (PDF/JPG/PNG) yükle.
+    Bordro/muhasebe (masraf.edit) veya İK (ik.edit) yapabilir."""
+    if not (current_user.has_permission('ik.edit') or current_user.has_permission('masraf.edit')):
+        flash('Bu işlem için yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.detay', id=id))
+
+    calisan = Calisan.query.get_or_404(id)
+    if not calisan_in_scope(calisan):
+        flash('Bu çalışana erişim yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.liste'))
+
+    dosya = request.files.get('sgk_cikis_bildirgesi')
+    if not dosya or not dosya.filename:
+        flash('SGK çıkış bildirgesi yüklemek zorunludur.', 'danger')
+        return redirect(url_for('ik.detay', id=id))
+
+    ext = dosya.filename.rsplit('.', 1)[1].lower() if '.' in dosya.filename else ''
+    if ext not in ('pdf', 'jpg', 'jpeg', 'png'):
+        flash('Geçersiz format. PDF, JPG veya PNG yükleyiniz.', 'danger')
+        return redirect(url_for('ik.detay', id=id))
+
+    # Eski bildirge varsa sil (yenisi yükleniyor)
+    if calisan.sgk_cikis_bildirgesi:
+        try:
+            eski = os.path.join(current_app.config['UPLOAD_FOLDER'], calisan.sgk_cikis_bildirgesi)
+            if os.path.isfile(eski):
+                os.remove(eski)
+        except Exception as e:
+            current_app.logger.warning(f"Eski SGK çıkış bildirgesi silinemedi (calisan_id={id}): {e}")
+
+    hedef_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'calisanlar', str(id), 'sgk_cikis')
+    os.makedirs(hedef_dir, exist_ok=True)
+    fname = f"sgk_cikis_{id}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}"
+    dosya.save(os.path.join(hedef_dir, fname))
+    calisan.sgk_cikis_bildirgesi = f"calisanlar/{id}/sgk_cikis/{fname}"
+
+    # Akış: SPV ön bildirimini "SGK çıkışı yapıldı" durumuna al
+    bildirim = IstenCikisBildirimi.query.filter_by(calisan_id=id).order_by(
+        IstenCikisBildirimi.created_at.desc()).first()
+    if bildirim:
+        bildirim.durum = 'sgk_cikis_yapildi'
+
+    db.session.commit()
+
+    # Çıkış nedeni/kodu için en güncel resmi çıkış kaydı
+    cikis = IstenCikis.query.filter_by(calisan_id=id).order_by(
+        IstenCikis.created_at.desc()).first()
+
+    # İK/Bordro ekibine bilgilendirme
+    try:
+        from app.services.notification import notify_sgk_cikis_yapildi
+        notify_sgk_cikis_yapildi(calisan, cikis=cikis, yukleyen=current_user)
+    except Exception as e:
+        current_app.logger.warning(f"SGK çıkışı yapıldı bildirimi gönderilemedi (calisan_id={id}): {e}")
+
+    flash('SGK çıkış bildirgesi yüklendi ve ilgili ekiplere bildirim gönderildi.', 'success')
+    if request.form.get('next') == 'sgk_bekleyen':
+        return redirect(url_for('ik.sgk_bekleyen'))
+    return redirect(url_for('ik.detay', id=id))
+
+
+@ik_bp.route('/sgk-bekleyen/cikis-export')
+@login_required
+@permission_required('ik.view')
+def sgk_bekleyen_cikis_export():
+    """SGK çıkış bekleyen listesini Excel olarak indir."""
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, PatternFill
+    from io import BytesIO
+    from flask import Response
+
+    rows = _sgk_cikis_bekleyen_rows()
+    bildiren_map = _cikis_bildiren_map([c.calisan_id for c in rows])
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'SGK Çıkış Bekleyen'
+
+    headers = ['Ad Soyad', 'TC Kimlik', 'Telefon', 'Proje', 'Kadro',
+               'Son Çalışma Günü', 'Çıkış Nedeni', 'SGK Çıkış Kodu',
+               'Bildirim Tarihi', 'Bildiren SPV']
+    ws.append(headers)
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='137FEC')
+    for cell in ws[1]:
+        cell.font = header_font
+        cell.fill = header_fill
+
+    for c in rows:
+        calisan = c.calisan
+        proje = calisan.kadro.proje.ad if calisan.kadro and calisan.kadro.proje else ''
+        kadro = calisan.kadro.pozisyon_adi if calisan.kadro else (calisan.pozisyon.ad if calisan.pozisyon else '')
+        bildirim = bildiren_map.get(c.calisan_id)
+        cikis_nedeni = f"{c.cikis_tipi or ''}: {c.cikis_sebebi or ''}".strip(': ') or (calisan.ayrilma_nedeni or '')
+        ws.append([
+            calisan.full_name,
+            calisan.tc_kimlik or '',
+            calisan.telefon or '',
+            proje,
+            kadro,
+            c.gerceklesen_cikis_tarihi.strftime('%d.%m.%Y') if c.gerceklesen_cikis_tarihi else '',
+            cikis_nedeni,
+            str(c.sgk_cikis_kodu.kod) if c.sgk_cikis_kodu else '',
+            bildirim.created_at.strftime('%d.%m.%Y') if bildirim else '',
+            bildirim.bildiren.full_name if bildirim and bildirim.bildiren else '',
+        ])
+
+    widths = [26, 13, 16, 22, 24, 16, 24, 14, 16, 22]
+    for idx, w in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(idx)].width = w
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    filename = f"sgk_cikis_bekleyen_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
 
 
 @ik_bp.route('/aday/<int:id>/reddet', methods=['POST'])
@@ -3141,6 +3344,11 @@ def isten_cikis_tamamla(id):
     calisan.durum = CalisanDurumu.AYRILDI
     calisan.isten_ayrilma = cikis.gerceklesen_cikis_tarihi
     calisan.ayrilma_nedeni = f"{cikis.cikis_tipi}: {cikis.cikis_sebebi}"
+
+    # Akış: resmi çıkış tamamlandı -> SPV ön bildirimi (varsa) SGK çıkışı bekliyor
+    # durumuna geçer (bordro SGK çıkışını yapıp bildirge yükleyene kadar).
+    if bildirim and bildirim.durum != 'sgk_cikis_yapildi':
+        bildirim.durum = 'sgk_cikis_bekleniyor'
 
     db.session.commit()
 

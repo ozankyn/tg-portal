@@ -119,6 +119,9 @@ class Calisan(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     sozlesme_bitis = db.Column(db.Date)
     sozlesme_pdf = db.Column(db.String(500))  # Sözleşme dosya yolu (oluşturulan .docx veya yüklenen imzalı PDF)
 
+    # SGK Çıkış Bildirgesi (işten ayrılış sonrası bordronun yüklediği belge; UPLOAD_FOLDER'a göre relatif yol)
+    sgk_cikis_bildirgesi = db.Column(db.String(500))
+
     # İlişkiler
     departman = db.relationship('Departman', foreign_keys=[departman_id], backref='calisanlar')
     pozisyon = db.relationship('Pozisyon', backref='calisanlar')
@@ -1001,6 +1004,10 @@ class IstenCikisBildirimi(db.Model, TimestampMixin):
         'beklemede': 'Beklemede',
         'isleme_alindi': 'İşleme Alındı',
         'tamamlandi': 'Tamamlandı',
+        # SGK çıkış akışı: resmi çıkış tamamlandıktan sonra bordronun SGK çıkışını
+        # yapıp bildirgeyi yüklemesi beklenir.
+        'sgk_cikis_bekleniyor': 'SGK Çıkışı Bekleniyor',
+        'sgk_cikis_yapildi': 'SGK Çıkışı Yapıldı',
     }
 
     def __repr__(self):

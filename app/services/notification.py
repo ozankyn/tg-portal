@@ -778,6 +778,60 @@ def notify_isten_cikis_bildirimi(bildirim):
     return send_bildirim('ISTEN_CIKIS_BILDIRIMI', degiskenler, proje_id=proje_id)
 
 
+def notify_sgk_cikis_yapildi(calisan, cikis=None, yukleyen=None):
+    """SGK çıkışı yapıldı + çıkış bildirgesi yüklendi -> İK/Bordro ekibine
+    (sablon: SGK_CIKIS_YAPILDI).
+
+    Args:
+        calisan: Calisan instance (sgk_cikis_bildirgesi yüklenmiş)
+        cikis: opsiyonel IstenCikis instance (çıkış nedeni/kodu için)
+        yukleyen: opsiyonel User (bildirgeyi yükleyen)
+    """
+    from datetime import date as _date
+
+    proje_adi = '-'
+    pozisyon_adi = '-'
+    proje_id = None
+    if calisan.kadro_id:
+        from app.models.proje import HedefKadro
+        kadro = HedefKadro.query.get(calisan.kadro_id)
+        if kadro:
+            pozisyon_adi = kadro.pozisyon_adi or '-'
+            if kadro.proje:
+                proje_adi = kadro.proje.ad
+                proje_id = kadro.proje.id
+    if calisan.pozisyon and pozisyon_adi == '-':
+        pozisyon_adi = calisan.pozisyon.ad
+
+    sgk_kod_str = '-'
+    cikis_nedeni_str = calisan.ayrilma_nedeni or '-'
+    if cikis is not None:
+        if cikis.sgk_cikis_kodu is not None:
+            sgk_kod_str = str(cikis.sgk_cikis_kodu.kod)
+        if cikis.cikis_tipi or cikis.cikis_sebebi:
+            cikis_nedeni_str = f"{cikis.cikis_tipi or ''}: {cikis.cikis_sebebi or ''}".strip(': ')
+
+    try:
+        calisan_url = url_for('ik.detay', id=calisan.id, _external=True)
+    except Exception:
+        calisan_url = '#'
+
+    degiskenler = {
+        'ad_soyad': calisan.full_name,
+        'tc_kimlik': calisan.tc_kimlik or '-',
+        'sgk_cikis_tarihi': calisan.isten_ayrilma.strftime('%d.%m.%Y') if calisan.isten_ayrilma else '-',
+        'cikis_nedeni': cikis_nedeni_str,
+        'sgk_cikis_kodu': sgk_kod_str,
+        'proje': proje_adi,
+        'pozisyon': pozisyon_adi,
+        'telefon': calisan.telefon or '-',
+        'yukleyen': yukleyen.full_name if yukleyen else '-',
+        'bildirim_tarihi': _date.today().strftime('%d.%m.%Y'),
+        'calisan_url': calisan_url,
+    }
+    return send_bildirim('SGK_CIKIS_YAPILDI', degiskenler, proje_id=proje_id)
+
+
 # ============================================================
 # SÖZLEŞME BİTİŞ UYARISI
 # ============================================================

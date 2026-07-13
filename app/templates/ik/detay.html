@@ -686,6 +686,95 @@
         </div>
         {% endif %}
 
+        <!-- SGK Çıkış Bildirgesi (işten ayrılan personel) -->
+        {% if calisan.durum.value == 'ayrildi' or calisan.sgk_cikis_bildirgesi %}
+        {% set can_sgk_cikis = has_permission('ik.edit') or has_permission('masraf.edit') %}
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2 mb-4">
+                <span class="material-symbols-outlined text-red-600">logout</span>
+                SGK Çıkış Bildirgesi
+            </h3>
+            {% if calisan.sgk_cikis_bildirgesi %}
+            {% set cikis_dosya_adi = calisan.sgk_cikis_bildirgesi.rsplit('/', 1)[-1] %}
+            {% set cikis_uzanti = (calisan.sgk_cikis_bildirgesi.rsplit('.', 1)[-1]|lower) if '.' in calisan.sgk_cikis_bildirgesi else '' %}
+            {% set cikis_url = url_for('uploaded_file', filename=calisan.sgk_cikis_bildirgesi) %}
+            <div class="flex flex-col sm:flex-row gap-4">
+                <a href="{{ cikis_url }}" target="_blank"
+                   class="block w-full sm:w-40 h-40 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-[#111418] border border-border-light dark:border-border-dark">
+                    {% if cikis_uzanti in ['jpg', 'jpeg', 'png', 'webp'] %}
+                    <img src="{{ cikis_url }}" alt="SGK Çıkış Bildirgesi" class="w-full h-full object-cover hover:scale-105 transition-transform">
+                    {% elif cikis_uzanti == 'pdf' %}
+                    <embed src="{{ cikis_url }}#toolbar=0&navpanes=0&view=FitH" type="application/pdf" class="w-full h-full pointer-events-none">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center">
+                        <span class="material-symbols-outlined text-5xl text-text-muted dark:text-text-muted-dark">draft</span>
+                    </div>
+                    {% endif %}
+                </a>
+                <div class="flex-1 min-w-0 flex flex-col justify-center gap-3">
+                    <div class="flex items-center gap-2 text-[#111418] dark:text-white">
+                        <span class="material-symbols-outlined text-red-600">description</span>
+                        <span class="text-sm font-medium truncate" title="{{ cikis_dosya_adi }}">{{ cikis_dosya_adi }}</span>
+                        {% if cikis_uzanti %}
+                        <span class="px-2 py-0.5 bg-gray-100 dark:bg-[#111418] text-[10px] font-bold rounded uppercase text-text-muted dark:text-text-muted-dark">{{ cikis_uzanti }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ cikis_url }}" target="_blank"
+                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors">
+                            <span class="material-symbols-outlined text-lg">visibility</span> Görüntüle
+                        </a>
+                        <a href="{{ cikis_url }}" download="{{ cikis_dosya_adi }}"
+                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-[#111418] hover:bg-gray-200 dark:hover:bg-[#252b36] text-sm font-bold rounded-lg transition-colors text-[#111418] dark:text-white">
+                            <span class="material-symbols-outlined text-lg">download</span> İndir
+                        </a>
+                        {% if can_sgk_cikis %}
+                        <button type="button" onclick="document.getElementById('sgkCikisYukleModal').classList.remove('hidden')"
+                                class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 dark:bg-[#111418] hover:bg-gray-200 dark:hover:bg-[#252b36] text-sm font-bold rounded-lg transition-colors text-[#111418] dark:text-white">
+                            <span class="material-symbols-outlined text-lg">upload_file</span> Değiştir
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div class="flex items-start gap-2 flex-1 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3 text-amber-700 dark:text-amber-300">
+                    <span class="material-symbols-outlined text-base">warning</span>
+                    <span class="text-sm">SGK çıkış bildirgesi henüz yüklenmemiş. SGK çıkışı yapıldıktan sonra bildirgeyi yükleyin.</span>
+                </div>
+                {% if can_sgk_cikis %}
+                <button type="button" onclick="document.getElementById('sgkCikisYukleModal').classList.remove('hidden')"
+                        class="inline-flex items-center justify-center gap-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors whitespace-nowrap">
+                    <span class="material-symbols-outlined text-lg">upload_file</span> SGK Çıkışı Yaptım
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if can_sgk_cikis %}
+        <!-- SGK Çıkış Bildirgesi Yükle Modal -->
+        <div id="sgkCikisYukleModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-card-dark rounded-xl shadow-xl max-w-md w-full p-6">
+                <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-1">SGK Çıkışı Yapıldı</h3>
+                <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">{{ calisan.full_name }} için SGK çıkış bildirgesini yükleyiniz.</p>
+                <form action="{{ url_for('ik.sgk_cikis_bildirge_yukle', id=calisan.id) }}" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">SGK Çıkış Bildirgesi <span class="text-red-500">*</span></label>
+                    <input type="file" name="sgk_cikis_bildirgesi" required accept=".pdf,.jpg,.jpeg,.png"
+                           class="w-full bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg p-2 text-sm">
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">PDF, JPG veya PNG</p>
+                    <div class="flex justify-end gap-3 mt-4">
+                        <button type="button" onclick="document.getElementById('sgkCikisYukleModal').classList.add('hidden')" class="px-4 py-2 bg-gray-100 dark:bg-[#111418] rounded-lg font-medium text-sm hover:bg-gray-200 dark:hover:bg-[#252b36] transition-colors">İptal</button>
+                        <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700 transition-colors">Kaydet</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
         <!-- Aday Evrakları (adayken yüklenen) -->
         <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark overflow-hidden shadow-sm">
             <div class="p-6 border-b border-border-light dark:border-border-dark">

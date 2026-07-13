@@ -23,6 +23,11 @@ AVAILABLE_VARIABLES = {
         'ad_soyad', 'tc_kimlik', 'proje', 'pozisyon', 'cikis_nedeni',
         'son_calisma_gunu', 'bildiren', 'aciklama', 'telefon', 'calisan_url',
     ],
+    'SGK_CIKIS_YAPILDI': [
+        'ad_soyad', 'tc_kimlik', 'sgk_cikis_tarihi', 'cikis_nedeni',
+        'sgk_cikis_kodu', 'proje', 'pozisyon', 'telefon', 'yukleyen',
+        'bildirim_tarihi', 'calisan_url',
+    ],
     'YENI_BASVURU': [
         'ad_soyad', 'telefon', 'email', 'pozisyon', 'proje', 'lokasyon',
         'kaynak', 'tecrube_yil', 'son_is_yeri', 'son_pozisyon', 'basvuru_url',

@@ -88,7 +88,10 @@
                     </td>
                     {% if has_permission('ik.edit') %}
                     <td class="px-4 py-3 text-right">
-                        {% if b.durum != 'tamamlandi' %}
+                        {% if b.durum in ('sgk_cikis_bekleniyor', 'sgk_cikis_yapildi') %}
+                        {# SGK çıkış akışı SGK Bekleyen sayfasından yönetilir; burada sadece durum gösterilir #}
+                        <a href="{{ url_for('ik.detay', id=b.calisan_id) }}" class="text-xs font-medium text-primary hover:underline">Çalışan kartı →</a>
+                        {% elif b.durum != 'tamamlandi' %}
                         <form method="POST" action="{{ url_for('ik.isten_cikis_bildirimi_durum', id=b.id) }}" class="inline-flex items-center gap-1.5">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <select name="durum" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg px-2 py-1 text-xs">
