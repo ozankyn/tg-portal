@@ -1127,7 +1127,16 @@ def aday_detay(id):
                           evrak_tipleri=evrak_tipleri,
                           evrak_tamamlanma=evrak_tamamlanma,
                           eksik_evraklar=eksik_evraklar,
-                          ise_alim_hazir=ise_alim_hazir)
+                          ise_alim_hazir=ise_alim_hazir,
+                          has_iletisim=_aday_has_iletisim(aday))
+
+
+def _aday_has_iletisim(aday):
+    """Adayın en az bir iletişim (arama/SMS/WhatsApp/not) kaydı var mı?"""
+    return db.session.query(AdayIslemGecmisi.id).filter(
+        AdayIslemGecmisi.aday_id == aday.id,
+        AdayIslemGecmisi.islem.in_(AdayIslemGecmisi.ILETISIM_ISLEMLER)
+    ).first() is not None
 
 
 def _aday_log(aday, islem, aciklama=None, yeni_durum=None):
@@ -1309,6 +1318,12 @@ def aday_onayla(id):
 
     if aday.durum == 'onaylandi':
         flash('Aday zaten onaylanmış.', 'info')
+        return redirect(url_for('ik.aday_detay', id=id))
+
+    # Onay öncesi en az bir iletişim kaydı zorunlu (sadece onay adımında)
+    if not _aday_has_iletisim(aday):
+        flash('Bu adayı onaylamak için önce en az bir iletişim kaydı '
+              'eklemelisiniz (arama, SMS vb.).', 'danger')
         return redirect(url_for('ik.aday_detay', id=id))
 
     planlanan = request.form.get('planlanan_baslangic')
