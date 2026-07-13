@@ -817,9 +817,13 @@ def _aday_liste_query():
     il = request.args.get('il', '').strip()
     ilce = request.args.get('ilce', '').strip()
     search = request.args.get('search', '').strip()
+    iletisim = request.args.get('iletisim', '').strip()
 
     query = Aday.query.filter_by(is_deleted=False)
     query = apply_aday_scope(query)
+
+    if iletisim:
+        query = _iletisim_filtre_uygula(query, iletisim)
 
     if durum:
         query = query.filter(Aday.durum == durum)
@@ -857,6 +861,9 @@ def aday_liste():
     query = _aday_liste_query()
     pagination = paginate_query(query, page, 20)
 
+    # "Son İletişim" kolonu için toplu yükleme (sadece bu sayfadaki adaylar)
+    son_iletisim = _aday_son_iletisim([a.id for a in pagination.items])
+
     # İstatistikler (scope'a gore)
     scoped_base = apply_aday_scope(Aday.query.filter_by(is_deleted=False))
     stats = {
@@ -887,7 +894,8 @@ def aday_liste():
                           stats=stats,
                           projeler=projeler,
                           iller=iller,
-                          il_ilce_map=il_ilce_map)
+                          il_ilce_map=il_ilce_map,
+                          son_iletisim=son_iletisim)
 
 
 def _aday_org_bilgisi(aday):
@@ -1123,6 +1131,58 @@ def _aday_log(aday, islem, aciklama=None, yeni_durum=None):
         yeni_durum=yeni_durum or aday.durum,
         kullanici_id=current_user.id,
     ))
+
+
+@ik_bp.route('/aday/<int:id>/iletisim-ekle', methods=['POST'])
+@login_required
+@permission_required('ik.view')
+def aday_iletisim_ekle(id):
+    """Aday ile iletişim (arama / SMS / WhatsApp / not) kaydı ekler.
+
+    ik.view yetkisi yeterlidir; saha koordinatörleri (SPV) de kendi
+    adaylarını arayıp not düşebilsin. Adayın DURUMU değişmez; sadece süreç
+    geçmişine iletişim logu eklenir."""
+    aday = Aday.query.get_or_404(id)
+    if not aday_in_scope(aday):
+        flash('Bu adaya erişim yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_liste'))
+
+    tip = (request.form.get('iletisim_tipi') or '').strip()
+    if tip not in AdayIslemGecmisi.ILETISIM_ISLEMLER:
+        flash('Geçersiz iletişim tipi.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
+    not_metni = (request.form.get('not') or '').strip()
+
+    hatirlatma = None
+    if tip == 'geri_aranacak':
+        h_str = (request.form.get('hatirlatma_tarihi') or '').strip()
+        if not h_str:
+            flash('"Geri Aranacak" için tarih/saat seçmelisiniz.', 'danger')
+            return redirect(url_for('ik.aday_detay', id=id))
+        for fmt in ('%Y-%m-%dT%H:%M', '%Y-%m-%dT%H:%M:%S'):
+            try:
+                hatirlatma = datetime.strptime(h_str, fmt)
+                break
+            except ValueError:
+                continue
+        if hatirlatma is None:
+            flash('Geçersiz hatırlatma tarihi.', 'danger')
+            return redirect(url_for('ik.aday_detay', id=id))
+
+    db.session.add(AdayIslemGecmisi(
+        aday_id=aday.id,
+        islem=tip,
+        aciklama=not_metni or None,
+        onceki_durum=aday.durum,
+        yeni_durum=aday.durum,
+        hatirlatma_tarihi=hatirlatma,
+        kullanici_id=current_user.id,
+    ))
+    db.session.commit()
+
+    flash('İletişim kaydı eklendi.', 'success')
+    return redirect(url_for('ik.aday_detay', id=id))
 
 
 @ik_bp.route('/aday/<int:id>/durum', methods=['POST'])
@@ -1384,6 +1444,96 @@ def _sgk_talep_tarihleri(aday_ids):
         AdayIslemGecmisi.islem == 'sgk_talep'
     ).group_by(AdayIslemGecmisi.aday_id).all()
     return {aday_id: tarih for aday_id, tarih in rows}
+
+
+def _aday_son_iletisim(aday_ids):
+    """aday_id -> en son iletişim (arama/SMS/WhatsApp/not) logu.
+
+    Aday listesinde "Son İletişim" kolonu için toplu yükleme yapar."""
+    if not aday_ids:
+        return {}
+    ILETISIM = AdayIslemGecmisi.ILETISIM_ISLEMLER
+    # Her aday için en son iletişim logunun id'si
+    alt = db.session.query(
+        AdayIslemGecmisi.aday_id.label('aday_id'),
+        db.func.max(AdayIslemGecmisi.id).label('max_id')
+    ).filter(
+        AdayIslemGecmisi.aday_id.in_(aday_ids),
+        AdayIslemGecmisi.islem.in_(ILETISIM)
+    ).group_by(AdayIslemGecmisi.aday_id).subquery()
+
+    loglar = db.session.query(AdayIslemGecmisi).join(
+        alt, AdayIslemGecmisi.id == alt.c.max_id
+    ).all()
+    return {log.aday_id: log for log in loglar}
+
+
+def _iletisim_filtre_uygula(query, iletisim):
+    """Aday listesine iletişim durumuna göre filtre uygular.
+
+    - hic_aranmamis: hiç iletişim logu olmayan adaylar
+    - ulasilamadi: en son iletişimi "Ulaşılamadı" olan adaylar
+    - geri_aranacak: en son iletişimi "Geri Aranacak" olan adaylar (bekleyen)
+    """
+    ILETISIM = AdayIslemGecmisi.ILETISIM_ISLEMLER
+
+    if iletisim == 'hic_aranmamis':
+        var_olan = db.session.query(AdayIslemGecmisi.aday_id).filter(
+            AdayIslemGecmisi.islem.in_(ILETISIM)
+        )
+        return query.filter(~Aday.id.in_(var_olan))
+
+    if iletisim in ('ulasilamadi', 'geri_aranacak'):
+        # Her adayın en son iletişim logu bu tip mi?
+        son = db.session.query(
+            AdayIslemGecmisi.aday_id.label('aday_id'),
+            db.func.max(AdayIslemGecmisi.id).label('max_id')
+        ).filter(AdayIslemGecmisi.islem.in_(ILETISIM)).group_by(
+            AdayIslemGecmisi.aday_id
+        ).subquery()
+        eslesen = db.session.query(son.c.aday_id).join(
+            AdayIslemGecmisi, AdayIslemGecmisi.id == son.c.max_id
+        ).filter(AdayIslemGecmisi.islem == iletisim)
+        return query.filter(Aday.id.in_(eslesen))
+
+    return query
+
+
+def geri_aranacak_adaylar(scoped=True):
+    """Bekleyen "geri aranacak" hatırlatmaları.
+
+    Bir aday, EN SON iletişim logu 'geri_aranacak' (ve hatırlatma tarihi dolu)
+    ise "beklemede" sayılır. Sonradan başka bir iletişim kaydı (ör. arama
+    yapıldı) eklenirse otomatik olarak listeden düşer.
+
+    Dönüş: (aday, hatirlatma_log) tuple listesi, hatırlatma tarihine göre artan.
+    """
+    ILETISIM = AdayIslemGecmisi.ILETISIM_ISLEMLER
+    son = db.session.query(
+        AdayIslemGecmisi.aday_id.label('aday_id'),
+        db.func.max(AdayIslemGecmisi.id).label('max_id')
+    ).filter(AdayIslemGecmisi.islem.in_(ILETISIM)).group_by(
+        AdayIslemGecmisi.aday_id
+    ).subquery()
+
+    q = db.session.query(Aday, AdayIslemGecmisi).join(
+        son, Aday.id == son.c.aday_id
+    ).join(
+        AdayIslemGecmisi, AdayIslemGecmisi.id == son.c.max_id
+    ).filter(
+        AdayIslemGecmisi.islem == 'geri_aranacak',
+        AdayIslemGecmisi.hatirlatma_tarihi.isnot(None),
+        Aday.is_deleted == False,
+        # Süreci kapanmış adaylar hatırlatma üretmesin
+        ~Aday.durum.in_([
+            'calisana_donusturuldu', 'reddedildi', 'red',
+            'aday_reddetti', 'havuzda', 'iptal',
+        ]),
+    )
+    if scoped:
+        q = apply_aday_scope(q)
+    rows = q.order_by(AdayIslemGecmisi.hatirlatma_tarihi.asc()).all()
+    return [(aday, log) for aday, log in rows]
 
 
 def _sgk_bekleyen_query():
@@ -2938,11 +3088,24 @@ def inject_cikis_bildirimi_count():
 def isten_cikis_tamamla(id):
     """İşten çıkışı tamamla"""
     cikis = IstenCikis.query.get_or_404(id)
-    
-    cikis.durum = 'tamamlandi'
-    cikis.gerceklesen_cikis_tarihi = date.today()
 
-    # Çalışan durumunu güncelle
+    cikis.durum = 'tamamlandi'
+
+    # Gerçekleşen çıkış (SGK çıkış) tarihi = personelin SON ÇALIŞMA GÜNÜ.
+    # Öncelik: SPV/koordinatör işten çıkış bildirimindeki son_calisma_gunu,
+    # yoksa İK'nın formda girdiği planlanan çıkış tarihi, o da yoksa bugün.
+    bildirim = IstenCikisBildirimi.query.filter_by(
+        calisan_id=cikis.calisan_id
+    ).order_by(IstenCikisBildirimi.created_at.desc()).first()
+
+    if bildirim and bildirim.son_calisma_gunu:
+        cikis.gerceklesen_cikis_tarihi = bildirim.son_calisma_gunu
+    elif cikis.planlanan_cikis_tarihi:
+        cikis.gerceklesen_cikis_tarihi = cikis.planlanan_cikis_tarihi
+    else:
+        cikis.gerceklesen_cikis_tarihi = date.today()
+
+    # Çalışan durumunu güncelle — ayrılma tarihi de son çalışma günü ile aynı
     calisan = cikis.calisan
     calisan.durum = CalisanDurumu.AYRILDI
     calisan.isten_ayrilma = cikis.gerceklesen_cikis_tarihi
@@ -2961,6 +3124,7 @@ def isten_cikis_tamamla(id):
             zimmet_teslim=cikis.zimmet_teslim,
             sgk_cikis_kodu=cikis.sgk_cikis_kodu,
             liste_durumu=calisan.liste_durumu,
+            bildirim_tarihi=date.today(),
         )
         print(f"[İşten Çıkış] Bildirim sonucu: {sonuc}")
     except Exception as e:

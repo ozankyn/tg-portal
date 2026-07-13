@@ -784,12 +784,22 @@ class AdayIslemGecmisi(db.Model, TimestampMixin):
     onceki_durum = db.Column(db.String(30))
     yeni_durum = db.Column(db.String(30))
 
+    # İletişim logları için: "geri_aranacak" işlemlerinde adayın ne zaman geri
+    # aranacağı. Diğer işlemlerde NULL.
+    hatirlatma_tarihi = db.Column(db.DateTime, nullable=True)
+
     kullanici_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
     # İlişkiler
     aday = db.relationship('Aday', backref=db.backref(
         'islem_gecmisi', lazy='dynamic', order_by='AdayIslemGecmisi.created_at.desc()'))
     kullanici = db.relationship('User')
+
+    # İletişim (arama/not) işlem tipleri — süreç adımı değil, aday ile temas kaydı
+    ILETISIM_ISLEMLER = {
+        'arama_yapildi', 'ulasilamadi', 'sms_gonderildi',
+        'whatsapp_yazildi', 'geri_aranacak',
+    }
 
     ISLEM_ETIKET = {
         'incele': 'İncelemeye Alındı',
@@ -803,11 +813,34 @@ class AdayIslemGecmisi(db.Model, TimestampMixin):
         'havuzdan_ata': 'Havuzdan Kadroya Atandı',
         'durum': 'Durum Güncellendi',
         'planli_tarih': 'Planlı Başlangıç Tarihi Değiştirildi',
+        # İletişim logları
+        'arama_yapildi': 'Arama Yapıldı',
+        'ulasilamadi': 'Ulaşılamadı',
+        'sms_gonderildi': 'SMS Gönderildi',
+        'whatsapp_yazildi': 'WhatsApp Yazıldı',
+        'geri_aranacak': 'Geri Aranacak',
+    }
+
+    # İletişim işlemleri için Material Symbols ikon adı
+    ILETISIM_IKON = {
+        'arama_yapildi': 'call',
+        'ulasilamadi': 'phone_missed',
+        'sms_gonderildi': 'sms',
+        'whatsapp_yazildi': 'chat',
+        'geri_aranacak': 'schedule',
     }
 
     @property
     def islem_etiket(self):
         return self.ISLEM_ETIKET.get(self.islem, self.islem)
+
+    @property
+    def is_iletisim(self):
+        return self.islem in self.ILETISIM_ISLEMLER
+
+    @property
+    def iletisim_ikon(self):
+        return self.ILETISIM_IKON.get(self.islem, 'history')
 
     def __repr__(self):
         return f'<AdayIslemGecmisi {self.aday_id}-{self.islem}>'

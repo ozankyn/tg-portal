@@ -7,6 +7,20 @@
 {# request.args 'page' içerebilir; url_for'a tekrar page geçince çakışır (500). Temizlenmiş kopya: #}
 {% set args = request.args.to_dict() %}
 {% set _ = args.pop('page', None) %}
+{% set iletisim_ikon = {
+    'arama_yapildi': 'call',
+    'ulasilamadi': 'phone_missed',
+    'sms_gonderildi': 'sms',
+    'whatsapp_yazildi': 'chat',
+    'geri_aranacak': 'schedule',
+} %}
+{% set iletisim_renk = {
+    'arama_yapildi': 'text-green-600 dark:text-green-400',
+    'ulasilamadi': 'text-red-600 dark:text-red-400',
+    'sms_gonderildi': 'text-blue-600 dark:text-blue-400',
+    'whatsapp_yazildi': 'text-emerald-600 dark:text-emerald-400',
+    'geri_aranacak': 'text-orange-600 dark:text-orange-400',
+} %}
 <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark mb-4">
     <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
         <div class="flex items-center gap-2 text-text-primary dark:text-text-primary-dark">
@@ -92,6 +106,15 @@
                     <option value="kadin" {% if request.args.get('cinsiyet') == 'kadin' %}selected{% endif %}>Kadın</option>
                 </select>
             </div>
+            <div class="w-48">
+                <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">İletişim</label>
+                <select name="iletisim" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tümü</option>
+                    <option value="hic_aranmamis" {% if request.args.get('iletisim') == 'hic_aranmamis' %}selected{% endif %}>Hiç Aranmamış</option>
+                    <option value="ulasilamadi" {% if request.args.get('iletisim') == 'ulasilamadi' %}selected{% endif %}>Ulaşılamadı</option>
+                    <option value="geri_aranacak" {% if request.args.get('iletisim') == 'geri_aranacak' %}selected{% endif %}>Geri Aranacak</option>
+                </select>
+            </div>
             <div class="flex gap-2">
                 <button type="submit" class="inline-flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                     <span class="material-symbols-outlined text-sm">search</span>
@@ -116,12 +139,15 @@
                     <th class="px-4 py-3 text-left font-medium">Başvuru Tarihi</th>
                     <th class="px-4 py-3 text-left font-medium">Kaynak</th>
                     <th class="px-4 py-3 text-left font-medium">Durum</th>
+                    <th class="px-4 py-3 text-left font-medium">Son İletişim</th>
                     <th class="px-4 py-3 w-24"></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-border-light dark:divide-border-dark">
                 {% for aday in adaylar %}
-                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                {% set son_log = son_iletisim.get(aday.id) %}
+                {% set aktif_surec = aday.durum not in ('calisana_donusturuldu', 'reddedildi', 'red', 'aday_reddetti', 'havuzda', 'iptal') %}
+                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] {% if not son_log and aktif_surec %}bg-amber-50 dark:bg-amber-900/10{% endif %}">
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-3">
                             {% set ilk_foto = aday.medyalar.filter_by(tip='foto').first() %}
@@ -183,6 +209,24 @@
                         {% endif %}
                     </td>
                     <td class="px-4 py-3">
+                        {% if son_log %}
+                        <div class="flex items-start gap-1.5">
+                            <span class="material-symbols-outlined text-base {{ iletisim_renk.get(son_log.islem, 'text-text-muted') }}">{{ iletisim_ikon.get(son_log.islem, 'history') }}</span>
+                            <div class="leading-tight">
+                                <p class="text-xs font-medium {{ iletisim_renk.get(son_log.islem, 'text-text-primary dark:text-text-primary-dark') }}">{{ son_log.islem_etiket }}</p>
+                                <p class="text-[11px] text-text-muted dark:text-text-muted-dark">{{ son_log.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+                                <p class="text-[11px] text-text-muted dark:text-text-muted-dark">{{ son_log.kullanici.full_name if son_log.kullanici else 'Sistem' }}</p>
+                            </div>
+                        </div>
+                        {% elif aktif_surec %}
+                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[11px] font-bold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            <span class="material-symbols-outlined text-sm">warning</span> Hiç aranmamış
+                        </span>
+                        {% else %}
+                        <span class="text-xs text-text-muted dark:text-text-muted-dark">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">
                         <div class="flex items-center gap-1">
                             <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="p-1.5 text-text-muted dark:text-text-muted-dark hover:text-blue-600 hover:bg-blue-50 rounded" title="Detay">
                                 <span class="material-symbols-outlined text-lg">visibility</span>
@@ -197,7 +241,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="9" class="px-4 py-12 text-center text-text-muted dark:text-text-muted-dark">
+                    <td colspan="10" class="px-4 py-12 text-center text-text-muted dark:text-text-muted-dark">
                         <span class="material-symbols-outlined text-4xl mb-2 block">inbox</span>
                         Aday bulunamadı
                     </td>

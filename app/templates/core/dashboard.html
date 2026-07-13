@@ -283,6 +283,47 @@
 </div>
 {% endif %}
 
+{% if geri_aranacak %}
+{% set gecikmis_sayi = geri_aranacak | selectattr('durum', 'equalto', 'gecikmis') | list | length %}
+<div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm overflow-hidden flex flex-col mb-6">
+    <div class="p-4 sm:p-6 border-b border-border-light dark:border-border-dark flex items-center justify-between">
+        <h2 class="text-lg font-bold text-[#111418] dark:text-white flex items-center gap-2">
+            <span class="material-symbols-outlined text-orange-500">phone_callback</span>
+            Geri Aranacak Adaylar
+        </h2>
+        <div class="flex items-center gap-2">
+            {% if gecikmis_sayi %}
+            <span class="bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300 text-xs font-bold px-2 py-0.5 rounded-full">{{ gecikmis_sayi }} gecikmiş</span>
+            {% endif %}
+            <span class="bg-orange-100 text-orange-600 dark:bg-orange-900/40 dark:text-orange-300 text-xs font-bold px-2 py-0.5 rounded-full">{{ geri_aranacak|length }} toplam</span>
+        </div>
+    </div>
+    <div class="flex-1 overflow-y-auto p-0">
+        <div class="divide-y divide-border-light dark:divide-border-dark">
+            {% for g in geri_aranacak %}
+            {% set aday = g.aday %}
+            <a href="{{ url_for('ik.aday_detay', id=aday.id) }}" class="p-4 hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors flex items-center gap-3 block {% if g.durum == 'gecikmis' %}bg-red-50 dark:bg-red-900/10{% endif %}">
+                <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden shrink-0">
+                    <span class="text-xs font-bold text-gray-500 dark:text-gray-400">{{ (aday.ad[0] if aday.ad else '')|upper }}{{ (aday.soyad[0] if aday.soyad else '')|upper }}</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h4 class="text-sm font-bold text-[#111418] dark:text-white truncate">{{ aday.full_name }}</h4>
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark truncate">
+                        {{ aday.kadro.proje.ad if aday.kadro and aday.kadro.proje else (aday.telefon or '') }}
+                    </p>
+                </div>
+                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border whitespace-nowrap
+                    {% if g.durum == 'gecikmis' %}text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800
+                    {% else %}text-orange-600 bg-orange-100 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800{% endif %}">
+                    {% if g.durum == 'gecikmis' %}Gecikmiş • {% endif %}{{ g.tarih.strftime('%d.%m %H:%M') }}
+                </span>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Bottom Grid -->
 <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
     <!-- Son Eklenen Çalışanlar -->

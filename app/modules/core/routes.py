@@ -257,6 +257,24 @@ def dashboard():
         db.session.rollback()
         ticari_sozlesme_dolacak = []
 
+    # Bugün geri aranacak + tarihi geçmiş (gecikmiş) adaylar (scope'a göre)
+    try:
+        from app.modules.ik.routes import geri_aranacak_adaylar
+        bugun = date.today()
+        geri_aranacak = []
+        for aday, log in geri_aranacak_adaylar(scoped=True):
+            h = log.hatirlatma_tarihi
+            if h.date() < bugun:
+                durum = 'gecikmis'
+            elif h.date() == bugun:
+                durum = 'bugun'
+            else:
+                continue  # gelecekteki hatırlatmalar dashboard kartında gösterilmez
+            geri_aranacak.append({'aday': aday, 'tarih': h, 'durum': durum})
+    except Exception:
+        db.session.rollback()
+        geri_aranacak = []
+
     return render_template('core/dashboard.html',
                          stats=stats,
                          projeler=projeler,
@@ -264,7 +282,8 @@ def dashboard():
                          son_calisanlar=son_calisanlar,
                          arac_durum=arac_durum,
                          sozlesme_dolacak=sozlesme_dolacak,
-                         ticari_sozlesme_dolacak=ticari_sozlesme_dolacak)
+                         ticari_sozlesme_dolacak=ticari_sozlesme_dolacak,
+                         geri_aranacak=geri_aranacak)
 
 
 # ==================== PROFIL ====================

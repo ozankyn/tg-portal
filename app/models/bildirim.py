@@ -15,7 +15,7 @@ AVAILABLE_VARIABLES = {
         'lokasyon', 'sgk_sube', 'sgk_no', 'yonetici', 'telefon', 'email',
     ],
     'ISTEN_CIKIS': [
-        'ad_soyad', 'tc_kimlik', 'cikis_tarihi', 'cikis_nedeni',
+        'ad_soyad', 'tc_kimlik', 'cikis_tarihi', 'bildirim_tarihi', 'cikis_nedeni',
         'proje', 'pozisyon', 'telefon', 'zimmet_durumu',
         'sgk_cikis_kodu', 'sgk_cikis_aciklama', 'liste_durumu',
     ],

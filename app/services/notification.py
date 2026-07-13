@@ -669,13 +669,18 @@ def notify_ise_giris(calisan):
 
 
 def notify_isten_cikis(calisan, cikis_tarihi, cikis_nedeni, zimmet_teslim=None,
-                       sgk_cikis_kodu=None, liste_durumu=None):
+                       sgk_cikis_kodu=None, liste_durumu=None, bildirim_tarihi=None):
     """Isten cikis bildirimi - sablonu ISTEN_CIKIS
 
     Args:
+        cikis_tarihi: SGK çıkış tarihi = personelin son çalışma günü
         sgk_cikis_kodu: SgkCikisKodu instance veya None
         liste_durumu: ListeDurumu enum veya string veya None
+        bildirim_tarihi: Bildirimin gönderildiği tarih (bugün); None ise bugün
     """
+    from datetime import date as _date
+    if bildirim_tarihi is None:
+        bildirim_tarihi = _date.today()
     proje_adi = '-'
     pozisyon_adi = '-'
     proje_id = None
@@ -717,6 +722,7 @@ def notify_isten_cikis(calisan, cikis_tarihi, cikis_nedeni, zimmet_teslim=None,
         'ad_soyad': f"{calisan.ad} {calisan.soyad}",
         'tc_kimlik': calisan.tc_kimlik or '-',
         'cikis_tarihi': cikis_tarihi.strftime('%d.%m.%Y') if cikis_tarihi else '-',
+        'bildirim_tarihi': bildirim_tarihi.strftime('%d.%m.%Y') if bildirim_tarihi else '-',
         'cikis_nedeni': cikis_nedeni or '-',
         'proje': proje_adi,
         'pozisyon': pozisyon_adi,
