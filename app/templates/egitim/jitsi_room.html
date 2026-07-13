@@ -155,14 +155,14 @@
                 window.location.href = geriUrl;
             });
 
-            // Güvenlik ağı: 15sn içinde açılmazsa hata göster
+            // Güvenlik ağı: 30sn içinde açılmazsa hata göster
             setTimeout(function () {
                 var y = document.getElementById('yukleniyor');
                 if (y && y.style.display !== 'none') {
                     y.style.display = 'none';
                     document.getElementById('hata').style.display = 'flex';
                 }
-            }, 15000);
+            }, 30000);
         })();
     </script>
 </body>
