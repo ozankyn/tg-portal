@@ -941,6 +941,7 @@ def adaylar_export():
     from flask import Response
 
     adaylar = _aday_liste_query().all()
+    son_iletisim = _aday_son_iletisim([a.id for a in adaylar])
 
     wb = Workbook()
     ws = wb.active
@@ -951,7 +952,8 @@ def adaylar_export():
                'Planlı Başlangıç Tarihi',
                'İl', 'İlçe', 'Üst Beden', 'Alt Beden', 'Ayakkabı No',
                'Kargo Şubesi', 'TG\'de Çalıştı', 'Seyahat Engeli',
-               'Askerlik', 'Başvuru Kaynağı']
+               'Askerlik', 'Başvuru Kaynağı',
+               'Son İletişim Tarihi', 'Son İletişim Tipi', 'Arayan']
     ws.append(headers)
 
     header_font = Font(bold=True, color='FFFFFF')
@@ -987,6 +989,10 @@ def adaylar_export():
         else:
             kadro_pozisyon = ''
         direktorluk, mudurluk = _aday_org_bilgisi(a)
+        son_log = son_iletisim.get(a.id)
+        son_iletisim_tarihi = son_log.created_at.strftime('%d.%m.%Y %H:%M') if son_log else ''
+        son_iletisim_tipi = son_log.islem_etiket if son_log else ''
+        arayan = (son_log.kullanici.full_name if son_log and son_log.kullanici else '') if son_log else ''
         ws.append([
             f'{a.ad or ""} {a.soyad or ""}'.strip(),
             a.tc_kimlik or '',
@@ -1011,10 +1017,14 @@ def adaylar_export():
             'Var' if a.seyahat_engeli else 'Yok',
             a.askerlik_durumu or '',
             a.basvuru_kaynak_text if a.basvuru_kaynak else '',
+            son_iletisim_tarihi,
+            son_iletisim_tipi,
+            arayan,
         ])
 
     widths = [28, 13, 28, 9, 16, 28, 14, 22, 22, 22, 24, 18, 18,
-              14, 14, 10, 10, 10, 26, 12, 14, 12, 18]
+              14, 14, 10, 10, 10, 26, 12, 14, 12, 18,
+              18, 18, 20]
     for idx, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = w
 
