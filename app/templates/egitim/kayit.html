@@ -1,0 +1,202 @@
+{% extends "basvuru/base_public.html" %}
+{% block title %}Eğitim Kaydı{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+
+        <!-- Başlık -->
+        <div class="bg-gradient-to-r from-blue-600 to-blue-500 p-6 text-center">
+            <h4 class="text-white text-xl font-bold flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">school</span>
+                Eğitim Kaydı
+            </h4>
+            <p class="text-blue-100 text-sm mt-1">{{ egitim.baslik }}</p>
+        </div>
+
+        <div class="p-6">
+
+            {% if adim == 'kapali' %}
+            <div class="text-center py-6">
+                <span class="material-symbols-outlined text-5xl text-gray-300">event_busy</span>
+                <h5 class="text-lg font-bold text-gray-800 mt-3">Kayıt Kapalı</h5>
+                <p class="text-gray-500 text-sm mt-2">{{ kapali_mesaj }}</p>
+            </div>
+            {% else %}
+
+            {% if hata %}
+            <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 mb-4 text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-red-500">error</span>
+                <span>{{ hata }}</span>
+            </div>
+            {% endif %}
+            {% if bilgi %}
+            <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl p-3 mb-4 text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald-500">check_circle</span>
+                <span>{{ bilgi }}</span>
+            </div>
+            {% endif %}
+
+            {# ---------- ADIM 1: Ad soyad + telefon ---------- #}
+            {% if adim == 'telefon' %}
+
+            {% if egitim.aciklama %}
+            <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-5 text-sm text-gray-600">
+                {{ egitim.aciklama }}
+            </div>
+            {% endif %}
+
+            <p class="text-center text-gray-600 text-sm mb-6">
+                Kaydınızı tamamlamak için bilgilerinizi girin. Telefonunuza bir doğrulama kodu göndereceğiz.
+            </p>
+
+            <form method="POST" action="{{ url_for('egitim.kayit_kod_gonder', id=egitim.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="mb-4">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Ad Soyad</label>
+                    <input type="text" name="ad_soyad" required minlength="3"
+                           value="{{ ad_soyad or '' }}" placeholder="Adınız Soyadınız"
+                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Cep Telefonu</label>
+                    <div class="flex">
+                        <span class="inline-flex items-center px-4 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg text-gray-600 text-sm">🇹🇷 +90</span>
+                        <input type="tel" name="telefon" required value="{{ telefon or '' }}"
+                               placeholder="5XX XXX XX XX" pattern="[0-9\s]{10,15}"
+                               class="flex-1 p-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Başında 0 olmadan 10 haneli numaranızı girin.</p>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">E-posta <span class="text-gray-400 font-normal">(opsiyonel)</span></label>
+                    <input type="email" name="email" value="{{ email or '' }}" placeholder="ornek@mail.com"
+                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <button type="submit"
+                        class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">sms</span>
+                    Doğrulama Kodu Gönder
+                </button>
+            </form>
+
+            {# ---------- ADIM 2: OTP doğrulama ---------- #}
+            {% elif adim == 'kod' %}
+
+            <p class="text-center text-gray-600 text-sm mb-6">
+                <strong>0{{ telefon }}</strong> numarasına gönderilen 6 haneli kodu girin.
+            </p>
+
+            <form method="POST" action="{{ url_for('egitim.kayit_dogrula', id=egitim.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="mb-6">
+                    <input type="text" name="kod" required inputmode="numeric" pattern="[0-9]{6}"
+                           maxlength="6" autocomplete="one-time-code" placeholder="______"
+                           class="w-full p-4 border border-gray-300 rounded-lg text-center text-3xl tracking-[0.5em] font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <button type="submit"
+                        class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">verified</span>
+                    Doğrula
+                </button>
+            </form>
+
+            <form method="POST" action="{{ url_for('egitim.kayit_kod_tekrar', id=egitim.id) }}" class="mt-4 text-center">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                    Kod gelmedi mi? Tekrar gönder
+                </button>
+            </form>
+
+            {# ---------- ADIM 3: Oturum seçimi ---------- #}
+            {% elif adim == 'oturum' %}
+
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 mb-5 text-sm text-emerald-700 flex items-center gap-2">
+                <span class="material-symbols-outlined text-emerald-500">verified_user</span>
+                <span>Telefon numaranız doğrulandı.</span>
+            </div>
+
+            <div class="mb-5 text-sm text-gray-600 space-y-1">
+                {% if egitim.egitmen %}
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-base text-gray-400">person</span>
+                    <span>Eğitmen: <strong>{{ egitim.egitmen.full_name }}</strong></span>
+                </div>
+                {% elif egitim.dis_egitmen_ad %}
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-base text-gray-400">person</span>
+                    <span>Eğitmen: <strong>{{ egitim.dis_egitmen_ad }}</strong></span>
+                </div>
+                {% endif %}
+                {% if egitim.lokasyon %}
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-base text-gray-400">location_on</span>
+                    <span>{{ egitim.lokasyon }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if oturumlar %}
+            <h5 class="font-bold text-gray-800 mb-3">Bir oturum seçin</h5>
+            <form method="POST" action="{{ url_for('egitim.kayit_kaydol', id=egitim.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="space-y-3 mb-6">
+                    {% for o in oturumlar %}
+                    {% set secilebilir = o.kayit_alinabilir_mi %}
+                    <label class="block border rounded-xl p-4 transition-colors
+                                  {% if secilebilir %}border-gray-300 hover:border-blue-500 cursor-pointer has-[:checked]:border-blue-600 has-[:checked]:bg-blue-50
+                                  {% else %}border-gray-200 bg-gray-50 opacity-70 cursor-not-allowed{% endif %}">
+                        <div class="flex items-start gap-3">
+                            <input type="radio" name="oturum_id" value="{{ o.id }}" class="mt-1"
+                                   {% if not secilebilir %}disabled{% endif %} required>
+                            <div class="flex-1">
+                                <div class="font-bold text-gray-800">
+                                    {{ o.tarih.strftime('%d.%m.%Y') }}
+                                    <span class="text-gray-500 font-normal">
+                                        · {{ o.baslangic_saati.strftime('%H:%M') }}{% if o.bitis_saati %} - {{ o.bitis_saati.strftime('%H:%M') }}{% endif %}
+                                    </span>
+                                </div>
+                                {% if o.aciklama %}
+                                <div class="text-xs text-gray-500 mt-0.5">{{ o.aciklama }}</div>
+                                {% endif %}
+                                <div class="mt-2">
+                                    {% if o.dolu_mu %}
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700">
+                                        <span class="material-symbols-outlined text-sm">block</span> Kontenjan Doldu
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700">
+                                        <span class="material-symbols-outlined text-sm">event_available</span>
+                                        {{ o.kalan_kontenjan }} kişilik yer kaldı
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+
+                <button type="submit"
+                        class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">how_to_reg</span>
+                    Kaydımı Tamamla
+                </button>
+            </form>
+            {% else %}
+            <div class="text-center py-8">
+                <span class="material-symbols-outlined text-5xl text-gray-300">event_busy</span>
+                <p class="text-gray-500 text-sm mt-3">Şu anda kayıt alınabilecek bir oturum bulunmuyor.</p>
+            </div>
+            {% endif %}
+
+            {% endif %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "basvuru/base_public.html" %}
+{% block title %}Kaydınız Alındı{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+
+        {% if kayit.durum == 'iptal' %}
+        <div class="bg-gradient-to-r from-gray-600 to-gray-500 p-6 text-center">
+            <span class="material-symbols-outlined text-white text-5xl">event_busy</span>
+            <h4 class="text-white text-xl font-bold mt-2">Kaydınız İptal Edildi</h4>
+        </div>
+        {% else %}
+        <div class="bg-gradient-to-r from-emerald-600 to-emerald-500 p-6 text-center">
+            <span class="material-symbols-outlined text-white text-5xl">check_circle</span>
+            <h4 class="text-white text-xl font-bold mt-2">
+                {% if zaten_kayitli %}Zaten Kayıtlısınız{% else %}Kaydınız Alındı{% endif %}
+            </h4>
+        </div>
+        {% endif %}
+
+        <div class="p-6">
+
+            {% if zaten_kayitli %}
+            <p class="text-center text-gray-600 text-sm mb-5">
+                Bu eğitim için zaten aktif bir kaydınız bulunuyor. Kayıt bilgileriniz aşağıdadır.
+            </p>
+            {% endif %}
+
+            <!-- Kayıt Özeti -->
+            <div class="border border-gray-200 rounded-xl divide-y divide-gray-100 mb-5">
+                <div class="p-4">
+                    <div class="text-xs text-gray-500 uppercase font-bold">Eğitim</div>
+                    <div class="font-bold text-gray-800 mt-0.5">{{ egitim.baslik }}</div>
+                </div>
+                <div class="p-4">
+                    <div class="text-xs text-gray-500 uppercase font-bold">Tarih & Saat</div>
+                    <div class="font-bold text-gray-800 mt-0.5">{{ kayit.oturum.zaman_text }}</div>
+                    {% if kayit.oturum.aciklama %}
+                    <div class="text-xs text-gray-500 mt-0.5">{{ kayit.oturum.aciklama }}</div>
+                    {% endif %}
+                </div>
+                <div class="p-4">
+                    <div class="text-xs text-gray-500 uppercase font-bold">Katılımcı</div>
+                    <div class="font-bold text-gray-800 mt-0.5">{{ kayit.ad_soyad }}</div>
+                    <div class="text-sm text-gray-500">0{{ kayit.telefon }}</div>
+                </div>
+                {% if egitim.lokasyon %}
+                <div class="p-4">
+                    <div class="text-xs text-gray-500 uppercase font-bold">Lokasyon</div>
+                    <div class="text-gray-800 mt-0.5">{{ egitim.lokasyon }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if kayit.durum == 'onaylandi' %}
+
+            {% if kayit.oturum.toplanti_linki %}
+            <a href="{{ kayit.oturum.toplanti_linki }}" target="_blank" rel="noopener"
+               class="w-full py-3 mb-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">videocam</span>
+                Toplantıya Katıl
+            </a>
+            <p class="text-xs text-gray-500 text-center mb-5">
+                Bu link eğitim saatinde aktif olacaktır. Bağlantıyı bu sayfadan tekrar açabilirsiniz.
+            </p>
+            {% endif %}
+
+            {% if kayit.anket %}
+            <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl p-3 mb-3 text-sm text-center">
+                Anketimizi doldurduğunuz için teşekkürler.
+            </div>
+            {% elif kayit.oturum.gecmis_mi %}
+            <a href="{{ url_for('egitim.anket', token=kayit.token) }}"
+               class="w-full py-3 mb-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">rate_review</span>
+                Değerlendirme Anketini Doldur
+            </a>
+            {% endif %}
+
+            {% if kayit.iptal_edilebilir_mi %}
+            <a href="{{ url_for('egitim.kayit_iptal', token=kayit.token) }}"
+               class="w-full py-3 border border-rose-300 text-rose-600 hover:bg-rose-50 font-medium rounded-xl transition-colors flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">cancel</span>
+                Kaydımı İptal Et
+            </a>
+            {% endif %}
+
+            {% else %}
+            <div class="text-center">
+                <p class="text-gray-500 text-sm">
+                    Bu kayıt {{ kayit.iptal_zamani.strftime('%d.%m.%Y %H:%M') if kayit.iptal_zamani else '' }} tarihinde iptal edilmiştir.
+                </p>
+                <a href="{{ url_for('egitim.kayit', id=egitim.id) }}"
+                   class="inline-block mt-4 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                    Yeniden kayıt olmak için tıklayın
+                </a>
+            </div>
+            {% endif %}
+
+            <p class="text-xs text-gray-400 text-center mt-5">
+                Bu sayfayı kaydedin — kayıt bilgilerinize buradan tekrar ulaşabilirsiniz.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

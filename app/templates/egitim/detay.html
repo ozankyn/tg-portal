@@ -227,7 +227,8 @@
     <!-- Sağ Panel -->
     <div class="lg:col-span-2">
         <!-- Tab Menü -->
-        <div class="mb-4 border-b border-border-light dark:border-border-dark" x-data="{ tab: 'katilimcilar' }">
+        <div class="mb-4 border-b border-border-light dark:border-border-dark"
+             x-data="{ tab: ['#oturumlar', '#kayitlar'].includes(window.location.hash) ? window.location.hash.slice(1) : 'katilimcilar' }">
             <div class="flex gap-4">
                 <button @click="tab = 'katilimcilar'" :class="tab === 'katilimcilar' ? 'border-b-2 border-primary text-primary' : 'text-text-muted dark:text-text-muted-dark'" class="pb-3 px-1 font-medium text-sm flex items-center gap-2">
                     <span class="material-symbols-outlined text-lg">groups</span>
@@ -236,6 +237,14 @@
                 <button @click="tab = 'materyaller'" :class="tab === 'materyaller' ? 'border-b-2 border-primary text-primary' : 'text-text-muted dark:text-text-muted-dark'" class="pb-3 px-1 font-medium text-sm flex items-center gap-2">
                     <span class="material-symbols-outlined text-lg">folder</span>
                     Materyaller ({{ materyaller|length }})
+                </button>
+                <button @click="tab = 'oturumlar'" :class="tab === 'oturumlar' ? 'border-b-2 border-primary text-primary' : 'text-text-muted dark:text-text-muted-dark'" class="pb-3 px-1 font-medium text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">event</span>
+                    Oturumlar ({{ oturumlar|length }})
+                </button>
+                <button @click="tab = 'kayitlar'" :class="tab === 'kayitlar' ? 'border-b-2 border-primary text-primary' : 'text-text-muted dark:text-text-muted-dark'" class="pb-3 px-1 font-medium text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">how_to_reg</span>
+                    Kayıtlar ({{ aktif_kayit_sayisi }})
                 </button>
             </div>
         
@@ -400,9 +409,323 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Oturumlar Tab -->
+            <div x-show="tab === 'oturumlar'" id="oturumlar" class="pt-4">
+                <!-- Public kayıt linki -->
+                <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mb-4">
+                    <div class="px-5 py-4">
+                        <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2 mb-2">
+                            <span class="material-symbols-outlined text-primary">link</span>
+                            Kayıt (Booking) Linki
+                        </h6>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mb-3">
+                            Bu linki aday ve çalışanlarla paylaşın. Telefon doğrulaması sonrası müsait oturumlardan birini seçip kaydolabilirler.
+                        </p>
+                        <div class="flex gap-2">
+                            <input type="text" readonly id="bookingLink"
+                                   value="{{ url_for('egitim.kayit', id=egitim.id, _external=True) }}"
+                                   class="flex-1 px-3 py-2 text-sm font-mono bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-text-muted dark:text-text-muted-dark">
+                            <button type="button" onclick="kopyalaBookingLink(this)"
+                                    class="px-3 py-2 bg-primary hover:bg-primary-dark text-white text-sm font-medium rounded-lg flex items-center gap-1 whitespace-nowrap">
+                                <span class="material-symbols-outlined text-lg">content_copy</span>Kopyala
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                        <h6 class="font-bold text-[#111418] dark:text-white">Oturumlar</h6>
+                        {% if egitim_yonetebilir(egitim) %}
+                        <button onclick="oturumModalAc()" class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white font-medium text-sm rounded-lg transition-colors flex items-center gap-1">
+                            <span class="material-symbols-outlined text-lg">add</span>Oturum Ekle
+                        </button>
+                        {% endif %}
+                    </div>
+                    {% if oturumlar %}
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 dark:bg-[#111418]">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Tarih & Saat</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Kontenjan</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Durum</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden lg:table-cell">Toplantı Linki</th>
+                                    <th class="px-4 py-3 text-right text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                                {% for o in oturumlar %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium text-[#111418] dark:text-white whitespace-nowrap">{{ o.zaman_text }}</div>
+                                        {% if o.aciklama %}
+                                        <div class="text-xs text-text-muted dark:text-text-muted-dark">{{ o.aciklama }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 whitespace-nowrap">
+                                        <span class="font-bold text-[#111418] dark:text-white">{{ o.kayit_sayisi }}</span>
+                                        <span class="text-text-muted dark:text-text-muted-dark">/ {{ o.kontenjan }}</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        {% if not o.aktif %}
+                                        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Pasif</span>
+                                        {% elif o.gecmis_mi %}
+                                        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Tamamlandı</span>
+                                        {% elif o.dolu_mu %}
+                                        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Kontenjan Doldu</span>
+                                        {% else %}
+                                        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">{{ o.kalan_kontenjan }} yer var</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 hidden lg:table-cell">
+                                        {% if o.toplanti_linki %}
+                                        <a href="{{ o.toplanti_linki }}" target="_blank" rel="noopener" class="text-primary hover:underline text-xs break-all">{{ o.toplanti_linki|truncate(45) }}</a>
+                                        {% else %}
+                                        <span class="text-text-muted dark:text-text-muted-dark">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 text-right whitespace-nowrap">
+                                        {% if egitim_yonetebilir(egitim) %}
+                                        <button onclick='oturumModalAc({{ {
+                                                    "id": o.id,
+                                                    "tarih": o.tarih.strftime("%Y-%m-%d"),
+                                                    "baslangic": o.baslangic_saati.strftime("%H:%M"),
+                                                    "bitis": o.bitis_saati.strftime("%H:%M") if o.bitis_saati else "",
+                                                    "kontenjan": o.kontenjan,
+                                                    "aciklama": o.aciklama or "",
+                                                    "link": o.toplanti_linki or "",
+                                                    "aktif": o.aktif
+                                                }|tojson }})'
+                                                class="p-1.5 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg" title="Düzenle">
+                                            <span class="material-symbols-outlined text-lg">edit</span>
+                                        </button>
+                                        {% if o.gecmis_mi and o.kayit_sayisi %}
+                                        <form method="POST" action="{{ url_for('egitim.oturum_anket_sms', oturum_id=o.id) }}" class="inline"
+                                              onsubmit="return confirm('Bu oturumun katılımcılarına anket linki SMS ile gönderilsin mi?')">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="p-1.5 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg" title="Anket SMS gönder">
+                                                <span class="material-symbols-outlined text-lg text-amber-600">rate_review</span>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        <form method="POST" action="{{ url_for('egitim.oturum_sil', oturum_id=o.id) }}" class="inline"
+                                              onsubmit="return confirm('Bu oturumu silmek istediğinize emin misiniz?')">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-lg" title="Sil">
+                                                <span class="material-symbols-outlined text-lg text-rose-600">delete</span>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="py-12 text-center">
+                        <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-2">event</span>
+                        <p class="text-text-muted dark:text-text-muted-dark">Henüz oturum eklenmedi</p>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Kayıt linkinin çalışması için en az bir oturum ekleyin.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Kayıtlar Tab -->
+            <div x-show="tab === 'kayitlar'" id="kayitlar" class="pt-4">
+                <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                        <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-3">
+                            Booking Kayıtları
+                            {% if anket_ortalama %}
+                            <span class="px-2 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-bold rounded-full flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm">star</span>
+                                Anket ort. {{ anket_ortalama }}/5 ({{ anketler|length }})
+                            </span>
+                            {% endif %}
+                        </h6>
+                        {% if kayitlar %}
+                        <a href="{{ url_for('egitim.kayit_export', id=egitim.id) }}"
+                           class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors">
+                            <span class="material-symbols-outlined text-base">download</span>Excel'e Aktar
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% if kayitlar %}
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 dark:bg-[#111418]">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Ad Soyad</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Telefon</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Oturum</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden md:table-cell">Eşleşme</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Durum</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden lg:table-cell">Anket</th>
+                                    <th class="px-4 py-3 text-right text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                                {% for k in kayitlar %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] {% if k.durum == 'iptal' %}opacity-60{% endif %}">
+                                    <td class="px-4 py-3 font-medium text-[#111418] dark:text-white">
+                                        {% if k.calisan_id %}
+                                        <a href="{{ url_for('ik.detay', id=k.calisan_id) }}" class="hover:text-primary">{{ k.ad_soyad }}</a>
+                                        {% else %}{{ k.ad_soyad }}{% endif %}
+                                        {% if k.email %}<div class="text-xs text-text-muted dark:text-text-muted-dark">{{ k.email }}</div>{% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 font-mono text-text-muted dark:text-text-muted-dark whitespace-nowrap">0{{ k.telefon }}</td>
+                                    <td class="px-4 py-3 text-text-muted dark:text-text-muted-dark whitespace-nowrap">{{ k.oturum.zaman_text }}</td>
+                                    <td class="px-4 py-3 hidden md:table-cell">
+                                        {% if k.calisan_id %}
+                                        <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Çalışan</span>
+                                        {% elif k.aday_id %}
+                                        <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Aday</span>
+                                        {% else %}
+                                        <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400">Eşleşmedi</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        {% if k.durum == 'iptal' %}
+                                        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">İptal</span>
+                                        {% else %}
+                                        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Onaylandı</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 hidden lg:table-cell">
+                                        {% if k.anket %}
+                                        <span class="inline-flex items-center gap-0.5 text-amber-600 font-bold" title="{{ k.anket.yorum or '' }}">
+                                            <span class="material-symbols-outlined text-base">star</span>{{ k.anket.puan }}/5
+                                        </span>
+                                        {% else %}
+                                        <span class="text-text-muted dark:text-text-muted-dark">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 text-right">
+                                        {% if egitim_yonetebilir(egitim) and k.durum == 'onaylandi' %}
+                                        <form method="POST" action="{{ url_for('egitim.kayit_iptal_yonetim', kayit_id=k.id) }}"
+                                              onsubmit="return confirm('{{ k.ad_soyad }} kaydını iptal etmek istediğinize emin misiniz?')">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="p-1.5 hover:bg-rose-50 dark:hover:bg-rose-900/10 rounded-lg" title="Kaydı iptal et">
+                                                <span class="material-symbols-outlined text-lg text-rose-600">cancel</span>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="py-12 text-center">
+                        <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-2">how_to_reg</span>
+                        <p class="text-text-muted dark:text-text-muted-dark">Henüz kayıt yapılmadı</p>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Oturumlar sekmesindeki kayıt linkini paylaşın.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if anketler %}
+                <div class="mt-4 bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark">
+                        <h6 class="font-bold text-[#111418] dark:text-white flex items-center gap-2">
+                            <span class="material-symbols-outlined text-amber-500">rate_review</span>
+                            Anket Yorumları
+                        </h6>
+                    </div>
+                    <div class="p-5 space-y-3">
+                        {% for a in anketler if a.yorum %}
+                        <div class="border-l-4 border-amber-400 bg-gray-50 dark:bg-[#111418] rounded-r-lg px-4 py-3">
+                            <div class="flex items-center gap-2 text-xs text-text-muted dark:text-text-muted-dark mb-1">
+                                <span class="text-amber-600 font-bold">{{ a.puan }}/5</span>
+                                <span>·</span>
+                                <span>{{ a.kayit.ad_soyad if a.kayit else 'Anonim' }}</span>
+                                <span>·</span>
+                                <span>{{ a.created_at.strftime('%d.%m.%Y') }}</span>
+                            </div>
+                            <p class="text-sm text-[#111418] dark:text-white">{{ a.yorum }}</p>
+                        </div>
+                        {% else %}
+                        <p class="text-sm text-text-muted dark:text-text-muted-dark text-center py-4">Henüz yazılı yorum yok.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
+
+{% if egitim_yonetebilir(egitim) %}
+<!-- Oturum Ekle/Düzenle Modal -->
+<div id="oturumModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <form method="POST" id="oturumForm" action="{{ url_for('egitim.oturum_ekle', id=egitim.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+                <h5 class="font-bold text-lg text-[#111418] dark:text-white" id="oturumModalBaslik">Oturum Ekle</h5>
+                <button type="button" onclick="document.getElementById('oturumModal').classList.add('hidden')" class="p-1 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block mb-1.5 text-sm font-medium text-[#111418] dark:text-white">Tarih <span class="text-rose-500">*</span></label>
+                    <input type="date" name="tarih" id="oturumTarih" required
+                           class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-[#111418] text-[#111418] dark:text-white">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block mb-1.5 text-sm font-medium text-[#111418] dark:text-white">Başlangıç <span class="text-rose-500">*</span></label>
+                        <input type="time" name="baslangic_saati" id="oturumBaslangic" required
+                               class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-[#111418] text-[#111418] dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block mb-1.5 text-sm font-medium text-[#111418] dark:text-white">Bitiş</label>
+                        <input type="time" name="bitis_saati" id="oturumBitis"
+                               class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-[#111418] text-[#111418] dark:text-white">
+                    </div>
+                </div>
+                <div>
+                    <label class="block mb-1.5 text-sm font-medium text-[#111418] dark:text-white">Kontenjan <span class="text-rose-500">*</span></label>
+                    <input type="number" name="kontenjan" id="oturumKontenjan" min="1" value="20" required
+                           class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-[#111418] text-[#111418] dark:text-white">
+                </div>
+                <div>
+                    <label class="block mb-1.5 text-sm font-medium text-[#111418] dark:text-white">Açıklama</label>
+                    <input type="text" name="aciklama" id="oturumAciklama" maxlength="200" placeholder="Grup A / Sabah oturumu"
+                           class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-[#111418] text-[#111418] dark:text-white">
+                </div>
+                <div>
+                    <label class="block mb-1.5 text-sm font-medium text-[#111418] dark:text-white">Toplantı Linki</label>
+                    <input type="url" name="toplanti_linki" id="oturumLink" maxlength="500" placeholder="https://teams.microsoft.com/..."
+                           class="w-full px-3 py-2 border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-[#111418] text-[#111418] dark:text-white">
+                    <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Teams, Zoom, Google Meet veya Jitsi linki. Boş bırakırsanız aşağıdaki seçenekle Jitsi linki otomatik oluşturulur.</p>
+                </div>
+                <label class="flex items-center gap-2 text-sm text-[#111418] dark:text-white">
+                    <input type="checkbox" name="jitsi_otomatik" id="oturumJitsi" class="rounded border-border-light">
+                    Link boşsa otomatik Jitsi odası oluştur
+                </label>
+                <label class="flex items-center gap-2 text-sm text-[#111418] dark:text-white hidden" id="oturumAktifWrap">
+                    <input type="checkbox" name="aktif" id="oturumAktif" checked class="rounded border-border-light">
+                    Oturum aktif (kayıt alınabilir)
+                </label>
+            </div>
+            <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-2">
+                <button type="button" onclick="document.getElementById('oturumModal').classList.add('hidden')"
+                        class="px-4 py-2 border border-border-light dark:border-border-dark rounded-lg text-sm font-medium text-text-muted dark:text-text-muted-dark hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                    Vazgeç
+                </button>
+                <button type="submit" class="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg text-sm font-medium">Kaydet</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
 
 <!-- Katılım Logu (dış katılım linkinden girenler) -->
 <div class="mt-6 bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
@@ -631,6 +954,46 @@ function disKatilimKopyala(btn) {
         btn.innerHTML = '<span class="material-symbols-outlined text-base">check</span> Kopyalandı';
         setTimeout(() => { btn.innerHTML = eski; }, 1500);
     });
+}
+
+function kopyalaBookingLink(btn) {
+    const el = document.getElementById('bookingLink');
+    if (!el) return;
+    el.select();
+    el.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(el.value).then(() => {
+        const eski = btn.innerHTML;
+        btn.innerHTML = '<span class="material-symbols-outlined text-lg">check</span> Kopyalandı';
+        setTimeout(() => { btn.innerHTML = eski; }, 1500);
+    });
+}
+
+// Oturum ekle/düzenle modalı. Argümansız çağrı = yeni oturum.
+function oturumModalAc(o) {
+    const form = document.getElementById('oturumForm');
+    const aktifWrap = document.getElementById('oturumAktifWrap');
+
+    if (o) {
+        document.getElementById('oturumModalBaslik').textContent = 'Oturumu Düzenle';
+        form.action = `/egitim/oturum/${o.id}/duzenle`;
+        document.getElementById('oturumTarih').value = o.tarih;
+        document.getElementById('oturumBaslangic').value = o.baslangic;
+        document.getElementById('oturumBitis').value = o.bitis;
+        document.getElementById('oturumKontenjan').value = o.kontenjan;
+        document.getElementById('oturumAciklama').value = o.aciklama;
+        document.getElementById('oturumLink').value = o.link;
+        document.getElementById('oturumJitsi').checked = false;
+        document.getElementById('oturumAktif').checked = o.aktif;
+        aktifWrap.classList.remove('hidden');
+    } else {
+        document.getElementById('oturumModalBaslik').textContent = 'Oturum Ekle';
+        form.action = '{{ url_for("egitim.oturum_ekle", id=egitim.id) }}';
+        form.reset();
+        document.getElementById('oturumKontenjan').value = 20;
+        // Yeni oturumda "aktif" alanı gizli; sunucu tarafında varsayılan True
+        aktifWrap.classList.add('hidden');
+    }
+    document.getElementById('oturumModal').classList.remove('hidden');
 }
 </script>
 {% endblock %}

@@ -156,10 +156,17 @@ def create_app(config_name=None):
     # Public sayfalarda (/kariyer, /basvuru) aday dostu hata ekranları göster.
     # Diğer sayfalarda Flask/Werkzeug varsayılan davranışı korunur.
     # ============================================================
+    # Login gerektirmeyen (dış erişimli) sayfalar. Buradaki hatalar dashboard'a
+    # yönlendirilmek yerine public hata/CSRF sayfası ile karşılanır.
+    PUBLIC_PREFIXES = (
+        '/kariyer', '/basvuru',
+        '/egitim/kayit', '/egitim/anket', '/egitim/katil',  # eğitim booking & dış katılım
+    )
+
     def _public_path():
         from flask import request
         p = request.path or ''
-        return p.startswith('/kariyer') or p.startswith('/basvuru')
+        return p.startswith(PUBLIC_PREFIXES)
 
     def _public_error(kod, baslik, mesaj, whatsapp=False):
         from flask import render_template

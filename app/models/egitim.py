@@ -4,9 +4,15 @@ TG Portal - Eğitim Modelleri
 Eğitim tanımları, katılımcılar ve takip
 """
 
+import secrets
 from datetime import datetime, date
 from app import db
 from app.models.base import TimestampMixin, SoftDeleteMixin
+
+
+def _kayit_token():
+    """Public kayıt işlemleri (onay/iptal/anket) için tahmin edilemez token."""
+    return secrets.token_urlsafe(24)
 
 
 class EgitimTipi(db.Model, TimestampMixin):
@@ -166,12 +172,6 @@ class EgitimKatilimci(db.Model, TimestampMixin):
     jitsi_toplam_sure = db.Column(db.Integer, default=0)  # saniye cinsinden
     jitsi_katilim_sayisi = db.Column(db.Integer, default=0)  # kaç kez girdi
 
-    # Jitsi Online Katılım Takibi
-    jitsi_katilim_baslangic = db.Column(db.DateTime)
-    jitsi_katilim_bitis = db.Column(db.DateTime)
-    jitsi_toplam_sure = db.Column(db.Integer, default=0)  # saniye cinsinden
-    jitsi_katilim_sayisi = db.Column(db.Integer, default=0)  # kaç kez girdi
-    
     # İlişkiler
     calisan = db.relationship('Calisan', backref=db.backref('egitim_kayitlari', lazy='dynamic'))
     davet_eden = db.relationship('User', foreign_keys=[davet_eden_id])
@@ -356,3 +356,155 @@ class EgitimKatilimLog(db.Model, TimestampMixin):
 
     def __repr__(self):
         return f'<EgitimKatilimLog {self.egitim_id}-{self.telefon}>'
+
+
+# ============================================
+# BOOKING (OTURUM / KAYIT / ANKET)
+# ============================================
+
+class EgitimOturumu(db.Model, TimestampMixin):
+    """Bir eğitimin tarih/saat bazlı oturumu.
+
+    Bir eğitimin birden fazla oturumu olabilir (farklı günler/saatler).
+    Public booking sayfasında aday/çalışan bu oturumlardan birini seçip kaydolur.
+    """
+    __tablename__ = 'egitim_oturumlari'
+
+    id = db.Column(db.Integer, primary_key=True)
+    egitim_id = db.Column(db.Integer, db.ForeignKey('egitimler.id'), nullable=False, index=True)
+
+    tarih = db.Column(db.Date, nullable=False)
+    baslangic_saati = db.Column(db.Time, nullable=False)
+    bitis_saati = db.Column(db.Time)
+
+    kontenjan = db.Column(db.Integer, nullable=False, default=20)
+    aciklama = db.Column(db.String(200))  # "Grup A", "Sabah oturumu" vb.
+
+    # Online katılım linki (Teams / Zoom / Meet / Jitsi)
+    toplanti_linki = db.Column(db.String(500))
+
+    aktif = db.Column(db.Boolean, default=True, nullable=False)
+
+    egitim = db.relationship('Egitim', backref=db.backref(
+        'oturumlar', lazy='dynamic', cascade='all, delete-orphan',
+        order_by='EgitimOturumu.tarih, EgitimOturumu.baslangic_saati'))
+
+    @property
+    def baslangic_dt(self):
+        """Tarih + başlangıç saati birleşimi."""
+        return datetime.combine(self.tarih, self.baslangic_saati)
+
+    @property
+    def kayit_sayisi(self):
+        """Onaylı (iptal edilmemiş) kayıt sayısı."""
+        return self.kayitlar.filter_by(durum='onaylandi').count()
+
+    @property
+    def kalan_kontenjan(self):
+        return max(0, (self.kontenjan or 0) - self.kayit_sayisi)
+
+    @property
+    def dolu_mu(self):
+        return self.kalan_kontenjan <= 0
+
+    @property
+    def gecmis_mi(self):
+        return datetime.now() > self.baslangic_dt
+
+    @property
+    def kayit_alinabilir_mi(self):
+        """Public booking sayfasında bu oturuma kaydolunabilir mi?"""
+        return bool(self.aktif) and not self.dolu_mu and not self.gecmis_mi
+
+    @property
+    def zaman_text(self):
+        s = f"{self.tarih.strftime('%d.%m.%Y')} {self.baslangic_saati.strftime('%H:%M')}"
+        if self.bitis_saati:
+            s += f" - {self.bitis_saati.strftime('%H:%M')}"
+        return s
+
+    def __repr__(self):
+        return f'<EgitimOturumu {self.egitim_id} {self.zaman_text}>'
+
+
+class EgitimKayit(db.Model, TimestampMixin):
+    """Public booking kaydı - bir kişinin bir oturuma kaydı.
+
+    Aynı kişi (telefon) aynı eğitime yalnızca bir aktif kayıt yaptırabilir;
+    bu kural DB'de partial unique index ile de garanti altına alınmıştır.
+    """
+    __tablename__ = 'egitim_kayitlari'
+
+    id = db.Column(db.Integer, primary_key=True)
+    oturum_id = db.Column(db.Integer, db.ForeignKey('egitim_oturumlari.id'), nullable=False, index=True)
+    # Mükerrer kontrolü eğitim bazında yapıldığı için denormalize tutuluyor
+    egitim_id = db.Column(db.Integer, db.ForeignKey('egitimler.id'), nullable=False, index=True)
+
+    ad_soyad = db.Column(db.String(120), nullable=False)
+    telefon = db.Column(db.String(20), nullable=False, index=True)  # normalize (son 10 hane)
+    email = db.Column(db.String(120))
+
+    calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'))  # telefon eşleşirse
+    aday_id = db.Column(db.Integer, db.ForeignKey('adaylar.id'))        # onaylı aday eşleşirse
+
+    kayit_zamani = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    durum = db.Column(db.String(20), default='onaylandi', nullable=False)  # onaylandi, iptal
+    iptal_zamani = db.Column(db.DateTime)
+    iptal_eden = db.Column(db.String(20))  # katilimci, ik
+
+    # Public onay/iptal/anket linkleri için
+    token = db.Column(db.String(64), unique=True, nullable=False, index=True, default=_kayit_token)
+
+    sms_gonderildi = db.Column(db.Boolean, default=False)
+    ip = db.Column(db.String(45))
+
+    oturum = db.relationship('EgitimOturumu', backref=db.backref(
+        'kayitlar', lazy='dynamic', cascade='all, delete-orphan'))
+    egitim = db.relationship('Egitim', backref=db.backref('kayitlar', lazy='dynamic'))
+    calisan = db.relationship('Calisan')
+    aday = db.relationship('Aday')
+
+    __table_args__ = (
+        # Aynı eğitime aynı telefondan yalnızca bir AKTİF kayıt (iptal edilenler hariç)
+        db.Index('uq_egitim_kayit_aktif', 'egitim_id', 'telefon',
+                 unique=True, postgresql_where=db.text("durum = 'onaylandi'")),
+    )
+
+    @property
+    def eslesme_tipi(self):
+        if self.calisan_id:
+            return 'Çalışan'
+        if self.aday_id:
+            return 'Aday'
+        return 'Yok'
+
+    @property
+    def iptal_edilebilir_mi(self):
+        """Oturum başlamadan önce katılımcı kendi kaydını iptal edebilir."""
+        return self.durum == 'onaylandi' and self.oturum is not None and not self.oturum.gecmis_mi
+
+    def __repr__(self):
+        return f'<EgitimKayit {self.egitim_id}-{self.telefon} {self.durum}>'
+
+
+class EgitimAnket(db.Model, TimestampMixin):
+    """Eğitim sonrası memnuniyet anketi (kayıt başına en fazla bir yanıt)."""
+    __tablename__ = 'egitim_anketleri'
+
+    id = db.Column(db.Integer, primary_key=True)
+    egitim_id = db.Column(db.Integer, db.ForeignKey('egitimler.id'), nullable=False, index=True)
+    oturum_id = db.Column(db.Integer, db.ForeignKey('egitim_oturumlari.id'))
+    kayit_id = db.Column(db.Integer, db.ForeignKey('egitim_kayitlari.id'), unique=True)
+
+    puan = db.Column(db.Integer, nullable=False)   # Genel memnuniyet 1-5
+    egitmen_puan = db.Column(db.Integer)           # Eğitmen 1-5
+    icerik_puan = db.Column(db.Integer)            # İçerik 1-5
+    yorum = db.Column(db.Text)
+    ip = db.Column(db.String(45))
+
+    egitim = db.relationship('Egitim', backref=db.backref('anketler', lazy='dynamic'))
+    oturum = db.relationship('EgitimOturumu')
+    kayit = db.relationship('EgitimKayit', backref=db.backref('anket', uselist=False))
+
+    def __repr__(self):
+        return f'<EgitimAnket {self.egitim_id} puan={self.puan}>'

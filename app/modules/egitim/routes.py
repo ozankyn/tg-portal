@@ -4,9 +4,11 @@ from app import csrf
 TG Portal - Eğitim Routes
 Eğitim yönetimi, katılımcı takibi
 """
-from datetime import datetime, date
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app, send_file
+from datetime import datetime, date, timedelta
+from flask import (Blueprint, render_template, redirect, url_for, flash, request,
+                   jsonify, current_app, send_file, session)
 from flask_login import login_required, current_user
+from sqlalchemy.exc import IntegrityError
 from werkzeug.utils import secure_filename
 import os
 import random
@@ -15,7 +17,8 @@ import re
 from app import db
 from app.models.egitim import (
     EgitimTipi, Egitim, EgitimKatilimci, EgitimKatilimLog, EgitimMateryali,
-    CalisanZorunluEgitim, PozisyonZorunluEgitim
+    CalisanZorunluEgitim, PozisyonZorunluEgitim,
+    EgitimOturumu, EgitimKayit, EgitimAnket
 )
 from app.models.quiz import (
     SoruKategorisi, Soru, SoruSecenegi,
@@ -324,12 +327,29 @@ def detay(id):
     
     katilim_loglari = egitim.katilim_loglari.limit(500).all()
 
+    # Booking: oturumlar, kayıtlar ve anket özeti
+    oturumlar = egitim.oturumlar.all()
+    kayitlar = (egitim.kayitlar
+                .join(EgitimOturumu, EgitimKayit.oturum_id == EgitimOturumu.id)
+                .order_by(EgitimOturumu.tarih, EgitimOturumu.baslangic_saati,
+                          EgitimKayit.kayit_zamani)
+                .all())
+    aktif_kayit_sayisi = sum(1 for k in kayitlar if k.durum == 'onaylandi')
+
+    anketler = egitim.anketler.order_by(EgitimAnket.created_at.desc()).all()
+    anket_ortalama = round(sum(a.puan for a in anketler) / len(anketler), 1) if anketler else None
+
     return render_template('egitim/detay.html',
                           egitim=egitim,
                           katilimcilar=katilimcilar,
                           materyaller=materyaller,
                           eklenebilir_calisanlar=eklenebilir_calisanlar,
-                          katilim_loglari=katilim_loglari)
+                          katilim_loglari=katilim_loglari,
+                          oturumlar=oturumlar,
+                          kayitlar=kayitlar,
+                          aktif_kayit_sayisi=aktif_kayit_sayisi,
+                          anketler=anketler,
+                          anket_ortalama=anket_ortalama)
 
 
 # ============================================================
@@ -1904,3 +1924,634 @@ def katilim_raporu(id):
                           toplam_katilimci=toplam_katilimci,
                           online_katilan=online_katilan,
                           ortalama_sure=ortalama_sure)
+
+
+# ============================================================
+# EĞİTİM BOOKING - OTURUM YÖNETİMİ (İK tarafı)
+# ============================================================
+
+def _saat_parse(ham):
+    """'HH:MM' -> time. Geçersizse None."""
+    if not ham:
+        return None
+    try:
+        return datetime.strptime(ham.strip()[:5], '%H:%M').time()
+    except ValueError:
+        return None
+
+
+def _oturum_formu_oku(form):
+    """Oturum formunu okur. (veri, hata) döner."""
+    tarih_ham = (form.get('tarih') or '').strip()
+    try:
+        tarih = datetime.strptime(tarih_ham, '%Y-%m-%d').date()
+    except ValueError:
+        return None, 'Geçerli bir tarih seçin.'
+
+    baslangic = _saat_parse(form.get('baslangic_saati'))
+    if not baslangic:
+        return None, 'Geçerli bir başlangıç saati girin.'
+
+    bitis = _saat_parse(form.get('bitis_saati'))
+    if bitis and bitis <= baslangic:
+        return None, 'Bitiş saati başlangıç saatinden sonra olmalı.'
+
+    try:
+        kontenjan = int(form.get('kontenjan') or 0)
+    except ValueError:
+        kontenjan = 0
+    if kontenjan < 1:
+        return None, 'Kontenjan en az 1 olmalı.'
+
+    return {
+        'tarih': tarih,
+        'baslangic_saati': baslangic,
+        'bitis_saati': bitis,
+        'kontenjan': kontenjan,
+        'aciklama': (form.get('aciklama') or '').strip() or None,
+        'toplanti_linki': (form.get('toplanti_linki') or '').strip() or None,
+        'jitsi_otomatik': form.get('jitsi_otomatik') == 'on',
+    }, None
+
+
+def _jitsi_oturum_linki(egitim, oturum):
+    """Oturuma özel Jitsi oda linki üretir."""
+    oda = JitsiService.create_room_name('egitim', f'{egitim.id}_{oturum.id}')
+    return f'https://{JitsiService.JITSI_DOMAIN}/{oda}'
+
+
+@egitim_bp.route('/<int:id>/oturum/ekle', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def oturum_ekle(id):
+    """Eğitime yeni oturum ekle."""
+    egitim = Egitim.query.get_or_404(id)
+    hata_redirect = _yonetim_yetki_hatasi(egitim)
+    if hata_redirect:
+        return hata_redirect
+
+    veri, hata = _oturum_formu_oku(request.form)
+    if hata:
+        flash(hata, 'danger')
+        return redirect(url_for('egitim.detay', id=id))
+
+    jitsi_otomatik = veri.pop('jitsi_otomatik')
+    oturum = EgitimOturumu(egitim_id=egitim.id, **veri)
+    db.session.add(oturum)
+    db.session.flush()  # oturum.id gerekiyor (Jitsi oda adı için)
+
+    if jitsi_otomatik and not oturum.toplanti_linki:
+        oturum.toplanti_linki = _jitsi_oturum_linki(egitim, oturum)
+
+    db.session.commit()
+    flash(f'Oturum eklendi: {oturum.zaman_text}', 'success')
+    return redirect(url_for('egitim.detay', id=id) + '#oturumlar')
+
+
+@egitim_bp.route('/oturum/<int:oturum_id>/duzenle', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def oturum_duzenle(oturum_id):
+    """Oturum bilgilerini güncelle (kontenjan artır/azalt dahil)."""
+    oturum = EgitimOturumu.query.get_or_404(oturum_id)
+    egitim = oturum.egitim
+    hata_redirect = _yonetim_yetki_hatasi(egitim)
+    if hata_redirect:
+        return hata_redirect
+
+    veri, hata = _oturum_formu_oku(request.form)
+    if hata:
+        flash(hata, 'danger')
+        return redirect(url_for('egitim.detay', id=egitim.id))
+
+    # Kontenjan mevcut kayıt sayısının altına indirilemez
+    mevcut_kayit = oturum.kayit_sayisi
+    if veri['kontenjan'] < mevcut_kayit:
+        flash(f'Kontenjan mevcut kayıt sayısının ({mevcut_kayit}) altına indirilemez.', 'danger')
+        return redirect(url_for('egitim.detay', id=egitim.id))
+
+    jitsi_otomatik = veri.pop('jitsi_otomatik')
+    for alan, deger in veri.items():
+        setattr(oturum, alan, deger)
+    oturum.aktif = request.form.get('aktif') == 'on'
+
+    if jitsi_otomatik and not oturum.toplanti_linki:
+        oturum.toplanti_linki = _jitsi_oturum_linki(egitim, oturum)
+
+    db.session.commit()
+    flash('Oturum güncellendi.', 'success')
+    return redirect(url_for('egitim.detay', id=egitim.id) + '#oturumlar')
+
+
+@egitim_bp.route('/oturum/<int:oturum_id>/sil', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def oturum_sil(oturum_id):
+    """Oturumu sil. Aktif kaydı varsa silinmez (önce kayıtlar iptal edilmeli)."""
+    oturum = EgitimOturumu.query.get_or_404(oturum_id)
+    egitim = oturum.egitim
+    hata_redirect = _yonetim_yetki_hatasi(egitim)
+    if hata_redirect:
+        return hata_redirect
+
+    if oturum.kayit_sayisi > 0:
+        flash('Bu oturumda aktif kayıt var. Önce kayıtları iptal edin veya oturumu pasife alın.', 'danger')
+        return redirect(url_for('egitim.detay', id=egitim.id))
+
+    db.session.delete(oturum)
+    db.session.commit()
+    flash('Oturum silindi.', 'success')
+    return redirect(url_for('egitim.detay', id=egitim.id) + '#oturumlar')
+
+
+@egitim_bp.route('/kayit/<int:kayit_id>/iptal-yonetim', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def kayit_iptal_yonetim(kayit_id):
+    """İK tarafından kayıt iptali."""
+    kayit = EgitimKayit.query.get_or_404(kayit_id)
+    egitim = kayit.egitim
+    hata_redirect = _yonetim_yetki_hatasi(egitim)
+    if hata_redirect:
+        return hata_redirect
+
+    if kayit.durum != 'iptal':
+        kayit.durum = 'iptal'
+        kayit.iptal_zamani = datetime.now()
+        kayit.iptal_eden = 'ik'
+        db.session.commit()
+        flash(f'{kayit.ad_soyad} kaydı iptal edildi.', 'success')
+    return redirect(url_for('egitim.detay', id=egitim.id) + '#kayitlar')
+
+
+@egitim_bp.route('/<int:id>/kayit-export')
+@login_required
+@permission_required('egitim.view')
+def kayit_export(id):
+    """Eğitim booking kayıtlarını Excel olarak indir."""
+    from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
+    from openpyxl.styles import Font, PatternFill
+    from io import BytesIO
+    from flask import Response
+
+    egitim = Egitim.query.get_or_404(id)
+    kayitlar = (EgitimKayit.query
+                .filter_by(egitim_id=id)
+                .join(EgitimOturumu, EgitimKayit.oturum_id == EgitimOturumu.id)
+                .order_by(EgitimOturumu.tarih, EgitimOturumu.baslangic_saati,
+                          EgitimKayit.kayit_zamani)
+                .all())
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Kayitlar'
+
+    headers = ['Oturum', 'Ad Soyad', 'Telefon', 'E-posta', 'Eşleşme',
+               'Durum', 'Kayıt Zamanı', 'Anket Puanı']
+    ws.append(headers)
+    hf = Font(bold=True, color='FFFFFF')
+    hfill = PatternFill('solid', fgColor='137FEC')
+    for c in ws[1]:
+        c.font = hf
+        c.fill = hfill
+
+    for k in kayitlar:
+        ws.append([
+            k.oturum.zaman_text if k.oturum else '',
+            k.ad_soyad or '',
+            ('0' + k.telefon) if k.telefon else '',
+            k.email or '',
+            k.eslesme_tipi,
+            'İptal' if k.durum == 'iptal' else 'Onaylandı',
+            k.kayit_zamani.strftime('%d.%m.%Y %H:%M') if k.kayit_zamani else '',
+            k.anket.puan if k.anket else '',
+        ])
+
+    for i, w in enumerate([24, 28, 15, 26, 12, 12, 18, 12], start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+    filename = f"egitim_kayitlari_{id}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={filename}'},
+    )
+
+
+@egitim_bp.route('/oturum/<int:oturum_id>/anket-sms', methods=['POST'])
+@login_required
+@permission_required('egitim.edit')
+def oturum_anket_sms(oturum_id):
+    """Oturumdaki katılımcılara anket linkini SMS ile gönder."""
+    oturum = EgitimOturumu.query.get_or_404(oturum_id)
+    egitim = oturum.egitim
+    hata_redirect = _yonetim_yetki_hatasi(egitim)
+    if hata_redirect:
+        return hata_redirect
+
+    from app.modules.basvuru.routes import send_netgsm_sms
+
+    gonderilen, basarisiz = 0, 0
+    for kayit in oturum.kayitlar.filter_by(durum='onaylandi').all():
+        if kayit.anket:
+            continue  # zaten yanıtlamış
+        link = url_for('egitim.anket', token=kayit.token, _external=True)
+        mesaj = (f"Team Guerilla - {egitim.baslik} egitimine katiliminiz icin tesekkurler. "
+                 f"Kisa anketimizi doldurur musunuz? {link}")
+        sonuc = send_netgsm_sms('0' + kayit.telefon, mesaj)
+        if sonuc.get('success'):
+            gonderilen += 1
+        else:
+            basarisiz += 1
+            current_app.logger.warning(
+                f"Anket SMS gonderilemedi (kayit={kayit.id}): {sonuc.get('error')}")
+
+    if gonderilen:
+        flash(f'{gonderilen} katılımcıya anket linki gönderildi.', 'success')
+    if basarisiz:
+        flash(f'{basarisiz} SMS gönderilemedi. Detay için log kayıtlarına bakın.', 'warning')
+    if not gonderilen and not basarisiz:
+        flash('Anket gönderilecek katılımcı bulunamadı.', 'info')
+    return redirect(url_for('egitim.detay', id=egitim.id) + '#oturumlar')
+
+
+# ============================================================
+# PUBLIC BOOKING (login gerektirmez - telefon + OTP doğrulamalı)
+# ============================================================
+
+KAYIT_SESSION_KEY = 'egitim_kayit'
+
+
+def _kayit_oturumu(egitim_id):
+    """Session'daki booking durumunu döner (farklı eğitime aitse sıfırlar)."""
+    veri = session.get(KAYIT_SESSION_KEY)
+    if not isinstance(veri, dict) or veri.get('egitim_id') != egitim_id:
+        return None
+    return veri
+
+
+def _kayit_oturumu_yaz(veri):
+    session[KAYIT_SESSION_KEY] = veri
+    session.modified = True
+
+
+def _otp_uret(veri):
+    """Yeni OTP üretip session'a yazar, kodu döner."""
+    kod = str(random.randint(100000, 999999))
+    veri['otp_kod'] = kod
+    veri['otp_expires'] = (datetime.now() + timedelta(minutes=5)).isoformat()
+    veri['otp_deneme'] = 0
+    _kayit_oturumu_yaz(veri)
+    return kod
+
+
+def _otp_dogrula(veri, girilen):
+    """(basarili, mesaj) döner. Başarılıysa session'da dogrulandi=True olur."""
+    kod = (girilen or '').strip()
+    if not veri.get('otp_kod') or not veri.get('otp_expires'):
+        return False, 'Doğrulama kodu bulunamadı. Lütfen yeni kod isteyin.'
+    if datetime.now() > datetime.fromisoformat(veri['otp_expires']):
+        return False, 'Kodun süresi doldu. Lütfen yeni kod isteyin.'
+    if veri.get('otp_deneme', 0) >= 3:
+        return False, 'Çok fazla yanlış deneme. Lütfen yeni kod isteyin.'
+    if veri['otp_kod'] != kod:
+        veri['otp_deneme'] = veri.get('otp_deneme', 0) + 1
+        _kayit_oturumu_yaz(veri)
+        return False, f"Yanlış kod. {3 - veri['otp_deneme']} deneme hakkınız kaldı."
+
+    veri['dogrulandi'] = True
+    veri['otp_kod'] = None
+    _kayit_oturumu_yaz(veri)
+    return True, None
+
+
+def _booking_acik_mi(egitim):
+    """Booking sayfası bu eğitim için açık mı? (kapalıysa sebep metni döner)"""
+    if egitim.is_deleted or egitim.durum == 'iptal':
+        return False, 'Bu eğitim iptal edilmiş.'
+    if egitim.durum == 'tamamlandi':
+        return False, 'Bu eğitim tamamlanmış.'
+    if not egitim.oturumlar.filter_by(aktif=True).count():
+        return False, 'Bu eğitim için henüz kayıt açılmamış.'
+    return True, None
+
+
+def _booking_render(egitim, adim, **kwargs):
+    """Booking sayfasını uygun adımla render eder."""
+    oturumlar = []
+    if adim == 'oturum':
+        oturumlar = egitim.oturumlar.filter_by(aktif=True).all()
+        oturumlar = [o for o in oturumlar if not o.gecmis_mi]
+    return render_template('egitim/kayit.html', egitim=egitim, adim=adim,
+                           oturumlar=oturumlar, **kwargs)
+
+
+@egitim_bp.route('/kayit/<int:id>')
+def kayit(id):
+    """Public booking sayfası - eğitime kayıt (login gerektirmez)."""
+    egitim = Egitim.query.get_or_404(id)
+
+    acik, kapali_mesaj = _booking_acik_mi(egitim)
+    if not acik:
+        return render_template('egitim/kayit.html', egitim=egitim,
+                               adim='kapali', kapali_mesaj=kapali_mesaj)
+
+    veri = _kayit_oturumu(id)
+    if veri and veri.get('dogrulandi'):
+        return _booking_render(egitim, 'oturum', telefon=veri.get('telefon'))
+    if veri and veri.get('otp_kod'):
+        return _booking_render(egitim, 'kod', telefon=veri.get('telefon'))
+    return _booking_render(egitim, 'telefon')
+
+
+@egitim_bp.route('/kayit/<int:id>/kod-gonder', methods=['POST'])
+def kayit_kod_gonder(id):
+    """Telefona OTP kodu gönder."""
+    egitim = Egitim.query.get_or_404(id)
+    acik, kapali_mesaj = _booking_acik_mi(egitim)
+    if not acik:
+        return render_template('egitim/kayit.html', egitim=egitim,
+                               adim='kapali', kapali_mesaj=kapali_mesaj)
+
+    ad_soyad = (request.form.get('ad_soyad') or '').strip()
+    telefon_ham = (request.form.get('telefon') or '').strip()
+    email = (request.form.get('email') or '').strip() or None
+    norm10 = _normalize_tel(telefon_ham)
+
+    if len(ad_soyad) < 3 or not norm10:
+        return _booking_render(
+            egitim, 'telefon', ad_soyad=ad_soyad, telefon=telefon_ham, email=email,
+            hata='Lütfen adınızı ve geçerli bir cep telefonu numarası girin (5XX XXX XX XX).')
+
+    ip = _istek_ip()
+    # SMS maliyeti ve numara tacizini önlemek için IP + numara bazlı limit
+    if not _rate_limit_ok(f'egitim_kayit_otp_ip:{ip}', limit=5, pencere=300) or \
+       not _rate_limit_ok(f'egitim_kayit_otp_tel:{norm10}', limit=3, pencere=600):
+        return _booking_render(
+            egitim, 'telefon', ad_soyad=ad_soyad, telefon=telefon_ham, email=email,
+            hata='Çok fazla kod talebi gönderdiniz. Lütfen bir süre sonra tekrar deneyin.'), 429
+
+    # Bu eğitime bu telefondan aktif kayıt var mı?
+    mevcut = EgitimKayit.query.filter_by(
+        egitim_id=egitim.id, telefon=norm10, durum='onaylandi').first()
+    if mevcut:
+        return render_template('egitim/kayit_tamam.html', kayit=mevcut,
+                               egitim=egitim, zaten_kayitli=True)
+
+    veri = {
+        'egitim_id': egitim.id,
+        'ad_soyad': ad_soyad,
+        'telefon': norm10,
+        'email': email,
+        'dogrulandi': False,
+        'ip': ip,
+    }
+    kod = _otp_uret(veri)
+
+    from app.modules.basvuru.routes import send_netgsm_sms
+    mesaj = f"Team Guerilla egitim kayit dogrulama kodunuz: {kod} - Bu kod 5 dakika gecerlidir."
+    sonuc = send_netgsm_sms('0' + norm10, mesaj)
+    if not sonuc.get('success'):
+        current_app.logger.error(f"Egitim kayit OTP gonderilemedi ({norm10}): {sonuc.get('error')}")
+        return _booking_render(
+            egitim, 'telefon', ad_soyad=ad_soyad, telefon=telefon_ham, email=email,
+            hata='Doğrulama kodu gönderilemedi. Lütfen numaranızı kontrol edip tekrar deneyin.')
+
+    return _booking_render(egitim, 'kod', telefon=norm10,
+                           bilgi='Doğrulama kodu telefonunuza gönderildi.')
+
+
+@egitim_bp.route('/kayit/<int:id>/kod-tekrar', methods=['POST'])
+def kayit_kod_tekrar(id):
+    """OTP kodunu yeniden gönder."""
+    egitim = Egitim.query.get_or_404(id)
+    veri = _kayit_oturumu(id)
+    if not veri or not veri.get('telefon'):
+        return redirect(url_for('egitim.kayit', id=id))
+
+    ip = _istek_ip()
+    if not _rate_limit_ok(f'egitim_kayit_otp_ip:{ip}', limit=5, pencere=300) or \
+       not _rate_limit_ok(f'egitim_kayit_otp_tel:{veri["telefon"]}', limit=3, pencere=600):
+        return _booking_render(
+            egitim, 'kod', telefon=veri['telefon'],
+            hata='Çok fazla kod talebi gönderdiniz. Lütfen bir süre sonra tekrar deneyin.'), 429
+
+    kod = _otp_uret(veri)
+    from app.modules.basvuru.routes import send_netgsm_sms
+    mesaj = f"Team Guerilla egitim kayit dogrulama kodunuz: {kod} - Bu kod 5 dakika gecerlidir."
+    sonuc = send_netgsm_sms('0' + veri['telefon'], mesaj)
+    if not sonuc.get('success'):
+        return _booking_render(egitim, 'kod', telefon=veri['telefon'],
+                               hata='Kod gönderilemedi. Lütfen tekrar deneyin.')
+
+    return _booking_render(egitim, 'kod', telefon=veri['telefon'],
+                           bilgi='Yeni doğrulama kodu gönderildi.')
+
+
+@egitim_bp.route('/kayit/<int:id>/dogrula', methods=['POST'])
+def kayit_dogrula(id):
+    """OTP kodunu doğrula, oturum seçim adımına geç."""
+    egitim = Egitim.query.get_or_404(id)
+    veri = _kayit_oturumu(id)
+    if not veri:
+        return redirect(url_for('egitim.kayit', id=id))
+
+    ip = _istek_ip()
+    if not _rate_limit_ok(f'egitim_kayit_dogrula:{ip}', limit=15, pencere=300):
+        return _booking_render(egitim, 'kod', telefon=veri.get('telefon'),
+                               hata='Çok fazla deneme yaptınız. Lütfen biraz bekleyin.'), 429
+
+    basarili, mesaj = _otp_dogrula(veri, request.form.get('kod'))
+    if not basarili:
+        return _booking_render(egitim, 'kod', telefon=veri.get('telefon'), hata=mesaj)
+
+    return _booking_render(egitim, 'oturum', telefon=veri.get('telefon'))
+
+
+@egitim_bp.route('/kayit/<int:id>/kaydol', methods=['POST'])
+def kayit_kaydol(id):
+    """Seçilen oturuma kaydı oluştur (kontenjan kilidi ile)."""
+    egitim = Egitim.query.get_or_404(id)
+    veri = _kayit_oturumu(id)
+    if not veri or not veri.get('dogrulandi'):
+        flash('Lütfen önce telefon numaranızı doğrulayın.', 'warning')
+        return redirect(url_for('egitim.kayit', id=id))
+
+    try:
+        oturum_id = int(request.form.get('oturum_id') or 0)
+    except ValueError:
+        oturum_id = 0
+
+    # Kontenjan kontrolünü serialize etmek için oturum satırını kilitle
+    oturum = (db.session.query(EgitimOturumu)
+              .filter_by(id=oturum_id, egitim_id=egitim.id)
+              .with_for_update()
+              .first())
+    if not oturum:
+        return _booking_render(egitim, 'oturum', telefon=veri.get('telefon'),
+                               hata='Lütfen bir oturum seçin.')
+
+    if not oturum.aktif or oturum.gecmis_mi:
+        db.session.rollback()
+        return _booking_render(egitim, 'oturum', telefon=veri.get('telefon'),
+                               hata='Seçtiğiniz oturum artık kayda kapalı.')
+
+    if oturum.dolu_mu:
+        db.session.rollback()
+        return _booking_render(egitim, 'oturum', telefon=veri.get('telefon'),
+                               hata='Seçtiğiniz oturumun kontenjanı doldu. Lütfen başka bir oturum seçin.')
+
+    telefon = veri['telefon']
+    mevcut = EgitimKayit.query.filter_by(
+        egitim_id=egitim.id, telefon=telefon, durum='onaylandi').first()
+    if mevcut:
+        db.session.rollback()
+        return render_template('egitim/kayit_tamam.html', kayit=mevcut,
+                               egitim=egitim, zaten_kayitli=True)
+
+    calisan, aday = _telefon_eslesme(telefon)
+    ad_soyad = veri.get('ad_soyad') or ''
+    email = veri.get('email')
+    if calisan:
+        ad_soyad = calisan.full_name
+        email = email or calisan.email
+    elif aday:
+        ad_soyad = aday.full_name
+        email = email or aday.email
+
+    kayit_obj = EgitimKayit(
+        oturum_id=oturum.id,
+        egitim_id=egitim.id,
+        ad_soyad=ad_soyad,
+        telefon=telefon,
+        email=email,
+        calisan_id=calisan.id if calisan else None,
+        aday_id=aday.id if aday else None,
+        kayit_zamani=datetime.now(),
+        durum='onaylandi',
+        ip=_istek_ip(),
+    )
+    db.session.add(kayit_obj)
+
+    # Çalışansa eğitim katılımcı listesine de davetli olarak ekle
+    if calisan:
+        katilimci = EgitimKatilimci.query.filter_by(
+            egitim_id=egitim.id, calisan_id=calisan.id).first()
+        if not katilimci:
+            db.session.add(EgitimKatilimci(
+                egitim_id=egitim.id, calisan_id=calisan.id,
+                durum='davetli', davet_tarihi=datetime.now()))
+
+    try:
+        db.session.commit()
+    except IntegrityError:
+        # Partial unique index: aynı telefondan eşzamanlı ikinci kayıt
+        db.session.rollback()
+        mevcut = EgitimKayit.query.filter_by(
+            egitim_id=egitim.id, telefon=telefon, durum='onaylandi').first()
+        if mevcut:
+            return render_template('egitim/kayit_tamam.html', kayit=mevcut,
+                                   egitim=egitim, zaten_kayitli=True)
+        return _booking_render(egitim, 'oturum', telefon=telefon,
+                               hata='Kayıt oluşturulamadı. Lütfen tekrar deneyin.')
+
+    _kayit_bilgi_sms(kayit_obj)
+    session.pop(KAYIT_SESSION_KEY, None)
+    return redirect(url_for('egitim.kayit_tamam', token=kayit_obj.token))
+
+
+def _kayit_bilgi_sms(kayit_obj):
+    """Kayıt sonrası bilgilendirme SMS'i (hata durumunda kaydı bozmaz)."""
+    try:
+        from app.modules.basvuru.routes import send_netgsm_sms
+        link = url_for('egitim.kayit_tamam', token=kayit_obj.token, _external=True)
+        oturum = kayit_obj.oturum
+        mesaj = (f"Egitime kaydiniz alinmistir. {kayit_obj.egitim.baslik} - "
+                 f"Tarih: {oturum.tarih.strftime('%d.%m.%Y')} "
+                 f"Saat: {oturum.baslangic_saati.strftime('%H:%M')}. "
+                 f"Katilim linki ve iptal icin: {link}")
+        sonuc = send_netgsm_sms('0' + kayit_obj.telefon, mesaj)
+        if sonuc.get('success'):
+            kayit_obj.sms_gonderildi = True
+            db.session.commit()
+        else:
+            current_app.logger.warning(
+                f"Kayit SMS gonderilemedi (kayit={kayit_obj.id}): {sonuc.get('error')}")
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Kayit SMS hatasi (kayit={kayit_obj.id}): {e}")
+
+
+@egitim_bp.route('/kayit/tamam/<token>')
+def kayit_tamam(token):
+    """Kayıt onay sayfası - toplantı linki, iptal ve anket erişimi."""
+    kayit_obj = EgitimKayit.query.filter_by(token=token).first_or_404()
+    return render_template('egitim/kayit_tamam.html',
+                           kayit=kayit_obj, egitim=kayit_obj.egitim)
+
+
+@egitim_bp.route('/kayit/iptal/<token>', methods=['GET', 'POST'])
+def kayit_iptal(token):
+    """Katılımcının kendi kaydını iptal etmesi."""
+    kayit_obj = EgitimKayit.query.filter_by(token=token).first_or_404()
+
+    if request.method == 'POST':
+        if not kayit_obj.iptal_edilebilir_mi:
+            return render_template('egitim/kayit_iptal.html', kayit=kayit_obj,
+                                   hata='Bu kayıt artık iptal edilemez.')
+        kayit_obj.durum = 'iptal'
+        kayit_obj.iptal_zamani = datetime.now()
+        kayit_obj.iptal_eden = 'katilimci'
+        db.session.commit()
+        return render_template('egitim/kayit_iptal.html', kayit=kayit_obj, iptal_edildi=True)
+
+    return render_template('egitim/kayit_iptal.html', kayit=kayit_obj)
+
+
+@egitim_bp.route('/anket/<token>', methods=['GET', 'POST'])
+def anket(token):
+    """Eğitim sonrası memnuniyet anketi (kayıt token'ı ile)."""
+    kayit_obj = EgitimKayit.query.filter_by(token=token).first_or_404()
+
+    if kayit_obj.anket:
+        return render_template('egitim/anket.html', kayit=kayit_obj,
+                               egitim=kayit_obj.egitim, tamamlandi=True)
+
+    if request.method == 'POST':
+        def _puan(alan):
+            try:
+                deger = int(request.form.get(alan) or 0)
+            except ValueError:
+                return None
+            if 1 <= deger <= 5:
+                return deger
+            return None
+
+        puan = _puan('puan')
+        if not puan:
+            return render_template('egitim/anket.html', kayit=kayit_obj,
+                                   egitim=kayit_obj.egitim,
+                                   hata='Lütfen genel memnuniyet puanı verin.')
+
+        db.session.add(EgitimAnket(
+            egitim_id=kayit_obj.egitim_id,
+            oturum_id=kayit_obj.oturum_id,
+            kayit_id=kayit_obj.id,
+            puan=puan,
+            egitmen_puan=_puan('egitmen_puan'),
+            icerik_puan=_puan('icerik_puan'),
+            yorum=(request.form.get('yorum') or '').strip() or None,
+            ip=_istek_ip(),
+        ))
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()  # kayit_id unique - çift gönderim
+        return render_template('egitim/anket.html', kayit=kayit_obj,
+                               egitim=kayit_obj.egitim, tesekkur=True)
+
+    return render_template('egitim/anket.html', kayit=kayit_obj, egitim=kayit_obj.egitim)

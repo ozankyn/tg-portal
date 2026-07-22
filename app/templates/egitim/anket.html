@@ -1,0 +1,115 @@
+{% extends "basvuru/base_public.html" %}
+{% block title %}Eğitim Değerlendirme{% endblock %}
+
+{% block extra_css %}
+<style>
+    .puan-grup input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+    .puan-grup label {
+        cursor: pointer; flex: 1; text-align: center; padding: .65rem 0;
+        border: 1px solid #d1d5db; font-weight: 700; color: #6b7280;
+        transition: background-color .15s, color .15s, border-color .15s;
+    }
+    .puan-grup label:first-of-type { border-radius: .5rem 0 0 .5rem; }
+    .puan-grup label:last-of-type { border-radius: 0 .5rem .5rem 0; }
+    .puan-grup label + label { border-left: none; }
+    .puan-grup input[type="radio"]:checked + label {
+        background-color: #2563eb; border-color: #2563eb; color: #fff;
+    }
+    .puan-grup input[type="radio"]:focus-visible + label { outline: 2px solid #2563eb; outline-offset: 2px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+
+        <div class="bg-gradient-to-r from-amber-500 to-amber-400 p-6 text-center">
+            <h4 class="text-white text-xl font-bold flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">rate_review</span>
+                Eğitim Değerlendirme
+            </h4>
+            <p class="text-amber-50 text-sm mt-1">{{ egitim.baslik }}</p>
+        </div>
+
+        <div class="p-6">
+
+            {% if tesekkur %}
+            <div class="text-center py-6">
+                <span class="material-symbols-outlined text-5xl text-emerald-500">check_circle</span>
+                <h5 class="text-lg font-bold text-gray-800 mt-3">Teşekkürler!</h5>
+                <p class="text-gray-500 text-sm mt-2">
+                    Değerlendirmeniz kaydedildi. Görüşleriniz eğitimlerimizi geliştirmemize yardımcı oluyor.
+                </p>
+            </div>
+
+            {% elif tamamlandi %}
+            <div class="text-center py-6">
+                <span class="material-symbols-outlined text-5xl text-gray-300">task_alt</span>
+                <h5 class="text-lg font-bold text-gray-800 mt-3">Anket Zaten Dolduruldu</h5>
+                <p class="text-gray-500 text-sm mt-2">Bu eğitim için değerlendirmenizi daha önce aldık.</p>
+            </div>
+
+            {% else %}
+
+            {% if hata %}
+            <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-3 mb-4 text-sm flex items-center gap-2">
+                <span class="material-symbols-outlined text-red-500">error</span>
+                <span>{{ hata }}</span>
+            </div>
+            {% endif %}
+
+            <p class="text-gray-600 text-sm mb-6">
+                Merhaba <strong>{{ kayit.ad_soyad }}</strong>, {{ kayit.oturum.zaman_text }} tarihli eğitimimizi
+                değerlendirir misiniz? 1 = Çok kötü, 5 = Çok iyi.
+            </p>
+
+            <form method="POST" action="{{ url_for('egitim.anket', token=kayit.token) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <div class="mb-5">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Genel memnuniyetiniz <span class="text-rose-500">*</span></label>
+                    <div class="puan-grup flex">
+                        {% for p in range(1, 6) %}
+                        <input type="radio" id="puan{{ p }}" name="puan" value="{{ p }}" required>
+                        <label for="puan{{ p }}">{{ p }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Eğitmen</label>
+                    <div class="puan-grup flex">
+                        {% for p in range(1, 6) %}
+                        <input type="radio" id="eg{{ p }}" name="egitmen_puan" value="{{ p }}">
+                        <label for="eg{{ p }}">{{ p }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mb-5">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Eğitim içeriği</label>
+                    <div class="puan-grup flex">
+                        {% for p in range(1, 6) %}
+                        <input type="radio" id="ic{{ p }}" name="icerik_puan" value="{{ p }}">
+                        <label for="ic{{ p }}">{{ p }}</label>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block mb-2 text-sm font-medium text-gray-700">Görüş ve önerileriniz</label>
+                    <textarea name="yorum" rows="4" maxlength="2000" placeholder="Eklemek istedikleriniz..."
+                              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+                </div>
+
+                <button type="submit"
+                        class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">send</span>
+                    Değerlendirmeyi Gönder
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

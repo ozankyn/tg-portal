@@ -1,0 +1,65 @@
+{% extends "basvuru/base_public.html" %}
+{% block title %}Kayıt İptali{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
+
+        <div class="bg-gradient-to-r from-rose-600 to-rose-500 p-6 text-center">
+            <span class="material-symbols-outlined text-white text-5xl">event_busy</span>
+            <h4 class="text-white text-xl font-bold mt-2">Kayıt İptali</h4>
+        </div>
+
+        <div class="p-6">
+
+            {% if iptal_edildi %}
+            <div class="text-center py-4">
+                <span class="material-symbols-outlined text-5xl text-emerald-500">check_circle</span>
+                <h5 class="text-lg font-bold text-gray-800 mt-3">Kaydınız İptal Edildi</h5>
+                <p class="text-gray-500 text-sm mt-2">
+                    {{ kayit.egitim.baslik }} eğitimindeki kaydınız iptal edilmiştir.
+                </p>
+                <a href="{{ url_for('egitim.kayit', id=kayit.egitim_id) }}"
+                   class="inline-block mt-5 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                    Yeniden kayıt olmak için tıklayın
+                </a>
+            </div>
+
+            {% elif hata or not kayit.iptal_edilebilir_mi %}
+            <div class="text-center py-4">
+                <span class="material-symbols-outlined text-5xl text-gray-300">info</span>
+                <p class="text-gray-600 text-sm mt-3">
+                    {{ hata or 'Bu kayıt artık iptal edilemez. Oturum başlamış veya kayıt zaten iptal edilmiş olabilir.' }}
+                </p>
+                <a href="{{ url_for('egitim.kayit_tamam', token=kayit.token) }}"
+                   class="inline-block mt-5 text-sm text-blue-600 hover:text-blue-800 font-medium">
+                    Kayıt bilgilerime dön
+                </a>
+            </div>
+
+            {% else %}
+            <p class="text-gray-600 text-sm mb-4">
+                Aşağıdaki kaydınızı iptal etmek üzeresiniz:
+            </p>
+            <div class="border border-gray-200 rounded-xl p-4 mb-5">
+                <div class="font-bold text-gray-800">{{ kayit.egitim.baslik }}</div>
+                <div class="text-sm text-gray-500 mt-1">{{ kayit.oturum.zaman_text }}</div>
+                <div class="text-sm text-gray-500">{{ kayit.ad_soyad }} · 0{{ kayit.telefon }}</div>
+            </div>
+
+            <form method="POST" action="{{ url_for('egitim.kayit_iptal', token=kayit.token) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                        class="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">cancel</span>
+                    Kaydımı İptal Et
+                </button>
+            </form>
+            <a href="{{ url_for('egitim.kayit_tamam', token=kayit.token) }}"
+               class="block w-full mt-3 py-3 border border-gray-300 text-gray-600 hover:bg-gray-50 font-medium rounded-xl text-center transition-colors">
+                Vazgeç
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

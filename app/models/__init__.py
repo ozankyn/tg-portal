@@ -48,7 +48,10 @@ from app.models.egitim import (
     EgitimKatilimLog,
     EgitimMateryali,
     CalisanZorunluEgitim,
-    PozisyonZorunluEgitim
+    PozisyonZorunluEgitim,
+    EgitimOturumu,
+    EgitimKayit,
+    EgitimAnket
 )
 
 # Quiz models
@@ -92,11 +95,6 @@ from app.models.talep import (
 from app.models.ayarlar import (
     SistemAyar, AktiviteLog, varsayilan_ayarlari_yukle
 )
-
-from app.models.egitim import (
-        EgitimTipi, Egitim, EgitimKatilimci, EgitimKatilimLog, EgitimMateryali,
-        CalisanZorunluEgitim, PozisyonZorunluEgitim
-    )
 
 __all__ = [
     # Base
@@ -143,6 +141,9 @@ __all__ = [
     'EgitimMateryali',
     'CalisanZorunluEgitim',
     'PozisyonZorunluEgitim',
+    'EgitimOturumu',
+    'EgitimKayit',
+    'EgitimAnket',
     # Quiz
     'SoruKategorisi',
     'Soru',
