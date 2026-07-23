@@ -46,13 +46,18 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Durum</label>
-                            <select name="durum" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <select name="durum" id="durum-select" onchange="toggleIadeTarihi()" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 {% for d in durumlar %}
                                 <option value="{{ d.value }}" {% if arac and arac.durum == d %}selected{% endif %}>
                                     {{ d.value|replace('_', ' ')|title }}
                                 </option>
                                 {% endfor %}
                             </select>
+                        </div>
+                        <div id="iade-tarihi-wrap" class="{% if not (arac and arac.durum and arac.durum.value == 'iade_edildi') %}hidden{% endif %}">
+                            <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">İade Tarihi</label>
+                            <input type="date" name="iade_tarihi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" value="{{ arac.iade_tarihi.strftime('%Y-%m-%d') if arac and arac.iade_tarihi else '' }}">
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">Boş bırakılırsa bugünün tarihi kullanılır.</p>
                         </div>
                     </div>
                 </div>
@@ -210,4 +215,17 @@
         </div>
     </div>
 </form>
+
+<script>
+function toggleIadeTarihi() {
+    var durum = document.getElementById('durum-select').value;
+    var wrap = document.getElementById('iade-tarihi-wrap');
+    if (durum === 'iade_edildi') {
+        wrap.classList.remove('hidden');
+    } else {
+        wrap.classList.add('hidden');
+    }
+}
+document.addEventListener('DOMContentLoaded', toggleIadeTarihi);
+</script>
 {% endblock %}

@@ -508,7 +508,8 @@ Kullanıcının doğal dilde sorduğu soruları PostgreSQL sorguları ve Türkç
 **araclar** (Şirket araçları)
 - id, plaka (unique), marka, model, model_yili, renk
 - yakit_tipi: enum 'BENZIN','DIZEL','LPG','ELEKTRIK','HIBRIT'
-- durum: enum 'AKTIF','BAKIM','ARIZALI','SATILDI','HURDA'
+- durum: enum 'AKTIF','BAKIM','ARIZALI','IADE_EDILDI','SATILDI','HURDA'
+- iade_tarihi: date (araç 'IADE_EDILDI' durumundaysa iade tarihi)
 - km, sahiplik_tipi ('sirket','kiralama','leasing'), aylik_kira
 - atanan_calisan_id → calisanlar.id, proje_id → projeler.id
 

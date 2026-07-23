@@ -104,6 +104,7 @@ class Arac(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     
     # Durum
     durum = db.Column(db.Enum(AracDurumu), default=AracDurumu.AKTIF)
+    iade_tarihi = db.Column(db.Date)  # Araç "İade Edildi" durumuna geçtiğinde
     konum = db.Column(db.String(200))  # Son bilinen konum
     notlar = db.Column(db.Text)
     

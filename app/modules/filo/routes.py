@@ -96,9 +96,15 @@ def _excel_response(headers, rows, filename, widths=None):
     )
 
 
+# Araç listesi tab gruplaması
+AKTIF_DURUMLAR = [AracDurumu.AKTIF, AracDurumu.BAKIM, AracDurumu.ARIZALI]
+IADE_DURUMLAR = [AracDurumu.IADE_EDILDI, AracDurumu.SATILDI, AracDurumu.HURDA]
+
+
 def _arac_filtered_query():
     """Araç listesi filtrelerini uygular — liste() ve arac_export() ortak query."""
     search = request.args.get('search', '').strip()
+    tab = request.args.get('tab', 'aktif')
     durum = request.args.get('durum', '')
     proje_id = request.args.get('proje_id', type=int)
     il = request.args.get('il', '')
@@ -117,8 +123,14 @@ def _arac_filtered_query():
             Arac.marka.ilike(f'%{search}%'),
             Arac.model.ilike(f'%{search}%')
         ))
+    # Tab bazlı durum grubu (aktif / iade). Spesifik bir durum seçildiyse
+    # onu uygula, aksi halde tab'ın durum grubuna göre filtrele.
     if durum:
         query = query.filter_by(durum=AracDurumu(durum))
+    elif tab == 'iade':
+        query = query.filter(Arac.durum.in_(IADE_DURUMLAR))
+    else:
+        query = query.filter(Arac.durum.in_(AKTIF_DURUMLAR))
     if proje_id:
         query = query.filter_by(proje_id=proje_id)
     if il:
@@ -151,18 +163,29 @@ def _arac_filtered_query():
 def liste():
     """Araç listesi"""
     page = request.args.get('page', 1, type=int)
+    tab = request.args.get('tab', 'aktif')
 
     pagination = _arac_filtered_query().paginate(page=page, per_page=20, error_out=False)
 
     projeler = Proje.query.filter_by(is_deleted=False, aktif=True).order_by(Proje.ad).all()
     kiralama_firmalari = Tedarikci.query.filter_by(is_deleted=False).order_by(Tedarikci.unvan).all()
 
+    # Tab sayaçları
+    aktif_sayisi = Arac.query.filter_by(is_deleted=False).filter(Arac.durum.in_(AKTIF_DURUMLAR)).count()
+    iade_sayisi = Arac.query.filter_by(is_deleted=False).filter(Arac.durum.in_(IADE_DURUMLAR)).count()
+
+    # Durum dropdown'unda sadece aktif tab'ın durumları görünsün
+    durum_secenekleri = IADE_DURUMLAR if tab == 'iade' else AKTIF_DURUMLAR
+
     return render_template('filo/liste.html',
                          araclar=pagination.items,
                          pagination=pagination,
                          projeler=projeler,
                          kiralama_firmalari=kiralama_firmalari,
-                         durumlar=AracDurumu,
+                         durumlar=durum_secenekleri,
+                         tab=tab,
+                         aktif_sayisi=aktif_sayisi,
+                         iade_sayisi=iade_sayisi,
                          yakit_tipleri=YakitTipi,
                          today=date.today(),
                          iller=[i[0] for i in db.session.query(Calisan.il).filter(Calisan.il.isnot(None), Calisan.il != '').distinct().order_by(Calisan.il).all()])
@@ -177,7 +200,7 @@ def arac_export():
 
     headers = ['Plaka', 'Marka', 'Model', 'Model Yılı', 'Yakıt', 'Vites', 'KM',
                'Sahiplik', 'Kiralama Firması', 'Aylık Kira (₺)', 'Kira Başlangıç', 'Kira Bitiş',
-               'Atanan Şoför', 'Proje', 'Müşteri', 'İl', 'Durum', 'Son KM Güncelleme']
+               'Atanan Şoför', 'Proje', 'Müşteri', 'İl', 'Durum', 'İade Tarihi', 'Son KM Güncelleme']
     rows = []
     for a in araclar:
         rows.append([
@@ -198,9 +221,10 @@ def arac_export():
             a.proje.musteri.display_name if a.proje and a.proje.musteri else '',
             a.atanan_calisan.il if a.atanan_calisan and a.atanan_calisan.il else '',
             a.durum.value if a.durum else '',
+            a.iade_tarihi.strftime('%d.%m.%Y') if a.iade_tarihi else '',
             a.son_km_guncelleme.strftime('%d.%m.%Y %H:%M') if a.son_km_guncelleme else '',
         ])
-    widths = [12, 14, 18, 10, 10, 10, 10, 12, 22, 14, 14, 14, 22, 18, 18, 14, 12, 18]
+    widths = [12, 14, 18, 10, 10, 10, 10, 12, 22, 14, 14, 14, 22, 18, 18, 14, 12, 12, 18]
     filename = f"araclar_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
     return _excel_response(headers, rows, filename, widths)
 
@@ -233,6 +257,10 @@ def ekle():
             durum=AracDurumu(request.form.get('durum')) if request.form.get('durum') else AracDurumu.AKTIF,
             notlar=request.form.get('notlar')
         )
+        # İade Edildi durumunda iade tarihi (form'dan gelmezse bugün)
+        if arac.durum == AracDurumu.IADE_EDILDI:
+            iade_tarihi_str = request.form.get('iade_tarihi', '').strip()
+            arac.iade_tarihi = datetime.strptime(iade_tarihi_str, '%Y-%m-%d').date() if iade_tarihi_str else date.today()
 
         try:
             db.session.add(arac)
@@ -300,6 +328,15 @@ def duzenle(id):
         arac.proje_id = request.form.get('proje_id') or None
         arac.durum = AracDurumu(request.form.get('durum')) if request.form.get('durum') else AracDurumu.AKTIF
         arac.notlar = request.form.get('notlar')
+        # İade Edildi durumunda iade tarihini ayarla, aksi halde temizle
+        if arac.durum == AracDurumu.IADE_EDILDI:
+            iade_tarihi_str = request.form.get('iade_tarihi', '').strip()
+            if iade_tarihi_str:
+                arac.iade_tarihi = datetime.strptime(iade_tarihi_str, '%Y-%m-%d').date()
+            elif not arac.iade_tarihi:
+                arac.iade_tarihi = date.today()
+        else:
+            arac.iade_tarihi = None
 
         try:
             db.session.commit()

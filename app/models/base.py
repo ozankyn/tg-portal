@@ -48,6 +48,7 @@ class AracDurumu(enum.Enum):
     AKTIF = 'aktif'
     BAKIM = 'bakim'
     ARIZALI = 'arizali'
+    IADE_EDILDI = 'iade_edildi'
     SATILDI = 'satildi'
     HURDA = 'hurda'
 

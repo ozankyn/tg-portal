@@ -40,8 +40,10 @@
                 <span class="px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Bakım</span>
                 {% elif arac.durum.value == 'arizali' %}
                 <span class="px-2 py-1 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Arızalı</span>
+                {% elif arac.durum.value == 'iade_edildi' %}
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400">İade Edildi</span>
                 {% else %}
-                <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-[#111418] dark:text-white">{{ arac.durum.value.title() }}</span>
+                <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-[#111418] dark:text-white">{{ arac.durum.value|replace('_', ' ')|title }}</span>
                 {% endif %}
             </div>
             <div class="p-4">
@@ -216,7 +218,30 @@
                 </a>
             </div>
         </div>
-        
+
+        {% if arac.durum.value == 'iade_edildi' %}
+        <!-- İade Bilgisi -->
+        <div class="bg-white dark:bg-card-dark rounded-xl border border-sky-200 dark:border-sky-900/40 shadow-sm">
+            <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+                <h6 class="font-medium text-sky-700 dark:text-sky-400 flex items-center gap-2">
+                    <span class="material-symbols-outlined">assignment_return</span>İade Bilgisi
+                </h6>
+            </div>
+            <div class="p-4 space-y-2">
+                <div>
+                    <label class="text-xs text-text-muted dark:text-text-muted-dark">İade Tarihi</label>
+                    <div class="font-semibold">{{ arac.iade_tarihi.strftime('%d.%m.%Y') if arac.iade_tarihi else '-' }}</div>
+                </div>
+                {% if arac.notlar %}
+                <div>
+                    <label class="text-xs text-text-muted dark:text-text-muted-dark">İade Notu</label>
+                    <div class="text-sm whitespace-pre-line">{{ arac.notlar }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Bakım Hatırlatma -->
         <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm mb-4">
             <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
