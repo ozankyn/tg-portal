@@ -26,6 +26,7 @@
         </div>
       </div>
       <div class="flex flex-wrap gap-2">
+        {% if has_permission('ik.edit') %}
         <form method="POST" action="{{ url_for('rapor.haftalik_beyan_sms', id=beyan.id) }}"
               onsubmit="return confirm('Projenin TÜM aktif çalışanlarına SMS gönderilecek. Onaylıyor musunuz?');">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -41,6 +42,7 @@
             <span class="material-symbols-outlined">notifications_active</span>Hatırlat
           </button>
         </form>
+        {% endif %}
         <a href="{{ url_for('rapor.haftalik_beyan_export', id=beyan.id) }}"
            class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
           <span class="material-symbols-outlined">file_download</span>Excel

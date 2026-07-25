@@ -14,7 +14,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import func, extract, case, text
 
 from app import db
-from app.utils import permission_required
+from app.utils import permission_required, admin_or_permission_required
 
 # Modelleri import et
 from app.models.ik import Calisan, Departman
@@ -972,11 +972,12 @@ def haftalik_beyan_detay(id):
 
 @rapor_bp.route('/haftalik-beyan/<int:id>/sms', methods=['POST'])
 @login_required
-@permission_required('rapor.view')
+@admin_or_permission_required('ik.edit')
 def haftalik_beyan_sms(id):
     """Projenin aktif çalışanlarına beyan linkli toplu SMS gönderir.
 
-    ?hatirlat=1 -> sadece henüz beyan vermemiş çalışanlara gönderir.
+    hatirlat=1 -> sadece henüz beyan vermemiş çalışanlara gönderir.
+    Yetki: admin veya ik.edit (toplu SMS maliyetli olduğu için kısıtlı).
     """
     from app.modules.basvuru.routes import send_netgsm_sms
 
