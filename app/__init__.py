@@ -150,7 +150,12 @@ def create_app(config_name=None):
 
     from app.modules.onay.routes import onay_bp
     app.register_blueprint(onay_bp, url_prefix="/onay")
-    
+
+    # Haftalık Çalışma Beyanı - public (login gerektirmez, OTP ile doğrulama)
+    from app.modules.beyan.routes import beyan_bp
+    app.register_blueprint(beyan_bp, url_prefix="/beyan")
+    csrf.exempt(beyan_bp)
+
     # ============================================================
     # HATA YÖNETİMİ
     # Public sayfalarda (/kariyer, /basvuru) aday dostu hata ekranları göster.
@@ -159,7 +164,7 @@ def create_app(config_name=None):
     # Login gerektirmeyen (dış erişimli) sayfalar. Buradaki hatalar dashboard'a
     # yönlendirilmek yerine public hata/CSRF sayfası ile karşılanır.
     PUBLIC_PREFIXES = (
-        '/kariyer', '/basvuru',
+        '/kariyer', '/basvuru', '/beyan',
         '/egitim/kayit', '/egitim/anket', '/egitim/katil',  # eğitim booking & dış katılım
     )
 

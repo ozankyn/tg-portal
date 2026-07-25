@@ -156,3 +156,6 @@ __all__ = [
 
 from app.models.depo import Depo, UrunKategori, Urun, StokKarti, StokHareketi, StokHareketiKalem
 from app.models.bildirim import BildirimSablonu
+
+# Haftalık Çalışma Beyanı (Proje/Calisan/User'dan sonra)
+from app.models.haftalik_beyan import HaftalikBeyan, BeyanKayit

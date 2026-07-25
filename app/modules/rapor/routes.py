@@ -8,7 +8,8 @@ from datetime import datetime, date, timedelta
 from decimal import Decimal
 import io
 
-from flask import Blueprint, render_template, request, jsonify, Response, current_app
+from flask import (Blueprint, render_template, request, jsonify, Response,
+                   current_app, redirect, url_for, flash)
 from flask_login import login_required, current_user
 from sqlalchemy import func, extract, case, text
 
@@ -22,6 +23,9 @@ from app.models.sozlesme import Sozlesme, SozlesmeTipi
 from app.models.satinalma import SatinAlmaTalebi, SatinAlmaSiparisi, SatinAlmaKategorisi
 from app.models.talep import Talep, TalepKategorisi
 from app.models.core import User
+from app.models.base import CalisanDurumu
+from app.models.proje import Proje, HedefKadro
+from app.models.haftalik_beyan import HaftalikBeyan, BeyanKayit
 
 rapor_bp = Blueprint('rapor', __name__)
 
@@ -579,6 +583,18 @@ Kullanıcının doğal dilde sorduğu soruları PostgreSQL sorguları ve Türkç
 **tuzel_kisiler**: id, ad, kisa_ad, vergi_no
 **sgk_dosyalari**: id, tuzel_kisi_id, dosya_no, il, aktif
 
+### HAFTALIK ÇALIŞMA BEYANI
+
+**haftalik_beyanlar** (Bir proje için hafta sonu çalışma günü beyan formu)
+- id, proje_id → projeler.id, hafta_baslangic (Cuma), hafta_bitis (Pazar)
+- olusturan_id → users.id, aktif (bool: form açık mı)
+- NOT: is_deleted YOK, soft delete kullanmaz
+
+**beyan_kayitlari** (Çalışanın gün seçimi — beyan başına çalışan başına 1 kayıt)
+- id, beyan_id → haftalik_beyanlar.id, calisan_id → calisanlar.id
+- telefon, ad_soyad, cuma (bool), cumartesi (bool), pazar (bool)
+- kayit_zamani, ip — NOT: is_deleted YOK
+
 ### COĞRAFYA
 
 **iller**: id, ad, plaka_kodu
@@ -827,3 +843,249 @@ def ai_asistan_export():
         print(f"[AI Asistan Export] HATA: {e}")
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ============================================================
+# HAFTALIK ÇALIŞMA BEYANI (İK Yönetim)
+# Public form: app/modules/beyan  |  Yönetim: /rapor/haftalik-beyan
+# ============================================================
+
+def _beyan_aktif_calisanlar(proje_id):
+    """Projede kadrosu olan aktif çalışanlar (SMS ve raporlama için)."""
+    return Calisan.query.join(HedefKadro, Calisan.kadro_id == HedefKadro.id).filter(
+        HedefKadro.proje_id == proje_id,
+        Calisan.is_deleted == False,
+        Calisan.durum == CalisanDurumu.AKTIF
+    ).order_by(Calisan.ad, Calisan.soyad).all()
+
+
+def _beyan_rapor_verisi(beyan):
+    """Bir beyan için raporlama verilerini hesaplar."""
+    aktif_calisanlar = _beyan_aktif_calisanlar(beyan.proje_id)
+    kayitlar = beyan.kayitlar.all()
+    kayit_map = {k.calisan_id: k for k in kayitlar}
+    beyan_eden_ids = set(kayit_map.keys())
+
+    beyan_etmeyenler = [c for c in aktif_calisanlar if c.id not in beyan_eden_ids]
+    gelmeyecekler = [k for k in kayitlar if k.gun_sayisi == 0]
+
+    # Müdürlük (departman) bazlı gün kırılımı
+    mudurluk = {}
+    for c in aktif_calisanlar:
+        dep_ad = c.departman.ad if c.departman else 'Belirtilmemiş'
+        m = mudurluk.setdefault(dep_ad, {'toplam': 0, 'beyan_eden': 0,
+                                         'cuma': 0, 'cumartesi': 0, 'pazar': 0})
+        m['toplam'] += 1
+        k = kayit_map.get(c.id)
+        if k:
+            m['beyan_eden'] += 1
+            if k.cuma:
+                m['cuma'] += 1
+            if k.cumartesi:
+                m['cumartesi'] += 1
+            if k.pazar:
+                m['pazar'] += 1
+
+    return {
+        'aktif_calisanlar': aktif_calisanlar,
+        'kayitlar': kayitlar,
+        'kayit_map': kayit_map,
+        'beyan_etmeyenler': beyan_etmeyenler,
+        'gelmeyecekler': gelmeyecekler,
+        'gun_sayaclari': beyan.gun_sayaclari,
+        'mudurluk': dict(sorted(mudurluk.items())),
+        'aktif_sayi': len(aktif_calisanlar),
+        'beyan_eden_sayi': len(beyan_eden_ids),
+        'beyan_etmeyen_sayi': len(beyan_etmeyenler),
+    }
+
+
+@rapor_bp.route('/haftalik-beyan')
+@login_required
+@permission_required('rapor.view')
+def haftalik_beyan_liste():
+    """Haftalık beyan listesi + yeni beyan oluşturma."""
+    beyanlar = HaftalikBeyan.query.order_by(HaftalikBeyan.hafta_baslangic.desc()).all()
+
+    ozet = []
+    for b in beyanlar:
+        sayac = b.gun_sayaclari
+        aktif_sayi = len(_beyan_aktif_calisanlar(b.proje_id))
+        katilim = round((sayac['toplam'] / aktif_sayi) * 100, 1) if aktif_sayi else 0
+        ozet.append({
+            'beyan': b, 'sayac': sayac,
+            'aktif_sayi': aktif_sayi, 'katilim': katilim,
+        })
+
+    projeler = Proje.query.filter_by(is_deleted=False, aktif=True).order_by(Proje.ad).all()
+    return render_template('rapor/haftalik_beyan_liste.html',
+                           ozet=ozet, projeler=projeler, active='rapor')
+
+
+@rapor_bp.route('/haftalik-beyan/olustur', methods=['POST'])
+@login_required
+@permission_required('rapor.view')
+def haftalik_beyan_olustur():
+    """Yeni haftalık beyan oluştur."""
+    proje_id = request.form.get('proje_id', type=int)
+    hafta_baslangic = request.form.get('hafta_baslangic', '').strip()
+    hafta_bitis = request.form.get('hafta_bitis', '').strip()
+
+    if not proje_id or not hafta_baslangic or not hafta_bitis:
+        flash('Proje ve hafta başlangıç/bitiş tarihleri zorunludur.', 'danger')
+        return redirect(url_for('rapor.haftalik_beyan_liste'))
+
+    try:
+        bas = datetime.strptime(hafta_baslangic, '%Y-%m-%d').date()
+        bit = datetime.strptime(hafta_bitis, '%Y-%m-%d').date()
+    except ValueError:
+        flash('Geçersiz tarih formatı.', 'danger')
+        return redirect(url_for('rapor.haftalik_beyan_liste'))
+
+    if bit < bas:
+        flash('Bitiş tarihi başlangıçtan önce olamaz.', 'danger')
+        return redirect(url_for('rapor.haftalik_beyan_liste'))
+
+    beyan = HaftalikBeyan(
+        proje_id=proje_id,
+        hafta_baslangic=bas,
+        hafta_bitis=bit,
+        olusturan_id=current_user.id,
+        aktif=True,
+    )
+    db.session.add(beyan)
+    db.session.commit()
+    flash('Haftalık beyan oluşturuldu. Şimdi çalışanlara SMS gönderebilirsiniz.', 'success')
+    return redirect(url_for('rapor.haftalik_beyan_detay', id=beyan.id))
+
+
+@rapor_bp.route('/haftalik-beyan/<int:id>')
+@login_required
+@permission_required('rapor.view')
+def haftalik_beyan_detay(id):
+    """Haftalık beyan raporu."""
+    beyan = HaftalikBeyan.query.get_or_404(id)
+    veri = _beyan_rapor_verisi(beyan)
+    return render_template('rapor/haftalik_beyan_detay.html',
+                           beyan=beyan, veri=veri, active='rapor')
+
+
+@rapor_bp.route('/haftalik-beyan/<int:id>/sms', methods=['POST'])
+@login_required
+@permission_required('rapor.view')
+def haftalik_beyan_sms(id):
+    """Projenin aktif çalışanlarına beyan linkli toplu SMS gönderir.
+
+    ?hatirlat=1 -> sadece henüz beyan vermemiş çalışanlara gönderir.
+    """
+    from app.modules.basvuru.routes import send_netgsm_sms
+
+    beyan = HaftalikBeyan.query.get_or_404(id)
+    sadece_hatirlat = request.form.get('hatirlat') == '1'
+
+    aktif_calisanlar = _beyan_aktif_calisanlar(beyan.proje_id)
+    beyan_eden_ids = {k.calisan_id for k in beyan.kayitlar.all()}
+
+    if sadece_hatirlat:
+        hedef = [c for c in aktif_calisanlar if c.id not in beyan_eden_ids]
+    else:
+        hedef = aktif_calisanlar
+
+    link = url_for('beyan.beyan_sayfa', id=beyan.id, _external=True)
+    proje_ad = beyan.proje.ad if beyan.proje else ''
+
+    basarili, basarisiz, telefonsuz = 0, 0, 0
+    for c in hedef:
+        if not c.telefon:
+            telefonsuz += 1
+            continue
+        mesaj = (f"Sayin {c.full_name}, {proje_ad} {beyan.baslik} haftasi "
+                 f"calisma gunlerinizi bildirin: {link} - Team Guerilla IK")
+        result = send_netgsm_sms(c.telefon, mesaj)
+        if result.get('success'):
+            basarili += 1
+        else:
+            basarisiz += 1
+
+    tur = 'Hatırlatma' if sadece_hatirlat else 'Beyan daveti'
+    mesajlar = [f'{tur} SMS: {basarili} gönderildi']
+    if basarisiz:
+        mesajlar.append(f'{basarisiz} başarısız')
+    if telefonsuz:
+        mesajlar.append(f'{telefonsuz} telefonsuz atlandı')
+    flash(', '.join(mesajlar) + '.', 'success' if basarili else 'warning')
+    return redirect(url_for('rapor.haftalik_beyan_detay', id=beyan.id))
+
+
+@rapor_bp.route('/haftalik-beyan/<int:id>/durum', methods=['POST'])
+@login_required
+@permission_required('rapor.view')
+def haftalik_beyan_durum(id):
+    """Beyan formunu açar/kapatır (kapalıyken public form beyan almaz)."""
+    beyan = HaftalikBeyan.query.get_or_404(id)
+    beyan.aktif = not beyan.aktif
+    db.session.commit()
+    flash('Beyan formu ' + ('açıldı.' if beyan.aktif else 'kapatıldı.'), 'success')
+    return redirect(url_for('rapor.haftalik_beyan_detay', id=beyan.id))
+
+
+@rapor_bp.route('/haftalik-beyan/<int:id>/export')
+@login_required
+@permission_required('rapor.view')
+def haftalik_beyan_export(id):
+    """Haftalık beyan raporunu Excel olarak indir."""
+    import openpyxl
+    from openpyxl.utils import get_column_letter
+
+    beyan = HaftalikBeyan.query.get_or_404(id)
+    veri = _beyan_rapor_verisi(beyan)
+
+    wb = openpyxl.Workbook()
+
+    # Sayfa 1: Beyanlar
+    ws = wb.active
+    ws.title = 'Beyanlar'
+    headers = ['Ad Soyad', 'Telefon', 'Müdürlük', 'Cuma', 'Cumartesi', 'Pazar',
+               'Gün Sayısı', 'Kayıt Zamanı']
+    ws.append(headers)
+    for c in veri['aktif_calisanlar']:
+        k = veri['kayit_map'].get(c.id)
+        dep = c.departman.ad if c.departman else '-'
+        if k:
+            ws.append([
+                c.full_name, c.telefon or '-', dep,
+                'Evet' if k.cuma else 'Hayır',
+                'Evet' if k.cumartesi else 'Hayır',
+                'Evet' if k.pazar else 'Hayır',
+                k.gun_sayisi,
+                k.kayit_zamani.strftime('%d.%m.%Y %H:%M') if k.kayit_zamani else '-',
+            ])
+        else:
+            ws.append([c.full_name, c.telefon or '-', dep,
+                       'Beyan yok', 'Beyan yok', 'Beyan yok', '-', '-'])
+    for col in range(1, len(headers) + 1):
+        ws.column_dimensions[get_column_letter(col)].width = 18
+
+    # Sayfa 2: Müdürlük özeti
+    ws2 = wb.create_sheet('Müdürlük Özeti')
+    h2 = ['Müdürlük', 'Aktif Çalışan', 'Beyan Eden', 'Cuma', 'Cumartesi', 'Pazar']
+    ws2.append(h2)
+    for dep, m in veri['mudurluk'].items():
+        ws2.append([dep, m['toplam'], m['beyan_eden'],
+                    m['cuma'], m['cumartesi'], m['pazar']])
+    ws2.append([])
+    ws2.append(['TOPLAM', veri['aktif_sayi'], veri['beyan_eden_sayi'],
+                veri['gun_sayaclari']['cuma'], veri['gun_sayaclari']['cumartesi'],
+                veri['gun_sayaclari']['pazar']])
+    for col in range(1, len(h2) + 1):
+        ws2.column_dimensions[get_column_letter(col)].width = 18
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    fname = f"haftalik_beyan_{beyan.hafta_baslangic.strftime('%Y%m%d')}.xlsx"
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={fname}'}
+    )

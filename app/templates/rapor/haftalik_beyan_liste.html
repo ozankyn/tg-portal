@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Haftalık Çalışma Beyanı - TG Portal{% endblock %}
+{% block page_title %}Haftalık Çalışma Beyanı{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Yeni Beyan Oluştur -->
+  <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+    <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+      <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+        <span class="material-symbols-outlined">add_circle</span>Yeni Beyan Oluştur
+      </h6>
+    </div>
+    <div class="p-4">
+      <form method="POST" action="{{ url_for('rapor.haftalik_beyan_olustur') }}"
+            class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+        <div class="md:col-span-1">
+          <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Proje</label>
+          <select name="proje_id" required
+                  class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Proje seçin...</option>
+            {% for p in projeler %}
+            <option value="{{ p.id }}" {% if p.id == 12 %}selected{% endif %}>{{ p.ad }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Hafta Başlangıç (Cuma)</label>
+          <input type="date" name="hafta_baslangic" required
+                 class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Hafta Bitiş (Pazar)</label>
+          <input type="date" name="hafta_bitis" required
+                 class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <div>
+          <button type="submit"
+                  class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+            <span class="material-symbols-outlined">save</span>Oluştur
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Beyan Listesi -->
+  <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+    <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+      <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+        <span class="material-symbols-outlined">event_note</span>Beyanlar
+      </h6>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-[#111418]">
+          <tr>
+            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Proje</th>
+            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Hafta</th>
+            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Katılım</th>
+            <th class="px-4 py-3 text-center font-medium text-text-muted dark:text-text-muted-dark">Cuma</th>
+            <th class="px-4 py-3 text-center font-medium text-text-muted dark:text-text-muted-dark">Cmt</th>
+            <th class="px-4 py-3 text-center font-medium text-text-muted dark:text-text-muted-dark">Pazar</th>
+            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+            <th class="px-4 py-3 text-right font-medium text-[#111418] dark:text-white w-24"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-light dark:divide-border-dark">
+          {% for o in ozet %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418]">
+            <td class="px-4 py-3">
+              <a href="{{ url_for('rapor.haftalik_beyan_detay', id=o.beyan.id) }}" class="text-blue-600 hover:underline font-semibold">
+                {{ o.beyan.proje.ad if o.beyan.proje else '-' }}
+              </a>
+            </td>
+            <td class="px-4 py-3">{{ o.beyan.baslik }}</td>
+            <td class="px-4 py-3">
+              <div class="flex items-center gap-2">
+                <div class="w-24 h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                  <div class="h-full bg-blue-500" style="width: {{ o.katilim }}%;"></div>
+                </div>
+                <span class="text-xs text-text-muted dark:text-text-muted-dark">
+                  {{ o.sayac.toplam }}/{{ o.aktif_sayi }} (%{{ o.katilim }})
+                </span>
+              </div>
+            </td>
+            <td class="px-4 py-3 text-center font-medium">{{ o.sayac.cuma }}</td>
+            <td class="px-4 py-3 text-center font-medium">{{ o.sayac.cumartesi }}</td>
+            <td class="px-4 py-3 text-center font-medium">{{ o.sayac.pazar }}</td>
+            <td class="px-4 py-3">
+              {% if o.beyan.aktif %}
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Açık</span>
+              {% else %}
+              <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Kapalı</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 text-right">
+              <a href="{{ url_for('rapor.haftalik_beyan_detay', id=o.beyan.id) }}"
+                 class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Detay/Rapor">
+                <span class="material-symbols-outlined">visibility</span>
+              </a>
+            </td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="8" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz beyan oluşturulmadı</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

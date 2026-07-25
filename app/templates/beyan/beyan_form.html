@@ -1,0 +1,104 @@
+{% extends "basvuru/base_public.html" %}
+
+{% block title %}Haftalık Çalışma Beyanı{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="bg-tg-card rounded-2xl border border-tg-border shadow-sm p-6 sm:p-8">
+
+        <div class="text-center mb-6">
+            <div class="w-14 h-14 rounded-2xl bg-tg-acc/10 flex items-center justify-center mx-auto mb-3">
+                <span class="material-symbols-outlined text-tg-acc" style="font-size:30px;">event_available</span>
+            </div>
+            <h1 style="font-family:var(--font-d);font-weight:800;font-size:22px;color:var(--text);margin:0;">
+                Haftalık Çalışma Beyanı
+            </h1>
+            <p class="mt-2 text-sm" style="color:var(--sub);">
+                {{ beyan.proje.ad }}<br>
+                <strong style="color:var(--text);">{{ beyan.baslik }}</strong> haftası
+            </p>
+        </div>
+
+        {# ---------------- 1) Telefon girişi ---------------- #}
+        {% if asama == 'telefon' %}
+        <p class="text-sm mb-4" style="color:var(--sub);">
+            Bu haftaki çalışma günlerinizi bildirmek için önce telefon numaranızı doğrulayın.
+        </p>
+        <form method="POST" action="{{ url_for('beyan.beyan_sayfa', id=beyan.id) }}">
+            <input type="hidden" name="action" value="send_code">
+            <label class="block mb-1">Telefon Numarası</label>
+            <input type="tel" name="telefon" required placeholder="05XX XXX XX XX"
+                   class="w-full px-4 py-3 mb-4 rounded-lg" inputmode="tel">
+            <button type="submit" class="btn-primary w-full py-3 flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">sms</span>Doğrulama Kodu Gönder
+            </button>
+        </form>
+
+        {# ---------------- 2) OTP doğrulama ---------------- #}
+        {% elif asama == 'kod' %}
+        <p class="text-sm mb-4" style="color:var(--sub);">
+            Telefonunuza gönderilen 6 haneli doğrulama kodunu girin.
+        </p>
+        <form method="POST" action="{{ url_for('beyan.beyan_sayfa', id=beyan.id) }}">
+            <input type="hidden" name="action" value="verify_code">
+            <label class="block mb-1">Doğrulama Kodu</label>
+            <input type="text" name="kod" required maxlength="6" inputmode="numeric" pattern="[0-9]*"
+                   placeholder="______" autocomplete="one-time-code"
+                   class="w-full px-4 py-3 mb-4 rounded-lg text-center tracking-[0.5em] text-xl">
+            <button type="submit" class="btn-primary w-full py-3 flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">check</span>Doğrula
+            </button>
+        </form>
+        <form method="POST" action="{{ url_for('beyan.beyan_sayfa', id=beyan.id) }}" class="mt-3 text-center">
+            <input type="hidden" name="action" value="send_code">
+            {# telefon session'da tutuluyor; tekrar gönder için gizli alan gerekmez #}
+            <button type="submit" class="text-sm" style="color:var(--acc);background:none;border:none;cursor:pointer;">
+                Kodu tekrar gönder
+            </button>
+        </form>
+
+        {# ---------------- 3) Gün seçimi ---------------- #}
+        {% elif asama == 'gun' %}
+        <div class="mb-4 px-4 py-3 rounded-lg" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+            <p class="text-sm" style="color:#15803d;margin:0;">
+                <strong>{{ calisan.full_name }}</strong> olarak doğrulandınız.
+            </p>
+        </div>
+        {% if kayit %}
+        <div class="mb-4 px-4 py-3 rounded-lg flash-info text-sm">
+            Daha önce beyan verdiniz. Seçiminizi değiştirip tekrar gönderebilirsiniz.
+        </div>
+        {% endif %}
+        <p class="text-sm mb-4" style="color:var(--sub);">
+            Bu hafta hangi günler çalışacaksınız? Çalışacağınız günleri işaretleyin.
+        </p>
+        <form method="POST" action="{{ url_for('beyan.beyan_kaydet', id=beyan.id) }}">
+            <div class="space-y-3 mb-6">
+                {% set gunler = [
+                    ('cuma', 'Cuma', beyan.hafta_baslangic),
+                    ('cumartesi', 'Cumartesi', beyan.hafta_baslangic),
+                    ('pazar', 'Pazar', beyan.hafta_bitis)
+                ] %}
+                {% for alan, etiket, tarih in gunler %}
+                <label class="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer border transition-colors"
+                       style="border-color:var(--border);">
+                    <input type="checkbox" name="{{ alan }}"
+                           {% if kayit and kayit[alan] %}checked{% endif %}>
+                    <span>
+                        <span style="font-family:var(--font-d);font-weight:700;font-size:15px;color:var(--text);">{{ etiket }}</span>
+                    </span>
+                </label>
+                {% endfor %}
+            </div>
+            <button type="submit" class="btn-primary w-full py-3 flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">send</span>Gönder
+            </button>
+        </form>
+        {% endif %}
+
+    </div>
+    <p class="text-center text-xs mt-4" style="color:var(--sub);">
+        Bu form Team Guerilla İK tarafından oluşturulmuştur.
+    </p>
+</div>
+{% endblock %}

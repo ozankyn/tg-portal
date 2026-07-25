@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}{{ beyan.proje.ad if beyan.proje else 'Beyan' }} - Haftalık Beyan{% endblock %}
+{% block page_title %}Haftalık Çalışma Beyanı{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Üst bilgi + aksiyonlar -->
+  <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+    <div class="p-4 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <div class="text-lg font-bold text-[#111418] dark:text-white">
+          {{ beyan.proje.ad if beyan.proje else '-' }}
+          {% if beyan.aktif %}
+          <span class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 align-middle">Açık</span>
+          {% else %}
+          <span class="ml-2 px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 align-middle">Kapalı</span>
+          {% endif %}
+        </div>
+        <div class="text-sm text-text-muted dark:text-text-muted-dark">{{ beyan.baslik }} haftası</div>
+        <div class="text-xs text-text-muted dark:text-text-muted-dark mt-1">
+          Public link:
+          <a href="{{ url_for('beyan.beyan_sayfa', id=beyan.id, _external=True) }}" target="_blank"
+             class="text-blue-600 hover:underline">{{ url_for('beyan.beyan_sayfa', id=beyan.id, _external=True) }}</a>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <form method="POST" action="{{ url_for('rapor.haftalik_beyan_sms', id=beyan.id) }}"
+              onsubmit="return confirm('Projenin TÜM aktif çalışanlarına SMS gönderilecek. Onaylıyor musunuz?');">
+          <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+            <span class="material-symbols-outlined">sms</span>SMS Gönder
+          </button>
+        </form>
+        <form method="POST" action="{{ url_for('rapor.haftalik_beyan_sms', id=beyan.id) }}"
+              onsubmit="return confirm('Henüz beyan vermeyen çalışanlara hatırlatma SMS gönderilecek. Onaylıyor musunuz?');">
+          <input type="hidden" name="hatirlat" value="1">
+          <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 transition-colors">
+            <span class="material-symbols-outlined">notifications_active</span>Hatırlat
+          </button>
+        </form>
+        <a href="{{ url_for('rapor.haftalik_beyan_export', id=beyan.id) }}"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
+          <span class="material-symbols-outlined">file_download</span>Excel
+        </a>
+        <form method="POST" action="{{ url_for('rapor.haftalik_beyan_durum', id=beyan.id) }}">
+          <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-[#111418] dark:text-white text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+            <span class="material-symbols-outlined">{{ 'lock' if beyan.aktif else 'lock_open' }}</span>
+            {{ 'Formu Kapat' if beyan.aktif else 'Formu Aç' }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Özet kartlar -->
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
+      <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Aktif Çalışan</div>
+      <div class="mt-1 text-2xl font-extrabold text-[#111418] dark:text-white">{{ veri.aktif_sayi }}</div>
+    </div>
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
+      <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Beyan Eden</div>
+      <div class="mt-1 text-2xl font-extrabold text-blue-600">{{ veri.beyan_eden_sayi }}</div>
+    </div>
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
+      <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Beyan Etmeyen</div>
+      <div class="mt-1 text-2xl font-extrabold text-rose-600">{{ veri.beyan_etmeyen_sayi }}</div>
+    </div>
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
+      <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Gelmeyecek (0 gün)</div>
+      <div class="mt-1 text-2xl font-extrabold text-gray-600 dark:text-gray-300">{{ veri.gelmeyecekler|length }}</div>
+    </div>
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
+      <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Katılım</div>
+      <div class="mt-1 text-2xl font-extrabold text-[#111418] dark:text-white">
+        %{{ ((veri.beyan_eden_sayi / veri.aktif_sayi * 100) | round(1)) if veri.aktif_sayi else 0 }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Gün bazlı -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    {% set gunler = [('Cuma', veri.gun_sayaclari.cuma, 'blue'), ('Cumartesi', veri.gun_sayaclari.cumartesi, 'indigo'), ('Pazar', veri.gun_sayaclari.pazar, 'violet')] %}
+    {% for etiket, sayi, renk in gunler %}
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-5 flex items-center justify-between">
+      <div>
+        <div class="text-sm font-semibold text-text-muted dark:text-text-muted-dark">{{ etiket }}</div>
+        <div class="mt-1 text-3xl font-extrabold text-[#111418] dark:text-white">{{ sayi }} <span class="text-base font-medium text-text-muted dark:text-text-muted-dark">kişi</span></div>
+      </div>
+      <div class="w-12 h-12 rounded-2xl bg-{{ renk }}-500/10 flex items-center justify-center">
+        <span class="material-symbols-outlined text-{{ renk }}-600">today</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Müdürlük breakdown -->
+  <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+    <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+      <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+        <span class="material-symbols-outlined">apartment</span>Müdürlük Bazlı Dağılım
+      </h6>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-[#111418]">
+          <tr>
+            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Müdürlük</th>
+            <th class="px-4 py-3 text-center font-medium text-text-muted dark:text-text-muted-dark">Aktif</th>
+            <th class="px-4 py-3 text-center font-medium text-text-muted dark:text-text-muted-dark">Beyan Eden</th>
+            <th class="px-4 py-3 text-center font-medium text-text-muted dark:text-text-muted-dark">Cuma</th>
+            <th class="px-4 py-3 text-center font-medium text-text-muted dark:text-text-muted-dark">Cumartesi</th>
+            <th class="px-4 py-3 text-center font-medium text-text-muted dark:text-text-muted-dark">Pazar</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-light dark:divide-border-dark">
+          {% for dep, m in veri.mudurluk.items() %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418]">
+            <td class="px-4 py-3 font-medium">{{ dep }}</td>
+            <td class="px-4 py-3 text-center">{{ m.toplam }}</td>
+            <td class="px-4 py-3 text-center">{{ m.beyan_eden }}</td>
+            <td class="px-4 py-3 text-center">{{ m.cuma }}</td>
+            <td class="px-4 py-3 text-center">{{ m.cumartesi }}</td>
+            <td class="px-4 py-3 text-center">{{ m.pazar }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Kayıt yok</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Beyan edenler -->
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+      <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+        <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+          <span class="material-symbols-outlined">how_to_reg</span>Beyan Edenler ({{ veri.kayitlar|length }})
+        </h6>
+      </div>
+      <div class="overflow-x-auto max-h-96 overflow-y-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 dark:bg-[#111418] sticky top-0">
+            <tr>
+              <th class="px-4 py-2 text-left font-medium text-text-muted dark:text-text-muted-dark">Ad Soyad</th>
+              <th class="px-4 py-2 text-left font-medium text-text-muted dark:text-text-muted-dark">Günler</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border-light dark:divide-border-dark">
+            {% for k in veri.kayitlar %}
+            <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418]">
+              <td class="px-4 py-2">{{ k.ad_soyad }}</td>
+              <td class="px-4 py-2">
+                {% if k.gun_sayisi > 0 %}
+                {% for gun in k.secilen_gunler %}
+                <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{{ gun }}</span>
+                {% endfor %}
+                {% else %}
+                <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Gelmeyecek</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz beyan yok</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Beyan etmeyenler -->
+    <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+      <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+        <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+          <span class="material-symbols-outlined">person_off</span>Beyan Etmeyenler ({{ veri.beyan_etmeyenler|length }})
+        </h6>
+      </div>
+      <div class="overflow-x-auto max-h-96 overflow-y-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 dark:bg-[#111418] sticky top-0">
+            <tr>
+              <th class="px-4 py-2 text-left font-medium text-text-muted dark:text-text-muted-dark">Ad Soyad</th>
+              <th class="px-4 py-2 text-left font-medium text-text-muted dark:text-text-muted-dark">Telefon</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-border-light dark:divide-border-dark">
+            {% for c in veri.beyan_etmeyenler %}
+            <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418]">
+              <td class="px-4 py-2">{{ c.full_name }}</td>
+              <td class="px-4 py-2 text-text-muted dark:text-text-muted-dark">{{ c.telefon or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" class="px-4 py-8 text-center text-emerald-600">Herkes beyan verdi 🎉</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
