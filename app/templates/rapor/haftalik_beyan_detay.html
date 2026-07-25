@@ -28,12 +28,14 @@
       <div class="flex flex-wrap gap-2">
         <form method="POST" action="{{ url_for('rapor.haftalik_beyan_sms', id=beyan.id) }}"
               onsubmit="return confirm('Projenin TÜM aktif çalışanlarına SMS gönderilecek. Onaylıyor musunuz?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
             <span class="material-symbols-outlined">sms</span>SMS Gönder
           </button>
         </form>
         <form method="POST" action="{{ url_for('rapor.haftalik_beyan_sms', id=beyan.id) }}"
               onsubmit="return confirm('Henüz beyan vermeyen çalışanlara hatırlatma SMS gönderilecek. Onaylıyor musunuz?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="hatirlat" value="1">
           <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded-lg hover:bg-amber-600 transition-colors">
             <span class="material-symbols-outlined">notifications_active</span>Hatırlat
@@ -44,6 +46,7 @@
           <span class="material-symbols-outlined">file_download</span>Excel
         </a>
         <form method="POST" action="{{ url_for('rapor.haftalik_beyan_durum', id=beyan.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-[#111418] dark:text-white text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
             <span class="material-symbols-outlined">{{ 'lock' if beyan.aktif else 'lock_open' }}</span>
             {{ 'Formu Kapat' if beyan.aktif else 'Formu Aç' }}

@@ -16,6 +16,7 @@
     <div class="p-4">
       <form method="POST" action="{{ url_for('rapor.haftalik_beyan_olustur') }}"
             class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="md:col-span-1">
           <label class="block text-sm font-medium text-[#111418] dark:text-white mb-1">Proje</label>
           <select name="proje_id" required
