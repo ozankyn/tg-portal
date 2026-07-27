@@ -15,6 +15,9 @@ from app.models.base import CalisanDurumu, ListeDurumu
 from werkzeug.utils import secure_filename
 from sqlalchemy.exc import IntegrityError
 import os
+import io
+import re
+import zipfile
 
 from app import db
 from app.models.ik import (
@@ -4972,3 +4975,217 @@ def sozlesme_toplu_olustur(proje_id):
         sablonlar=sablonlar,
         manuel_degiskenler=MANUEL_DEGISKENLER,
     )
+
+
+# ============================================================
+# TOPLU EVRAK ZIP İNDİRME
+# Çalışan/Aday evraklarını klasörlü ZIP olarak indirir.
+# Yetki: ik.view (detay sayfalarıyla aynı, scope kontrollü)
+# ============================================================
+
+def _zip_ad_temizle(s):
+    """Klasör/dosya adını ZIP için güvenli hale getirir (Türkçe -> ASCII)."""
+    s = (s or '').strip()
+    tr = str.maketrans('çÇğĞıİöÖşŞüÜ', 'cCgGiIoOsSuU')
+    s = s.translate(tr)
+    s = re.sub(r'[^A-Za-z0-9._-]+', '_', s).strip('_')
+    return s or 'dosya'
+
+
+def _evrak_klasoru(evrak_tipi):
+    """EvrakTipi'ni ZIP alt klasör adına eşler."""
+    if not evrak_tipi:
+        return 'Diger_Evraklar'
+    ad = f"{evrak_tipi.kod or ''} {evrak_tipi.ad or ''} {evrak_tipi.kategori or ''}".lower()
+    if 'iban' in ad:
+        return 'IBAN'
+    if 'cv' in ad or 'ozgec' in ad or 'özgeç' in ad:
+        return 'CV'
+    if 'sgk' in ad and ('cik' in ad or 'çık' in ad or 'ayril' in ad):
+        return 'SGK_Cikis_Bildirgesi'
+    if 'sgk' in ad:
+        return 'SGK_Giris_Bildirgesi'
+    if 'foto' in ad or 'vesikal' in ad or 'resim' in ad:
+        return 'Fotograf'
+    return 'Diger_Evraklar'
+
+
+def _evrak_dosya_ekle(items, klasor, dosya_adi, dosya_yolu):
+    """Var olan bir dosyayı items listesine ekler (klasor, dosya_adi, tam_yol)."""
+    tam = _evrak_tam_yol(dosya_yolu)
+    if tam and os.path.exists(tam) and os.path.isfile(tam):
+        ad = dosya_adi or os.path.basename(tam)
+        items.append((klasor, ad, tam))
+
+
+def _calisan_evrak_items(calisan):
+    """Çalışanın kendi (sabit alan + CalisanEvrak) dosyaları."""
+    items = []
+    _evrak_dosya_ekle(items, 'Fotograf', None, calisan.foto)
+    _evrak_dosya_ekle(items, 'Sozlesme', None, calisan.sozlesme_pdf)
+    _evrak_dosya_ekle(items, 'SGK_Cikis_Bildirgesi', None, calisan.sgk_cikis_bildirgesi)
+    for ev in calisan.evraklar:
+        _evrak_dosya_ekle(items, _evrak_klasoru(ev.evrak_tipi), ev.dosya_adi, ev.dosya_yolu)
+    return items
+
+
+def _aday_evrak_items(aday):
+    """Adayın (sabit alan + AdayEvrak) dosyaları."""
+    items = []
+    _evrak_dosya_ekle(items, 'CV', None, aday.cv_dosya)
+    _evrak_dosya_ekle(items, 'Fotograf', None, aday.foto)
+    _evrak_dosya_ekle(items, 'Kimlik', None, aday.kimlik_on)
+    _evrak_dosya_ekle(items, 'Kimlik', None, aday.kimlik_arka)
+    _evrak_dosya_ekle(items, 'Ehliyet', None, aday.ehliyet_foto)
+    _evrak_dosya_ekle(items, 'Diploma', None, aday.diploma_foto)
+    _evrak_dosya_ekle(items, 'SRC', None, aday.src_foto)
+    _evrak_dosya_ekle(items, 'Diger_Evraklar', None, aday.ikametgah)
+    _evrak_dosya_ekle(items, 'Diger_Evraklar', None, aday.adli_sicil)
+    _evrak_dosya_ekle(items, 'Diger_Evraklar', None, aday.kargo_barkod_foto)
+    _evrak_dosya_ekle(items, 'SGK_Giris_Bildirgesi', None, aday.sgk_bildirgesi)
+    for ev in aday.evraklar:
+        _evrak_dosya_ekle(items, _evrak_klasoru(ev.evrak_tipi), ev.dosya_adi, ev.dosya_yolu)
+    return items
+
+
+def _calisan_tum_evrak_items(calisan):
+    """Çalışan evrakları + bağlı aday(lar)ın evrakları."""
+    items = _calisan_evrak_items(calisan)
+    for aday in Aday.query.filter_by(calisan_id=calisan.id, is_deleted=False).all():
+        items += _aday_evrak_items(aday)
+    return items
+
+
+def _evrak_zip_indir(kisiler, zip_filename):
+    """kisiler: [(kok_klasor, items[(klasor, dosya_adi, tam_yol)]), ...]
+
+    Boş sonuç (hiç dosya yoksa) None döner.
+    """
+    mem = io.BytesIO()
+    kullanilan_arc = set()
+    kullanilan_root = set()
+    dosya_sayisi = 0
+    with zipfile.ZipFile(mem, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for root, items in kisiler:
+            # Kök klasör adını benzersizleştir (aynı ad+tc iki kişide olursa)
+            uroot, i = root, 1
+            while uroot in kullanilan_root:
+                i += 1
+                uroot = f"{root}_{i}"
+            kullanilan_root.add(uroot)
+
+            gorulen_yol = set()
+            for klasor, dosya_adi, tam in items:
+                if tam in gorulen_yol:
+                    continue  # aynı fiziksel dosya iki kez eklenmesin
+                gorulen_yol.add(tam)
+
+                guv_ad = (dosya_adi or os.path.basename(tam)).replace('/', '_').replace('\\', '_')
+                arc = f"{uroot}/{klasor}/{guv_ad}"
+                base, j = arc, 1
+                while arc in kullanilan_arc:
+                    n, e = os.path.splitext(base)
+                    arc = f"{n}_{j}{e}"
+                    j += 1
+                kullanilan_arc.add(arc)
+                try:
+                    zf.write(tam, arc)
+                    dosya_sayisi += 1
+                except OSError:
+                    continue
+
+    if dosya_sayisi == 0:
+        return None
+    mem.seek(0)
+    return send_file(mem, mimetype='application/zip', as_attachment=True,
+                     download_name=zip_filename)
+
+
+@ik_bp.route('/calisan/<int:id>/evrak-zip')
+@login_required
+@permission_required('ik.view')
+def calisan_evrak_zip(id):
+    """Çalışanın tüm evraklarını (kendi + bağlı aday) ZIP olarak indir."""
+    calisan = Calisan.query.get_or_404(id)
+    if not calisan_in_scope(calisan):
+        flash('Bu çalışanın evraklarını indirme yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.liste'))
+
+    items = _calisan_tum_evrak_items(calisan)
+    root = _zip_ad_temizle(f"{calisan.full_name}_{calisan.tc_kimlik or calisan.id}")
+    resp = _evrak_zip_indir([(root, items)], f"{root}_evraklar.zip")
+    if resp is None:
+        flash('Bu çalışana ait indirilebilecek evrak dosyası bulunamadı.', 'warning')
+        return redirect(url_for('ik.detay', id=id))
+    return resp
+
+
+@ik_bp.route('/aday/<int:id>/evrak-zip')
+@login_required
+@permission_required('ik.view')
+def aday_evrak_zip(id):
+    """Adayın tüm evraklarını ZIP olarak indir."""
+    aday = Aday.query.get_or_404(id)
+    if not aday_in_scope(aday):
+        flash('Bu adayın evraklarını indirme yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_liste'))
+
+    items = _aday_evrak_items(aday)
+    root = _zip_ad_temizle(f"{aday.full_name}_{aday.tc_kimlik or aday.id}")
+    resp = _evrak_zip_indir([(root, items)], f"{root}_evraklar.zip")
+    if resp is None:
+        flash('Bu adaya ait indirilebilecek evrak dosyası bulunamadı.', 'warning')
+        return redirect(url_for('ik.aday_detay', id=id))
+    return resp
+
+
+@ik_bp.route('/calisanlar/evrak-zip-toplu', methods=['POST'])
+@login_required
+@permission_required('ik.view')
+def calisan_evrak_zip_toplu():
+    """Seçili çalışanların evraklarını tek ZIP'te (kişi başı klasör) indir."""
+    ids = [int(x) for x in request.form.getlist('ids') if x.isdigit()]
+    if not ids:
+        flash('Lütfen en az bir çalışan seçin.', 'warning')
+        return redirect(url_for('ik.liste'))
+
+    kisiler = []
+    for calisan in Calisan.query.filter(Calisan.id.in_(ids), Calisan.is_deleted == False).all():
+        if not calisan_in_scope(calisan):
+            continue
+        items = _calisan_tum_evrak_items(calisan)
+        if items:
+            root = _zip_ad_temizle(f"{calisan.full_name}_{calisan.tc_kimlik or calisan.id}")
+            kisiler.append((root, items))
+
+    resp = _evrak_zip_indir(kisiler, f"calisan_evraklari_{datetime.now().strftime('%Y%m%d_%H%M')}.zip")
+    if resp is None:
+        flash('Seçilen çalışanlara ait indirilebilecek evrak bulunamadı.', 'warning')
+        return redirect(url_for('ik.liste'))
+    return resp
+
+
+@ik_bp.route('/adaylar/evrak-zip-toplu', methods=['POST'])
+@login_required
+@permission_required('ik.view')
+def aday_evrak_zip_toplu():
+    """Seçili adayların evraklarını tek ZIP'te (kişi başı klasör) indir."""
+    ids = [int(x) for x in request.form.getlist('ids') if x.isdigit()]
+    if not ids:
+        flash('Lütfen en az bir aday seçin.', 'warning')
+        return redirect(url_for('ik.aday_liste'))
+
+    kisiler = []
+    for aday in Aday.query.filter(Aday.id.in_(ids), Aday.is_deleted == False).all():
+        if not aday_in_scope(aday):
+            continue
+        items = _aday_evrak_items(aday)
+        if items:
+            root = _zip_ad_temizle(f"{aday.full_name}_{aday.tc_kimlik or aday.id}")
+            kisiler.append((root, items))
+
+    resp = _evrak_zip_indir(kisiler, f"aday_evraklari_{datetime.now().strftime('%Y%m%d_%H%M')}.zip")
+    if resp is None:
+        flash('Seçilen adaylara ait indirilebilecek evrak bulunamadı.', 'warning')
+        return redirect(url_for('ik.aday_liste'))
+    return resp

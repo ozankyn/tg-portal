@@ -28,6 +28,11 @@
             Filtreler
         </div>
         <div class="flex gap-2">
+            <button type="submit" form="adayZipForm" id="adayZipBtn" disabled
+                    class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-700 text-white text-sm rounded-lg hover:bg-emerald-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                <span class="material-symbols-outlined text-sm">folder_zip</span>
+                Seçilenlerin Evraklarını İndir <span id="adayZipCount"></span>
+            </button>
             <a href="{{ url_for('ik.adaylar_export', **args) }}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 transition-colors">
                 <span class="material-symbols-outlined text-sm">download</span>
                 Excel'e Aktar
@@ -128,9 +133,14 @@
 
 <div class="bg-white dark:bg-card-dark rounded-lg border border-border-light dark:border-border-dark">
     <div class="overflow-x-auto">
+        <form method="POST" id="adayZipForm" action="{{ url_for('ik.aday_evrak_zip_toplu') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <table class="w-full">
             <thead class="bg-gray-50 dark:bg-[#252b36] text-xs text-text-muted dark:text-text-muted-dark uppercase">
                 <tr>
+                    <th class="px-4 py-3 w-10">
+                        <input type="checkbox" id="adaySelectAll" class="w-4 h-4 rounded border-gray-300 cursor-pointer" title="Tümünü seç">
+                    </th>
                     <th class="px-4 py-3 text-left font-medium">Ad Soyad</th>
                     <th class="px-4 py-3 text-left font-medium">Proje</th>
                     <th class="px-4 py-3 text-left font-medium">Kadro</th>
@@ -148,6 +158,9 @@
                 {% set son_log = son_iletisim.get(aday.id) %}
                 {% set aktif_surec = aday.durum not in ('calisana_donusturuldu', 'reddedildi', 'red', 'aday_reddetti', 'havuzda', 'iptal') %}
                 <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] {% if not son_log and aktif_surec %}bg-amber-50 dark:bg-amber-900/10{% endif %}">
+                    <td class="px-4 py-3">
+                        <input type="checkbox" name="ids" value="{{ aday.id }}" class="aday-cb w-4 h-4 rounded border-gray-300 cursor-pointer">
+                    </td>
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-3">
                             {% set ilk_foto = aday.medyalar.filter_by(tip='foto').first() %}
@@ -241,7 +254,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="10" class="px-4 py-12 text-center text-text-muted dark:text-text-muted-dark">
+                    <td colspan="11" class="px-4 py-12 text-center text-text-muted dark:text-text-muted-dark">
                         <span class="material-symbols-outlined text-4xl mb-2 block">inbox</span>
                         Aday bulunamadı
                     </td>
@@ -249,6 +262,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </form>
     </div>
     
     {% if pagination.pages > 1 %}
@@ -317,5 +331,34 @@
             ilceDoldur();
         }
     })();
+</script>
+
+<script>
+(function () {
+    const selectAll = document.getElementById('adaySelectAll');
+    const btn = document.getElementById('adayZipBtn');
+    const countEl = document.getElementById('adayZipCount');
+    const boxes = () => Array.from(document.querySelectorAll('.aday-cb'));
+
+    function refresh() {
+        const secili = boxes().filter(cb => cb.checked).length;
+        if (btn) btn.disabled = secili === 0;
+        if (countEl) countEl.textContent = secili ? '(' + secili + ')' : '';
+        if (selectAll) {
+            const all = boxes();
+            selectAll.checked = all.length > 0 && secili === all.length;
+            selectAll.indeterminate = secili > 0 && secili < all.length;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            boxes().forEach(cb => { cb.checked = selectAll.checked; });
+            refresh();
+        });
+    }
+    boxes().forEach(cb => cb.addEventListener('change', refresh));
+    refresh();
+})();
 </script>
 {% endblock %}

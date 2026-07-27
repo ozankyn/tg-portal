@@ -194,6 +194,10 @@
                 <div class="grid grid-cols-1 gap-3">
                     <a href="{{ url_for('ik.aday_duzenle', id=aday.id) }}" class="bg-gray-100 dark:bg-[#111418] hover:bg-gray-200 dark:hover:bg-[#252b36] text-sm font-bold py-2 rounded-lg transition-all text-center">Düzenle</a>
                 </div>
+                <a href="{{ url_for('ik.aday_evrak_zip', id=aday.id) }}" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">folder_zip</span>
+                    Tüm Evrakları İndir (ZIP)
+                </a>
 
                 {% if aday.tekrar_ise_alim_uygun %}
                 <div class="flex items-start gap-2 text-xs bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-3 text-amber-700 dark:text-amber-300">

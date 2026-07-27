@@ -111,6 +111,10 @@
                     <span class="bg-gray-100 dark:bg-[#111418] text-sm font-bold py-2 rounded-lg text-center text-gray-400">İşten Çıkış</span>
                     {% endif %}
                 </div>
+                <a href="{{ url_for('ik.calisan_evrak_zip', id=calisan.id) }}" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-lg">folder_zip</span>
+                    Tüm Evrakları İndir (ZIP)
+                </a>
 
                 {% if calisan.tekrar_ise_alinabilir and has_permission('ik.edit') %}
                 <button type="button" onclick="document.getElementById('tekrarIseAlModal').classList.remove('hidden')" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-lg transition-all flex items-center justify-center gap-2">

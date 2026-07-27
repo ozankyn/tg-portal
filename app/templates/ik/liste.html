@@ -13,6 +13,11 @@
         </p>
     </div>
     <div class="flex gap-3">
+        <button type="submit" form="calisanZipForm" id="calisanZipBtn" disabled
+                class="flex items-center gap-2 px-4 py-2.5 bg-emerald-700 text-white rounded-lg font-bold text-sm hover:bg-emerald-800 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+            <span class="material-symbols-outlined text-lg">folder_zip</span>
+            Seçilenlerin Evraklarını İndir <span id="calisanZipCount"></span>
+        </button>
         <a href="{{ url_for('ik.calisanlar_export', **request.args) }}" class="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg font-bold text-sm hover:bg-emerald-700 transition-colors shadow-sm">
             <span class="material-symbols-outlined text-lg">download</span>
             Excel'e Aktar
@@ -105,9 +110,14 @@
 <!-- Table Container -->
 <div class="bg-white dark:bg-card-dark border border-border-light dark:border-border-dark rounded-xl shadow-sm overflow-hidden">
     <div class="overflow-x-auto">
+        <form method="POST" id="calisanZipForm" action="{{ url_for('ik.calisan_evrak_zip_toplu') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <table class="w-full text-left border-collapse">
             <thead>
                 <tr class="bg-gray-50 dark:bg-[#111418] border-b border-border-light dark:border-border-dark">
+                    <th class="px-4 py-4 w-10">
+                        <input type="checkbox" id="calisanSelectAll" class="w-4 h-4 rounded border-gray-300 cursor-pointer" title="Tümünü seç">
+                    </th>
                     <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark">Çalışan</th>
                     <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden md:table-cell">Sicil No</th>
                     <th class="px-6 py-4 text-xs font-bold uppercase tracking-wider text-text-muted dark:text-text-muted-dark hidden xl:table-cell">Proje</th>
@@ -122,6 +132,9 @@
             <tbody class="divide-y divide-border-light dark:divide-border-dark">
                 {% for calisan in calisanlar %}
                 <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors group">
+                    <td class="px-4 py-4">
+                        <input type="checkbox" name="ids" value="{{ calisan.id }}" class="calisan-cb w-4 h-4 rounded border-gray-300 cursor-pointer">
+                    </td>
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden shrink-0">
@@ -198,7 +211,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="9" class="px-6 py-12 text-center">
+                    <td colspan="10" class="px-6 py-12 text-center">
                         <div class="flex flex-col items-center">
                             <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-3">group_off</span>
                             <p class="text-text-muted dark:text-text-muted-dark font-medium">Çalışan bulunamadı</p>
@@ -209,8 +222,9 @@
                 {% endfor %}
             </tbody>
         </table>
+        </form>
     </div>
-    
+
     <!-- Pagination Footer -->
     {% if pagination and pagination.pages > 1 %}
     <div class="px-6 py-4 bg-gray-50 dark:bg-[#111418] border-t border-border-light dark:border-border-dark flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -259,4 +273,35 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    const selectAll = document.getElementById('calisanSelectAll');
+    const btn = document.getElementById('calisanZipBtn');
+    const countEl = document.getElementById('calisanZipCount');
+    const boxes = () => Array.from(document.querySelectorAll('.calisan-cb'));
+
+    function refresh() {
+        const secili = boxes().filter(cb => cb.checked).length;
+        if (btn) btn.disabled = secili === 0;
+        if (countEl) countEl.textContent = secili ? '(' + secili + ')' : '';
+        if (selectAll) {
+            const all = boxes();
+            selectAll.checked = all.length > 0 && secili === all.length;
+            selectAll.indeterminate = secili > 0 && secili < all.length;
+        }
+    }
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            boxes().forEach(cb => { cb.checked = selectAll.checked; });
+            refresh();
+        });
+    }
+    boxes().forEach(cb => cb.addEventListener('change', refresh));
+    refresh();
+})();
+</script>
 {% endblock %}
