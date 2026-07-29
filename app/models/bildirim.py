@@ -50,6 +50,10 @@ AVAILABLE_VARIABLES = {
     'ADAY_ONAY_SMS': [
         'ad_soyad', 'evrak_link', 'gun_sayisi',
     ],
+    # SMS sablonu - yeni ise giris egitimi kayit daveti
+    'EGITIM_DAVET_SMS': [
+        'ad_soyad', 'egitim_link', 'egitim_adi',
+    ],
 }
 
 

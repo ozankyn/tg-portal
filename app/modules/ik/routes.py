@@ -2944,6 +2944,15 @@ def aday_calisana_donustur(id):
             except Exception as e:
                 current_app.logger.warning(f"İşe giriş bildirimi gönderilemedi (calisan_id={calisan.id}): {e}")
 
+            # Yeni işe giriş eğitimi daveti SMS'i (uygun eğitim varsa).
+            # Dönüştürme zaten commit edildi; SMS hatası akışı bozmamalı.
+            try:
+                from app.services.notification import notify_egitim_davet_sms
+                notify_egitim_davet_sms(calisan)
+            except Exception as e:
+                current_app.logger.warning(
+                    f"Eğitim davet SMS gönderilemedi (calisan_id={calisan.id}): {e}")
+
             if tekrar_calisan is not None or (tc_cakisan and tc_action == 'baglan'):
                 flash(f'{calisan.full_name} mevcut çalışan kaydına bağlandı ve yeniden işe alındı.', 'success')
             else:

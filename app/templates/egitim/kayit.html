@@ -11,9 +11,19 @@
                 Eğitim Kaydı
             </h4>
             <p class="text-blue-100 text-sm mt-1">{{ egitim.baslik }}</p>
+            <span class="inline-block mt-2 px-2 py-0.5 bg-white/20 text-white text-xs font-bold rounded-full">
+                {{ egitim.kategori_etiket }}
+            </span>
         </div>
 
         <div class="p-6">
+
+            {% if egitim.egitim_kategorisi == 'yeni_giris' and adim != 'kapali' %}
+            <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl p-3 mb-4 text-sm flex items-start gap-2">
+                <span class="material-symbols-outlined text-emerald-500">info</span>
+                <span>Bu eğitim yeni işe başlayan personel içindir.</span>
+            </div>
+            {% endif %}
 
             {% if adim == 'kapali' %}
             <div class="text-center py-6">

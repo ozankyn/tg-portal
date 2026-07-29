@@ -610,6 +610,116 @@ def notify_aday_onay_sms(aday, gun_sayisi=3):
     return send_netgsm_sms(aday.telefon, mesaj)
 
 
+# -------------------------------------------------------------------
+# Yeni ise giris egitimi daveti (SMS)
+# -------------------------------------------------------------------
+
+# Otomatik egitim daveti gonderilecek projeler.
+# Simdilik tek proje ile sinirli; genellestirilecegi zaman bu kume genisletilir
+# veya Proje modeline bir bayrak eklenir.
+EGITIM_DAVET_PROJE_IDS = {12}
+
+# DB'de EGITIM_DAVET_SMS sablonu yoksa kullanilacak metin (ASCII, tek segment)
+EGITIM_DAVET_SMS_VARSAYILAN = (
+    "TG - Ise giris egitiminize kayit olun: {egitim_link}"
+)
+
+
+def yeni_giris_egitimi_bul(proje_id):
+    """Projede davet gonderilebilecek yeni giris egitimini dondurur.
+
+    Kosullar (public booking sayfasindaki _booking_acik_mi ile ayni):
+    - silinmemis, durumu iptal/tamamlandi olmayan
+    - egitim_kategorisi = 'yeni_giris'
+    - en az bir aktif, gelecek tarihli ve kontenjani dolmamis oturumu olan
+
+    Birden fazla uygun egitim varsa en yakin tarihli oturuma sahip olan secilir.
+    Uygun egitim yoksa None doner.
+    """
+    from app.models.egitim import Egitim
+
+    if not proje_id:
+        return None
+
+    adaylar = Egitim.query.filter(
+        Egitim.is_deleted == False,
+        Egitim.proje_id == proje_id,
+        Egitim.egitim_kategorisi == 'yeni_giris',
+        Egitim.durum.notin_(['iptal', 'tamamlandi']),
+    ).all()
+
+    uygunlar = []
+    for egitim in adaylar:
+        # kayit_alinabilir_mi: aktif + dolu degil + gecmemis
+        acik_oturumlar = [o for o in egitim.oturumlar.all() if o.kayit_alinabilir_mi]
+        if acik_oturumlar:
+            uygunlar.append((min(o.baslangic_dt for o in acik_oturumlar), egitim))
+
+    if not uygunlar:
+        return None
+    uygunlar.sort(key=lambda x: x[0])
+    return uygunlar[0][1]
+
+
+def notify_egitim_davet_sms(calisan):
+    """Calisana yeni ise giris egitimi kayit linkini SMS ile gonderir.
+
+    Sadece EGITIM_DAVET_PROJE_IDS icindeki projelerde ve uygun (aktif,
+    kontenjani dolmamis) bir 'yeni_giris' egitimi varsa gonderir.
+
+    Doner: gonderim yapildiysa sonuc dict'i, yapilmadiysa None.
+    """
+    from app.models.bildirim import BildirimSablonu
+    from app.modules.basvuru.routes import send_netgsm_sms
+    from app.utils import normalize_telefon, sms_ascii
+
+    proje_id = calisan.kadro.proje_id if calisan.kadro else None
+    if proje_id not in EGITIM_DAVET_PROJE_IDS:
+        return None
+
+    egitim = yeni_giris_egitimi_bul(proje_id)
+    if not egitim:
+        current_app.logger.info(
+            "Egitim davet SMS atlandi - uygun yeni giris egitimi yok: "
+            "calisan_id=%s, proje_id=%s", calisan.id, proje_id)
+        return None
+
+    telefon = normalize_telefon(calisan.telefon)
+    if not telefon:
+        current_app.logger.warning(
+            "Egitim davet SMS atlandi - gecerli telefon yok: calisan_id=%s, tel=%r",
+            calisan.id, calisan.telefon)
+        return None
+
+    try:
+        egitim_link = url_for('egitim.kayit', id=egitim.id, _external=True)
+    except Exception:
+        egitim_link = f"https://portal.teamguerilla.com/egitim/kayit/{egitim.id}"
+
+    degiskenler = {
+        'ad_soyad': calisan.full_name,
+        'egitim_link': egitim_link,
+        'egitim_adi': egitim.baslik,
+    }
+
+    sablon = BildirimSablonu.query.filter_by(kod='EGITIM_DAVET_SMS', aktif=True).first()
+    metin_sablonu = sablon.icerik_sablonu if sablon else EGITIM_DAVET_SMS_VARSAYILAN
+    # Sablon DB'den duzenlenebildigi icin Turkce karakter icerebilir; SMS'in tek
+    # segmentte gitmesi icin ASCII'ye cevrilir.
+    mesaj = sms_ascii(render_sablon(metin_sablonu, degiskenler))
+
+    sonuc = send_netgsm_sms(telefon, mesaj)
+    if sonuc.get('success'):
+        current_app.logger.info(
+            "Eğitim davet SMS gönderildi: calisan_id=%s, egitim_id=%s",
+            calisan.id, egitim.id)
+    else:
+        current_app.logger.warning(
+            "Eğitim davet SMS gönderilemedi: calisan_id=%s, egitim_id=%s, hata=%s",
+            calisan.id, egitim.id, sonuc.get('error'))
+    return sonuc
+
+
 def notify_ise_giris(calisan):
     """Ise giris bildirimi - sablonu ISE_GIRIS"""
     print(f">>> NOTIFY_ISE_GIRIS TETIKLENDI: {calisan.ad} {calisan.soyad} (id={calisan.id})", flush=True)

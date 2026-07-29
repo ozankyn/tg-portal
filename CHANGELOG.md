@@ -34,6 +34,15 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına uyg
 ## [Unreleased]
 
 ### Eklendi
+- **Yeni işe giriş eğitimi otomatik SMS daveti**: aday çalışana dönüştürüldüğünde,
+  çalışanın projesinde uygun (aktif, oturumu olan, kontenjanı dolmamış)
+  `yeni_giris` kategorili bir eğitim varsa kayıt linki SMS ile gönderilir.
+  Şu an yalnızca proje id 12 için aktif (`EGITIM_DAVET_PROJE_IDS`).
+  SMS metni DB'den düzenlenebilir: `EGITIM_DAVET_SMS` şablonu
+  (`{ad_soyad}`, `{egitim_link}`, `{egitim_adi}`),
+  seed: `scripts/egitim_davet_sms_sablon_seed.py`
+- Eğitim booking sayfasında (`/egitim/kayit/<id>`) kategori rozeti; `yeni_giris`
+  eğitimlerde "Bu eğitim yeni işe başlayan personel içindir" bilgi notu
 - **Eğitim kategorisi**: `egitimler.egitim_kategorisi` (String(20), varsayılan `genel`)
   — Yeni İşe Giriş / Tekrar / Genel. Eğitim ekle-düzenle formunda dropdown,
   listede renkli badge (yeşil/mavi/gri) + kategori filtresi, detayda gösterim
