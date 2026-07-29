@@ -28,6 +28,14 @@
                                 </select>
                             </div>
                             <div>
+                                <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Eğitim Kategorisi *</label>
+                                <select name="egitim_kategorisi" required class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary">
+                                    {% for kod, etiket in kategoriler %}
+                                    <option value="{{ kod }}" {{ 'selected' if (egitim.egitim_kategorisi if egitim else 'genel') == kod }}>{{ etiket }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
                                 <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Proje</label>
                                 <select name="proje_id" class="w-full p-2.5 bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary">
                                     <option value="">Genel Eğitim (Proje Bağımsız)</option>

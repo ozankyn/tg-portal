@@ -18,7 +18,7 @@ from app import db
 from app.models.egitim import (
     EgitimTipi, Egitim, EgitimKatilimci, EgitimKatilimLog, EgitimMateryali,
     CalisanZorunluEgitim, PozisyonZorunluEgitim,
-    EgitimOturumu, EgitimKayit, EgitimAnket
+    EgitimOturumu, EgitimKayit, EgitimAnket, EGITIM_KATEGORILERI
 )
 from app.models.quiz import (
     SoruKategorisi, Soru, SoruSecenegi,
@@ -177,17 +177,26 @@ def liste():
     durum = request.args.get('durum')
     tip_id = request.args.get('tip_id', type=int)
     proje_id = request.args.get('proje_id', type=int)
+    kategori = request.args.get('kategori')
     tarih = request.args.get('tarih')  # gecmis, gelecek, bugun
-    
+
     query = Egitim.query.filter_by(is_deleted=False)
-    
+
     if durum:
         query = query.filter(Egitim.durum == durum)
     if tip_id:
         query = query.filter(Egitim.egitim_tipi_id == tip_id)
     if proje_id:
         query = query.filter(Egitim.proje_id == proje_id)
-    
+    if kategori:
+        # Kolon NOT NULL DEFAULT 'genel'; yine de kolonun nullable eklendiği
+        # bir ortamda NULL kayıtların filtre dışında kalmaması için:
+        if kategori == 'genel':
+            query = query.filter(db.or_(Egitim.egitim_kategorisi == 'genel',
+                                        Egitim.egitim_kategorisi.is_(None)))
+        else:
+            query = query.filter(Egitim.egitim_kategorisi == kategori)
+
     if tarih == 'gecmis':
         query = query.filter(Egitim.baslangic_tarihi < datetime.now())
     elif tarih == 'gelecek':
@@ -206,12 +215,22 @@ def liste():
                           egitimler=pagination.items,
                           pagination=pagination,
                           egitim_tipleri=egitim_tipleri,
+                          kategoriler=EGITIM_KATEGORILERI,
                           projeler=projeler)
 
 
 # ============================================================
 # EĞİTİM EKLE / DÜZENLE
 # ============================================================
+
+_GECERLI_KATEGORILER = {kod for kod, _ in EGITIM_KATEGORILERI}
+
+
+def _kategori_al():
+    """Form'dan gelen eğitim kategorisini doğrular; geçersizse 'genel' döner."""
+    kategori = (request.form.get('egitim_kategorisi') or '').strip()
+    return kategori if kategori in _GECERLI_KATEGORILER else 'genel'
+
 
 @egitim_bp.route('/ekle', methods=['GET', 'POST'])
 @login_required
@@ -223,6 +242,7 @@ def ekle():
             egitim_tipi_id=int(request.form['egitim_tipi_id']),
             baslik=request.form.get('baslik', '').strip(),
             aciklama=request.form.get('aciklama', '').strip() or None,
+            egitim_kategorisi=_kategori_al(),
             proje_id=int(request.form['proje_id']) if request.form.get('proje_id') else None,
             baslangic_tarihi=datetime.strptime(request.form['baslangic_tarihi'], '%Y-%m-%dT%H:%M'),
             bitis_tarihi=datetime.strptime(request.form['bitis_tarihi'], '%Y-%m-%dT%H:%M') if request.form.get('bitis_tarihi') else None,
@@ -253,6 +273,7 @@ def ekle():
     return render_template('egitim/form.html',
                           egitim=None,
                           egitim_tipleri=egitim_tipleri,
+                          kategoriler=EGITIM_KATEGORILERI,
                           projeler=projeler,
                           egitmenler=egitmenler)
 
@@ -272,6 +293,7 @@ def duzenle(id):
         egitim.egitim_tipi_id = int(request.form['egitim_tipi_id'])
         egitim.baslik = request.form.get('baslik', '').strip()
         egitim.aciklama = request.form.get('aciklama', '').strip() or None
+        egitim.egitim_kategorisi = _kategori_al()
         egitim.proje_id = int(request.form['proje_id']) if request.form.get('proje_id') else None
         egitim.baslangic_tarihi = datetime.strptime(request.form['baslangic_tarihi'], '%Y-%m-%dT%H:%M')
         egitim.bitis_tarihi = datetime.strptime(request.form['bitis_tarihi'], '%Y-%m-%dT%H:%M') if request.form.get('bitis_tarihi') else None
@@ -299,6 +321,7 @@ def duzenle(id):
     return render_template('egitim/form.html',
                           egitim=egitim,
                           egitim_tipleri=egitim_tipleri,
+                          kategoriler=EGITIM_KATEGORILERI,
                           projeler=projeler,
                           egitmenler=egitmenler)
 

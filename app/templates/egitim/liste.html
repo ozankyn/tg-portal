@@ -21,6 +21,12 @@
                     <option value="{{ tip.id }}" {{ 'selected' if request.args.get('tip_id')|int == tip.id }}>{{ tip.ad }}</option>
                     {% endfor %}
                 </select>
+                <select class="px-3 py-2 text-sm bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg focus:ring-primary" onchange="applyFilter('kategori', this.value)">
+                    <option value="">Tüm Kategoriler</option>
+                    {% for kod, etiket in kategoriler %}
+                    <option value="{{ kod }}" {{ 'selected' if request.args.get('kategori') == kod }}>{{ etiket }}</option>
+                    {% endfor %}
+                </select>
                 <select class="px-3 py-2 text-sm bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg focus:ring-primary" onchange="applyFilter('tarih', this.value)">
                     <option value="">Tüm Tarihler</option>
                     <option value="bugun" {{ 'selected' if request.args.get('tarih') == 'bugun' }}>Bugün</option>
@@ -46,6 +52,7 @@
             <thead class="bg-gray-50 dark:bg-[#111418]">
                 <tr>
                     <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Eğitim</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Kategori</th>
                     <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden md:table-cell">Tip</th>
                     <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden lg:table-cell">Proje</th>
                     <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Tarih</th>
@@ -63,6 +70,11 @@
                         <a href="{{ url_for('egitim.detay', id=egitim.id) }}" class="font-semibold text-[#111418] dark:text-white hover:text-primary">
                             {{ egitim.baslik }}
                         </a>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs font-bold rounded-full whitespace-nowrap {{ egitim.kategori_renk }}">
+                            {{ egitim.kategori_etiket }}
+                        </span>
                     </td>
                     <td class="px-4 py-3 hidden md:table-cell">
                         <span class="px-2 py-1 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-xs rounded-full">{{ egitim.egitim_tipi.ad }}</span>
@@ -123,7 +135,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="9" class="px-4 py-12 text-center">
+                    <td colspan="10" class="px-4 py-12 text-center">
                         <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-2">school</span>
                         <p class="text-text-muted dark:text-text-muted-dark">Eğitim bulunamadı</p>
                     </td>
@@ -134,6 +146,9 @@
     </div>
     
     {% if pagination.pages > 1 %}
+    {# request.args 'page' içerebilir; url_for'a tekrar page geçince çakışır (500). Temizlenmiş kopya: #}
+    {% set args = request.args.to_dict() %}
+    {% set _ = args.pop('page', None) %}
     <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-center">
         <div class="flex items-center gap-1">
             {% for p in pagination.iter_pages() %}
@@ -141,7 +156,7 @@
                     {% if p == pagination.page %}
                     <span class="w-8 h-8 rounded-lg bg-primary text-white text-xs font-bold flex items-center justify-center">{{ p }}</span>
                     {% else %}
-                    <a href="{{ url_for('egitim.liste', page=p, **request.args) }}" class="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-[#252b36] text-xs font-bold flex items-center justify-center transition-colors">{{ p }}</a>
+                    <a href="{{ url_for('egitim.liste', page=p, **args) }}" class="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-[#252b36] text-xs font-bold flex items-center justify-center transition-colors">{{ p }}</a>
                     {% endif %}
                 {% else %}
                 <span class="px-1 text-gray-400">...</span>

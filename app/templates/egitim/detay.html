@@ -29,6 +29,15 @@
                 
                 <div class="space-y-3 text-sm">
                     <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">category</span>
+                        <div class="flex items-center gap-2">
+                            <strong>Kategori:</strong>
+                            <span class="px-2 py-0.5 text-xs font-bold rounded-full {{ egitim.kategori_renk }}">
+                                {{ egitim.kategori_etiket }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
                         <span class="material-symbols-outlined text-text-muted dark:text-text-muted-dark">label</span>
                         <div><strong>Tip:</strong> {{ egitim.egitim_tipi.ad }}</div>
                     </div>

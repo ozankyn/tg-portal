@@ -15,6 +15,18 @@ def _kayit_token():
     return secrets.token_urlsafe(24)
 
 
+# Eğitim kategorileri — (kod, etiket) sırası form dropdown'ında da kullanılır.
+# EgitimTipi.kategori'den farklıdır: o eğitimin konusunu (İSG, ürün vb.),
+# bu ise eğitimin kime/neden verildiğini tanımlar.
+EGITIM_KATEGORILERI = [
+    ('yeni_giris', 'Yeni İşe Giriş Eğitimi'),
+    ('tekrar', 'Tekrar Eğitimi'),
+    ('genel', 'Genel Eğitim'),
+]
+
+EGITIM_KATEGORI_ETIKET = dict(EGITIM_KATEGORILERI)
+
+
 class EgitimTipi(db.Model, TimestampMixin):
     """Eğitim tipleri - Oryantasyon, İSG, Ürün Eğitimi vb."""
     __tablename__ = 'egitim_tipleri'
@@ -51,6 +63,10 @@ class Egitim(db.Model, TimestampMixin, SoftDeleteMixin):
     # Temel bilgiler
     baslik = db.Column(db.String(200), nullable=False)
     aciklama = db.Column(db.Text)
+
+    # Kategori — yeni_giris, tekrar, genel (bkz. EGITIM_KATEGORILERI)
+    egitim_kategorisi = db.Column(db.String(20), default='genel',
+                                  nullable=False, server_default='genel')
     
     # Proje bağlantısı (opsiyonel - proje bazlı eğitimler için)
     proje_id = db.Column(db.Integer, db.ForeignKey('projeler.id'))
@@ -124,6 +140,21 @@ class Egitim(db.Model, TimestampMixin, SoftDeleteMixin):
         }
         return renk_map.get(self.durum, 'secondary')
     
+    @property
+    def kategori_etiket(self):
+        """Kategorinin okunabilir adı ('Genel Eğitim' vb.)"""
+        return EGITIM_KATEGORI_ETIKET.get(self.egitim_kategorisi or 'genel', 'Genel Eğitim')
+
+    @property
+    def kategori_renk(self):
+        """Kategori badge'i için Tailwind sınıfları (yeşil / mavi / gri)"""
+        renk_map = {
+            'yeni_giris': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+            'tekrar': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+        }
+        return renk_map.get(self.egitim_kategorisi,
+                            'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300')
+
     @property
     def gecmis_mi(self):
         """Eğitim tarihi geçmiş mi?"""

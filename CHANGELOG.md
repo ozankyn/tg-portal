@@ -34,6 +34,10 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına uyg
 ## [Unreleased]
 
 ### Eklendi
+- **Eğitim kategorisi**: `egitimler.egitim_kategorisi` (String(20), varsayılan `genel`)
+  — Yeni İşe Giriş / Tekrar / Genel. Eğitim ekle-düzenle formunda dropdown,
+  listede renkli badge (yeşil/mavi/gri) + kategori filtresi, detayda gösterim
+  (migration: `c8d2f6b3a914`, production SQL: `scripts/egitim_kategorisi_kolonu.sql`)
 - **Çalışan ehliyet bilgisi**: `calisanlar.ehliyet_sinifi` (String(10), boş = ehliyet yok).
   Çalışan ekle/düzenle formunda dropdown, çalışan detayında gösterim, aday →
   çalışan dönüşümünde otomatik aktarım
@@ -51,6 +55,8 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına uyg
   (`--dry-run` / `--apply`, mükerrer ve normalize edilemeyen kayıt raporu)
 
 ### Düzeltildi
+- Eğitim listesinde 2. sayfadan sonra sayfalama bağlantıları 500 veriyordu
+  (`url_for(..., page=p, **request.args)` — `page` iki kez geçiyordu)
 - Aday detay sayfasında sürücü belgesi bloğu var olmayan `aday.ehliyet` alanına
   baktığı için hiçbir zaman görünmüyordu; `ehliyet_sinifi` / `ehliyet_var` /
   `ehliyet_tarihi` alanlarına bağlandı
