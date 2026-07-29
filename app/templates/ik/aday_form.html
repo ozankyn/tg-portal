@@ -46,6 +46,16 @@
                                 <option value="kadin" {{ 'selected' if aday and aday.cinsiyet == 'kadin' }}>Kadın</option>
                             </select>
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Ehliyet Sınıfı</label>
+                            <select name="ehliyet_sinifi" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">Ehliyeti yok</option>
+                                <option value="VAR" {{ 'selected' if aday and aday.ehliyet_var and not aday.ehliyet_sinifi }}>Var (sınıf belirtilmemiş)</option>
+                                {% for s in ehliyet_siniflari %}
+                                <option value="{{ s }}" {{ 'selected' if aday and aday.ehliyet_sinifi == s }}>{{ s }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
                     
                     <!-- İletişim Bilgileri -->

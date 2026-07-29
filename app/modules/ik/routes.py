@@ -24,7 +24,7 @@ from app.models.ik import (
     Departman, Pozisyon, Calisan, Izin, Aday,
     EvrakTipi, AdayEvrak, AdayMedya, CalisanEvrak, IstenCikis,
     IstenCikisBildirimi,
-    SozlesmeSablonu, AdayIslemGecmisi, ADAY_DURUM_AKISI
+    SozlesmeSablonu, AdayIslemGecmisi, ADAY_DURUM_AKISI, EHLIYET_SINIFLARI
 )
 from app.models.base import CalisanDurumu
 from app.utils import (
@@ -427,6 +427,7 @@ def _calisan_liste_query():
     departman_id = request.args.get('departman_id', type=int)
     proje_id = request.args.get('proje_id', type=int)
     durum = request.args.get('durum')
+    ehliyet = request.args.get('ehliyet', '').strip()
     search = request.args.get('search', '').strip()
 
     query = Calisan.query.filter_by(is_deleted=False)
@@ -438,6 +439,10 @@ def _calisan_liste_query():
         query = query.join(HedefKadro, Calisan.kadro_id == HedefKadro.id).filter(HedefKadro.proje_id == proje_id)
     if durum:
         query = query.filter(Calisan.durum == CalisanDurumu(durum))
+    if ehliyet == 'var':
+        query = query.filter(Calisan.ehliyet_sinifi.isnot(None), Calisan.ehliyet_sinifi != '')
+    elif ehliyet == 'yok':
+        query = query.filter(db.or_(Calisan.ehliyet_sinifi.is_(None), Calisan.ehliyet_sinifi == ''))
     if search:
         search_filter = f'%{search}%'
         query = query.filter(
@@ -489,8 +494,9 @@ def calisanlar_export():
     ws = wb.active
     ws.title = 'Çalışanlar'
 
-    headers = ['Sicil No', 'Ad Soyad', 'Proje', 'Kadro', 'Pozisyon',
-               'Departman', 'Durum', 'İşe Başlama', 'Telefon', 'Email', 'IBAN']
+    headers = ['Sicil No', 'Ad Soyad', 'TC Kimlik', 'Proje', 'Kadro', 'Pozisyon',
+               'Departman', 'Durum', 'İşe Başlama', 'Telefon', 'Email', 'IBAN',
+               'Ehliyet']
     ws.append(headers)
 
     header_font = Font(bold=True, color='FFFFFF')
@@ -508,6 +514,7 @@ def calisanlar_export():
         ws.append([
             c.sicil_no or '',
             f'{c.ad} {c.soyad}',
+            c.tc_kimlik or '',
             c.kadro.proje.ad if c.kadro and c.kadro.proje else '',
             c.kadro.pozisyon_adi if c.kadro else '',
             c.pozisyon.ad if c.pozisyon else '',
@@ -517,9 +524,10 @@ def calisanlar_export():
             c.telefon or '',
             c.email or '',
             c.iban or '',
+            c.ehliyet_sinifi or 'Yok',
         ])
 
-    widths = [12, 28, 22, 22, 22, 20, 12, 14, 16, 28, 28]
+    widths = [12, 28, 13, 22, 22, 22, 20, 12, 14, 16, 28, 28, 10]
     for idx, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = w
 
@@ -615,6 +623,7 @@ def ekle():
             durum=CalisanDurumu(request.form.get('durum')) if request.form.get('durum') else CalisanDurumu.AKTIF,
             notlar=request.form.get('notlar', '').strip() or None,
             yonetici_id=int(request.form.get('yonetici_id')) if request.form.get('yonetici_id') else None,
+            ehliyet_sinifi=request.form.get('ehliyet_sinifi', '').strip() or None,
             created_by=current_user.id
         )
         
@@ -691,6 +700,7 @@ def ekle():
                           sgk_dosyalari=sgk_dosyalari,
                           kadrolar=kadrolar,
                           sablonlar=sablonlar,
+                          ehliyet_siniflari=EHLIYET_SINIFLARI,
                           durumlar=CalisanDurumu)
 
 
@@ -744,6 +754,7 @@ def duzenle(id):
         calisan.calisma_tipi = request.form.get('calisma_tipi') or None
         calisan.durum = CalisanDurumu(request.form.get('durum')) if request.form.get('durum') else CalisanDurumu.AKTIF
         calisan.notlar = request.form.get('notlar', '').strip() or None
+        calisan.ehliyet_sinifi = request.form.get('ehliyet_sinifi', '').strip() or None
         calisan.updated_by = current_user.id
 
         # Sözleşme bilgileri
@@ -817,6 +828,7 @@ def duzenle(id):
                           kadrolar=kadrolar,
                           sablonlar=sablonlar,
                           yoneticiler=yoneticiler,
+                          ehliyet_siniflari=EHLIYET_SINIFLARI,
                           durumlar=CalisanDurumu)
 
 
@@ -832,6 +844,7 @@ def _aday_liste_query():
     proje_id = request.args.get('proje_id', type=int)
     il = request.args.get('il', '').strip()
     ilce = request.args.get('ilce', '').strip()
+    ehliyet = request.args.get('ehliyet', '').strip()
     search = request.args.get('search', '').strip()
     iletisim = request.args.get('iletisim', '').strip()
 
@@ -853,6 +866,16 @@ def _aday_liste_query():
         query = query.filter(Aday.il == il)
     if ilce:
         query = query.filter(Aday.ilce == ilce)
+    # Ehliyet: eski kayıtlarda yalnızca ehliyet_var işaretli olabilir,
+    # yeni kayıtlarda sınıf da doluyor — ikisi birlikte değerlendirilir.
+    _ehliyet_var_kosul = db.or_(
+        Aday.ehliyet_var.is_(True),
+        db.and_(Aday.ehliyet_sinifi.isnot(None), Aday.ehliyet_sinifi != ''),
+    )
+    if ehliyet == 'var':
+        query = query.filter(_ehliyet_var_kosul)
+    elif ehliyet == 'yok':
+        query = query.filter(db.not_(_ehliyet_var_kosul))
     if search:
         search_filter = f'%{search}%'
         query = query.filter(
@@ -914,6 +937,16 @@ def aday_liste():
                           son_iletisim=son_iletisim)
 
 
+def _aday_ehliyet_text(aday):
+    """Aday ehliyet bilgisini tek metne indirger: 'B', 'Var' veya 'Yok'.
+
+    Eski kayıtlarda sınıf girilmeden yalnızca ehliyet_var işaretlenmiş olabilir.
+    """
+    if aday.ehliyet_sinifi:
+        return aday.ehliyet_sinifi
+    return 'Var' if aday.ehliyet_var else 'Yok'
+
+
 def _aday_org_bilgisi(aday):
     """Adayın kadrosundan (Direktörlük, Müdürlük) bilgisini çıkarır.
     Önce HedefKadro FK alanları, yoksa pozisyon_adi içinden parse edilir.
@@ -968,7 +1001,7 @@ def adaylar_export():
                'Planlı Başlangıç Tarihi',
                'İl', 'İlçe', 'Üst Beden', 'Alt Beden', 'Ayakkabı No',
                'Kargo Şubesi', 'TG\'de Çalıştı', 'Seyahat Engeli',
-               'Askerlik', 'Başvuru Kaynağı',
+               'Askerlik', 'Ehliyet', 'Başvuru Kaynağı',
                'Son İletişim Tarihi', 'Son İletişim Tipi', 'Arayan']
     ws.append(headers)
 
@@ -1032,6 +1065,7 @@ def adaylar_export():
             'Evet' if a.tg_calistimi else 'Hayır',
             'Var' if a.seyahat_engeli else 'Yok',
             a.askerlik_durumu or '',
+            _aday_ehliyet_text(a),
             a.basvuru_kaynak_text if a.basvuru_kaynak else '',
             son_iletisim_tarihi,
             son_iletisim_tipi,
@@ -1039,7 +1073,7 @@ def adaylar_export():
         ])
 
     widths = [28, 13, 28, 9, 16, 28, 14, 22, 22, 22, 24, 18, 18,
-              14, 14, 10, 10, 10, 26, 12, 14, 12, 18,
+              14, 14, 10, 10, 10, 26, 12, 14, 12, 10, 18,
               18, 18, 20]
     for idx, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = w
@@ -1091,6 +1125,11 @@ def aday_duzenle(id):
         aday.tc_kimlik = request.form.get('tc_kimlik', '').strip() or None
         aday.dogum_tarihi = datetime.strptime(request.form.get('dogum_tarihi'), '%Y-%m-%d').date() if request.form.get('dogum_tarihi') else None
         aday.cinsiyet = request.form.get('cinsiyet') or None
+        _ehliyet_sec = request.form.get('ehliyet_sinifi', '').strip()
+        # 'VAR' = ehliyeti var ama sınıfı bilinmiyor (başvuru formunda sınıf
+        # seçmeden işaretlemiş adaylar); boş = ehliyet yok
+        aday.ehliyet_var = bool(_ehliyet_sec)
+        aday.ehliyet_sinifi = None if _ehliyet_sec in ('', 'VAR') else _ehliyet_sec
         aday.adres = request.form.get('adres', '').strip() or None
         aday.il = request.form.get('il', '').strip() or None
         aday.ilce = request.form.get('ilce', '').strip() or None
@@ -1108,7 +1147,8 @@ def aday_duzenle(id):
     
     return render_template('ik/aday_form.html',
                           aday=aday,
-                          pozisyonlar=pozisyonlar)
+                          pozisyonlar=pozisyonlar,
+                          ehliyet_siniflari=EHLIYET_SINIFLARI)
 
 @ik_bp.route('/aday/<int:id>')
 @login_required
@@ -2824,6 +2864,8 @@ def aday_calisana_donustur(id):
                         calisan.sicil_no = sicil_no
                     if aday.iban and not calisan.iban:
                         calisan.iban = aday.iban
+                    if aday.ehliyet_sinifi and not calisan.ehliyet_sinifi:
+                        calisan.ehliyet_sinifi = aday.ehliyet_sinifi
                     # Ayrılış bilgilerini temizle, aktif yap
                     calisan.isten_ayrilma = None
                     calisan.ayrilma_nedeni = None
@@ -2849,6 +2891,7 @@ def aday_calisana_donustur(id):
                         egitim_durumu=aday.egitim_durumu,
                         beden=aday.ust_beden,
                         kargo_subesi=aday.kargo_subesi,
+                        ehliyet_sinifi=aday.ehliyet_sinifi,
                         pozisyon_id=aday.pozisyon_id,
                         kadro_id=aday.kadro_id,
                         sicil_no=sicil_no,
@@ -4032,6 +4075,9 @@ def aday_ekle():
             flash('Bu telefon numarası zaten kayıtlı.', 'danger')
             return redirect(url_for('ik.aday_ekle'))
 
+        # 'VAR' = ehliyeti var ama sınıfı bilinmiyor; boş = ehliyet yok
+        ehliyet_sec = request.form.get('ehliyet_sinifi', '').strip()
+
         aday = Aday(
             ad=request.form.get('ad', '').strip(),
             soyad=request.form.get('soyad', '').strip(),
@@ -4040,6 +4086,8 @@ def aday_ekle():
             tc_kimlik=request.form.get('tc_kimlik', '').strip() or None,
             dogum_tarihi=datetime.strptime(request.form.get('dogum_tarihi'), '%Y-%m-%d').date() if request.form.get('dogum_tarihi') else None,
             cinsiyet=request.form.get('cinsiyet') or None,
+            ehliyet_var=bool(ehliyet_sec),
+            ehliyet_sinifi=None if ehliyet_sec in ('', 'VAR') else ehliyet_sec,
             adres=request.form.get('adres', '').strip() or None,
             il=request.form.get('il', '').strip() or None,
             ilce=request.form.get('ilce', '').strip() or None,
@@ -4063,7 +4111,8 @@ def aday_ekle():
     
     return render_template('ik/aday_form.html',
                           aday=None,
-                          pozisyonlar=pozisyonlar)
+                          pozisyonlar=pozisyonlar,
+                          ehliyet_siniflari=EHLIYET_SINIFLARI)
 
 
 

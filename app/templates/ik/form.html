@@ -105,9 +105,20 @@
                         <option value="bosanmis" {% if calisan and calisan.medeni_durum == 'bosanmis' %}selected{% endif %}>Boşanmış</option>
                     </select>
                 </div>
+                <div>
+                    <label class="block mb-2 text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase tracking-wider">
+                        Ehliyet Sınıfı
+                    </label>
+                    <select name="ehliyet_sinifi" class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
+                        <option value="">Ehliyeti yok</option>
+                        {% for s in ehliyet_siniflari %}
+                        <option value="{{ s }}" {% if calisan and calisan.ehliyet_sinifi == s %}selected{% endif %}>{{ s }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
         </div>
-        
+
         <!-- İletişim Bilgileri -->
         <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 md:p-8 shadow-sm">
             <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border-light dark:border-border-dark">

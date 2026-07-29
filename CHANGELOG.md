@@ -34,11 +34,29 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına uyg
 ## [Unreleased]
 
 ### Eklendi
+- **Çalışan ehliyet bilgisi**: `calisanlar.ehliyet_sinifi` (String(10), boş = ehliyet yok).
+  Çalışan ekle/düzenle formunda dropdown, çalışan detayında gösterim, aday →
+  çalışan dönüşümünde otomatik aktarım
+  (migration: `b1c4e7a9f250`, production SQL: `scripts/calisan_ehliyet_kolonu.sql`)
+- **Ehliyet filtresi**: aday ve çalışan listelerinde Var/Yok/Tümü filtresi
+- **Excel export kolonları**: çalışan export'una `TC Kimlik` + `Ehliyet`,
+  aday export'una `Ehliyet`
+- İK aday ekle/düzenle formuna ehliyet sınıfı alanı ("Var (sınıf belirtilmemiş)"
+  seçeneği, sınıfsız işaretlenmiş eski kayıtları korur)
+
 - **Telefon normalizasyonu**: `app/utils.py` içinde `normalize_telefon()` — tüm cep
   numaraları `05XXXXXXXXX` formatına indirgenir (İK çalışan/aday, kariyer başvuru,
   başvuru daveti, beyan doğrulama, kullanıcı formları)
 - `scripts/telefon_normalize.py` — mevcut DB kayıtları için toplu düzeltme
   (`--dry-run` / `--apply`, mükerrer ve normalize edilemeyen kayıt raporu)
+
+### Düzeltildi
+- Aday detay sayfasında sürücü belgesi bloğu var olmayan `aday.ehliyet` alanına
+  baktığı için hiçbir zaman görünmüyordu; `ehliyet_sinifi` / `ehliyet_var` /
+  `ehliyet_tarihi` alanlarına bağlandı
+- Açık başvuru formunda zorunlu foto/video, geçersiz format veya boyut aşımında
+  sessizce atlanıyor ve başvuru medyasız tamamlanıyordu; format/boyut kontrolü
+  aday kaydı oluşturulmadan önceye alındı
 
 ### Değiştirildi
 - **SMS maliyet optimizasyonu**: NetGSM gönderiminde ASCII metinler `dil=EN` ile

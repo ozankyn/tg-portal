@@ -88,6 +88,13 @@
                 <option value="{{ p.id }}" {% if request.args.get('proje_id')|int == p.id %}selected{% endif %}>{{ p.ad }}</option>
                 {% endfor %}
             </select>
+
+            <!-- Ehliyet Filter -->
+            <select name="ehliyet" onchange="this.form.submit()" class="h-9 px-3 rounded-lg text-xs font-medium bg-gray-100 dark:bg-[#111418] border border-border-light dark:border-border-dark focus:ring-primary focus:border-primary">
+                <option value="">Ehliyet: Tümü</option>
+                <option value="var" {% if request.args.get('ehliyet') == 'var' %}selected{% endif %}>Ehliyeti Var</option>
+                <option value="yok" {% if request.args.get('ehliyet') == 'yok' %}selected{% endif %}>Ehliyeti Yok</option>
+            </select>
         </div>
         
         <!-- Search -->
@@ -234,7 +241,7 @@
         </p>
         <div class="flex items-center gap-1">
             {% if pagination.has_prev %}
-            <a href="{{ url_for('ik.liste', page=pagination.prev_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), proje_id=request.args.get('proje_id'), search=request.args.get('search')) }}" 
+            <a href="{{ url_for('ik.liste', page=pagination.prev_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), proje_id=request.args.get('proje_id'), ehliyet=request.args.get('ehliyet'), search=request.args.get('search')) }}" 
                class="p-1.5 rounded-lg border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-[#252b36] transition-colors">
                 <span class="material-symbols-outlined text-lg">chevron_left</span>
             </a>
@@ -249,7 +256,7 @@
                     {% if page_num == pagination.page %}
                     <span class="w-8 h-8 rounded-lg bg-primary text-white text-xs font-bold flex items-center justify-center">{{ page_num }}</span>
                     {% else %}
-                    <a href="{{ url_for('ik.liste', page=page_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), proje_id=request.args.get('proje_id'), search=request.args.get('search')) }}" 
+                    <a href="{{ url_for('ik.liste', page=page_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), proje_id=request.args.get('proje_id'), ehliyet=request.args.get('ehliyet'), search=request.args.get('search')) }}" 
                        class="w-8 h-8 rounded-lg hover:bg-gray-200 dark:hover:bg-[#252b36] text-xs font-bold flex items-center justify-center transition-colors">
                         {{ page_num }}
                     </a>
@@ -260,7 +267,7 @@
             {% endfor %}
             
             {% if pagination.has_next %}
-            <a href="{{ url_for('ik.liste', page=pagination.next_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), proje_id=request.args.get('proje_id'), search=request.args.get('search')) }}" 
+            <a href="{{ url_for('ik.liste', page=pagination.next_num, durum=request.args.get('durum'), departman_id=request.args.get('departman_id'), proje_id=request.args.get('proje_id'), ehliyet=request.args.get('ehliyet'), search=request.args.get('search')) }}" 
                class="p-1.5 rounded-lg border border-border-light dark:border-border-dark hover:bg-white dark:hover:bg-[#252b36] transition-colors">
                 <span class="material-symbols-outlined text-lg">chevron_right</span>
             </a>

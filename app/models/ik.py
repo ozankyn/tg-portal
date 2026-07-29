@@ -94,7 +94,8 @@ class Calisan(db.Model, TimestampMixin, SoftDeleteMixin, AuditMixin):
     yemek_karti = db.Column(db.String(50))  # Yemek kartı numarası
     beden = db.Column(db.String(10))  # Kıyafet bedeni (S, M, L, XL, XXL)
     kargo_subesi = db.Column(db.String(500))  # Kargo şubesi
-    
+    ehliyet_sinifi = db.Column(db.String(10))  # B, A1, A2, C, D, E, BE, CE — boş = ehliyet yok
+
     ise_baslama = db.Column(db.Date)
     isten_ayrilma = db.Column(db.Date)
     ayrilma_nedeni = db.Column(db.Text)
@@ -216,6 +217,9 @@ BASVURU_KAYNAK_TURLERI = [
 
 # Beden seçenekleri (üst/alt giyim)
 BEDEN_SECENEKLERI = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']
+
+# Ehliyet sınıfları — boş değer "ehliyet yok" demektir
+EHLIYET_SINIFLARI = ['A1', 'A2', 'A', 'B', 'BE', 'C', 'CE', 'D', 'E']
 
 
 class Aday(db.Model, TimestampMixin, SoftDeleteMixin):

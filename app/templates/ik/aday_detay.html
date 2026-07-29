@@ -840,12 +840,21 @@
                     <span class="text-sm font-medium text-[#111418] dark:text-white">{{ '{:,.0f}'.format(aday.maas_beklentisi).replace(',', '.') }} ₺</span>
                 </div>
                 {% endif %}
-                {% if aday.ehliyet %}
                 <div class="flex flex-col gap-1">
                     <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Sürücü Belgesi</span>
-                    <span class="text-sm font-medium text-[#111418] dark:text-white">{{ aday.ehliyet }}</span>
+                    <span class="text-sm font-medium text-[#111418] dark:text-white">
+                        {% if aday.ehliyet_sinifi %}
+                            {{ aday.ehliyet_sinifi }} sınıfı
+                        {% elif aday.ehliyet_var %}
+                            Var
+                        {% else %}
+                            Yok
+                        {% endif %}
+                        {% if aday.ehliyet_tarihi %}
+                        <span class="text-text-muted dark:text-text-muted-dark">({{ aday.ehliyet_tarihi.strftime('%d.%m.%Y') }})</span>
+                        {% endif %}
+                    </span>
                 </div>
-                {% endif %}
                 {% if aday.askerlik_durumu %}
                 <div class="flex flex-col gap-1">
                     <span class="text-xs font-bold text-text-muted dark:text-text-muted-dark uppercase">Askerlik Durumu</span>
