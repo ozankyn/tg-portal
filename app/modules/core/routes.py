@@ -8,7 +8,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models.core import User, Role, Permission, AuditLog
-from app.utils import admin_required, admin_or_permission_required
+from app.utils import admin_required, admin_or_permission_required, normalize_telefon
 
 core_bp = Blueprint('core', __name__)
 
@@ -288,6 +288,22 @@ def dashboard():
 
 # ==================== PROFIL ====================
 
+def _telefon_al(ham):
+    """Kullanıcı telefonunu normalize eder.
+
+    Cep numarası formatına oturmayan girişler (sabit hat, dahili no vb.)
+    veri kaybı olmasın diye girildiği gibi saklanır; kullanıcı uyarılır.
+    """
+    ham = (ham or '').strip()
+    if not ham:
+        return None
+    telefon = normalize_telefon(ham)
+    if not telefon:
+        flash('Telefon numarası cep telefonu formatına uymuyor, girdiğiniz '
+              'gibi kaydedildi. Önerilen format: 05XX XXX XX XX', 'warning')
+        return ham
+    return telefon
+
 @core_bp.route('/profil', methods=['GET', 'POST'])
 @login_required
 def profil():
@@ -295,7 +311,7 @@ def profil():
     if request.method == 'POST':
         current_user.ad = request.form.get('ad', '').strip()
         current_user.soyad = request.form.get('soyad', '').strip()
-        current_user.telefon = request.form.get('telefon', '').strip()
+        current_user.telefon = _telefon_al(request.form.get('telefon'))
         
         # Şifre değişikliği
         new_password = request.form.get('new_password')
@@ -343,7 +359,7 @@ def admin_kullanici_ekle():
             email=email,
             ad=request.form.get('ad', '').strip(),
             soyad=request.form.get('soyad', '').strip(),
-            telefon=request.form.get('telefon', '').strip(),
+            telefon=_telefon_al(request.form.get('telefon')),
             is_admin=request.form.get('is_admin') == 'on',
             is_active=True
         )
@@ -376,7 +392,7 @@ def admin_kullanici_duzenle(id):
     if request.method == 'POST':
         user.ad = request.form.get('ad', '').strip()
         user.soyad = request.form.get('soyad', '').strip()
-        user.telefon = request.form.get('telefon', '').strip()
+        user.telefon = _telefon_al(request.form.get('telefon'))
         user.is_admin = request.form.get('is_admin') == 'on'
         user.is_active = request.form.get('is_active') == 'on'
         

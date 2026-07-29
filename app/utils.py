@@ -3,6 +3,7 @@
 TG Portal - Utility Functions & Decorators
 """
 
+import re
 from functools import wraps
 from flask import abort, flash, redirect, url_for
 from flask_login import current_user
@@ -123,6 +124,118 @@ def format_currency(amount, currency='TRY'):
 def enum_choices(enum_class):
     """Enum sınıfını form choices listesine çevirir"""
     return [(e.value, e.name.replace('_', ' ').title()) for e in enum_class]
+
+
+# ============================================================
+# TELEFON NORMALIZASYONU
+# ============================================================
+
+def normalize_telefon(telefon):
+    """Türk cep telefonu numarasını 05XXXXXXXXX formatına çevirir.
+
+    Boşluk, tire, parantez, nokta, slash temizlenir; +90 / 90 / 0090
+    önekleri 0'a indirgenir; başında 0 olmayan 10 haneli 5XX numaralara
+    0 eklenir.
+
+    Geçerli bir cep numarası üretilemezse None döner (sabit hat, eksik
+    hane, harf içeren giriş vb.).
+
+    >>> normalize_telefon('+90 (532) 123 45 67')
+    '05321234567'
+    >>> normalize_telefon('5321234567')
+    '05321234567'
+    >>> normalize_telefon('2123456789')   # sabit hat
+    None
+    """
+    if telefon is None:
+        return None
+
+    s = str(telefon).strip()
+    if not s:
+        return None
+
+    # Ayraçları temizle (boşluk, tire, parantez, nokta, slash, alt çizgi)
+    s = re.sub(r'[\s\-\(\)\.\/_]', '', s)
+
+    # Uluslararası önekler
+    if s.startswith('+90'):
+        s = '0' + s[3:]
+    elif s.startswith('0090'):
+        s = '0' + s[4:]
+    elif s.startswith('+'):
+        s = s[1:]
+
+    # Ayraç temizliği sonrası sadece rakam kalmalı
+    if not s.isdigit():
+        return None
+
+    # 905XXXXXXXXX (12 hane) -> 05XXXXXXXXX
+    if s.startswith('90') and len(s) == 12:
+        s = '0' + s[2:]
+
+    # 5XXXXXXXXX (10 hane) -> 05XXXXXXXXX
+    if s.startswith('5') and len(s) == 10:
+        s = '0' + s
+
+    # Sonuç 05XXXXXXXXX (11 hane) değilse geçersiz
+    if len(s) == 11 and s.startswith('05'):
+        return s
+    return None
+
+
+# ============================================================
+# SMS METİN YARDIMCILARI
+# ============================================================
+
+# Türkçe -> ASCII karakter eşlemesi (GSM-7 alfabesine sığması için)
+_TR_ASCII = str.maketrans({
+    'ç': 'c', 'Ç': 'C', 'ğ': 'g', 'Ğ': 'G', 'ı': 'i', 'İ': 'I',
+    'ö': 'o', 'Ö': 'O', 'ş': 's', 'Ş': 'S', 'ü': 'u', 'Ü': 'U',
+    'â': 'a', 'Â': 'A', 'î': 'i', 'Î': 'I', 'û': 'u', 'Û': 'U',
+})
+
+
+def sms_ascii(metin):
+    """SMS metnindeki Türkçe karakterleri ASCII karşılıklarına çevirir.
+
+    Türkçe karakter içeren SMS UCS-2 ile gönderilir ve segment başına
+    70 karaktere düşer; saf ASCII metin GSM-7 ile 160 karakter/segment
+    gider. Maliyeti yarıdan fazla düşürür.
+    """
+    if not metin:
+        return metin
+    donusen = str(metin).translate(_TR_ASCII)
+    # Eşlemede olmayan diğer non-ASCII karakterleri de ayıkla
+    return donusen.encode('ascii', 'ignore').decode('ascii')
+
+
+def sms_turkce_mi(metin):
+    """Metin GSM-7 dışı (Türkçe/unicode) karakter içeriyor mu?"""
+    if not metin:
+        return False
+    try:
+        str(metin).encode('ascii')
+        return False
+    except UnicodeEncodeError:
+        return True
+
+
+def sms_segment_sayisi(metin):
+    """SMS'in kaç segment (kredi) tutacağını hesaplar.
+
+    ASCII (GSM-7): 160 tek segment, çok parçalıda 153/segment
+    Türkçe (UCS-2): 70 tek segment, çok parçalıda 67/segment
+    """
+    if not metin:
+        return 0
+    uzunluk = len(str(metin))
+    if sms_turkce_mi(metin):
+        tek, coklu = 70, 67
+    else:
+        tek, coklu = 160, 153
+    if uzunluk <= tek:
+        return 1
+    return -(-uzunluk // coklu)  # ceil
 
 
 # ============================================================

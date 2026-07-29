@@ -33,6 +33,22 @@ Format [Keep a Changelog](https://keepachangelog.com/tr/1.0.0/) standardına uyg
 
 ## [Unreleased]
 
+### Eklendi
+- **Telefon normalizasyonu**: `app/utils.py` içinde `normalize_telefon()` — tüm cep
+  numaraları `05XXXXXXXXX` formatına indirgenir (İK çalışan/aday, kariyer başvuru,
+  başvuru daveti, beyan doğrulama, kullanıcı formları)
+- `scripts/telefon_normalize.py` — mevcut DB kayıtları için toplu düzeltme
+  (`--dry-run` / `--apply`, mükerrer ve normalize edilemeyen kayıt raporu)
+
+### Değiştirildi
+- **SMS maliyet optimizasyonu**: NetGSM gönderiminde ASCII metinler `dil=EN` ile
+  GSM-7 (160 karakter/segment) olarak gider; Türkçe karakterli metinler `dil=TR`
+  ile gönderilmeye devam eder
+- Haftalık beyan davet/hatırlatma SMS'i ASCII'ye çevrilip tek segmente (160
+  karakter) sığdırılıyor — uzun proje/hafta adlarında metin kademeli kısaltılır
+- `send_netgsm_sms()` gönderim öncesi numarayı normalize eder; geçersiz numaralar
+  gönderilmez, log'a uyarı yazılır
+
 ### Planlanıyor
 - Bildirim sistemi genişletmesi (izin, masraf, sözleşme hatırlatmaları)
 - Dashboard widget'ları

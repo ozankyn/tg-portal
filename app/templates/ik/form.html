@@ -127,6 +127,9 @@
                         Telefon Numarası
                     </label>
                     <input type="tel" name="telefon" value="{{ calisan.telefon if calisan else '' }}" placeholder="05XX XXX XX XX"
+                           maxlength="11" pattern="05[0-9]{9}" inputmode="tel"
+                           title="Cep telefonunu 05XXXXXXXXX formatında girin"
+                           oninput="this.value=this.value.replace(/[^0-9]/g,'').substring(0,11)"
                            class="bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark rounded-lg text-sm focus:ring-primary focus:border-primary block w-full p-2.5">
                 </div>
                 <div>

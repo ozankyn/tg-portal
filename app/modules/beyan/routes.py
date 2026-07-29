@@ -24,6 +24,7 @@ from app.models.ik import Calisan
 from app.models.proje import HedefKadro
 from app.models.haftalik_beyan import HaftalikBeyan, BeyanKayit
 from app.modules.basvuru.routes import send_netgsm_sms
+from app.utils import normalize_telefon
 
 beyan_bp = Blueprint('beyan', __name__)
 
@@ -51,7 +52,11 @@ def _proje_aktif_calisanlar(proje_id):
 
 
 def _calisan_bul(proje_id, telefon):
-    """Girilen telefona göre projedeki aktif çalışanı bulur."""
+    """Girilen telefona göre projedeki aktif çalışanı bulur.
+
+    Eşleştirme son 10 hane üzerinden yapılır; DB'de henüz normalize
+    edilmemiş kayıtlar da bulunabilsin diye format bağımsızdır.
+    """
     hedef = _normalize_tel(telefon)
     if not hedef:
         return None
@@ -82,10 +87,17 @@ def beyan_sayfa(id):
 
         # 1) Doğrulama kodu gönder
         if action == 'send_code':
-            telefon = (request.form.get('telefon') or '').strip()
+            telefon_ham = (request.form.get('telefon') or '').strip()
             # "Kodu tekrar gönder" telefon alanı olmadan gelir -> session'daki numarayı kullan
-            if not telefon and session.get(otp_key):
-                telefon = session[otp_key].get('telefon', '')
+            if not telefon_ham and session.get(otp_key):
+                telefon_ham = session[otp_key].get('telefon', '')
+
+            telefon = normalize_telefon(telefon_ham)
+            if not telefon:
+                flash('Geçerli bir cep telefonu numarası girin. '
+                      'Örnek: 05XX XXX XX XX', 'danger')
+                return redirect(url_for('beyan.beyan_sayfa', id=id))
+
             calisan = _calisan_bul(beyan.proje_id, telefon)
             if not calisan:
                 flash('Bu telefon numarası bu projedeki aktif çalışanlar '
@@ -183,7 +195,7 @@ def beyan_kaydet(id):
         kayit.generate_token()
         db.session.add(kayit)
 
-    kayit.telefon = calisan.telefon
+    kayit.telefon = normalize_telefon(calisan.telefon) or calisan.telefon
     kayit.ad_soyad = calisan.full_name
     kayit.cuma = cuma
     kayit.cumartesi = cumartesi

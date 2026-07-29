@@ -56,7 +56,10 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div>
                             <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Telefon *</label>
-                            <input type="tel" name="telefon" required placeholder="5XX XXX XX XX" value="{{ aday.telefon if aday else '' }}"
+                            <input type="tel" name="telefon" required placeholder="05XX XXX XX XX" value="{{ aday.telefon if aday else '' }}"
+                                   maxlength="11" pattern="05[0-9]{9}" inputmode="tel"
+                                   title="Cep telefonunu 05XXXXXXXXX formatında girin"
+                                   oninput="this.value=this.value.replace(/[^0-9]/g,'').substring(0,11)"
                                    class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>

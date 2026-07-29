@@ -31,6 +31,7 @@ from app.utils import (
     permission_required, paginate_query,
     apply_calisan_scope, calisan_in_scope,
     apply_aday_scope, aday_in_scope, user_scoped_projeler,
+    normalize_telefon,
 )
 
 ik_bp = Blueprint('ik', __name__)
@@ -586,7 +587,13 @@ def ekle():
         if tc and Calisan.query.filter_by(tc_kimlik=tc, is_deleted=False).first():
             flash('Bu TC Kimlik numarası zaten kayıtlı.', 'danger')
             return redirect(url_for('ik.ekle'))
-        
+
+        telefon_ham = request.form.get('telefon', '').strip()
+        telefon = normalize_telefon(telefon_ham)
+        if telefon_ham and not telefon:
+            flash('Geçersiz telefon numarası. Örnek format: 05XX XXX XX XX', 'danger')
+            return redirect(url_for('ik.ekle'))
+
         calisan = Calisan(
             sicil_no=None if request.form.get('sicil_no', '').strip() in ('', 'None', 'none') else request.form.get('sicil_no', '').strip(),
             ad=request.form.get('ad', '').strip(),
@@ -595,7 +602,7 @@ def ekle():
             dogum_tarihi=datetime.strptime(request.form.get('dogum_tarihi'), '%Y-%m-%d').date() if request.form.get('dogum_tarihi') else None,
             cinsiyet=request.form.get('cinsiyet') or None,
             email=request.form.get('email', '').strip() or None,
-            telefon=request.form.get('telefon', '').strip() or None,
+            telefon=telefon,
             adres=request.form.get('adres', '').strip() or None,
             il=request.form.get('il', '').strip() or None,
             ilce=request.form.get('ilce', '').strip() or None,
@@ -709,7 +716,13 @@ def duzenle(id):
             if existing:
                 flash('Bu TC Kimlik numarası başka bir çalışanda kayıtlı.', 'danger')
                 return redirect(url_for('ik.duzenle', id=id))
-        
+
+        telefon_ham = request.form.get('telefon', '').strip()
+        telefon = normalize_telefon(telefon_ham)
+        if telefon_ham and not telefon:
+            flash('Geçersiz telefon numarası. Örnek format: 05XX XXX XX XX', 'danger')
+            return redirect(url_for('ik.duzenle', id=id))
+
         calisan.sicil_no = None if request.form.get('sicil_no', '').strip() in ('', 'None', 'none') else request.form.get('sicil_no', '').strip()
         calisan.ad = request.form.get('ad', '').strip()
         calisan.soyad = request.form.get('soyad', '').strip()
@@ -717,7 +730,7 @@ def duzenle(id):
         calisan.dogum_tarihi = datetime.strptime(request.form.get('dogum_tarihi'), '%Y-%m-%d').date() if request.form.get('dogum_tarihi') else None
         calisan.cinsiyet = request.form.get('cinsiyet') or None
         calisan.email = request.form.get('email', '').strip() or None
-        calisan.telefon = request.form.get('telefon', '').strip() or None
+        calisan.telefon = telefon
         calisan.iban = request.form.get('iban', '').strip().replace(' ', '').upper() or None
         calisan.adres = request.form.get('adres', '').strip() or None
         calisan.il = request.form.get('il', '').strip() or None
@@ -1055,7 +1068,11 @@ def aday_duzenle(id):
         return redirect(url_for('ik.aday_liste'))
 
     if request.method == 'POST':
-        telefon = request.form.get('telefon', '').strip()
+        telefon_ham = request.form.get('telefon', '').strip()
+        telefon = normalize_telefon(telefon_ham)
+        if telefon_ham and not telefon:
+            flash('Geçersiz telefon numarası. Örnek format: 05XX XXX XX XX', 'danger')
+            return redirect(url_for('ik.aday_duzenle', id=id))
         if telefon:
             existing = Aday.query.filter(
                 Aday.telefon == telefon,
@@ -1065,7 +1082,7 @@ def aday_duzenle(id):
             if existing:
                 flash('Bu telefon numarası başka bir adayda kayıtlı.', 'danger')
                 return redirect(url_for('ik.aday_duzenle', id=id))
-        
+
         aday.ad = request.form.get('ad', '').strip()
         aday.soyad = request.form.get('soyad', '').strip()
         aday.telefon = telefon
@@ -2823,7 +2840,7 @@ def aday_calisana_donustur(id):
                         dogum_yeri=aday.dogum_yeri,
                         cinsiyet=aday.cinsiyet,
                         medeni_durum=aday.medeni_durum,
-                        telefon=aday.telefon,
+                        telefon=normalize_telefon(aday.telefon),
                         email=aday.email,
                         adres=aday.adres,
                         il=aday.il,
@@ -4006,11 +4023,15 @@ def aday_ekle():
     """Yeni aday ekle (manuel)"""
     if request.method == 'POST':
         # Telefon kontrolü
-        telefon = request.form.get('telefon', '').strip()
+        telefon_ham = request.form.get('telefon', '').strip()
+        telefon = normalize_telefon(telefon_ham)
+        if telefon_ham and not telefon:
+            flash('Geçersiz telefon numarası. Örnek format: 05XX XXX XX XX', 'danger')
+            return redirect(url_for('ik.aday_ekle'))
         if telefon and Aday.query.filter_by(telefon=telefon, is_deleted=False).first():
             flash('Bu telefon numarası zaten kayıtlı.', 'danger')
             return redirect(url_for('ik.aday_ekle'))
-        
+
         aday = Aday(
             ad=request.form.get('ad', '').strip(),
             soyad=request.form.get('soyad', '').strip(),
@@ -4086,7 +4107,7 @@ def kullanici_olustur(id):
         email=calisan.email,
         ad=calisan.ad,
         soyad=calisan.soyad,
-        telefon=calisan.telefon,
+        telefon=normalize_telefon(calisan.telefon),
         is_active=True,
         calisan_id=calisan.id
     )

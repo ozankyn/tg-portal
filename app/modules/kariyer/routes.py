@@ -12,6 +12,7 @@ from app.models.ik import (
     EvrakTipi, AdayEvrak, AdayMedya, SozlesmeSablonu,
 )
 from app.models.proje import HedefKadro, Proje, Musteri, Il, Ilce
+from app.utils import normalize_telefon
 
 kariyer_bp = Blueprint('kariyer', __name__)
 
@@ -196,11 +197,15 @@ def telefon_dogrula(kadro_id):
         action = request.form.get('action')
 
         if action == 'send_code':
-            telefon = (request.form.get('telefon') or '').strip()
-            if telefon and not telefon.startswith('0') and not telefon.startswith('+'):
-                telefon = '0' + telefon
-            if not telefon:
+            telefon_ham = (request.form.get('telefon') or '').strip()
+            if not telefon_ham:
                 flash('Telefon numarası gereklidir.', 'danger')
+                return redirect(url_for('kariyer.telefon_dogrula', kadro_id=kadro_id))
+
+            telefon = normalize_telefon(telefon_ham)
+            if not telefon:
+                flash('Geçerli bir cep telefonu numarası girin. '
+                      'Örnek: 05XX XXX XX XX', 'danger')
                 return redirect(url_for('kariyer.telefon_dogrula', kadro_id=kadro_id))
 
             kod = str(random.randint(100000, 999999))
@@ -329,7 +334,10 @@ def basvuru_form(kadro_id):
         # Mükerrer başvuru kontrolü — aynı kadroya aynı TC veya telefon ile
         # daha önce başvuru yapılmış mı? (silinmiş kayıtlar sayılmaz)
         tc_kimlik = request.form.get('tc_kimlik')
-        telefon = bsv.get('telefon') if bsv.get('telefon_dogrulandi') else request.form.get('telefon')
+        telefon = (bsv.get('telefon') if bsv.get('telefon_dogrulandi')
+                   else normalize_telefon(request.form.get('telefon')))
+        if not telefon:
+            hatalar.append('Geçerli bir cep telefonu numarası girin. Örnek: 05XX XXX XX XX')
         if not hatalar:
             mukerrer = Aday.query.filter(
                 Aday.kadro_id == kadro_id,
@@ -384,7 +392,7 @@ def basvuru_form(kadro_id):
         
         # İletişim — doğrulanmış telefon session'dan alınır
         aday.email = request.form.get('email')
-        aday.telefon = bsv.get('telefon') if bsv.get('telefon_dogrulandi') else request.form.get('telefon')
+        aday.telefon = telefon  # yukarıda normalize edildi (05XXXXXXXXX)
         aday.adres = request.form.get('adres')
         aday.il = request.form.get('il')
         aday.ilce = request.form.get('ilce')

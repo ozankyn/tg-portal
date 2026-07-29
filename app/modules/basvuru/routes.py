@@ -9,6 +9,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from datetime import datetime
 from app import db
 from app.models.ik import Aday
+from app.utils import normalize_telefon, sms_segment_sayisi, sms_turkce_mi
 import requests
 import urllib.parse
 
@@ -27,16 +28,23 @@ def send_netgsm_sms(telefon, mesaj):
         if not all([usercode, password, header]):
             current_app.logger.error("NetGSM yapılandırması eksik")
             return {'success': False, 'error': 'SMS servisi yapılandırılmamış'}
-        
-        # Telefon numarasını formatla (başında 0 olmadan, 10 hane)
-        telefon = telefon.replace(' ', '').replace('-', '').replace('(', '').replace(')', '')
-        if telefon.startswith('+90'):
-            telefon = telefon[3:]
-        elif telefon.startswith('90'):
-            telefon = telefon[2:]
-        elif telefon.startswith('0'):
-            telefon = telefon[1:]
-        
+
+        # Telefon normalizasyonu — 05XXXXXXXXX; geçersizse gönderme
+        normalize = normalize_telefon(telefon)
+        if not normalize:
+            current_app.logger.warning(f"SMS atlandı - geçersiz telefon: {telefon!r}")
+            return {'success': False, 'error': 'Geçersiz telefon numarası'}
+
+        # NetGSM başında 0 olmadan 10 hane bekler
+        telefon = normalize[1:]
+
+        # Türkçe karakter yoksa dil=EN ile GSM-7 (160 karakter/segment) gider
+        dil = 'TR' if sms_turkce_mi(mesaj) else 'EN'
+        segment = sms_segment_sayisi(mesaj)
+        if segment > 1:
+            current_app.logger.info(
+                f"SMS {segment} segment ({len(mesaj)} karakter, dil={dil}): {telefon}")
+
         # NetGSM API - GET metodu
         url = "https://api.netgsm.com.tr/sms/send/get/"
         params = {
@@ -45,9 +53,9 @@ def send_netgsm_sms(telefon, mesaj):
             'gsmno': telefon,
             'message': mesaj,
             'msgheader': header,
-            'dil': 'TR'
+            'dil': dil
         }
-        
+
         response = requests.get(url, params=params, timeout=30)
         result = response.text.strip()
         
@@ -237,7 +245,7 @@ def basvuru_form(token):
         
         # İletişim
         aday.email = request.form.get('email', aday.email)
-        aday.telefon = request.form.get('telefon', aday.telefon)
+        aday.telefon = normalize_telefon(request.form.get('telefon')) or aday.telefon
         aday.adres = request.form.get('adres')
         aday.il = request.form.get('il')
         aday.ilce = request.form.get('ilce')
@@ -351,7 +359,15 @@ def aday_davet(kadro_id):
         if not ad or not soyad or not iletisim:
             flash('Ad, soyad ve iletişim bilgisi zorunludur.', 'danger')
             return redirect(url_for('basvuru.aday_davet', kadro_id=kadro_id))
-        
+
+        if davet_tipi != 'email':
+            normalize = normalize_telefon(iletisim)
+            if not normalize:
+                flash(f'Geçersiz telefon numarası: {iletisim}. '
+                      'Örnek format: 05XX XXX XX XX', 'danger')
+                return redirect(url_for('basvuru.aday_davet', kadro_id=kadro_id))
+            iletisim = normalize
+
         # Aday oluştur
         aday = Aday(
             ad=ad,
@@ -418,7 +434,13 @@ def toplu_davet(kadro_id):
         parcalar = [p.strip() for p in satir.split(',')]
         if len(parcalar) >= 3:
             ad, soyad, iletisim = parcalar[0], parcalar[1], parcalar[2]
-            
+
+            if davet_tipi != 'email':
+                iletisim = normalize_telefon(iletisim)
+                if not iletisim:
+                    hatali += 1
+                    continue
+
             try:
                 aday = Aday(
                     ad=ad,
@@ -519,16 +541,19 @@ def telefon_dogrula(token):
         action = request.form.get('action')
         
         if action == 'send_code':
-            telefon = request.form.get('telefon')
-            if telefon:
-                if not telefon.startswith('0') and not telefon.startswith('+'):
-                    telefon = '0' + telefon
+            telefon_ham = request.form.get('telefon')
+            if telefon_ham:
+                telefon = normalize_telefon(telefon_ham)
+                if not telefon:
+                    flash('Geçerli bir cep telefonu numarası girin. '
+                          'Örnek: 05XX XXX XX XX', 'danger')
+                    return redirect(url_for('basvuru.telefon_dogrula', token=token))
                 aday.telefon = telefon
-            
+
             if not aday.telefon:
                 flash('Telefon numarası gereklidir.', 'danger')
                 return redirect(url_for('basvuru.telefon_dogrula', token=token))
-            
+
             result = send_otp_sms(aday)
             db.session.commit()
             

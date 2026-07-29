@@ -14,7 +14,8 @@ from flask_login import login_required, current_user
 from sqlalchemy import func, extract, case, text
 
 from app import db
-from app.utils import permission_required, admin_or_permission_required
+from app.utils import (permission_required, admin_or_permission_required,
+                       normalize_telefon, sms_ascii)
 
 # Modelleri import et
 from app.models.ik import Calisan, Departman
@@ -970,6 +971,30 @@ def haftalik_beyan_detay(id):
                            beyan=beyan, veri=veri, active='rapor')
 
 
+SMS_TEK_SEGMENT = 160  # ASCII (GSM-7) tek segment sınırı
+
+
+def _beyan_sms_metni(ad_soyad, proje_ad, baslik, link):
+    """Beyan davet SMS metnini 160 ASCII karaktere (tek segment) sığdırır.
+
+    Türkçe karakter SMS'i UCS-2'ye düşürüp segment başına 70 karaktere
+    indirdiği için metin ASCII'ye çevrilir. Uzun proje/hafta adlarında
+    metin kademeli olarak kısaltılır.
+    """
+    adaylar = [
+        f"Sayin {ad_soyad}, {proje_ad} {baslik} haftasi calisma gunlerinizi "
+        f"bildirin: {link} - Team Guerilla IK",
+        f"Sayin {ad_soyad}, {proje_ad} calisma gunlerinizi bildirin: {link} - TG IK",
+        f"{proje_ad} haftalik calisma beyani: {link} - TG IK",
+        f"TG Portal - Haftalik calisma beyani: {link}",
+    ]
+    for metin in adaylar:
+        metin = sms_ascii(metin)
+        if len(metin) <= SMS_TEK_SEGMENT:
+            return metin
+    return sms_ascii(adaylar[-1])[:SMS_TEK_SEGMENT]
+
+
 @rapor_bp.route('/haftalik-beyan/<int:id>/sms', methods=['POST'])
 @login_required
 @admin_or_permission_required('ik.edit')
@@ -997,12 +1022,16 @@ def haftalik_beyan_sms(id):
 
     basarili, basarisiz, telefonsuz = 0, 0, 0
     for c in hedef:
-        if not c.telefon:
+        telefon = normalize_telefon(c.telefon)
+        if not telefon:
+            if c.telefon:
+                current_app.logger.warning(
+                    f"Beyan SMS atlandı - geçersiz telefon: "
+                    f"calisan_id={c.id} tel={c.telefon!r}")
             telefonsuz += 1
             continue
-        mesaj = (f"Sayin {c.full_name}, {proje_ad} {beyan.baslik} haftasi "
-                 f"calisma gunlerinizi bildirin: {link} - Team Guerilla IK")
-        result = send_netgsm_sms(c.telefon, mesaj)
+        mesaj = _beyan_sms_metni(c.full_name, proje_ad, beyan.baslik, link)
+        result = send_netgsm_sms(telefon, mesaj)
         if result.get('success'):
             basarili += 1
         else:
@@ -1013,7 +1042,7 @@ def haftalik_beyan_sms(id):
     if basarisiz:
         mesajlar.append(f'{basarisiz} başarısız')
     if telefonsuz:
-        mesajlar.append(f'{telefonsuz} telefonsuz atlandı')
+        mesajlar.append(f'{telefonsuz} telefonsuz/geçersiz numara atlandı')
     flash(', '.join(mesajlar) + '.', 'success' if basarili else 'warning')
     return redirect(url_for('rapor.haftalik_beyan_detay', id=beyan.id))
 

@@ -122,7 +122,10 @@
                             </p>
                             {% else %}
                             <input type="tel" name="telefon" required inputmode="tel" placeholder="05XX XXX XX XX" value="{{ aday.telefon or '' }}"
+                                   maxlength="11" pattern="05[0-9]{9}"
+                                   title="Cep telefonunuzu 05XXXXXXXXX formatında girin"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p class="text-xs text-gray-500 mt-1">11 haneli, 0 ile başlayan cep numarası</p>
                             {% endif %}
                         </div>
                         <div class="md:col-span-4">
@@ -465,6 +468,18 @@
 </div>
 
 <script>
+    // Telefon: sadece rakam, 11 hane, 0 ile başlar (05XXXXXXXXX)
+    (function () {
+        const tel = document.querySelector('input[name="telefon"]');
+        if (!tel || tel.readOnly) return;
+        tel.addEventListener('input', function () {
+            let v = this.value.replace(/[^0-9]/g, '');
+            if (v.startsWith('90')) v = '0' + v.substring(2);
+            else if (v.startsWith('5')) v = '0' + v;
+            this.value = v.substring(0, 11);
+        });
+    })();
+
     // Askerlik durumu erkek adaylar için zorunlu
     (function () {
         const cinsiyet = document.getElementById('cinsiyet');
