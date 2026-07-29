@@ -18,6 +18,30 @@ kariyer_bp = Blueprint('kariyer', __name__)
 
 
 # ============================================================
+# MEDYA (FOTO/VIDEO) KURALLARI
+# Hem başvuru formu hem token'lı public yükleme aynı sınırları kullanır.
+# ============================================================
+
+_FOTO_EXTS = {'jpg', 'jpeg', 'png', 'webp'}
+_VIDEO_EXTS = {'mp4', 'mov', 'webm'}
+_FOTO_MAX = 10 * 1024 * 1024
+_VIDEO_MAX = 100 * 1024 * 1024
+
+
+def _kariyer_ext(fn):
+    return fn.rsplit('.', 1)[1].lower() if '.' in fn else ''
+
+
+def _dosya_boyut(f):
+    """Yüklenen dosyanın boyutunu okur ve imleci başa alır."""
+    import os
+    f.seek(0, os.SEEK_END)
+    boyut = f.tell()
+    f.seek(0)
+    return boyut
+
+
+# ============================================================
 # SESSION TABANLI BAŞVURU YARDIMCILARI
 # Açık başvuruda aday kaydı YALNIZCA form gönderilince oluşur.
 # KVKK onayı, telefon ve doğrulama bilgisi o ana kadar session'da tutulur.
@@ -320,16 +344,30 @@ def basvuru_form(kadro_id):
         if request.form.get('cinsiyet') == 'erkek' and not request.form.get('askerlik_durumu'):
             hatalar.append('Askerlik durumu erkek adaylar için zorunludur.')
 
-        # Kadro flag'lerine göre foto/video zorunlu kontrolü (aday oluşturmadan önce)
+        # Kadro flag'lerine göre foto/video zorunlu kontrolü (aday oluşturmadan önce).
+        # Format/boyut da burada doğrulanır: aksi halde geçersiz dosya sessizce
+        # atlanır ve "zorunlu" alan boş kalmış bir başvuru kaydedilirdi.
+        fotos, video_file = [], None
+
         if kadro.foto_gerekli:
             fotos = [f for f in request.files.getlist('medya_fotos') if f and f.filename]
             if not fotos:
                 hatalar.append('Bu pozisyon için en az bir fotoğraf yüklemeniz zorunludur.')
+            for f in fotos:
+                if _kariyer_ext(f.filename) not in _FOTO_EXTS:
+                    hatalar.append(f'{f.filename}: fotoğraf yalnızca JPG, PNG veya WEBP olabilir.')
+                elif _dosya_boyut(f) > _FOTO_MAX:
+                    hatalar.append(f'{f.filename}: fotoğraf boyutu 10 MB sınırını aşıyor.')
 
         if kadro.video_gerekli:
             video_file = request.files.get('medya_video')
             if not video_file or not video_file.filename:
+                video_file = None
                 hatalar.append('Bu pozisyon için video yüklemeniz zorunludur.')
+            elif _kariyer_ext(video_file.filename) not in _VIDEO_EXTS:
+                hatalar.append(f'{video_file.filename}: video yalnızca MP4, MOV veya WEBM olabilir.')
+            elif _dosya_boyut(video_file) > _VIDEO_MAX:
+                hatalar.append(f'{video_file.filename}: video boyutu 100 MB sınırını aşıyor.')
 
         # Mükerrer başvuru kontrolü — aynı kadroya aynı TC veya telefon ile
         # daha önce başvuru yapılmış mı? (silinmiş kayıtlar sayılmaz)
@@ -476,28 +514,14 @@ def basvuru_form(kadro_id):
                 setattr(aday, field, f"uploads/adaylar/{aday.id}/{filename}")
 
         # Tanıtım foto/video → AdayMedya
-        FOTO_EXTS = {'jpg', 'jpeg', 'png', 'webp'}
-        VIDEO_EXTS = {'mp4', 'mov', 'webm'}
-        FOTO_MAX = 10 * 1024 * 1024
-        VIDEO_MAX = 100 * 1024 * 1024
-
-        def _ext(fn):
-            return fn.rsplit('.', 1)[1].lower() if '.' in fn else ''
-
-        if kadro.foto_gerekli:
+        # Dosyalar yukarıda (aday oluşturulmadan önce) format/boyut açısından
+        # doğrulandı; burada yalnızca kaydediliyor.
+        if fotos:
             fotos_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'adaylar', str(aday.id), 'fotos')
             os.makedirs(fotos_dir, exist_ok=True)
-            for f in request.files.getlist('medya_fotos'):
-                if not f or not f.filename:
-                    continue
-                ext = _ext(f.filename)
-                if ext not in FOTO_EXTS:
-                    continue
-                f.seek(0, os.SEEK_END)
-                boyut = f.tell()
-                f.seek(0)
-                if boyut > FOTO_MAX:
-                    continue
+            for f in fotos:
+                ext = _kariyer_ext(f.filename)
+                boyut = _dosya_boyut(f)
                 fname = f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}.{ext}"
                 fpath = os.path.join(fotos_dir, fname)
                 f.save(fpath)
@@ -509,27 +533,21 @@ def basvuru_form(kadro_id):
                     mime_type=f.mimetype or f'image/{ext}',
                 ))
 
-        if kadro.video_gerekli:
-            v = request.files.get('medya_video')
-            if v and v.filename:
-                ext = _ext(v.filename)
-                if ext in VIDEO_EXTS:
-                    v.seek(0, os.SEEK_END)
-                    boyut = v.tell()
-                    v.seek(0)
-                    if boyut <= VIDEO_MAX:
-                        videos_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'adaylar', str(aday.id), 'videos')
-                        os.makedirs(videos_dir, exist_ok=True)
-                        fname = f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}.{ext}"
-                        fpath = os.path.join(videos_dir, fname)
-                        v.save(fpath)
-                        rel = f"adaylar/{aday.id}/videos/{fname}"
-                        db.session.add(AdayMedya(
-                            aday_id=aday.id, tip='video',
-                            dosya_adi=secure_filename(v.filename),
-                            dosya_yolu=rel, dosya_boyut=boyut,
-                            mime_type=v.mimetype or f'video/{ext}',
-                        ))
+        if video_file:
+            ext = _kariyer_ext(video_file.filename)
+            boyut = _dosya_boyut(video_file)
+            videos_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'adaylar', str(aday.id), 'videos')
+            os.makedirs(videos_dir, exist_ok=True)
+            fname = f"{datetime.now().strftime('%Y%m%d%H%M%S%f')}.{ext}"
+            fpath = os.path.join(videos_dir, fname)
+            video_file.save(fpath)
+            rel = f"adaylar/{aday.id}/videos/{fname}"
+            db.session.add(AdayMedya(
+                aday_id=aday.id, tip='video',
+                dosya_adi=secure_filename(video_file.filename),
+                dosya_yolu=rel, dosya_boyut=boyut,
+                mime_type=video_file.mimetype or f'video/{ext}',
+            ))
 
         # Başvuru tamamlandı (durum/flag'ler aday oluşturulurken set edildi)
         db.session.commit()
@@ -705,17 +723,8 @@ def evrak_yukle_post(token):
 
 # ============================================================
 # ADAY MEDYA (Foto/Video) - PUBLIC TOKEN İLE
+# Format/boyut sabitleri dosyanın başında tanımlıdır.
 # ============================================================
-
-_FOTO_EXTS = {'jpg', 'jpeg', 'png', 'webp'}
-_VIDEO_EXTS = {'mp4', 'mov', 'webm'}
-_FOTO_MAX = 10 * 1024 * 1024
-_VIDEO_MAX = 100 * 1024 * 1024
-
-
-def _kariyer_ext(fn):
-    return fn.rsplit('.', 1)[1].lower() if '.' in fn else ''
-
 
 def _kariyer_medya_dict(m):
     return {
