@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """EGITIM_DAVET_SMS bildirim şablonunu oluştur (idempotent).
 
-Aday çalışana dönüştürüldüğünde, projesinde uygun bir "yeni işe giriş"
-eğitimi varsa çalışana gönderilen kayıt daveti SMS'inin metni.
+Aday onaylandığında (ve eğitim detayından manuel toplu gönderimde),
+projesinde uygun bir "yeni işe giriş" eğitimi varsa gönderilen kayıt
+daveti SMS'inin metni.
 
 Şablon gövdesi DB'de (BildirimSablonu) tutulur; bu betik yoksa oluşturur, varsa
 dokunmaz (admin özelleştirmelerini ezmemek için).
@@ -36,9 +37,9 @@ def seed():
     sablon = BildirimSablonu(
         kod=KOD,
         ad='Eğitim Daveti (SMS)',
-        aciklama='Aday çalışana dönüştürüldüğünde, projesinde uygun bir yeni işe '
-                 'giriş eğitimi varsa çalışana gönderilen kayıt daveti SMS metni. '
-                 'Değişkenler: {ad_soyad}, {egitim_link}, {egitim_adi}',
+        aciklama='Aday onaylandığında (ve eğitim detayından manuel toplu gönderimde), '
+                 'projesinde uygun bir yeni işe giriş eğitimi varsa gönderilen kayıt '
+                 'daveti SMS metni. Değişkenler: {ad_soyad}, {egitim_link}, {egitim_adi}',
         konu_sablonu=KONU,
         icerik_sablonu=ICERIK,
         alicilar=[],

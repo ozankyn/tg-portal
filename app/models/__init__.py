@@ -51,7 +51,8 @@ from app.models.egitim import (
     PozisyonZorunluEgitim,
     EgitimOturumu,
     EgitimKayit,
-    EgitimAnket
+    EgitimAnket,
+    EgitimDavetSms
 )
 
 # Quiz models

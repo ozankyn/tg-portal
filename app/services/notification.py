@@ -661,35 +661,25 @@ def yeni_giris_egitimi_bul(proje_id):
     return uygunlar[0][1]
 
 
-def notify_egitim_davet_sms(calisan):
-    """Calisana yeni ise giris egitimi kayit linkini SMS ile gonderir.
+def egitim_davet_sms_gonder(egitim, kisi, kaynak='manuel', gonderen_id=None):
+    """Verilen egitim icin tek bir aday/calisana davet SMS'i gonderir ve loglar.
 
-    Sadece EGITIM_DAVET_PROJE_IDS icindeki projelerde ve uygun (aktif,
-    kontenjani dolmamis) bir 'yeni_giris' egitimi varsa gonderir.
-
-    Doner: gonderim yapildiysa sonuc dict'i, yapilmadiysa None.
+    kisi: Aday veya Calisan (full_name + telefon alanlari yeterli).
+    Doner: {'success': bool, 'error': str|None, 'telefon': str|None}
+    Gecerli telefon yoksa gonderim yapilmaz, log da yazilmaz.
     """
     from app.models.bildirim import BildirimSablonu
+    from app.models.egitim import EgitimDavetSms
+    from app.models.ik import Aday
     from app.modules.basvuru.routes import send_netgsm_sms
     from app.utils import normalize_telefon, sms_ascii
 
-    proje_id = calisan.kadro.proje_id if calisan.kadro else None
-    if proje_id not in EGITIM_DAVET_PROJE_IDS:
-        return None
-
-    egitim = yeni_giris_egitimi_bul(proje_id)
-    if not egitim:
-        current_app.logger.info(
-            "Egitim davet SMS atlandi - uygun yeni giris egitimi yok: "
-            "calisan_id=%s, proje_id=%s", calisan.id, proje_id)
-        return None
-
-    telefon = normalize_telefon(calisan.telefon)
+    telefon = normalize_telefon(getattr(kisi, 'telefon', None))
     if not telefon:
         current_app.logger.warning(
-            "Egitim davet SMS atlandi - gecerli telefon yok: calisan_id=%s, tel=%r",
-            calisan.id, calisan.telefon)
-        return None
+            "Egitim davet SMS atlandi - gecerli telefon yok: %s id=%s, tel=%r",
+            type(kisi).__name__, getattr(kisi, 'id', None), getattr(kisi, 'telefon', None))
+        return {'success': False, 'error': 'Geçerli telefon numarası yok', 'telefon': None}
 
     try:
         egitim_link = url_for('egitim.kayit', id=egitim.id, _external=True)
@@ -697,7 +687,7 @@ def notify_egitim_davet_sms(calisan):
         egitim_link = f"https://portal.teamguerilla.com/egitim/kayit/{egitim.id}"
 
     degiskenler = {
-        'ad_soyad': calisan.full_name,
+        'ad_soyad': kisi.full_name,
         'egitim_link': egitim_link,
         'egitim_adi': egitim.baslik,
     }
@@ -709,15 +699,67 @@ def notify_egitim_davet_sms(calisan):
     mesaj = sms_ascii(render_sablon(metin_sablonu, degiskenler))
 
     sonuc = send_netgsm_sms(telefon, mesaj)
-    if sonuc.get('success'):
+    basarili = bool(sonuc.get('success'))
+
+    aday_mi = isinstance(kisi, Aday)
+    log = EgitimDavetSms(
+        egitim_id=egitim.id,
+        aday_id=kisi.id if aday_mi else None,
+        calisan_id=None if aday_mi else kisi.id,
+        ad_soyad=kisi.full_name,
+        telefon=telefon,
+        basarili=basarili,
+        hata=(sonuc.get('error') or '')[:255] or None,
+        kaynak=kaynak,
+        gonderen_id=gonderen_id,
+    )
+    db.session.add(log)
+    db.session.commit()
+
+    if basarili:
         current_app.logger.info(
-            "Eğitim davet SMS gönderildi: calisan_id=%s, egitim_id=%s",
-            calisan.id, egitim.id)
+            "Eğitim davet SMS gönderildi: %s_id=%s, egitim_id=%s, kaynak=%s",
+            'aday' if aday_mi else 'calisan', kisi.id, egitim.id, kaynak)
     else:
         current_app.logger.warning(
-            "Eğitim davet SMS gönderilemedi: calisan_id=%s, egitim_id=%s, hata=%s",
-            calisan.id, egitim.id, sonuc.get('error'))
-    return sonuc
+            "Eğitim davet SMS gönderilemedi: %s_id=%s, egitim_id=%s, hata=%s",
+            'aday' if aday_mi else 'calisan', kisi.id, egitim.id, sonuc.get('error'))
+    return {'success': basarili, 'error': sonuc.get('error'), 'telefon': telefon}
+
+
+def notify_egitim_davet_sms(kisi, kaynak='otomatik', gonderen_id=None):
+    """Aday/calisana yeni ise giris egitimi kayit linkini SMS ile gonderir.
+
+    Sadece EGITIM_DAVET_PROJE_IDS icindeki projelerde ve uygun (aktif,
+    kontenjani dolmamis) bir 'yeni_giris' egitimi varsa gonderir.
+    Ayni egitim icin daha once basarili SMS gitmisse tekrar gondermez.
+
+    Doner: gonderim yapildiysa sonuc dict'i, yapilmadiysa None.
+    """
+    from app.models.egitim import davet_sms_gonderildi_mi
+    from app.models.ik import Aday
+
+    proje_id = kisi.kadro.proje_id if kisi.kadro else None
+    if proje_id not in EGITIM_DAVET_PROJE_IDS:
+        return None
+
+    egitim = yeni_giris_egitimi_bul(proje_id)
+    if not egitim:
+        current_app.logger.info(
+            "Egitim davet SMS atlandi - uygun yeni giris egitimi yok: "
+            "%s_id=%s, proje_id=%s", type(kisi).__name__.lower(), kisi.id, proje_id)
+        return None
+
+    aday_mi = isinstance(kisi, Aday)
+    if davet_sms_gonderildi_mi(egitim.id,
+                               aday_id=kisi.id if aday_mi else None,
+                               calisan_id=None if aday_mi else kisi.id):
+        current_app.logger.info(
+            "Egitim davet SMS atlandi - daha once gonderilmis: "
+            "%s_id=%s, egitim_id=%s", type(kisi).__name__.lower(), kisi.id, egitim.id)
+        return None
+
+    return egitim_davet_sms_gonder(egitim, kisi, kaynak=kaynak, gonderen_id=gonderen_id)
 
 
 def notify_ise_giris(calisan):

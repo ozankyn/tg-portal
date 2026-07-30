@@ -1409,10 +1409,25 @@ def aday_onayla(id):
         current_app.logger.warning(f"Aday onay SMS gönderilemedi (aday_id={aday.id}): {e}")
         sms_uyari = str(e)
 
+    # Yeni işe giriş eğitimi daveti SMS'i. Yalnızca adayın kadrosu
+    # EGITIM_DAVET_PROJE_IDS içindeki bir projedeyse ve uygun (aktif,
+    # kontenjanı dolmamış) bir yeni giriş eğitimi varsa gönderilir.
+    # Onay işlemi zaten commit edildi; SMS hatası onay akışını bozmamalı.
+    egitim_daveti_gitti = False
+    try:
+        from app.services.notification import notify_egitim_davet_sms
+        egitim_sonuc = notify_egitim_davet_sms(aday, kaynak='otomatik')
+        egitim_daveti_gitti = bool(egitim_sonuc and egitim_sonuc.get('success'))
+    except Exception as e:
+        current_app.logger.warning(
+            f"Eğitim davet SMS gönderilemedi (aday_id={aday.id}): {e}")
+
     if sms_uyari:
         flash(f'Aday onaylandı ancak onay SMS\'i gönderilemedi: {sms_uyari}', 'warning')
     else:
         flash('Aday onaylandı ve evrak yükleme SMS\'i gönderildi.', 'success')
+    if egitim_daveti_gitti:
+        flash('Yeni işe giriş eğitimi davet SMS\'i de gönderildi.', 'success')
     return redirect(url_for('ik.aday_detay', id=id))
 
 
@@ -2944,14 +2959,8 @@ def aday_calisana_donustur(id):
             except Exception as e:
                 current_app.logger.warning(f"İşe giriş bildirimi gönderilemedi (calisan_id={calisan.id}): {e}")
 
-            # Yeni işe giriş eğitimi daveti SMS'i (uygun eğitim varsa).
-            # Dönüştürme zaten commit edildi; SMS hatası akışı bozmamalı.
-            try:
-                from app.services.notification import notify_egitim_davet_sms
-                notify_egitim_davet_sms(calisan)
-            except Exception as e:
-                current_app.logger.warning(
-                    f"Eğitim davet SMS gönderilemedi (calisan_id={calisan.id}): {e}")
+            # NOT: Eğitim davet SMS'i artık burada değil, aday onaylandığında
+            # (ik.aday_onayla) gönderiliyor.
 
             if tekrar_calisan is not None or (tc_cakisan and tc_action == 'baglan'):
                 flash(f'{calisan.full_name} mevcut çalışan kaydına bağlandı ve yeniden işe alındı.', 'success')

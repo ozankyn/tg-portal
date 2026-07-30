@@ -237,7 +237,7 @@
     <div class="lg:col-span-2">
         <!-- Tab Menü -->
         <div class="mb-4 border-b border-border-light dark:border-border-dark"
-             x-data="{ tab: ['#oturumlar', '#kayitlar'].includes(window.location.hash) ? window.location.hash.slice(1) : 'katilimcilar' }">
+             x-data="{ tab: ['#oturumlar', '#kayitlar', '#davetler'].includes(window.location.hash) ? window.location.hash.slice(1) : 'katilimcilar' }">
             <div class="flex gap-4">
                 <button @click="tab = 'katilimcilar'" :class="tab === 'katilimcilar' ? 'border-b-2 border-primary text-primary' : 'text-text-muted dark:text-text-muted-dark'" class="pb-3 px-1 font-medium text-sm flex items-center gap-2">
                     <span class="material-symbols-outlined text-lg">groups</span>
@@ -254,6 +254,10 @@
                 <button @click="tab = 'kayitlar'" :class="tab === 'kayitlar' ? 'border-b-2 border-primary text-primary' : 'text-text-muted dark:text-text-muted-dark'" class="pb-3 px-1 font-medium text-sm flex items-center gap-2">
                     <span class="material-symbols-outlined text-lg">how_to_reg</span>
                     Kayıtlar ({{ aktif_kayit_sayisi }})
+                </button>
+                <button @click="tab = 'davetler'" :class="tab === 'davetler' ? 'border-b-2 border-primary text-primary' : 'text-text-muted dark:text-text-muted-dark'" class="pb-3 px-1 font-medium text-sm flex items-center gap-2">
+                    <span class="material-symbols-outlined text-lg">sms</span>
+                    Davetler ({{ davet_basarili_sayisi }})
                 </button>
             </div>
         
@@ -665,6 +669,93 @@
                 </div>
                 {% endif %}
             </div>
+
+            <!-- Davetler Tab -->
+            <div x-show="tab === 'davetler'" id="davetler" class="pt-4">
+                <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+                    <div class="px-5 py-4 border-b border-border-light dark:border-border-dark flex flex-wrap gap-2 justify-between items-center">
+                        <div>
+                            <h6 class="font-bold text-[#111418] dark:text-white">Davet Edilen Adaylar</h6>
+                            <p class="text-xs text-text-muted dark:text-text-muted-dark mt-0.5">
+                                Bu eğitim için gönderilen davet SMS'leri (otomatik + manuel).
+                            </p>
+                        </div>
+                        {% if has_permission('ik.edit') %}
+                        {% if egitim.proje %}
+                        <button type="button" onclick="davetModalAc()"
+                                class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white font-medium text-sm rounded-lg transition-colors flex items-center gap-1">
+                            <span class="material-symbols-outlined text-lg">forward_to_inbox</span>Eğitim Davet SMS Gönder
+                        </button>
+                        {% else %}
+                        <span class="text-xs text-amber-600 dark:text-amber-400">
+                            Toplu davet için eğitimin bir projeye bağlı olması gerekir.
+                        </span>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                    {% if davetler %}
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 dark:bg-[#111418]">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Ad Soyad</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Telefon</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden md:table-cell">Gönderim</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark hidden sm:table-cell">Kaynak</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">SMS</th>
+                                    <th class="px-4 py-3 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Kayıt</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                                {% for d in davetler %}
+                                {% set kaydoldu = (d.aday_id and d.aday_id in kayitli_aday_ids) or (d.telefon and d.telefon[-10:] in kayitli_telefonlar) %}
+                                <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] {% if not d.basarili %}opacity-70{% endif %}">
+                                    <td class="px-4 py-3 font-medium text-[#111418] dark:text-white">
+                                        {% if d.aday_id %}
+                                        <a href="{{ url_for('ik.aday_detay', id=d.aday_id) }}" class="hover:text-primary">{{ d.ad_soyad }}</a>
+                                        {% elif d.calisan_id %}
+                                        <a href="{{ url_for('ik.detay', id=d.calisan_id) }}" class="hover:text-primary">{{ d.ad_soyad }}</a>
+                                        {% else %}{{ d.ad_soyad or '-' }}{% endif %}
+                                    </td>
+                                    <td class="px-4 py-3 font-mono text-text-muted dark:text-text-muted-dark whitespace-nowrap">{{ d.telefon or '-' }}</td>
+                                    <td class="px-4 py-3 hidden md:table-cell text-text-muted dark:text-text-muted-dark whitespace-nowrap">
+                                        {{ d.gonderim_zamani.strftime('%d.%m.%Y %H:%M') if d.gonderim_zamani else '-' }}
+                                    </td>
+                                    <td class="px-4 py-3 hidden sm:table-cell">
+                                        <span class="px-2 py-0.5 rounded-full text-xs font-bold {% if d.kaynak == 'otomatik' %}bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400{% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">{{ d.kaynak_text }}</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        {% if d.basarili %}
+                                        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Gönderildi</span>
+                                        {% else %}
+                                        <span class="px-2 py-0.5 text-xs font-bold rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400" title="{{ d.hata or '' }}">Başarısız</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        {% if kaydoldu %}
+                                        <span class="inline-flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 font-bold text-xs">
+                                            <span class="material-symbols-outlined text-base">check_circle</span>Kaydoldu
+                                        </span>
+                                        {% else %}
+                                        <span class="text-text-muted dark:text-text-muted-dark">—</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="py-12 text-center">
+                        <span class="material-symbols-outlined text-5xl text-gray-300 dark:text-gray-600 mb-2">sms</span>
+                        <p class="text-text-muted dark:text-text-muted-dark">Henüz davet SMS'i gönderilmedi</p>
+                        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">
+                            Adaylar onaylandığında otomatik gönderilir; buradan toplu da gönderebilirsiniz.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -935,6 +1026,107 @@
         </form>
     </div>
 </div>
+
+{% if has_permission('ik.edit') and egitim.proje %}
+<!-- Eğitim Davet SMS Modal -->
+<div id="davetSmsModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-card-dark rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
+        <div class="px-6 py-4 border-b border-border-light dark:border-border-dark flex justify-between items-center">
+            <div>
+                <h5 class="font-bold text-lg text-[#111418] dark:text-white">Eğitim Davet SMS Gönder</h5>
+                <p class="text-xs text-text-muted dark:text-text-muted-dark mt-0.5">
+                    {{ egitim.proje.ad }} projesindeki onaylı adaylara kayıt linki gönderilir.
+                </p>
+            </div>
+            <button type="button" onclick="davetModalKapat()" class="p-1 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <div class="p-6 overflow-y-auto">
+            <!-- Filtre -->
+            <label class="block mb-2 text-sm font-medium text-[#111418] dark:text-white">Kimlere gönderilsin?</label>
+            <div class="space-y-2 mb-4">
+                {% for kod, etiket in davet_filtreleri.items() %}
+                <label class="flex items-center gap-3 p-3 border border-border-light dark:border-border-dark rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#252b36]">
+                    <input type="radio" name="davetFiltre" value="{{ kod }}" {% if loop.first %}checked{% endif %}
+                           class="w-4 h-4 text-primary border-gray-300 focus:ring-primary">
+                    <span class="text-sm text-[#111418] dark:text-white">{{ etiket }}</span>
+                </label>
+                {% endfor %}
+            </div>
+
+            <label class="flex items-center gap-3 mb-4 cursor-pointer">
+                <input type="checkbox" id="davetAtla" checked
+                       class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary">
+                <span class="text-sm text-[#111418] dark:text-white">
+                    Daha önce davet edilenleri ve kayıt olanları atla <span class="text-text-muted dark:text-text-muted-dark">(önerilir)</span>
+                </span>
+            </label>
+
+            <!-- Özet -->
+            <div id="davetOzet" class="p-4 bg-gray-50 dark:bg-[#111418] rounded-lg text-sm text-[#111418] dark:text-white mb-4">
+                Liste yükleniyor...
+            </div>
+
+            <!-- İlerleme -->
+            <div id="davetIlerlemeKart" class="hidden mb-4">
+                <div class="flex items-center justify-between mb-2">
+                    <span id="davetIlerlemeMetin" class="text-sm font-bold text-[#111418] dark:text-white">0 / 0 gönderildi</span>
+                    <span id="davetIlerlemeYuzde" class="text-sm text-text-muted dark:text-text-muted-dark">%0</span>
+                </div>
+                <div class="w-full h-3 bg-gray-200 dark:bg-[#111418] rounded-full overflow-hidden">
+                    <div id="davetIlerlemeBar" class="h-full bg-primary transition-all duration-200" style="width:0%"></div>
+                </div>
+                <div class="grid grid-cols-3 gap-4 mt-4">
+                    <div class="text-center">
+                        <div id="davetSayacBasarili" class="text-xl font-bold text-green-600 dark:text-green-400">0</div>
+                        <div class="text-xs text-text-muted dark:text-text-muted-dark uppercase font-bold">Gönderildi</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="davetSayacAtlandi" class="text-xl font-bold text-amber-600 dark:text-amber-400">0</div>
+                        <div class="text-xs text-text-muted dark:text-text-muted-dark uppercase font-bold">Atlandı</div>
+                    </div>
+                    <div class="text-center">
+                        <div id="davetSayacHatali" class="text-xl font-bold text-red-600 dark:text-red-400">0</div>
+                        <div class="text-xs text-text-muted dark:text-text-muted-dark uppercase font-bold">Hata</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste / sonuç tablosu -->
+            <div class="border border-border-light dark:border-border-dark rounded-lg overflow-hidden">
+                <div class="overflow-y-auto max-h-64">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 dark:bg-[#111418] sticky top-0">
+                            <tr>
+                                <th class="px-3 py-2 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Ad Soyad</th>
+                                <th class="px-3 py-2 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Telefon</th>
+                                <th class="px-3 py-2 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">İş Başı</th>
+                                <th class="px-3 py-2 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody id="davetTablo" class="divide-y divide-border-light dark:divide-border-dark"></tbody>
+                    </table>
+                </div>
+            </div>
+            <p class="text-xs text-text-muted dark:text-text-muted-dark mt-3">
+                SMS'ler tek tek gönderilir. Gönderim sırasında bu pencereyi kapatmayın.
+            </p>
+        </div>
+
+        <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-end gap-3">
+            <button type="button" onclick="davetModalKapat()" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors">Kapat</button>
+            <button type="button" id="davetDurdurBtn" onclick="davetDurdur()"
+                    class="hidden px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors">Durdur</button>
+            <button type="button" id="davetGonderBtn" onclick="davetGonder()" disabled
+                    class="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-bold rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                SMS Gönder
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -1004,5 +1196,198 @@ function oturumModalAc(o) {
     }
     document.getElementById('oturumModal').classList.remove('hidden');
 }
+
+{% if has_permission('ik.edit') and egitim.proje %}
+// ---- Toplu eğitim davet SMS ----
+(function () {
+    const CSRF = "{{ csrf_token() }}";
+    const LISTE_URL = "{{ url_for('egitim.davet_sms_liste', id=egitim.id) }}";
+    const TEK_URL = "{{ url_for('egitim.davet_sms_tek', id=egitim.id) }}";
+
+    let adaylar = [];        // sunucudan gelen ham liste
+    let calisiyor = false;
+    let durduruldu = false;
+    let gonderimYapildi = false;
+
+    function el(id) { return document.getElementById(id); }
+
+    function esc(s) {
+        const d = document.createElement('div');
+        d.textContent = (s === null || s === undefined) ? '' : String(s);
+        return d.innerHTML;
+    }
+
+    function seciliFiltre() {
+        const r = document.querySelector('input[name="davetFiltre"]:checked');
+        return r ? r.value : 'yarin';
+    }
+
+    function atlanacakMi(a) {
+        if (!a.telefon_gecerli) return true;
+        if (el('davetAtla').checked && (a.davet_edildi || a.kayitli)) return true;
+        return false;
+    }
+
+    function hedefler() {
+        return adaylar.filter(a => !atlanacakMi(a));
+    }
+
+    function rozet(metin, renk) {
+        return '<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-' + renk +
+               '-100 text-' + renk + '-700 dark:bg-' + renk + '-900/30 dark:text-' + renk +
+               '-400">' + esc(metin) + '</span>';
+    }
+
+    function durumRozeti(a) {
+        if (!a.telefon_gecerli) return rozet('Telefon geçersiz', 'rose');
+        if (a.kayitli) return rozet('Zaten kayıtlı', 'emerald');
+        if (a.davet_edildi) return rozet('Davet edilmiş', 'amber');
+        return rozet('Gönderilecek', 'blue');
+    }
+
+    function tabloCiz() {
+        const tbody = el('davetTablo');
+        tbody.innerHTML = '';
+        if (!adaylar.length) {
+            tbody.innerHTML = '<tr><td colspan="4" class="px-3 py-6 text-center text-text-muted dark:text-text-muted-dark">Bu filtreye uyan aday bulunamadı.</td></tr>';
+            return;
+        }
+        adaylar.forEach(a => {
+            const tr = document.createElement('tr');
+            tr.id = 'davetSatir' + a.id;
+            if (atlanacakMi(a)) tr.className = 'opacity-60';
+            tr.innerHTML =
+                '<td class="px-3 py-2 font-medium text-[#111418] dark:text-white">' + esc(a.ad_soyad) + '</td>' +
+                '<td class="px-3 py-2 font-mono text-text-muted dark:text-text-muted-dark">' + esc(a.telefon || '-') + '</td>' +
+                '<td class="px-3 py-2 text-text-muted dark:text-text-muted-dark whitespace-nowrap">' + esc(a.baslangic || '-') + '</td>' +
+                '<td class="px-3 py-2" id="davetDurum' + a.id + '">' + durumRozeti(a) + '</td>';
+            tbody.appendChild(tr);
+        });
+    }
+
+    function ozetGuncelle() {
+        const hedef = hedefler().length;
+        const atlanan = adaylar.length - hedef;
+        el('davetOzet').innerHTML =
+            '<b>' + adaylar.length + '</b> aday listelendi. ' +
+            '<b class="text-primary">' + hedef + '</b> kişiye SMS gönderilecek' +
+            (atlanan ? ', <b>' + atlanan + '</b> kişi atlanacak.' : '.');
+        el('davetGonderBtn').disabled = (hedef === 0 || calisiyor);
+    }
+
+    async function listeYukle() {
+        el('davetGonderBtn').disabled = true;
+        el('davetOzet').textContent = 'Liste yükleniyor...';
+        el('davetTablo').innerHTML = '';
+        el('davetIlerlemeKart').classList.add('hidden');
+        adaylar = [];
+        try {
+            const resp = await fetch(LISTE_URL + '?filtre=' + encodeURIComponent(seciliFiltre()),
+                                     { headers: { 'X-CSRFToken': CSRF } });
+            const veri = await resp.json();
+            if (!resp.ok) {
+                el('davetOzet').textContent = veri.hata || 'Liste alınamadı.';
+                return;
+            }
+            adaylar = veri.adaylar || [];
+        } catch (e) {
+            el('davetOzet').textContent = 'Liste alınamadı: ' + e;
+            return;
+        }
+        tabloCiz();
+        ozetGuncelle();
+    }
+
+    function ilerlemeGuncelle(islenen, toplam, basarili, atlandi, hatali) {
+        const yuzde = toplam ? Math.round((islenen / toplam) * 100) : 0;
+        el('davetIlerlemeBar').style.width = yuzde + '%';
+        el('davetIlerlemeMetin').textContent = islenen + ' / ' + toplam + ' işlendi';
+        el('davetIlerlemeYuzde').textContent = '%' + yuzde;
+        el('davetSayacBasarili').textContent = basarili;
+        el('davetSayacAtlandi').textContent = atlandi;
+        el('davetSayacHatali').textContent = hatali;
+    }
+
+    async function tekGonder(adayId) {
+        const resp = await fetch(TEK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+            body: JSON.stringify({ aday_id: adayId })
+        });
+        return await resp.json();
+    }
+
+    window.davetModalAc = function () {
+        el('davetSmsModal').classList.remove('hidden');
+        listeYukle();
+    };
+
+    window.davetModalKapat = function () {
+        if (calisiyor && !confirm('Gönderim devam ediyor. Yine de kapatmak istiyor musunuz?')) return;
+        durduruldu = true;
+        el('davetSmsModal').classList.add('hidden');
+        // Gönderim yapıldıysa davet listesi güncellensin
+        if (gonderimYapildi) window.location.href = '{{ url_for("egitim.detay", id=egitim.id) }}#davetler';
+    };
+
+    window.davetDurdur = function () { durduruldu = true; };
+
+    window.davetGonder = async function () {
+        if (calisiyor) return;
+        const hedef = hedefler();
+        if (!hedef.length) return;
+        if (!confirm(hedef.length + ' kişiye eğitim davet SMS\'i gönderilecek. Onaylıyor musunuz?')) return;
+
+        calisiyor = true;
+        durduruldu = false;
+        gonderimYapildi = true;
+        el('davetGonderBtn').disabled = true;
+        el('davetDurdurBtn').classList.remove('hidden');
+        el('davetIlerlemeKart').classList.remove('hidden');
+
+        let islenen = 0, basarili = 0, atlandi = 0, hatali = 0;
+        ilerlemeGuncelle(0, hedef.length, 0, 0, 0);
+
+        for (const a of hedef) {
+            if (durduruldu) break;
+            const hucre = el('davetDurum' + a.id);
+            if (hucre) hucre.innerHTML = rozet('Gönderiliyor...', 'blue');
+            let r;
+            try {
+                r = await tekGonder(a.id);
+            } catch (e) {
+                r = { durum: 'hatali', mesaj: 'Bağlantı hatası' };
+            }
+            islenen++;
+            if (r.durum === 'basarili') {
+                basarili++;
+                if (hucre) hucre.innerHTML = rozet('Gönderildi', 'emerald');
+            } else if (r.durum === 'atlandi') {
+                atlandi++;
+                if (hucre) hucre.innerHTML = rozet(r.mesaj || 'Atlandı', 'amber');
+            } else {
+                hatali++;
+                if (hucre) hucre.innerHTML = rozet(r.mesaj || 'Hata', 'rose');
+            }
+            ilerlemeGuncelle(islenen, hedef.length, basarili, atlandi, hatali);
+        }
+
+        calisiyor = false;
+        el('davetDurdurBtn').classList.add('hidden');
+        el('davetGonderBtn').disabled = true;
+        if (durduruldu) {
+            el('davetIlerlemeMetin').textContent += ' (durduruldu)';
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('input[name="davetFiltre"]').forEach(r => {
+            r.addEventListener('change', listeYukle);
+        });
+        const atla = el('davetAtla');
+        if (atla) atla.addEventListener('change', function () { tabloCiz(); ozetGuncelle(); });
+    });
+})();
+{% endif %}
 </script>
 {% endblock %}

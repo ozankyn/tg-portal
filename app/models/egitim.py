@@ -518,6 +518,70 @@ class EgitimKayit(db.Model, TimestampMixin):
         return f'<EgitimKayit {self.egitim_id}-{self.telefon} {self.durum}>'
 
 
+class EgitimDavetSms(db.Model, TimestampMixin):
+    """Eğitim davet SMS gönderim logu.
+
+    Hem otomatik (aday onaylandığında) hem manuel (toplu davet ekranı)
+    gönderimler buraya yazılır. Aynı kişiye tekrar SMS gönderilmesini
+    engellemek/uyarmak ve "davet edilenler" listesini üretmek için kullanılır.
+    """
+    __tablename__ = 'egitim_davet_smsleri'
+
+    id = db.Column(db.Integer, primary_key=True)
+    egitim_id = db.Column(db.Integer, db.ForeignKey('egitimler.id'), nullable=False, index=True)
+
+    aday_id = db.Column(db.Integer, db.ForeignKey('adaylar.id'), index=True)
+    calisan_id = db.Column(db.Integer, db.ForeignKey('calisanlar.id'), index=True)
+
+    ad_soyad = db.Column(db.String(120))
+    telefon = db.Column(db.String(20))  # normalize edilmiş (05XXXXXXXXX)
+
+    basarili = db.Column(db.Boolean, default=False, nullable=False)
+    hata = db.Column(db.String(255))
+
+    kaynak = db.Column(db.String(20), default='manuel', nullable=False)  # otomatik, manuel
+    gonderen_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # manuel gönderimde kullanıcı
+    gonderim_zamani = db.Column(db.DateTime, default=datetime.now, nullable=False)
+
+    egitim = db.relationship('Egitim', backref=db.backref(
+        'davet_smsleri', lazy='dynamic',
+        order_by='EgitimDavetSms.gonderim_zamani.desc()'))
+    aday = db.relationship('Aday')
+    calisan = db.relationship('Calisan')
+    gonderen = db.relationship('User', foreign_keys=[gonderen_id])
+
+    @property
+    def kaynak_text(self):
+        return 'Otomatik' if self.kaynak == 'otomatik' else 'Manuel'
+
+    def __repr__(self):
+        return f'<EgitimDavetSms {self.egitim_id}-{self.telefon} {"OK" if self.basarili else "HATA"}>'
+
+
+def davet_sms_gonderildi_mi(egitim_id, aday_id=None, calisan_id=None, telefon=None):
+    """Bu eğitim için kişiye daha önce BAŞARILI davet SMS'i gitmiş mi?
+
+    aday_id / calisan_id / telefon'dan verilenlerin herhangi biri eşleşirse
+    True döner (aday çalışana dönüştüğünde de mükerrer gönderim olmasın diye).
+    """
+    kosullar = []
+    if aday_id:
+        kosullar.append(EgitimDavetSms.aday_id == aday_id)
+    if calisan_id:
+        kosullar.append(EgitimDavetSms.calisan_id == calisan_id)
+    if telefon:
+        kosullar.append(EgitimDavetSms.telefon == telefon)
+    if not kosullar:
+        return False
+    return db.session.query(
+        EgitimDavetSms.query.filter(
+            EgitimDavetSms.egitim_id == egitim_id,
+            EgitimDavetSms.basarili == True,  # noqa: E712
+            db.or_(*kosullar),
+        ).exists()
+    ).scalar()
+
+
 class EgitimAnket(db.Model, TimestampMixin):
     """Eğitim sonrası memnuniyet anketi (kayıt başına en fazla bir yanıt)."""
     __tablename__ = 'egitim_anketleri'
