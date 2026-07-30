@@ -27,7 +27,7 @@ from app.models.quiz import (
 from app.models.ik import Calisan, Pozisyon, Aday
 from app.models.proje import Proje, HedefKadro
 from app.models.base import CalisanDurumu
-from app.utils import permission_required, paginate_query
+from app.utils import permission_required, any_permission_required, paginate_query
 from app.services.jitsi import JitsiService
 
 egitim_bp = Blueprint('egitim', __name__)
@@ -2288,7 +2288,7 @@ def _davet_durum_setleri(egitim_id):
 
 @egitim_bp.route('/<int:id>/davet-sms-liste')
 @login_required
-@permission_required('ik.edit')
+@any_permission_required('ik.edit', 'egitim.edit')
 def davet_sms_liste(id):
     """Toplu davet SMS öncesi hedef aday listesi (JSON).
 
@@ -2330,7 +2330,7 @@ def davet_sms_liste(id):
 
 @egitim_bp.route('/<int:id>/davet-sms-tek', methods=['POST'])
 @login_required
-@permission_required('ik.edit')
+@any_permission_required('ik.edit', 'egitim.edit')
 def davet_sms_tek(id):
     """Tek bir adaya eğitim davet SMS'i gönderir (AJAX döngüsünden çağrılır)."""
     from app.models.egitim import davet_sms_gonderildi_mi

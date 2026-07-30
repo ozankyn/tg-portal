@@ -71,6 +71,29 @@ def admin_or_permission_required(permission):
     return decorator
 
 
+def any_permission_required(*permissions):
+    """
+    Verilen yetkilerden EN AZ BİRİNE sahip kullanıcıların erişebildiği decorator
+
+    Kullanım:
+        @any_permission_required('ik.edit', 'egitim.edit')
+        def davet_sms_liste(id):
+            ...
+    """
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                flash('Bu işlem için giriş yapmalısınız.', 'warning')
+                return redirect(url_for('core.login'))
+            if not any(current_user.has_permission(p) for p in permissions):
+                flash('Bu işlem için yetkiniz bulunmamaktadır.', 'danger')
+                abort(403)
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
 def module_access_required(module):
     """
     Modül erişim yetkisi kontrolü

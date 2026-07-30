@@ -680,7 +680,7 @@
                                 Bu eğitim için gönderilen davet SMS'leri (otomatik + manuel).
                             </p>
                         </div>
-                        {% if has_permission('ik.edit') %}
+                        {% if has_permission('ik.edit') or has_permission('egitim.edit') %}
                         {% if egitim.proje %}
                         <button type="button" onclick="davetModalAc()"
                                 class="px-3 py-1.5 bg-primary hover:bg-primary-dark text-white font-medium text-sm rounded-lg transition-colors flex items-center gap-1">
@@ -1027,7 +1027,7 @@
     </div>
 </div>
 
-{% if has_permission('ik.edit') and egitim.proje %}
+{% if (has_permission('ik.edit') or has_permission('egitim.edit')) and egitim.proje %}
 <!-- Eğitim Davet SMS Modal -->
 <div id="davetSmsModal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
     <div class="bg-white dark:bg-card-dark rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
@@ -1197,7 +1197,7 @@ function oturumModalAc(o) {
     document.getElementById('oturumModal').classList.remove('hidden');
 }
 
-{% if has_permission('ik.edit') and egitim.proje %}
+{% if (has_permission('ik.edit') or has_permission('egitim.edit')) and egitim.proje %}
 // ---- Toplu eğitim davet SMS ----
 (function () {
     const CSRF = "{{ csrf_token() }}";
