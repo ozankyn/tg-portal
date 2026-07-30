@@ -26,7 +26,7 @@ from app.models.talep import Talep, TalepKategorisi
 from app.models.core import User
 from app.models.base import CalisanDurumu
 from app.models.proje import Proje, HedefKadro
-from app.models.haftalik_beyan import HaftalikBeyan, BeyanKayit
+from app.models.haftalik_beyan import HaftalikBeyan, BeyanKayit, mudurluk_ayikla
 
 rapor_bp = Blueprint('rapor', __name__)
 
@@ -594,6 +594,8 @@ Kullanıcının doğal dilde sorduğu soruları PostgreSQL sorguları ve Türkç
 **beyan_kayitlari** (Çalışanın gün seçimi — beyan başına çalışan başına 1 kayıt)
 - id, beyan_id → haftalik_beyanlar.id, calisan_id → calisanlar.id
 - telefon, ad_soyad, cuma (bool), cumartesi (bool), pazar (bool)
+- kadro_adi: beyan anındaki kadro adı (hedef_kadrolar.pozisyon_adi kopyası).
+  Müdürlük bu adın ilk " - " öncesinden ayıklanır: "Akdeniz Md. - Antalya - P.T Sniper" → "Akdeniz Md."
 - kayit_zamani, ip — NOT: is_deleted YOK
 
 ### COĞRAFYA
@@ -860,6 +862,22 @@ def _beyan_aktif_calisanlar(proje_id):
     ).order_by(Calisan.ad, Calisan.soyad).all()
 
 
+def _calisan_kadro_adi(calisan):
+    """Çalışanın kadro adı (HedefKadro.pozisyon_adi)."""
+    return calisan.kadro.pozisyon_adi if calisan.kadro else None
+
+
+def _calisan_mudurluk(calisan):
+    """Müdürlük: önce departman, boşsa kadro adından ayıklanır.
+
+    Saha kadrolarında departman çoğunlukla boş; müdürlük bilgisi
+    'Akdeniz Md. - Antalya - P.T Sniper' gibi kadro adının içinde geliyor.
+    """
+    if calisan.departman and calisan.departman.ad:
+        return calisan.departman.ad
+    return mudurluk_ayikla(_calisan_kadro_adi(calisan)) or 'Belirtilmemiş'
+
+
 def _beyan_rapor_verisi(beyan):
     """Bir beyan için raporlama verilerini hesaplar."""
     aktif_calisanlar = _beyan_aktif_calisanlar(beyan.proje_id)
@@ -870,10 +888,10 @@ def _beyan_rapor_verisi(beyan):
     beyan_etmeyenler = [c for c in aktif_calisanlar if c.id not in beyan_eden_ids]
     gelmeyecekler = [k for k in kayitlar if k.gun_sayisi == 0]
 
-    # Müdürlük (departman) bazlı gün kırılımı
+    # Müdürlük bazlı gün kırılımı (departman -> kadro adından parse fallback)
     mudurluk = {}
     for c in aktif_calisanlar:
-        dep_ad = c.departman.ad if c.departman else 'Belirtilmemiş'
+        dep_ad = _calisan_mudurluk(c)
         m = mudurluk.setdefault(dep_ad, {'toplam': 0, 'beyan_eden': 0,
                                          'cuma': 0, 'cumartesi': 0, 'pazar': 0})
         m['toplam'] += 1
@@ -1072,31 +1090,39 @@ def haftalik_beyan_export(id):
 
     wb = openpyxl.Workbook()
 
-    # Sayfa 1: Beyanlar
+    # Sayfa 1: Beyan edenler
     ws = wb.active
-    ws.title = 'Beyanlar'
-    headers = ['Ad Soyad', 'Telefon', 'Müdürlük', 'Cuma', 'Cumartesi', 'Pazar',
-               'Gün Sayısı', 'Kayıt Zamanı']
+    ws.title = 'Beyan Edenler'
+    headers = ['Ad Soyad', 'Telefon', 'Kadro', 'Müdürlük', 'Cuma', 'Cumartesi',
+               'Pazar', 'Gün Sayısı', 'Kayıt Zamanı']
     ws.append(headers)
     for c in veri['aktif_calisanlar']:
         k = veri['kayit_map'].get(c.id)
-        dep = c.departman.ad if c.departman else '-'
-        if k:
-            ws.append([
-                c.full_name, c.telefon or '-', dep,
-                'Evet' if k.cuma else 'Hayır',
-                'Evet' if k.cumartesi else 'Hayır',
-                'Evet' if k.pazar else 'Hayır',
-                k.gun_sayisi,
-                k.kayit_zamani.strftime('%d.%m.%Y %H:%M') if k.kayit_zamani else '-',
-            ])
-        else:
-            ws.append([c.full_name, c.telefon or '-', dep,
-                       'Beyan yok', 'Beyan yok', 'Beyan yok', '-', '-'])
+        if not k:
+            continue
+        ws.append([
+            c.full_name, c.telefon or '-',
+            _calisan_kadro_adi(c) or '-', _calisan_mudurluk(c),
+            'Evet' if k.cuma else 'Hayır',
+            'Evet' if k.cumartesi else 'Hayır',
+            'Evet' if k.pazar else 'Hayır',
+            k.gun_sayisi,
+            k.kayit_zamani.strftime('%d.%m.%Y %H:%M') if k.kayit_zamani else '-',
+        ])
     for col in range(1, len(headers) + 1):
-        ws.column_dimensions[get_column_letter(col)].width = 18
+        ws.column_dimensions[get_column_letter(col)].width = 22
 
-    # Sayfa 2: Müdürlük özeti
+    # Sayfa 2: Beyan etmeyenler
+    ws1 = wb.create_sheet('Beyan Etmeyenler')
+    h1 = ['Ad Soyad', 'Telefon', 'Kadro', 'Müdürlük']
+    ws1.append(h1)
+    for c in veri['beyan_etmeyenler']:
+        ws1.append([c.full_name, c.telefon or '-',
+                    _calisan_kadro_adi(c) or '-', _calisan_mudurluk(c)])
+    for col in range(1, len(h1) + 1):
+        ws1.column_dimensions[get_column_letter(col)].width = 22
+
+    # Sayfa 3: Müdürlük özeti
     ws2 = wb.create_sheet('Müdürlük Özeti')
     h2 = ['Müdürlük', 'Aktif Çalışan', 'Beyan Eden', 'Cuma', 'Cumartesi', 'Pazar']
     ws2.append(h2)

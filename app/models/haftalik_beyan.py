@@ -15,6 +15,18 @@ from app import db
 from app.models.base import TimestampMixin
 
 
+def mudurluk_ayikla(kadro_adi):
+    """Kadro adının ilk ' - ' öncesindeki müdürlük parçasını döndürür.
+
+    Saha kadroları 'Akdeniz Md. - Antalya - P.T Sniper' biçiminde adlandırılır;
+    müdürlük ayrı bir alan olmadığı için kadro adından ayıklanır.
+    Ayraç yoksa None döner (kadro adı müdürlük bilgisi taşımıyor demektir).
+    """
+    if not kadro_adi or ' - ' not in kadro_adi:
+        return None
+    return kadro_adi.split(' - ')[0].strip() or None
+
+
 class HaftalikBeyan(db.Model, TimestampMixin):
     """Bir proje için belirli bir hafta sonuna (Cuma-Pazar) açılan beyan formu."""
     __tablename__ = 'haftalik_beyanlar'
@@ -71,6 +83,9 @@ class BeyanKayit(db.Model, TimestampMixin):
 
     telefon = db.Column(db.String(20))
     ad_soyad = db.Column(db.String(200))
+    # Beyan anındaki kadro adı - çalışan sonradan başka kadroya geçse de
+    # rapor o haftanın kadrosunu göstersin diye kopyalanır
+    kadro_adi = db.Column(db.String(200))
 
     cuma = db.Column(db.Boolean, default=False)
     cumartesi = db.Column(db.Boolean, default=False)
@@ -94,6 +109,22 @@ class BeyanKayit(db.Model, TimestampMixin):
     def generate_token(self):
         self.token = secrets.token_urlsafe(32)
         return self.token
+
+    @property
+    def kadro_gosterim(self):
+        """Beyan anında kaydedilen kadro; yoksa çalışanın güncel kadrosu.
+
+        kadro_adi kolonu eklenmeden önce girilen eski kayıtlar için fallback.
+        """
+        if self.kadro_adi:
+            return self.kadro_adi
+        if self.calisan and self.calisan.kadro:
+            return self.calisan.kadro.pozisyon_adi
+        return None
+
+    @property
+    def mudurluk(self):
+        return mudurluk_ayikla(self.kadro_gosterim)
 
     @property
     def gun_sayisi(self):

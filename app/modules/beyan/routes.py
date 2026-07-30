@@ -197,6 +197,7 @@ def beyan_kaydet(id):
 
     kayit.telefon = normalize_telefon(calisan.telefon) or calisan.telefon
     kayit.ad_soyad = calisan.full_name
+    kayit.kadro_adi = calisan.kadro.pozisyon_adi if calisan.kadro else None
     kayit.cuma = cuma
     kayit.cumartesi = cumartesi
     kayit.pazar = pazar
