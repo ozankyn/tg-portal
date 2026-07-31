@@ -491,13 +491,22 @@ def calisanlar_export():
 
     calisanlar = _calisan_liste_query().all()
 
+    # Her çalışanın en son işten çıkış bildirimi (satır başına sorgu atmamak için toplu)
+    bildirim_tarihleri = {}
+    if calisanlar:
+        bildirim_tarihleri = dict(
+            db.session.query(IstenCikisBildirimi.calisan_id,
+                             db.func.max(IstenCikisBildirimi.created_at))
+            .filter(IstenCikisBildirimi.calisan_id.in_([c.id for c in calisanlar]))
+            .group_by(IstenCikisBildirimi.calisan_id).all())
+
     wb = Workbook()
     ws = wb.active
     ws.title = 'Çalışanlar'
 
     headers = ['Sicil No', 'Ad Soyad', 'TC Kimlik', 'Proje', 'Kadro', 'Pozisyon',
-               'Departman', 'Durum', 'İşe Başlama', 'Telefon', 'Email', 'IBAN',
-               'Ehliyet']
+               'Departman', 'Durum', 'Ayrılma Tarihi', 'Bildirim Tarihi',
+               'İşe Başlama', 'Telefon', 'Email', 'IBAN', 'Ehliyet']
     ws.append(headers)
 
     header_font = Font(bold=True, color='FFFFFF')
@@ -512,6 +521,7 @@ def calisanlar_export():
     }
 
     for c in calisanlar:
+        bildirim = bildirim_tarihleri.get(c.id)
         ws.append([
             c.sicil_no or '',
             f'{c.ad} {c.soyad}',
@@ -521,6 +531,8 @@ def calisanlar_export():
             c.pozisyon.ad if c.pozisyon else '',
             c.departman.ad if c.departman else '',
             durum_etiket.get(c.durum.value if c.durum else '', c.durum.value if c.durum else ''),
+            c.isten_ayrilma.strftime('%d.%m.%Y') if c.isten_ayrilma else '',
+            bildirim.strftime('%d.%m.%Y') if bildirim else '',
             c.ise_baslama.strftime('%d.%m.%Y') if c.ise_baslama else '',
             c.telefon or '',
             c.email or '',
@@ -528,7 +540,7 @@ def calisanlar_export():
             c.ehliyet_sinifi or 'Yok',
         ])
 
-    widths = [12, 28, 13, 22, 22, 22, 20, 12, 14, 16, 28, 28, 10]
+    widths = [12, 28, 13, 22, 22, 22, 20, 12, 15, 15, 14, 16, 28, 28, 10]
     for idx, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = w
 
