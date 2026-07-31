@@ -86,12 +86,15 @@
 </div>
 
 {% if pagination.pages > 1 %}
+{# request.args 'page' içerebilir; url_for'a tekrar page geçince çakışır (500). Temizlenmiş kopya: #}
+{% set args = request.args.to_dict() %}
+{% set _ = args.pop('page', None) %}
 <nav class="mt-4 flex justify-center">
     <ul class="inline-flex items-center gap-1">
         {% for p in pagination.iter_pages() %}
         {% if p %}
         <li>
-            <a href="{{ url_for('filo.yakit_liste', page=p, **request.args) }}" class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
+            <a href="{{ url_for('filo.yakit_liste', page=p, **args) }}" class="px-3 py-1.5 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 text-[#111418] dark:text-white hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
         </li>
         {% else %}
         <li><span class="px-3 py-1.5 text-gray-400 dark:text-gray-500">...</span></li>
