@@ -561,7 +561,8 @@ def detay(id):
     # Adayken yüklenen bilgiler - bağlı Aday kaydı (varsa)
     aday = Aday.query.filter_by(calisan_id=calisan.id, is_deleted=False).first()
     aday_gecmis = aday.islem_gecmisi.all() if aday else []
-    aday_evraklar = aday.evraklar.all() if aday else []
+    # Adaylar tablosundaki sabit dosya alanları + aday_evraklar kayıtları birlikte
+    aday_evraklar = _aday_evrak_listesi(aday) if aday else []
 
     # Tekrar işe alım modalı için aktif kadrolar (yalnızca gerekince yükle)
     kadrolar = []
