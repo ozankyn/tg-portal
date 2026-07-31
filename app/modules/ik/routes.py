@@ -6,7 +6,8 @@ Güncellenmiş versiyon: Evrak yönetimi, İşten çıkış, Aday→Çalışan d
 
 from datetime import datetime, date, timedelta
 from decimal import Decimal
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, send_file, jsonify
+from flask import (Blueprint, render_template, redirect, url_for, flash, request,
+                   current_app, send_file, jsonify, abort)
 from flask_login import login_required, current_user
 from app.models.ik import ZimmetTipi, Zimmet, ZimmetLog, SgkCikisKodu
 from app.models.sirket import SgkDosya
@@ -1150,6 +1151,142 @@ def aday_duzenle(id):
                           pozisyonlar=pozisyonlar,
                           ehliyet_siniflari=EHLIYET_SINIFLARI)
 
+# ============================================================
+# ADAY EVRAKLARI (sabit alanlar + aday_evraklar tablosu)
+# ============================================================
+
+# Adaylar tablosundaki sabit dosya alanları: (alan, etiket).
+# Başvuru formundan gelen dosyalar bu alanlara yazılır; aday_evraklar
+# tablosuna kayıt düşmez. Bu yüzden evrak listesinde iki kaynak birleştirilir.
+ADAY_DOSYA_ALANLARI = [
+    ('foto', 'Fotoğraf'),
+    ('cv_dosya', 'CV'),
+    ('kimlik_on', 'Kimlik (Ön)'),
+    ('kimlik_arka', 'Kimlik (Arka)'),
+    ('diploma_foto', 'Diploma'),
+    ('ehliyet_foto', 'Ehliyet'),
+    ('src_foto', 'SRC Belgesi'),
+    ('ikametgah', 'İkametgah'),
+    ('adli_sicil', 'Adli Sicil Kaydı'),
+    ('kargo_barkod_foto', 'Kargo Barkodu'),
+]
+ADAY_DOSYA_ETIKETLERI = dict(ADAY_DOSYA_ALANLARI)
+
+
+def _dosya_yol_adaylari(deger):
+    """Bir dosya yolu değeri için diskteki olası tam yollar.
+
+    Başvuru/kariyer formları 'uploads/adaylar/<id>/<dosya>' (static klasörüne
+    göre), evrak akışı ise UPLOAD_FOLDER'a göre relatif yol kaydediyor; eski
+    kayıtlarda mutlak yol da olabilir.
+    """
+    yol = (deger or '').strip()
+    if not yol:
+        return []
+    if os.path.isabs(yol):
+        return [yol]
+    adaylar = [
+        os.path.join(current_app.config['UPLOAD_FOLDER'], yol),
+        os.path.join(current_app.static_folder, yol),
+    ]
+    if yol.startswith('uploads/'):
+        # 'uploads/adaylar/..' değeri UPLOAD_FOLDER'ın kendisine göre de denenir
+        adaylar.append(os.path.join(current_app.config['UPLOAD_FOLDER'],
+                                    yol[len('uploads/'):]))
+    return adaylar
+
+
+def _aday_dosya_tam_yol(deger):
+    """Dosya değerinin diskte var olan tam yolu (bulunamazsa None).
+
+    Relatif değerler yalnızca izinli köklerin (UPLOAD_FOLDER / static) altında
+    çözülür — DB'deki bozuk bir yol ('../..') klasör dışına çıkamasın.
+    """
+    mutlak = os.path.isabs((deger or '').strip())
+    kokler = [os.path.realpath(current_app.config['UPLOAD_FOLDER']),
+              os.path.realpath(current_app.static_folder)]
+    for yol in _dosya_yol_adaylari(deger):
+        if not (os.path.exists(yol) and os.path.isfile(yol)):
+            continue
+        if mutlak:
+            return yol
+        gercek = os.path.realpath(yol)
+        if any(gercek.startswith(kok + os.sep) for kok in kokler):
+            return yol
+    return None
+
+
+def _aday_evrak_listesi(aday):
+    """Evrak Takibi listesi: sabit alanlar + aday_evraklar kayıtları.
+
+    Aynı fiziksel dosya iki kaynakta da varsa bir kez gösterilir.
+    """
+    liste = []
+    gorulen_yollar = set()
+
+    for alan, etiket in ADAY_DOSYA_ALANLARI:
+        deger = getattr(aday, alan, None)
+        if not deger:
+            continue
+        tam = _aday_dosya_tam_yol(deger)
+        if tam:
+            gorulen_yollar.add(os.path.realpath(tam))
+        liste.append({
+            'kaynak': 'alan',
+            'alan': alan,
+            'evrak_id': None,
+            'ad': etiket,
+            'dosya_adi': os.path.basename(deger),
+            'dosya_var': tam is not None,
+            'durum': 'yuklendi' if tam else 'kayip',
+            'tarih': None,
+        })
+
+    for ev in aday.evraklar:
+        tam = _evrak_tam_yol(ev.dosya_yolu)
+        var = bool(tam) and os.path.exists(tam) and os.path.isfile(tam)
+        if var and os.path.realpath(tam) in gorulen_yollar:
+            continue
+        liste.append({
+            'kaynak': 'evrak',
+            'alan': None,
+            'evrak_id': ev.id,
+            'ad': (ev.evrak_tipi.ad if ev.evrak_tipi else None) or ev.dosya_adi or 'Evrak',
+            'dosya_adi': ev.dosya_adi or (os.path.basename(ev.dosya_yolu) if ev.dosya_yolu else None),
+            'dosya_var': var,
+            'durum': ev.durum,
+            'tarih': ev.created_at,
+        })
+
+    return liste
+
+
+@ik_bp.route('/aday/<int:id>/dosya/<alan>')
+@login_required
+@permission_required('ik.view')
+def aday_dosya_indir(id, alan):
+    """Adaylar tablosundaki sabit alandaki dosyayı indir / görüntüle (?goster=1)."""
+    aday = Aday.query.get_or_404(id)
+    if not aday_in_scope(aday):
+        flash('Bu adayın evraklarını görüntüleme yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.aday_liste'))
+
+    if alan not in ADAY_DOSYA_ETIKETLERI:
+        abort(404)
+
+    inline = request.args.get('goster') == '1'
+    tam = _aday_dosya_tam_yol(getattr(aday, alan, None))
+    if not tam:
+        if inline:
+            # <img>/yeni sekme isteklerinde flash mesajı bırakmadan 404 dön
+            abort(404)
+        flash('Evrak dosyası bulunamadı.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=aday.id))
+
+    return send_file(tam, as_attachment=not inline,
+                     download_name=os.path.basename(tam))
+
+
 @ik_bp.route('/aday/<int:id>')
 @login_required
 @permission_required('ik.view')
@@ -1185,6 +1322,10 @@ def aday_detay(id):
     return render_template('ik/aday_detay.html',
                           aday=aday,
                           evrak_tipleri=evrak_tipleri,
+                          evrak_listesi=_aday_evrak_listesi(aday),
+                          aday_foto_url=(url_for('ik.aday_dosya_indir', id=aday.id,
+                                                 alan='foto', goster=1)
+                                         if _aday_dosya_tam_yol(aday.foto) else None),
                           evrak_tamamlanma=evrak_tamamlanma,
                           eksik_evraklar=eksik_evraklar,
                           ise_alim_hazir=ise_alim_hazir,
@@ -2338,13 +2479,18 @@ def evrak_indir(id):
 # ============================================================
 
 def _evrak_tam_yol(dosya_yolu):
-    """AdayEvrak/CalisanEvrak dosya_yolu değerini tam dosya yoluna çözer."""
+    """AdayEvrak/CalisanEvrak dosya_yolu değerini tam dosya yoluna çözer.
+
+    Farklı yükleme akışları yolu UPLOAD_FOLDER'a ya da static klasörüne göre
+    kaydettiği için diskte var olan ilk aday yol döner; hiçbiri yoksa (geriye
+    dönük uyumluluk) UPLOAD_FOLDER'a göre çözülmüş yol döner.
+    """
     yol = dosya_yolu or ''
     if not yol:
         return None
     if os.path.isabs(yol):
         return yol
-    return os.path.join(current_app.config['UPLOAD_FOLDER'], yol)
+    return _aday_dosya_tam_yol(yol) or os.path.join(current_app.config['UPLOAD_FOLDER'], yol)
 
 
 def _iban_evrak_tipi_idleri():
