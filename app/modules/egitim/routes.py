@@ -2224,10 +2224,15 @@ def oturum_anket_sms(oturum_id):
 DAVET_ADAY_DURUMLARI = ('onaylandi', 'sgk_giris_talebi', 'sgk_girisi_yapildi')
 
 DAVET_FILTRELERI = {
+    'bugun': 'Bugün iş başı yapanlar',
     'yarin': 'Yarın iş başı yapacaklar',
     'hafta': 'Bu hafta iş başı yapacaklar',
+    'aralik': 'Tarih aralığında çalışana dönüşenler',
     'tumu': 'Tüm onaylı adaylar',
 }
+
+# Tarih aralığı gerektiren filtreler (baslangic + bitis parametresi zorunlu)
+DAVET_ARALIK_FILTRELERI = ('aralik',)
 
 
 def _davet_tarih_araligi(filtre):
@@ -2236,6 +2241,8 @@ def _davet_tarih_araligi(filtre):
     'tumu' için (None, None) — tarih filtresi uygulanmaz.
     """
     bugun = date.today()
+    if filtre == 'bugun':
+        return bugun, bugun
     if filtre == 'yarin':
         yarin = bugun + timedelta(days=1)
         return yarin, yarin
@@ -2246,53 +2253,190 @@ def _davet_tarih_araligi(filtre):
     return None, None
 
 
-def _davet_adaylari(egitim, filtre):
-    """Eğitimin projesindeki, filtreye uyan onaylı adayları döner."""
+def _davet_aday_sorgusu(egitim):
+    """Eğitimin projesindeki (silinmemiş) adaylar için temel sorgu."""
+    return (Aday.query
+            .join(HedefKadro, Aday.kadro_id == HedefKadro.id)
+            .filter(Aday.is_deleted == False,  # noqa: E712
+                    HedefKadro.proje_id == egitim.proje_id))
+
+
+def _davet_calisan_sorgusu(egitim):
+    """Eğitimin projesindeki (silinmemiş, ayrılmamış) çalışanlar için temel sorgu."""
+    return (Calisan.query
+            .join(HedefKadro, Calisan.kadro_id == HedefKadro.id)
+            .filter(Calisan.is_deleted == False,  # noqa: E712
+                    Calisan.durum != CalisanDurumu.AYRILDI,
+                    HedefKadro.proje_id == egitim.proje_id))
+
+
+def _davet_baslangic_tarihi(tip, obj):
+    """Kişinin iş başı tarihi (aday: planlanan, çalışan: gerçekleşen)."""
+    return obj.planlanan_baslangic if tip == 'aday' else obj.ise_baslama
+
+
+def _davet_tekille(kayitlar):
+    """(tip, obj) listesindeki mükerrerleri temizler.
+
+    Aynı kişi hem aday hem çalışan olarak listeye girdiyse (dönüştürülmüş aday)
+    çalışan kaydı tercih edilir — SMS logu çalışan üzerine düşsün diye.
+    """
+    from app.utils import normalize_telefon
+
+    gorulen = set()
+    tekil = []
+    calisan_telefonlar = set()
+    for tip, obj in kayitlar:
+        anahtar = (tip, obj.id)
+        if anahtar in gorulen:
+            continue
+        gorulen.add(anahtar)
+        tekil.append((tip, obj))
+        if tip == 'calisan':
+            tel = normalize_telefon(getattr(obj, 'telefon', None))
+            if tel:
+                calisan_telefonlar.add(tel[-10:])
+
+    sonuc = []
+    for tip, obj in tekil:
+        if tip == 'aday':
+            tel = normalize_telefon(getattr(obj, 'telefon', None))
+            if tel and tel[-10:] in calisan_telefonlar:
+                continue
+        sonuc.append((tip, obj))
+
+    sonuc.sort(key=lambda k: (_davet_baslangic_tarihi(k[0], k[1]) or date.max,
+                              k[1].ad or '', k[1].soyad or ''))
+    return sonuc
+
+
+def _davet_donusenler(egitim, bas, bit):
+    """Dönüştürme tarihi [bas, bit] aralığında olan, çalışana dönüşmüş adaylar.
+
+    Dönüştürme tarihi olarak işlem geçmişindeki 'donustur' kaydı kullanılır;
+    yoksa adayın updated_at değerine düşülür.
+    """
+    from app.models.ik import AdayIslemGecmisi
+
+    donusum = (db.session.query(
+                    AdayIslemGecmisi.aday_id.label('aday_id'),
+                    db.func.max(AdayIslemGecmisi.created_at).label('tarih'))
+               .filter(AdayIslemGecmisi.islem == 'donustur')
+               .group_by(AdayIslemGecmisi.aday_id)
+               .subquery())
+
+    bas_dt = datetime.combine(bas, datetime.min.time())
+    bit_dt = datetime.combine(bit, datetime.max.time())
+    donusum_tarihi = db.func.coalesce(donusum.c.tarih, Aday.updated_at)
+
+    return (_davet_aday_sorgusu(egitim)
+            .outerjoin(donusum, donusum.c.aday_id == Aday.id)
+            .filter(Aday.durum == 'calisana_donusturuldu',
+                    donusum_tarihi >= bas_dt,
+                    donusum_tarihi <= bit_dt)
+            .all())
+
+
+def _davet_kisileri(egitim, filtre, bas=None, bit=None):
+    """Filtreye uyan davet hedeflerini [(tip, obj), ...] olarak döner.
+
+    tip: 'aday' | 'calisan'
+    """
     if not egitim.proje_id:
         return []
 
-    q = (Aday.query
-         .join(HedefKadro, Aday.kadro_id == HedefKadro.id)
-         .filter(Aday.is_deleted == False,  # noqa: E712
-                 Aday.durum.in_(DAVET_ADAY_DURUMLARI),
-                 HedefKadro.proje_id == egitim.proje_id))
+    kayitlar = []
 
-    bas, bit = _davet_tarih_araligi(filtre)
-    if bas and bit:
-        q = q.filter(Aday.planlanan_baslangic >= bas,
-                     Aday.planlanan_baslangic <= bit)
+    if filtre == 'aralik':
+        if not (bas and bit):
+            return []
+        # 1) Bu aralıkta çalışana dönüştürülen adaylar (çalışan kaydı varsa onun üzerinden)
+        for a in _davet_donusenler(egitim, bas, bit):
+            calisan = a.donusen_calisan
+            if calisan and (calisan.is_deleted or calisan.durum == CalisanDurumu.AYRILDI):
+                continue  # dönüşmüş ama ayrılmış/silinmiş — davet edilmez
+            # Çalışan kaydı bu projede değilse (kadro değişmişse) aday üzerinden gönderilir
+            if calisan and calisan.kadro and calisan.kadro.proje_id == egitim.proje_id:
+                kayitlar.append(('calisan', calisan))
+            else:
+                kayitlar.append(('aday', a))
+        # 2) İşe başlama tarihi bu aralıkta olan çalışanlar
+        for c in (_davet_calisan_sorgusu(egitim)
+                  .filter(Calisan.ise_baslama >= bas, Calisan.ise_baslama <= bit).all()):
+            kayitlar.append(('calisan', c))
+        return _davet_tekille(kayitlar)
 
-    return q.order_by(Aday.planlanan_baslangic, Aday.ad, Aday.soyad).all()
+    if filtre == 'bugun':
+        bugun = date.today()
+        for a in (_davet_aday_sorgusu(egitim)
+                  .filter(Aday.durum.in_(DAVET_ADAY_DURUMLARI),
+                          Aday.planlanan_baslangic == bugun).all()):
+            kayitlar.append(('aday', a))
+        for c in _davet_calisan_sorgusu(egitim).filter(Calisan.ise_baslama == bugun).all():
+            kayitlar.append(('calisan', c))
+        return _davet_tekille(kayitlar)
+
+    # yarin / hafta / tumu — sadece onaylı adaylar
+    q = _davet_aday_sorgusu(egitim).filter(Aday.durum.in_(DAVET_ADAY_DURUMLARI))
+    f_bas, f_bit = _davet_tarih_araligi(filtre)
+    if f_bas and f_bit:
+        q = q.filter(Aday.planlanan_baslangic >= f_bas,
+                     Aday.planlanan_baslangic <= f_bit)
+    return _davet_tekille([('aday', a) for a in q.all()])
 
 
 def _davet_durum_setleri(egitim_id):
-    """Bu eğitim için (davet edilen, kayıt olan) aday_id ve telefon kümeleri."""
+    """Bu eğitim için davet edilen / kayıt olan kişilerin kimlik kümeleri."""
     from app.models.egitim import EgitimDavetSms
 
-    davet_aday_ids, davet_telefonlar = set(), set()
+    setler = {
+        'davet_aday': set(), 'davet_calisan': set(), 'davet_tel': set(),
+        'kayit_aday': set(), 'kayit_calisan': set(), 'kayit_tel': set(),
+    }
+
     for log in EgitimDavetSms.query.filter_by(egitim_id=egitim_id, basarili=True).all():
         if log.aday_id:
-            davet_aday_ids.add(log.aday_id)
+            setler['davet_aday'].add(log.aday_id)
+        if log.calisan_id:
+            setler['davet_calisan'].add(log.calisan_id)
         if log.telefon:
-            davet_telefonlar.add(log.telefon[-10:])
+            setler['davet_tel'].add(log.telefon[-10:])
 
-    kayit_aday_ids, kayit_telefonlar = set(), set()
     for k in EgitimKayit.query.filter_by(egitim_id=egitim_id, durum='onaylandi').all():
         if k.aday_id:
-            kayit_aday_ids.add(k.aday_id)
+            setler['kayit_aday'].add(k.aday_id)
+        if k.calisan_id:
+            setler['kayit_calisan'].add(k.calisan_id)
         if k.telefon:
-            kayit_telefonlar.add(k.telefon[-10:])
+            setler['kayit_tel'].add(k.telefon[-10:])
 
-    return (davet_aday_ids, davet_telefonlar), (kayit_aday_ids, kayit_telefonlar)
+    return setler
+
+
+def _davet_tarih_parametreleri(args):
+    """?baslangic=YYYY-MM-DD&bitis=YYYY-MM-DD -> (bas, bit, hata)."""
+    ham_bas = (args.get('baslangic') or '').strip()
+    ham_bit = (args.get('bitis') or '').strip()
+    if not ham_bas or not ham_bit:
+        return None, None, 'Başlangıç ve bitiş tarihi seçilmelidir.'
+    try:
+        bas = datetime.strptime(ham_bas, '%Y-%m-%d').date()
+        bit = datetime.strptime(ham_bit, '%Y-%m-%d').date()
+    except ValueError:
+        return None, None, 'Tarih formatı geçersiz.'
+    if bas > bit:
+        return None, None, 'Başlangıç tarihi bitiş tarihinden sonra olamaz.'
+    return bas, bit, None
 
 
 @egitim_bp.route('/<int:id>/davet-sms-liste')
 @login_required
 @any_permission_required('ik.edit', 'egitim.edit')
 def davet_sms_liste(id):
-    """Toplu davet SMS öncesi hedef aday listesi (JSON).
+    """Toplu davet SMS öncesi hedef kişi listesi (JSON).
 
-    ?filtre=yarin|hafta|tumu
+    ?filtre=bugun|yarin|hafta|aralik|tumu
+    'aralik' için ayrıca ?baslangic=YYYY-MM-DD&bitis=YYYY-MM-DD
     """
     from app.utils import normalize_telefon
 
@@ -2304,20 +2448,32 @@ def davet_sms_liste(id):
     if filtre not in DAVET_FILTRELERI:
         filtre = 'yarin'
 
-    (davet_ids, davet_tels), (kayit_ids, kayit_tels) = _davet_durum_setleri(egitim.id)
+    bas = bit = None
+    if filtre in DAVET_ARALIK_FILTRELERI:
+        bas, bit, hata = _davet_tarih_parametreleri(request.args)
+        if hata:
+            return jsonify({'hata': hata}), 400
+
+    setler = _davet_durum_setleri(egitim.id)
 
     adaylar = []
-    for a in _davet_adaylari(egitim, filtre):
-        tel = normalize_telefon(a.telefon)
+    for tip, obj in _davet_kisileri(egitim, filtre, bas, bit):
+        tel = normalize_telefon(obj.telefon)
         son10 = tel[-10:] if tel else None
+        baslangic = _davet_baslangic_tarihi(tip, obj)
         adaylar.append({
-            'id': a.id,
-            'ad_soyad': a.full_name,
+            'tip': tip,
+            'id': obj.id,
+            'anahtar': f'{tip}-{obj.id}',
+            'ad_soyad': obj.full_name,
             'telefon': tel or '',
             'telefon_gecerli': bool(tel),
-            'baslangic': a.planlanan_baslangic.strftime('%d.%m.%Y') if a.planlanan_baslangic else '',
-            'davet_edildi': a.id in davet_ids or (son10 in davet_tels if son10 else False),
-            'kayitli': a.id in kayit_ids or (son10 in kayit_tels if son10 else False),
+            'kadro': obj.kadro.pozisyon_adi if obj.kadro else '',
+            'baslangic': baslangic.strftime('%d.%m.%Y') if baslangic else '',
+            'davet_edildi': (obj.id in setler['davet_' + tip]
+                             or (son10 in setler['davet_tel'] if son10 else False)),
+            'kayitli': (obj.id in setler['kayit_' + tip]
+                        or (son10 in setler['kayit_tel'] if son10 else False)),
         })
 
     return jsonify({
@@ -2332,39 +2488,53 @@ def davet_sms_liste(id):
 @login_required
 @any_permission_required('ik.edit', 'egitim.edit')
 def davet_sms_tek(id):
-    """Tek bir adaya eğitim davet SMS'i gönderir (AJAX döngüsünden çağrılır)."""
+    """Tek bir aday/çalışana eğitim davet SMS'i gönderir (AJAX döngüsünden çağrılır)."""
     from app.models.egitim import davet_sms_gonderildi_mi
     from app.services.notification import egitim_davet_sms_gonder
+    from app.utils import normalize_telefon
 
     egitim = Egitim.query.get_or_404(id)
 
     veri = request.get_json(silent=True) or {}
-    aday_id = veri.get('aday_id')
     zorla = bool(veri.get('zorla'))
-
-    aday = Aday.query.filter_by(id=aday_id, is_deleted=False).first()
-    if not aday:
-        return jsonify({'durum': 'hatali', 'mesaj': 'Aday bulunamadı.'}), 404
+    calisan_id = veri.get('calisan_id')
+    aday_id = veri.get('aday_id')
 
     # Yetki/kapsam kontrolü sunucu tarafında tekrar doğrulanır:
-    # aday onaylı olmalı ve eğitimin projesinde bir kadroda bulunmalı.
-    if aday.durum not in DAVET_ADAY_DURUMLARI:
-        return jsonify({'durum': 'atlandi', 'ad_soyad': aday.full_name,
-                        'mesaj': 'Aday onaylı değil.'})
-    if not aday.kadro or aday.kadro.proje_id != egitim.proje_id:
-        return jsonify({'durum': 'atlandi', 'ad_soyad': aday.full_name,
-                        'mesaj': 'Aday bu eğitimin projesinde değil.'})
+    # kişi uygun durumda olmalı ve eğitimin projesinde bir kadroda bulunmalı.
+    if calisan_id:
+        kisi = Calisan.query.filter_by(id=calisan_id, is_deleted=False).first()
+        if not kisi:
+            return jsonify({'durum': 'hatali', 'mesaj': 'Çalışan bulunamadı.'}), 404
+        if kisi.durum == CalisanDurumu.AYRILDI:
+            return jsonify({'durum': 'atlandi', 'ad_soyad': kisi.full_name,
+                            'mesaj': 'Çalışan ayrılmış.'})
+        kimlik = {'calisan_id': kisi.id}
+    else:
+        kisi = Aday.query.filter_by(id=aday_id, is_deleted=False).first()
+        if not kisi:
+            return jsonify({'durum': 'hatali', 'mesaj': 'Aday bulunamadı.'}), 404
+        if kisi.durum not in DAVET_ADAY_DURUMLARI + ('calisana_donusturuldu',):
+            return jsonify({'durum': 'atlandi', 'ad_soyad': kisi.full_name,
+                            'mesaj': 'Aday onaylı değil.'})
+        kimlik = {'aday_id': kisi.id}
 
-    if not zorla and davet_sms_gonderildi_mi(egitim.id, aday_id=aday.id):
-        return jsonify({'durum': 'atlandi', 'ad_soyad': aday.full_name,
+    if not kisi.kadro or kisi.kadro.proje_id != egitim.proje_id:
+        return jsonify({'durum': 'atlandi', 'ad_soyad': kisi.full_name,
+                        'mesaj': 'Kişi bu eğitimin projesinde değil.'})
+
+    # Telefon da kontrol edilir: aday çalışana dönüştüğünde mükerrer gitmesin.
+    if not zorla and davet_sms_gonderildi_mi(
+            egitim.id, telefon=normalize_telefon(kisi.telefon), **kimlik):
+        return jsonify({'durum': 'atlandi', 'ad_soyad': kisi.full_name,
                         'mesaj': 'Daha önce davet edilmiş.'})
 
-    sonuc = egitim_davet_sms_gonder(egitim, aday, kaynak='manuel',
+    sonuc = egitim_davet_sms_gonder(egitim, kisi, kaynak='manuel',
                                     gonderen_id=current_user.id)
     if sonuc.get('success'):
-        return jsonify({'durum': 'basarili', 'ad_soyad': aday.full_name,
+        return jsonify({'durum': 'basarili', 'ad_soyad': kisi.full_name,
                         'telefon': sonuc.get('telefon'), 'mesaj': 'Gönderildi'})
-    return jsonify({'durum': 'hatali', 'ad_soyad': aday.full_name,
+    return jsonify({'durum': 'hatali', 'ad_soyad': kisi.full_name,
                     'telefon': sonuc.get('telefon'),
                     'mesaj': sonuc.get('error') or 'Gönderilemedi'})
 

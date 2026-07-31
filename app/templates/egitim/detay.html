@@ -1035,7 +1035,7 @@
             <div>
                 <h5 class="font-bold text-lg text-[#111418] dark:text-white">Eğitim Davet SMS Gönder</h5>
                 <p class="text-xs text-text-muted dark:text-text-muted-dark mt-0.5">
-                    {{ egitim.proje.ad }} projesindeki onaylı adaylara kayıt linki gönderilir.
+                    {{ egitim.proje.ad }} projesindeki aday ve çalışanlara kayıt linki gönderilir.
                 </p>
             </div>
             <button type="button" onclick="davetModalKapat()" class="p-1 hover:bg-gray-100 dark:hover:bg-[#252b36] rounded-lg">
@@ -1049,10 +1049,24 @@
             <div class="space-y-2 mb-4">
                 {% for kod, etiket in davet_filtreleri.items() %}
                 <label class="flex items-center gap-3 p-3 border border-border-light dark:border-border-dark rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#252b36]">
-                    <input type="radio" name="davetFiltre" value="{{ kod }}" {% if loop.first %}checked{% endif %}
+                    <input type="radio" name="davetFiltre" value="{{ kod }}" {% if kod == 'yarin' %}checked{% endif %}
                            class="w-4 h-4 text-primary border-gray-300 focus:ring-primary">
                     <span class="text-sm text-[#111418] dark:text-white">{{ etiket }}</span>
                 </label>
+                {% if kod == 'aralik' %}
+                <div id="davetAralikAlan" class="hidden grid grid-cols-2 gap-3 pl-3 pr-1 pb-1">
+                    <div>
+                        <label for="davetBaslangic" class="block mb-1 text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Başlangıç</label>
+                        <input type="date" id="davetBaslangic"
+                               class="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-[#111418] text-[#111418] dark:text-white focus:ring-primary focus:border-primary">
+                    </div>
+                    <div>
+                        <label for="davetBitis" class="block mb-1 text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Bitiş</label>
+                        <input type="date" id="davetBitis"
+                               class="w-full px-3 py-2 text-sm border border-border-light dark:border-border-dark rounded-lg bg-white dark:bg-[#111418] text-[#111418] dark:text-white focus:ring-primary focus:border-primary">
+                    </div>
+                </div>
+                {% endif %}
                 {% endfor %}
             </div>
 
@@ -1102,6 +1116,7 @@
                             <tr>
                                 <th class="px-3 py-2 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Ad Soyad</th>
                                 <th class="px-3 py-2 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Telefon</th>
+                                <th class="px-3 py-2 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Kadro</th>
                                 <th class="px-3 py-2 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">İş Başı</th>
                                 <th class="px-3 py-2 text-left text-xs font-bold uppercase text-text-muted dark:text-text-muted-dark">Durum</th>
                             </tr>
@@ -1217,9 +1232,33 @@ function oturumModalAc(o) {
         return d.innerHTML;
     }
 
+    const ARALIK_FILTRELERI = ['aralik'];
+
     function seciliFiltre() {
         const r = document.querySelector('input[name="davetFiltre"]:checked');
         return r ? r.value : 'yarin';
+    }
+
+    function aralikMi() { return ARALIK_FILTRELERI.includes(seciliFiltre()); }
+
+    function isoTarih(g) {
+        const d = new Date();
+        d.setDate(d.getDate() + g);
+        return d.getFullYear() + '-' +
+               String(d.getMonth() + 1).padStart(2, '0') + '-' +
+               String(d.getDate()).padStart(2, '0');
+    }
+
+    function aralikAlaniGuncelle() {
+        const alan = el('davetAralikAlan');
+        if (!alan) return;
+        if (aralikMi()) {
+            if (!el('davetBaslangic').value) el('davetBaslangic').value = isoTarih(-7);
+            if (!el('davetBitis').value) el('davetBitis').value = isoTarih(0);
+            alan.classList.remove('hidden');
+        } else {
+            alan.classList.add('hidden');
+        }
     }
 
     function atlanacakMi(a) {
@@ -1249,18 +1288,20 @@ function oturumModalAc(o) {
         const tbody = el('davetTablo');
         tbody.innerHTML = '';
         if (!adaylar.length) {
-            tbody.innerHTML = '<tr><td colspan="4" class="px-3 py-6 text-center text-text-muted dark:text-text-muted-dark">Bu filtreye uyan aday bulunamadı.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="px-3 py-6 text-center text-text-muted dark:text-text-muted-dark">Bu filtreye uyan kişi bulunamadı.</td></tr>';
             return;
         }
         adaylar.forEach(a => {
             const tr = document.createElement('tr');
-            tr.id = 'davetSatir' + a.id;
+            tr.id = 'davetSatir' + a.anahtar;
             if (atlanacakMi(a)) tr.className = 'opacity-60';
             tr.innerHTML =
-                '<td class="px-3 py-2 font-medium text-[#111418] dark:text-white">' + esc(a.ad_soyad) + '</td>' +
+                '<td class="px-3 py-2 font-medium text-[#111418] dark:text-white">' + esc(a.ad_soyad) +
+                    (a.tip === 'calisan' ? ' <span class="text-xs text-text-muted dark:text-text-muted-dark">(çalışan)</span>' : '') + '</td>' +
                 '<td class="px-3 py-2 font-mono text-text-muted dark:text-text-muted-dark">' + esc(a.telefon || '-') + '</td>' +
+                '<td class="px-3 py-2 text-text-muted dark:text-text-muted-dark">' + esc(a.kadro || '-') + '</td>' +
                 '<td class="px-3 py-2 text-text-muted dark:text-text-muted-dark whitespace-nowrap">' + esc(a.baslangic || '-') + '</td>' +
-                '<td class="px-3 py-2" id="davetDurum' + a.id + '">' + durumRozeti(a) + '</td>';
+                '<td class="px-3 py-2" id="davetDurum' + a.anahtar + '">' + durumRozeti(a) + '</td>';
             tbody.appendChild(tr);
         });
     }
@@ -1269,7 +1310,7 @@ function oturumModalAc(o) {
         const hedef = hedefler().length;
         const atlanan = adaylar.length - hedef;
         el('davetOzet').innerHTML =
-            '<b>' + adaylar.length + '</b> aday listelendi. ' +
+            '<b>' + adaylar.length + '</b> kişi listelendi. ' +
             '<b class="text-primary">' + hedef + '</b> kişiye SMS gönderilecek' +
             (atlanan ? ', <b>' + atlanan + '</b> kişi atlanacak.' : '.');
         el('davetGonderBtn').disabled = (hedef === 0 || calisiyor);
@@ -1281,8 +1322,22 @@ function oturumModalAc(o) {
         el('davetTablo').innerHTML = '';
         el('davetIlerlemeKart').classList.add('hidden');
         adaylar = [];
+        let sorgu = '?filtre=' + encodeURIComponent(seciliFiltre());
+        if (aralikMi()) {
+            const bas = el('davetBaslangic').value;
+            const bit = el('davetBitis').value;
+            if (!bas || !bit) {
+                el('davetOzet').textContent = 'Başlangıç ve bitiş tarihi seçin.';
+                return;
+            }
+            if (bas > bit) {
+                el('davetOzet').textContent = 'Başlangıç tarihi bitiş tarihinden sonra olamaz.';
+                return;
+            }
+            sorgu += '&baslangic=' + encodeURIComponent(bas) + '&bitis=' + encodeURIComponent(bit);
+        }
         try {
-            const resp = await fetch(LISTE_URL + '?filtre=' + encodeURIComponent(seciliFiltre()),
+            const resp = await fetch(LISTE_URL + sorgu,
                                      { headers: { 'X-CSRFToken': CSRF } });
             const veri = await resp.json();
             if (!resp.ok) {
@@ -1308,17 +1363,19 @@ function oturumModalAc(o) {
         el('davetSayacHatali').textContent = hatali;
     }
 
-    async function tekGonder(adayId) {
+    async function tekGonder(a) {
+        const govde = a.tip === 'calisan' ? { calisan_id: a.id } : { aday_id: a.id };
         const resp = await fetch(TEK_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
-            body: JSON.stringify({ aday_id: adayId })
+            body: JSON.stringify(govde)
         });
         return await resp.json();
     }
 
     window.davetModalAc = function () {
         el('davetSmsModal').classList.remove('hidden');
+        aralikAlaniGuncelle();
         listeYukle();
     };
 
@@ -1350,11 +1407,11 @@ function oturumModalAc(o) {
 
         for (const a of hedef) {
             if (durduruldu) break;
-            const hucre = el('davetDurum' + a.id);
+            const hucre = el('davetDurum' + a.anahtar);
             if (hucre) hucre.innerHTML = rozet('Gönderiliyor...', 'blue');
             let r;
             try {
-                r = await tekGonder(a.id);
+                r = await tekGonder(a);
             } catch (e) {
                 r = { durum: 'hatali', mesaj: 'Bağlantı hatası' };
             }
@@ -1382,7 +1439,14 @@ function oturumModalAc(o) {
 
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('input[name="davetFiltre"]').forEach(r => {
-            r.addEventListener('change', listeYukle);
+            r.addEventListener('change', function () {
+                aralikAlaniGuncelle();
+                listeYukle();
+            });
+        });
+        ['davetBaslangic', 'davetBitis'].forEach(function (id) {
+            const inp = el(id);
+            if (inp) inp.addEventListener('change', listeYukle);
         });
         const atla = el('davetAtla');
         if (atla) atla.addEventListener('change', function () { tabloCiz(); ozetGuncelle(); });
