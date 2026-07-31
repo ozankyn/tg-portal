@@ -2229,7 +2229,15 @@ DAVET_FILTRELERI = {
     'hafta': 'Bu hafta iş başı yapacaklar',
     'aralik': 'Tarih aralığında çalışana dönüşenler',
     'tumu': 'Tüm onaylı adaylar',
+    'secili': 'Belirli kişileri seç',
 }
+
+# Hedef listesi sunucudan değil, kullanıcının arama/seçiminden gelen filtreler
+DAVET_SECIM_FILTRELERI = ('secili',)
+
+# Kişi arama (davet_sms_ara)
+DAVET_ARAMA_MIN_KARAKTER = 3
+DAVET_ARAMA_LIMIT = 20
 
 # Tarih aralığı gerektiren filtreler (baslangic + bitis parametresi zorunlu)
 DAVET_ARALIK_FILTRELERI = ('aralik',)
@@ -2345,6 +2353,10 @@ def _davet_kisileri(egitim, filtre, bas=None, bit=None):
     if not egitim.proje_id:
         return []
 
+    if filtre in DAVET_SECIM_FILTRELERI:
+        # Hedefler arama kutusundan seçiliyor (bkz. davet_sms_ara)
+        return []
+
     kayitlar = []
 
     if filtre == 'aralik':
@@ -2429,17 +2441,39 @@ def _davet_tarih_parametreleri(args):
     return bas, bit, None
 
 
+def _davet_kisi_json(tip, obj, setler):
+    """Bir aday/çalışanı modal listesi için JSON'a çevirir."""
+    from app.utils import normalize_telefon
+
+    tel = normalize_telefon(obj.telefon)
+    son10 = tel[-10:] if tel else None
+    baslangic = _davet_baslangic_tarihi(tip, obj)
+    return {
+        'tip': tip,
+        'id': obj.id,
+        'anahtar': f'{tip}-{obj.id}',
+        'ad_soyad': obj.full_name,
+        'telefon': tel or '',
+        'telefon_gecerli': bool(tel),
+        'kadro': obj.kadro.pozisyon_adi if obj.kadro else '',
+        'baslangic': baslangic.strftime('%d.%m.%Y') if baslangic else '',
+        'davet_edildi': (obj.id in setler['davet_' + tip]
+                         or (son10 in setler['davet_tel'] if son10 else False)),
+        'kayitli': (obj.id in setler['kayit_' + tip]
+                    or (son10 in setler['kayit_tel'] if son10 else False)),
+    }
+
+
 @egitim_bp.route('/<int:id>/davet-sms-liste')
 @login_required
 @any_permission_required('ik.edit', 'egitim.edit')
 def davet_sms_liste(id):
     """Toplu davet SMS öncesi hedef kişi listesi (JSON).
 
-    ?filtre=bugun|yarin|hafta|aralik|tumu
+    ?filtre=bugun|yarin|hafta|aralik|tumu|secili
     'aralik' için ayrıca ?baslangic=YYYY-MM-DD&bitis=YYYY-MM-DD
+    'secili' için liste boş döner — hedefler davet-sms-ara ile seçilir.
     """
-    from app.utils import normalize_telefon
-
     egitim = Egitim.query.get_or_404(id)
     if not egitim.proje_id:
         return jsonify({'hata': 'Bu eğitim bir projeye bağlı değil, aday listesi çıkarılamaz.'}), 400
@@ -2455,26 +2489,8 @@ def davet_sms_liste(id):
             return jsonify({'hata': hata}), 400
 
     setler = _davet_durum_setleri(egitim.id)
-
-    adaylar = []
-    for tip, obj in _davet_kisileri(egitim, filtre, bas, bit):
-        tel = normalize_telefon(obj.telefon)
-        son10 = tel[-10:] if tel else None
-        baslangic = _davet_baslangic_tarihi(tip, obj)
-        adaylar.append({
-            'tip': tip,
-            'id': obj.id,
-            'anahtar': f'{tip}-{obj.id}',
-            'ad_soyad': obj.full_name,
-            'telefon': tel or '',
-            'telefon_gecerli': bool(tel),
-            'kadro': obj.kadro.pozisyon_adi if obj.kadro else '',
-            'baslangic': baslangic.strftime('%d.%m.%Y') if baslangic else '',
-            'davet_edildi': (obj.id in setler['davet_' + tip]
-                             or (son10 in setler['davet_tel'] if son10 else False)),
-            'kayitli': (obj.id in setler['kayit_' + tip]
-                        or (son10 in setler['kayit_tel'] if son10 else False)),
-        })
+    adaylar = [_davet_kisi_json(tip, obj, setler)
+               for tip, obj in _davet_kisileri(egitim, filtre, bas, bit)]
 
     return jsonify({
         'filtre': filtre,
@@ -2482,6 +2498,56 @@ def davet_sms_liste(id):
         'proje': egitim.proje.ad if egitim.proje else '',
         'adaylar': adaylar,
     })
+
+
+@egitim_bp.route('/<int:id>/davet-sms-ara')
+@login_required
+@any_permission_required('ik.edit', 'egitim.edit')
+def davet_sms_ara(id):
+    """'Belirli kişiler' seçimi için aday/çalışan araması (JSON dizi).
+
+    ?q=ad soyad veya telefon — en az 3 karakter, en fazla 20 sonuç.
+    Eğitimin projesindeki aktif çalışanlar + onaylı adaylar aranır.
+    """
+    egitim = Egitim.query.get_or_404(id)
+    if not egitim.proje_id:
+        return jsonify({'hata': 'Bu eğitim bir projeye bağlı değil, kişi araması yapılamaz.'}), 400
+
+    q = (request.args.get('q') or '').strip()
+    if len(q) < DAVET_ARAMA_MIN_KARAKTER:
+        return jsonify([])
+
+    kalip = f'%{q}%'
+    rakamlar = re.sub(r'\D', '', q)
+    # Telefonlar DB'de boşluklu/0'lı olabildiği için karşılaştırma rakamlar üzerinden
+    tel_kalip = f'%{rakamlar}%' if len(rakamlar) >= DAVET_ARAMA_MIN_KARAKTER else None
+
+    def _arama_kosulu(model):
+        kosullar = [
+            model.ad.ilike(kalip),
+            model.soyad.ilike(kalip),
+            db.func.concat(model.ad, ' ', model.soyad).ilike(kalip),
+        ]
+        if tel_kalip:
+            kosullar.append(
+                db.func.regexp_replace(model.telefon, '[^0-9]', '', 'g').like(tel_kalip))
+        return db.or_(*kosullar)
+
+    kayitlar = [('calisan', c) for c in
+                (_davet_calisan_sorgusu(egitim)
+                 .filter(_arama_kosulu(Calisan))
+                 .order_by(Calisan.ad, Calisan.soyad)
+                 .limit(DAVET_ARAMA_LIMIT).all())]
+    kayitlar += [('aday', a) for a in
+                 (_davet_aday_sorgusu(egitim)
+                  .filter(Aday.durum.in_(DAVET_ADAY_DURUMLARI), _arama_kosulu(Aday))
+                  .order_by(Aday.ad, Aday.soyad)
+                  .limit(DAVET_ARAMA_LIMIT).all())]
+
+    setler = _davet_durum_setleri(egitim.id)
+    sonuclar = [_davet_kisi_json(tip, obj, setler) for tip, obj in _davet_tekille(kayitlar)]
+    sonuclar.sort(key=lambda k: k['ad_soyad'].casefold())
+    return jsonify(sonuclar[:DAVET_ARAMA_LIMIT])
 
 
 @egitim_bp.route('/<int:id>/davet-sms-tek', methods=['POST'])
