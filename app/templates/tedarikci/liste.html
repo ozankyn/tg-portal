@@ -123,12 +123,15 @@
     </div>
     
     {% if pagination.pages > 1 %}
+    {# request.args 'page' içerebilir; url_for'a tekrar page geçince çakışır (500). Temizlenmiş kopya: #}
+    {% set args = request.args.to_dict() %}
+    {% set _ = args.pop('page', None) %}
     <div class="px-4 py-3 border-t border-border-light dark:border-border-dark bg-gray-50 dark:bg-[#111418]">
         <nav class="flex justify-center">
             <ul class="inline-flex items-center gap-1">
                 {% if pagination.has_prev %}
                 <li>
-                    <a href="{{ url_for('tedarikci.liste', page=pagination.prev_num, **request.args) }}" class="inline-flex items-center justify-center w-8 h-8 bg-white border border-gray-300 dark:border-gray-600 text-text-muted dark:text-text-muted-dark rounded-lg hover:bg-gray-50 dark:bg-[#111418]">
+                    <a href="{{ url_for('tedarikci.liste', page=pagination.prev_num, **args) }}" class="inline-flex items-center justify-center w-8 h-8 bg-white border border-gray-300 dark:border-gray-600 text-text-muted dark:text-text-muted-dark rounded-lg hover:bg-gray-50 dark:bg-[#111418]">
                         <span class="material-symbols-outlined text-sm">chevron_left</span>
                     </a>
                 </li>
@@ -137,7 +140,7 @@
                 {% for p in pagination.iter_pages() %}
                 {% if p %}
                 <li>
-                    <a href="{{ url_for('tedarikci.liste', page=p, **request.args) }}" class="inline-flex items-center justify-center w-8 h-8 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 dark:border-gray-600 text-text-muted dark:text-text-muted-dark hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
+                    <a href="{{ url_for('tedarikci.liste', page=p, **args) }}" class="inline-flex items-center justify-center w-8 h-8 text-sm rounded-lg {% if p == pagination.page %}bg-blue-600 text-white{% else %}bg-white border border-gray-300 dark:border-gray-600 text-text-muted dark:text-text-muted-dark hover:bg-gray-50 dark:hover:bg-[#252b36]{% endif %}">{{ p }}</a>
                 </li>
                 {% else %}
                 <li><span class="px-2 text-gray-400 dark:text-gray-500">...</span></li>
@@ -146,7 +149,7 @@
                 
                 {% if pagination.has_next %}
                 <li>
-                    <a href="{{ url_for('tedarikci.liste', page=pagination.next_num, **request.args) }}" class="inline-flex items-center justify-center w-8 h-8 bg-white border border-gray-300 dark:border-gray-600 text-text-muted dark:text-text-muted-dark rounded-lg hover:bg-gray-50 dark:bg-[#111418]">
+                    <a href="{{ url_for('tedarikci.liste', page=pagination.next_num, **args) }}" class="inline-flex items-center justify-center w-8 h-8 bg-white border border-gray-300 dark:border-gray-600 text-text-muted dark:text-text-muted-dark rounded-lg hover:bg-gray-50 dark:bg-[#111418]">
                         <span class="material-symbols-outlined text-sm">chevron_right</span>
                     </a>
                 </li>

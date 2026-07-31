@@ -97,6 +97,9 @@
     </div>
     
     {% if pagination.pages > 1 %}
+    {# request.args 'page' içerebilir; url_for'a tekrar page geçince çakışır (500). Temizlenmiş kopya: #}
+    {% set args = request.args.to_dict() %}
+    {% set _ = args.pop('page', None) %}
     <div class="px-6 py-4 border-t border-border-light dark:border-border-dark flex justify-center">
         <div class="flex items-center gap-1">
             {% for p in pagination.iter_pages() %}
@@ -104,7 +107,7 @@
                     {% if p == pagination.page %}
                     <span class="w-8 h-8 rounded-lg bg-primary text-white text-xs font-bold flex items-center justify-center">{{ p }}</span>
                     {% else %}
-                    <a href="{{ url_for('egitim.soru_liste', page=p, **request.args) }}" class="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-[#252b36] text-xs font-bold flex items-center justify-center transition-colors">{{ p }}</a>
+                    <a href="{{ url_for('egitim.soru_liste', page=p, **args) }}" class="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-[#252b36] text-xs font-bold flex items-center justify-center transition-colors">{{ p }}</a>
                     {% endif %}
                 {% else %}
                 <span class="px-1 text-gray-400">...</span>
