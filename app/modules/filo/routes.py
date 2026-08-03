@@ -66,7 +66,7 @@ from app.models.base import AracDurumu, YakitTipi, IslemTipi, CalisanDurumu
 from app.models.ik import Calisan
 from app.models.proje import Proje
 from app.models.tedarikci import Tedarikci
-from app.utils import permission_required
+from app.utils import permission_required, maliyet_gorebilir
 
 filo_bp = Blueprint('filo', __name__)
 
@@ -143,6 +143,10 @@ def _arac_filtered_query():
         query = query.filter(Arac.yakit_tipi == YakitTipi(yakit_tipi))
     if model_yili:
         query = query.filter(Arac.model_yili == model_yili)
+    # Kira bitiş filtreleri maliyet bilgisi sayılır — yetkisiz kullanıcı
+    # URL'e elle parametre ekleyerek tarih çıkarımı yapamasın.
+    if not maliyet_gorebilir():
+        kira_bitis_baslangic = kira_bitis_bitis = ''
     if kira_bitis_baslangic:
         try:
             query = query.filter(Arac.kira_bitis >= datetime.strptime(kira_bitis_baslangic, '%Y-%m-%d').date())
@@ -187,6 +191,7 @@ def liste():
                          aktif_sayisi=aktif_sayisi,
                          iade_sayisi=iade_sayisi,
                          yakit_tipleri=YakitTipi,
+                         maliyet_gorebilir=maliyet_gorebilir(),
                          today=date.today(),
                          iller=[i[0] for i in db.session.query(Calisan.il).filter(Calisan.il.isnot(None), Calisan.il != '').distinct().order_by(Calisan.il).all()])
 
@@ -197,13 +202,21 @@ def liste():
 def arac_export():
     """Filtrelenmiş araç listesini Excel olarak indir"""
     araclar = _arac_filtered_query().all()
+    maliyet = maliyet_gorebilir()
 
+    # Maliyet kolonları (aylık kira + kira tarihleri) sadece yetkili rollere
     headers = ['Plaka', 'Marka', 'Model', 'Model Yılı', 'Yakıt', 'Vites', 'KM',
-               'Sahiplik', 'Kiralama Firması', 'Aylık Kira (₺)', 'Kira Başlangıç', 'Kira Bitiş',
-               'Atanan Şoför', 'Proje', 'Müşteri', 'İl', 'Durum', 'İade Tarihi', 'Son KM Güncelleme']
+               'Sahiplik', 'Kiralama Firması']
+    widths = [12, 14, 18, 10, 10, 10, 10, 12, 22]
+    if maliyet:
+        headers += ['Aylık Kira (₺)', 'Kira Başlangıç', 'Kira Bitiş']
+        widths += [14, 14, 14]
+    headers += ['Atanan Şoför', 'Proje', 'Müşteri', 'İl', 'Durum', 'İade Tarihi', 'Son KM Güncelleme']
+    widths += [22, 18, 18, 14, 12, 12, 18]
+
     rows = []
     for a in araclar:
-        rows.append([
+        row = [
             a.plaka,
             a.marka or '',
             a.model or '',
@@ -213,9 +226,14 @@ def arac_export():
             a.km or 0,
             a.sahiplik_tipi or '',
             a.kiralama_firmasi.display_name if a.kiralama_firmasi else '',
-            float(a.aylik_kira) if a.aylik_kira else '',
-            a.kira_baslangic.strftime('%d.%m.%Y') if a.kira_baslangic else '',
-            a.kira_bitis.strftime('%d.%m.%Y') if a.kira_bitis else '',
+        ]
+        if maliyet:
+            row += [
+                float(a.aylik_kira) if a.aylik_kira else '',
+                a.kira_baslangic.strftime('%d.%m.%Y') if a.kira_baslangic else '',
+                a.kira_bitis.strftime('%d.%m.%Y') if a.kira_bitis else '',
+            ]
+        row += [
             a.atanan_calisan.full_name if a.atanan_calisan else '',
             a.proje.ad if a.proje else '',
             a.proje.musteri.display_name if a.proje and a.proje.musteri else '',
@@ -223,8 +241,8 @@ def arac_export():
             a.durum.value if a.durum else '',
             a.iade_tarihi.strftime('%d.%m.%Y') if a.iade_tarihi else '',
             a.son_km_guncelleme.strftime('%d.%m.%Y %H:%M') if a.son_km_guncelleme else '',
-        ])
-    widths = [12, 14, 18, 10, 10, 10, 10, 12, 22, 14, 14, 14, 22, 18, 18, 14, 12, 12, 18]
+        ]
+        rows.append(row)
     filename = f"araclar_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
     return _excel_response(headers, rows, filename, widths)
 
@@ -234,6 +252,8 @@ def arac_export():
 @permission_required('filo.create')
 def ekle():
     """Yeni araç ekle"""
+    maliyet = maliyet_gorebilir()
+
     if request.method == 'POST':
         arac = Arac(
             plaka=request.form.get('plaka', '').upper().replace(' ', ''),
@@ -248,15 +268,17 @@ def ekle():
             vites_tipi=request.form.get('vites_tipi'),
             km=request.form.get('km') or 0,
             sahiplik_tipi=request.form.get('sahiplik_tipi'),
-            kira_baslangic=request.form.get('kira_baslangic') or None,
-            kira_bitis=request.form.get('kira_bitis') or None,
-            aylik_kira=request.form.get('aylik_kira') or None,
             kiralama_firmasi_id=request.form.get('kiralama_firmasi_id') or None,
             atanan_calisan_id=request.form.get('atanan_calisan_id') or None,
             proje_id=request.form.get('proje_id') or None,
             durum=AracDurumu(request.form.get('durum')) if request.form.get('durum') else AracDurumu.AKTIF,
             notlar=request.form.get('notlar')
         )
+        # Kiralama maliyet alanları sadece yetkili rollerden kabul edilir
+        if maliyet:
+            arac.kira_baslangic = request.form.get('kira_baslangic') or None
+            arac.kira_bitis = request.form.get('kira_bitis') or None
+            arac.aylik_kira = request.form.get('aylik_kira') or None
         # İade Edildi durumunda iade tarihi (form'dan gelmezse bugün)
         if arac.durum == AracDurumu.IADE_EDILDI:
             iade_tarihi_str = request.form.get('iade_tarihi', '').strip()
@@ -281,7 +303,8 @@ def ekle():
                          projeler=projeler,
                          tedarikciler=tedarikciler,
                          durumlar=AracDurumu,
-                         yakit_tipleri=YakitTipi)
+                         yakit_tipleri=YakitTipi,
+                         maliyet_gorebilir=maliyet)
 
 
 @filo_bp.route('/<int:id>')
@@ -297,7 +320,8 @@ def detay(id):
     return render_template('filo/detay.html',
                          arac=arac,
                          son_islemler=son_islemler,
-                         son_yakit=son_yakit)
+                         son_yakit=son_yakit,
+                         maliyet_gorebilir=maliyet_gorebilir())
 
 
 @filo_bp.route('/<int:id>/duzenle', methods=['GET', 'POST'])
@@ -306,7 +330,8 @@ def detay(id):
 def duzenle(id):
     """Araç düzenle"""
     arac = Arac.query.get_or_404(id)
-    
+    maliyet = maliyet_gorebilir()
+
     if request.method == 'POST':
         arac.plaka = request.form.get('plaka', '').upper().replace(' ', '')
         arac.marka = request.form.get('marka')
@@ -320,9 +345,12 @@ def duzenle(id):
         arac.vites_tipi = request.form.get('vites_tipi')
         arac.km = request.form.get('km') or 0
         arac.sahiplik_tipi = request.form.get('sahiplik_tipi')
-        arac.kira_baslangic = request.form.get('kira_baslangic') or None
-        arac.kira_bitis = request.form.get('kira_bitis') or None
-        arac.aylik_kira = request.form.get('aylik_kira') or None
+        # Kiralama maliyet alanları sadece yetkili rollerden kabul edilir;
+        # yetkisiz kullanıcı formu gönderdiğinde mevcut değerler korunur.
+        if maliyet:
+            arac.kira_baslangic = request.form.get('kira_baslangic') or None
+            arac.kira_bitis = request.form.get('kira_bitis') or None
+            arac.aylik_kira = request.form.get('aylik_kira') or None
         arac.kiralama_firmasi_id = request.form.get('kiralama_firmasi_id') or None
         arac.atanan_calisan_id = request.form.get('atanan_calisan_id') or None
         arac.proje_id = request.form.get('proje_id') or None
@@ -356,7 +384,8 @@ def duzenle(id):
                          projeler=projeler,
                          tedarikciler=tedarikciler,
                          durumlar=AracDurumu,
-                         yakit_tipleri=YakitTipi)
+                         yakit_tipleri=YakitTipi,
+                         maliyet_gorebilir=maliyet)
 
 
 @filo_bp.route('/<int:id>/sil')

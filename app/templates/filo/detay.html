@@ -92,6 +92,7 @@
                             {% else %}-{% endif %}
                         </div>
                     </div>
+                    {% if maliyet_gorebilir %}
                     <div>
                         <label class="text-xs text-text-muted dark:text-text-muted-dark">Kira Bitiş</label>
                         <div>{{ arac.kira_bitis.strftime('%d.%m.%Y') if arac.kira_bitis else '-' }}</div>
@@ -100,6 +101,7 @@
                         <label class="text-xs text-text-muted dark:text-text-muted-dark">Aylık Kira</label>
                         <div>{% if arac.aylik_kira %}₺{{ '{:,.2f}'.format(arac.aylik_kira) }}{% else %}-{% endif %}</div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -124,7 +126,9 @@
                             <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tip</th>
                             <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Açıklama</th>
                             <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">KM</th>
+                            {% if maliyet_gorebilir %}
                             <th class="px-4 py-3 text-right font-medium text-text-muted dark:text-text-muted-dark">Tutar</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-border-light dark:divide-border-dark">
@@ -134,11 +138,13 @@
                             <td class="px-4 py-3"><span class="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">{{ islem.islem_tipi.value.title() }}</span></td>
                             <td class="px-4 py-3">{{ islem.aciklama[:50] if islem.aciklama else '-' }}{% if islem.aciklama and islem.aciklama|length > 50 %}...{% endif %}</td>
                             <td class="px-4 py-3">{{ '{:,}'.format(islem.km) if islem.km else '-' }}</td>
+                            {% if maliyet_gorebilir %}
                             <td class="px-4 py-3 text-right">{% if islem.tutar %}₺{{ '{:,.2f}'.format(islem.tutar) }}{% else %}-{% endif %}</td>
+                            {% endif %}
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz işlem kaydı yok</td>
+                            <td colspan="{{ 5 if maliyet_gorebilir else 4 }}" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz işlem kaydı yok</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -166,7 +172,9 @@
                             <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">KM</th>
                             <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Litre</th>
                             <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tüketim</th>
+                            {% if maliyet_gorebilir %}
                             <th class="px-4 py-3 text-right font-medium text-text-muted dark:text-text-muted-dark">Tutar</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-border-light dark:divide-border-dark">
@@ -176,11 +184,13 @@
                             <td class="px-4 py-3">{{ '{:,}'.format(y.km) }}</td>
                             <td class="px-4 py-3">{{ y.litre }} L</td>
                             <td class="px-4 py-3">{% if y.tuketim %}{{ y.tuketim }} L/100km{% else %}-{% endif %}</td>
+                            {% if maliyet_gorebilir %}
                             <td class="px-4 py-3 text-right">{% if y.tutar %}₺{{ '{:,.2f}'.format(y.tutar) }}{% else %}-{% endif %}</td>
+                            {% endif %}
                         </tr>
                         {% else %}
                         <tr>
-                            <td colspan="5" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz yakıt kaydı yok</td>
+                            <td colspan="{{ 5 if maliyet_gorebilir else 4 }}" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz yakıt kaydı yok</td>
                         </tr>
                         {% endfor %}
                     </tbody>

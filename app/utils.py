@@ -278,6 +278,28 @@ def _user_role_names(user):
     return {r.name for r in (user.roles or [])}
 
 
+# ============================================================
+# MALIYET GORUNURLUGU - Filo kiralama/yakit tutarlari
+# ============================================================
+
+# Arac maliyet bilgilerini (aylik kira, kira tarihleri, yakit/islem
+# tutarlari) gorebilecek roller. Koordinator ve supervizorlar disarida.
+MALIYET_GOREBILIR_ROLLER = {
+    'Sistem Yoneticisi', 'Ajans Baskani', 'Direktor',
+    'Filo Yoneticisi', 'Butce Raporlama Uzmani',
+}
+
+
+def maliyet_gorebilir(user=None):
+    """Kullanici arac maliyet bilgilerini gorebilir mi? - bool dondurur"""
+    user = user or current_user
+    if not user or not user.is_authenticated:
+        return False
+    if user.is_admin:
+        return True
+    return bool(_user_role_names(user) & MALIYET_GOREBILIR_ROLLER)
+
+
 def apply_calisan_scope(query, user=None):
     """Calisan query'sine current user'in scope filtresini uygular.
     - Admin / Full-access roller: filtre yok (hepsini gorur)

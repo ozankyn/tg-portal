@@ -86,12 +86,14 @@
                 <div>
                     <input type="number" name="model_yili" min="1990" max="2030" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Model Yılı" value="{{ request.args.get('model_yili', '') }}">
                 </div>
+                {% if maliyet_gorebilir %}
                 <div>
                     <input type="date" name="kira_bitis_baslangic" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Kira Bitiş ≥" value="{{ request.args.get('kira_bitis_baslangic', '') }}" title="Kira Bitiş Başlangıç">
                 </div>
                 <div>
                     <input type="date" name="kira_bitis_bitis" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Kira Bitiş ≤" value="{{ request.args.get('kira_bitis_bitis', '') }}" title="Kira Bitiş Bitiş">
                 </div>
+                {% endif %}
                 <div class="flex gap-2">
                     <button type="submit" class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
                         <span class="material-symbols-outlined">search</span>Ara
@@ -135,7 +137,9 @@
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">KM</th>
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Bakım</th>
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+                    {% if maliyet_gorebilir %}
                     <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Kira Bitiş</th>
+                    {% endif %}
                     <th class="px-4 py-3 text-left font-medium text-[#111418] dark:text-white w-24"></th>
                 </tr>
             </thead>
@@ -219,6 +223,7 @@
                         <div class="text-xs text-text-muted dark:text-text-muted-dark mt-1">{{ arac.iade_tarihi.strftime('%d.%m.%Y') }}</div>
                         {% endif %}
                     </td>
+                    {% if maliyet_gorebilir %}
                     <td class="px-4 py-3">
                         {% if arac.kira_bitis %}
                         <div>{{ arac.kira_bitis.strftime("%d.%m.%Y") }}</div>
@@ -237,6 +242,7 @@
                         <span class="text-gray-400 dark:text-gray-500">-</span>
                         {% endif %}
                     </td>
+                    {% endif %}
                     <td class="px-4 py-3">
                         <div class="flex items-center gap-1">
                             <a href="{{ url_for('filo.detay', id=arac.id) }}" class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Detay">
@@ -252,7 +258,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="11" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Kayıt bulunamadı</td>
+                    <td colspan="{{ 11 if maliyet_gorebilir else 10 }}" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Kayıt bulunamadı</td>
                 </tr>
                 {% endfor %}
             </tbody>
