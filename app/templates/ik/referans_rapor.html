@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Referans Raporu{% endblock %}
+{% block page_title %}Arkadaşını Davet Et - Referans Raporu{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  {% if not veri.proje %}
+  <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm p-8 text-center">
+    <span class="material-symbols-outlined text-4xl text-text-muted dark:text-text-muted-dark">folder_off</span>
+    <p class="mt-2 text-text-muted dark:text-text-muted-dark">
+      Görüntüleyebileceğiniz aktif proje bulunamadı.
+    </p>
+  </div>
+  {% else %}
+
+  <!-- Filtreler -->
+  <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm p-4">
+    <form method="GET" class="flex flex-wrap items-end gap-3">
+      <div>
+        <label class="block text-xs font-semibold text-text-muted dark:text-text-muted-dark mb-1">Proje</label>
+        <select name="proje_id"
+                class="px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] text-[#111418] dark:text-white text-sm">
+          {% for p in veri.projeler %}
+          <option value="{{ p.id }}" {% if p.id == veri.proje.id %}selected{% endif %}>{{ p.ad }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-text-muted dark:text-text-muted-dark mb-1">Durum</label>
+        <select name="durum"
+                class="px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] text-[#111418] dark:text-white text-sm">
+          <option value="">Tümü</option>
+          {% for kod, bilgi in durumlar.items() %}
+          <option value="{{ kod }}" {% if veri.durum_filtre == kod %}selected{% endif %}>{{ bilgi[0] }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-text-muted dark:text-text-muted-dark mb-1">Davet Eden</label>
+        <select name="davet_eden"
+                class="px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] text-[#111418] dark:text-white text-sm">
+          <option value="">Tümü</option>
+          {% for d in veri.davet_edenler %}
+          {% if d.calisan_id %}
+          <option value="{{ d.calisan_id }}" {% if veri.davet_eden_filtre == d.calisan_id %}selected{% endif %}>
+            {{ d.ad_soyad }} ({{ d.toplam }})
+          </option>
+          {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+      <button type="submit"
+              class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg hover:opacity-90 transition-colors">
+        <span class="material-symbols-outlined">filter_alt</span>Filtrele
+      </button>
+      <a href="{{ url_for('ik.referans_rapor', proje_id=veri.proje.id) }}"
+         class="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-[#111418] dark:text-white text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+        <span class="material-symbols-outlined">restart_alt</span>Temizle
+      </a>
+      <div class="ml-auto flex flex-wrap gap-2">
+        <a href="{{ url_for('ik.referans_export', proje_id=veri.proje.id, durum=veri.durum_filtre, davet_eden=veri.davet_eden_filtre or '') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-700 transition-colors">
+          <span class="material-symbols-outlined">file_download</span>Excel
+        </a>
+        {% if has_permission('ik.edit') or current_user.is_admin %}
+        <a href="{{ url_for('ik.referans_sms', proje_id=veri.proje.id) }}"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+          <span class="material-symbols-outlined">sms</span>SMS Gönder
+        </a>
+        {% endif %}
+      </div>
+    </form>
+    {% if link_url %}
+    <div class="mt-3 text-xs text-text-muted dark:text-text-muted-dark">
+      Public link:
+      <a href="{{ link_url }}" target="_blank" class="text-blue-600 hover:underline">{{ link_url }}</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Özet kartlar -->
+  <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
+      <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Toplam Referans</div>
+      <div class="mt-1 text-2xl font-extrabold text-[#111418] dark:text-white">{{ veri.toplam }}</div>
+    </div>
+    {% for kod, bilgi in durumlar.items() %}
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
+      <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">{{ bilgi[0] }}</div>
+      <div class="mt-1 text-2xl font-extrabold text-[#111418] dark:text-white">{{ veri.sayaclar.get(kod, 0) }}</div>
+    </div>
+    {% endfor %}
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
+      <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Davet Eden Kişi</div>
+      <div class="mt-1 text-2xl font-extrabold text-[#111418] dark:text-white">{{ veri.davet_edenler|length }}</div>
+    </div>
+  </div>
+
+  <!-- Davet edenler -->
+  <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+    <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+      <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+        <span class="material-symbols-outlined">emoji_events</span>Kim Kaç Kişi Davet Etti
+      </h6>
+    </div>
+    <div class="overflow-x-auto max-h-80 overflow-y-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-[#111418] sticky top-0">
+          <tr>
+            <th class="px-4 py-2 text-left font-medium text-text-muted dark:text-text-muted-dark">Davet Eden</th>
+            <th class="px-4 py-2 text-left font-medium text-text-muted dark:text-text-muted-dark">Telefon</th>
+            <th class="px-4 py-2 text-center font-medium text-text-muted dark:text-text-muted-dark">Referans</th>
+            <th class="px-4 py-2 text-center font-medium text-text-muted dark:text-text-muted-dark">Başvuran</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-light dark:divide-border-dark">
+          {% for d in veri.davet_edenler %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418]">
+            <td class="px-4 py-2 font-medium">{{ d.ad_soyad }}</td>
+            <td class="px-4 py-2 text-text-muted dark:text-text-muted-dark">{{ d.telefon or '-' }}</td>
+            <td class="px-4 py-2 text-center font-semibold">{{ d.toplam }}</td>
+            <td class="px-4 py-2 text-center text-emerald-600 font-semibold">{{ d.basvurdu }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz referans yok</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Referans listesi -->
+  <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+    <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+      <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+        <span class="material-symbols-outlined">group</span>Referanslar ({{ veri.kayitlar|length }})
+      </h6>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-gray-50 dark:bg-[#111418]">
+          <tr>
+            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Davet Eden</th>
+            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Referans</th>
+            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Telefon</th>
+            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">İl</th>
+            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Tarih</th>
+            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
+            <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Arama Notu</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-border-light dark:divide-border-dark">
+          {% for r in veri.kayitlar %}
+          <tr class="hover:bg-gray-50 dark:hover:bg-[#252b36] dark:bg-[#111418] align-top" id="satir-{{ r.id }}">
+            <td class="px-4 py-3">
+              <div class="font-medium">{{ r.davet_eden_ad_soyad or '-' }}</div>
+              <div class="text-xs text-text-muted dark:text-text-muted-dark">{{ r.davet_eden_telefon or '' }}</div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="font-medium">{{ r.referans_ad_soyad }}</div>
+              {% if r.referans_notu %}
+              <div class="text-xs text-text-muted dark:text-text-muted-dark">{{ r.referans_notu }}</div>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3">
+              <a href="tel:{{ r.referans_telefon }}" class="text-blue-600 hover:underline">{{ r.referans_telefon }}</a>
+            </td>
+            <td class="px-4 py-3 text-text-muted dark:text-text-muted-dark">{{ r.referans_il or '-' }}</td>
+            <td class="px-4 py-3 text-text-muted dark:text-text-muted-dark whitespace-nowrap">
+              {{ r.created_at.strftime('%d.%m.%Y') if r.created_at else '-' }}
+            </td>
+            <td class="px-4 py-3">
+              <span id="rozet-{{ r.id }}" class="px-2 py-0.5 text-xs font-medium rounded-full {{ r.durum_renk }}">{{ r.durum_etiket }}</span>
+              <div class="mt-2 flex items-center gap-2">
+                <select id="durum-{{ r.id }}"
+                        class="px-2 py-1 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] text-[#111418] dark:text-white text-xs">
+                  {% for kod, bilgi in durumlar.items() %}
+                  <option value="{{ kod }}" {% if r.durum == kod %}selected{% endif %}>{{ bilgi[0] }}</option>
+                  {% endfor %}
+                </select>
+                <button type="button" onclick="durumKaydet({{ r.id }})"
+                        class="inline-flex items-center gap-1 px-2 py-1 bg-primary text-white text-xs font-medium rounded-lg hover:opacity-90 transition-colors">
+                  <span class="material-symbols-outlined text-sm">save</span>Kaydet
+                </button>
+              </div>
+              <div id="mesaj-{{ r.id }}" class="mt-1 text-xs"></div>
+            </td>
+            <td class="px-4 py-3 min-w-[220px]">
+              <input type="text" id="not-{{ r.id }}" placeholder="Arama notu ekle..."
+                     class="w-full px-2 py-1 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] text-[#111418] dark:text-white text-xs">
+              <div id="gecmis-{{ r.id }}" class="mt-1 text-xs text-text-muted dark:text-text-muted-dark whitespace-pre-line">{{ r.arama_notu or '' }}</div>
+              {% if r.arayan %}
+              <div class="mt-1 text-xs text-text-muted dark:text-text-muted-dark">
+                Son arayan: {{ r.arayan.full_name }}
+                {% if r.arama_tarihi %} · {{ r.arama_tarihi.strftime('%d.%m.%Y %H:%M') }}{% endif %}
+              </div>
+              {% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Kayıt bulunamadı</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function durumKaydet(id) {
+  const durum = document.getElementById('durum-' + id).value;
+  const notAlani = document.getElementById('not-' + id);
+  const mesaj = document.getElementById('mesaj-' + id);
+  mesaj.textContent = 'Kaydediliyor...';
+  mesaj.className = 'mt-1 text-xs text-text-muted dark:text-text-muted-dark';
+
+  fetch('/ik/referans/' + id + '/durum', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token() }}'
+    },
+    body: JSON.stringify({durum: durum, arama_notu: notAlani.value})
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      const rozet = document.getElementById('rozet-' + id);
+      rozet.className = 'px-2 py-0.5 text-xs font-medium rounded-full ' + data.durum_renk;
+      rozet.textContent = data.durum_etiket;
+      document.getElementById('gecmis-' + id).textContent = data.arama_notu;
+      notAlani.value = '';
+      mesaj.textContent = 'Kaydedildi';
+      mesaj.className = 'mt-1 text-xs text-emerald-600';
+    } else {
+      mesaj.textContent = data.error || 'Kaydedilemedi';
+      mesaj.className = 'mt-1 text-xs text-rose-600';
+    }
+  })
+  .catch(() => {
+    mesaj.textContent = 'Bağlantı hatası';
+    mesaj.className = 'mt-1 text-xs text-rose-600';
+  });
+}
+</script>
+{% endblock %}

@@ -54,6 +54,10 @@ AVAILABLE_VARIABLES = {
     'EGITIM_DAVET_SMS': [
         'ad_soyad', 'egitim_link', 'egitim_adi',
     ],
+    # SMS sablonu - arkadasini davet et (referans) public form daveti
+    'REFERANS_DAVET_SMS': [
+        'ad_soyad', 'referans_link', 'proje',
+    ],
 }
 
 

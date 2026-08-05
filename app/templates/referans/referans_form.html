@@ -1,0 +1,187 @@
+{% extends "basvuru/base_public.html" %}
+
+{% block title %}Arkadaşını Davet Et{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="bg-tg-card rounded-2xl border border-tg-border shadow-sm p-6 sm:p-8">
+
+        <div class="text-center mb-6">
+            <div class="w-14 h-14 rounded-2xl bg-tg-acc/10 flex items-center justify-center mx-auto mb-3">
+                <span class="material-symbols-outlined text-tg-acc" style="font-size:30px;">group_add</span>
+            </div>
+            <h1 style="font-family:var(--font-d);font-weight:800;font-size:22px;color:var(--text);margin:0;">
+                Arkadaşını Davet Et
+            </h1>
+            <p class="mt-2 text-sm" style="color:var(--sub);">
+                {{ link.proje.ad if link.proje else '' }}<br>
+                Birlikte çalışmak istediğin arkadaşlarını bize bildir.
+            </p>
+        </div>
+
+        {# ---------------- 1) Telefon girişi ---------------- #}
+        {% if asama == 'telefon' %}
+        <p class="text-sm mb-4" style="color:var(--sub);">
+            Öncelikle kendi telefon numaranı doğrula. Numaran projede kayıtlı
+            olmalıdır.
+        </p>
+        <form method="POST" action="{{ url_for('referans.referans_sayfa', token=link.token) }}">
+            <input type="hidden" name="action" value="send_code">
+            <label class="block mb-1">Telefon Numaran</label>
+            <input type="tel" name="telefon" required placeholder="05XX XXX XX XX"
+                   maxlength="11" pattern="05[0-9]{9}"
+                   title="Cep telefonunu 05XXXXXXXXX formatında gir"
+                   class="w-full px-4 py-3 mb-4 rounded-lg" inputmode="tel"
+                   oninput="this.value=this.value.replace(/[^0-9]/g,'').substring(0,11)">
+            <button type="submit" class="btn-primary w-full py-3 flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">sms</span>Doğrulama Kodu Gönder
+            </button>
+        </form>
+
+        {# ---------------- 2) OTP doğrulama ---------------- #}
+        {% elif asama == 'kod' %}
+        <p class="text-sm mb-4" style="color:var(--sub);">
+            Telefonuna gönderilen 6 haneli doğrulama kodunu gir.
+        </p>
+        <form method="POST" action="{{ url_for('referans.referans_sayfa', token=link.token) }}">
+            <input type="hidden" name="action" value="verify_code">
+            <label class="block mb-1">Doğrulama Kodu</label>
+            <input type="text" name="kod" required maxlength="6" inputmode="numeric" pattern="[0-9]*"
+                   placeholder="______" autocomplete="one-time-code"
+                   class="w-full px-4 py-3 mb-4 rounded-lg text-center tracking-[0.5em] text-xl">
+            <button type="submit" class="btn-primary w-full py-3 flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">check</span>Doğrula
+            </button>
+        </form>
+        <form method="POST" action="{{ url_for('referans.referans_sayfa', token=link.token) }}" class="mt-3 text-center">
+            <input type="hidden" name="action" value="send_code">
+            {# telefon session'da tutuluyor; tekrar gönder için gizli alan gerekmez #}
+            <button type="submit" class="text-sm" style="color:var(--acc);background:none;border:none;cursor:pointer;">
+                Kodu tekrar gönder
+            </button>
+        </form>
+
+        {# ---------------- 3) Referans formu ---------------- #}
+        {% elif asama == 'form' %}
+        <div class="mb-4 px-4 py-3 rounded-lg" style="background:#f0fdf4;border:1px solid #bbf7d0;">
+            <p class="text-sm" style="color:#15803d;margin:0;">
+                <strong>{{ calisan.full_name }}</strong> olarak doğrulandın.
+            </p>
+        </div>
+
+        {% if onceki %}
+        <div class="mb-4 px-4 py-3 rounded-lg flash-info text-sm">
+            Daha önce <strong>{{ onceki|length }}</strong> kişi önerdin. Yeni arkadaşlarını
+            eklemeye devam edebilirsin.
+        </div>
+        {% endif %}
+
+        <p class="text-sm mb-4" style="color:var(--sub);">
+            Arkadaşının ad soyad ve telefon bilgilerini gir. Birden fazla kişi
+            eklemek için <strong>“Arkadaş Ekle”</strong> butonunu kullan.
+        </p>
+
+        <form method="POST" action="{{ url_for('referans.referans_kaydet', token=link.token) }}">
+            <div id="satirlar" class="space-y-4"></div>
+
+            <button type="button" onclick="satirEkle()"
+                    class="mt-4 w-full py-2.5 rounded-lg flex items-center justify-center gap-2 text-sm font-medium"
+                    style="background:transparent;border:1px dashed var(--muted);color:var(--acc);cursor:pointer;">
+                <span class="material-symbols-outlined text-base">person_add</span>Arkadaş Ekle
+            </button>
+
+            <button type="submit" class="btn-primary w-full py-3 mt-4 flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">send</span>Gönder
+            </button>
+        </form>
+
+        <datalist id="il-listesi">
+            {% for il in iller %}<option value="{{ il }}"></option>{% endfor %}
+        </datalist>
+
+        {% if onceki %}
+        <div class="mt-8">
+            <div class="text-xs uppercase tracking-wide mb-2" style="color:var(--sub);">
+                Daha önce önerdiklerin
+            </div>
+            <div class="space-y-2">
+                {% for r in onceki %}
+                <div class="px-4 py-3 rounded-xl flex items-center justify-between gap-3"
+                     style="background:var(--bg);border:1px solid var(--border);">
+                    <div>
+                        <div style="font-family:var(--font-d);font-weight:700;font-size:14px;color:var(--text);">{{ r.referans_ad_soyad }}</div>
+                        <div class="text-xs" style="color:var(--sub);">{{ r.referans_telefon }}{% if r.referans_il %} · {{ r.referans_il }}{% endif %}</div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                          style="background:var(--surface);border:1px solid var(--border);color:var(--sub);">{{ r.durum_etiket }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+    </div>
+    <p class="text-center text-xs mt-4" style="color:var(--sub);">
+        Bu form Team Guerilla İK tarafından oluşturulmuştur.
+    </p>
+</div>
+
+{% if asama == 'form' %}
+<script>
+const MAX_SATIR = 20;
+
+function satirSil(btn) {
+    const kap = document.getElementById('satirlar');
+    // Tek satır kaldıysa silme - form boş kalmasın
+    if (kap.children.length <= 1) return;
+    btn.closest('.referans-satir').remove();
+    numaralandir();
+}
+
+function numaralandir() {
+    const kap = document.getElementById('satirlar');
+    Array.from(kap.children).forEach((el, i) => {
+        el.querySelector('.satir-no').textContent = (i + 1) + '. Arkadaşın';
+    });
+}
+
+function satirEkle() {
+    const kap = document.getElementById('satirlar');
+    if (kap.children.length >= MAX_SATIR) return;
+    const div = document.createElement('div');
+    div.className = 'referans-satir p-4 rounded-xl';
+    div.style.cssText = 'background:var(--bg);border:1px solid var(--border);';
+    div.innerHTML = `
+        <div class="flex items-center justify-between mb-3">
+            <span class="satir-no" style="font-family:var(--font-d);font-weight:700;font-size:14px;color:var(--text);"></span>
+            <button type="button" onclick="satirSil(this)"
+                    style="background:none;border:none;cursor:pointer;color:var(--sub);display:flex;align-items:center;">
+                <span class="material-symbols-outlined text-base">close</span>
+            </button>
+        </div>
+        <label class="block mb-1 text-sm">Ad Soyad</label>
+        <input type="text" name="ad_soyad" required maxlength="200" placeholder="Ad Soyad"
+               class="w-full px-4 py-3 mb-3 rounded-lg">
+        <label class="block mb-1 text-sm">Telefon</label>
+        <input type="tel" name="telefon" required placeholder="05XX XXX XX XX"
+               maxlength="11" pattern="05[0-9]{9}" inputmode="tel"
+               title="Cep telefonunu 05XXXXXXXXX formatında gir"
+               class="w-full px-4 py-3 mb-3 rounded-lg"
+               oninput="this.value=this.value.replace(/[^0-9]/g,'').substring(0,11)">
+        <label class="block mb-1 text-sm">İl <span style="color:var(--sub);">(opsiyonel)</span></label>
+        <input type="text" name="il" list="il-listesi" maxlength="100" placeholder="Çalışabileceği il"
+               class="w-full px-4 py-3 mb-3 rounded-lg">
+        <label class="block mb-1 text-sm">Not <span style="color:var(--sub);">(opsiyonel)</span></label>
+        <input type="text" name="not" maxlength="500" placeholder="Deneyim, uygunluk vb."
+               class="w-full px-4 py-3 rounded-lg">
+    `;
+    kap.appendChild(div);
+    numaralandir();
+}
+
+// İlk satır hazır gelsin
+satirEkle();
+</script>
+{% endif %}
+{% endblock %}

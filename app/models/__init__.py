@@ -160,3 +160,6 @@ from app.models.bildirim import BildirimSablonu
 
 # Haftalık Çalışma Beyanı (Proje/Calisan/User'dan sonra)
 from app.models.haftalik_beyan import HaftalikBeyan, BeyanKayit
+
+# Arkadaşını Davet Et / Referans (Proje/Calisan/User'dan sonra)
+from app.models.referans import ReferansLink, ReferansKayit, REFERANS_DURUMLARI

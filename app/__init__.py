@@ -156,6 +156,11 @@ def create_app(config_name=None):
     app.register_blueprint(beyan_bp, url_prefix="/beyan")
     csrf.exempt(beyan_bp)
 
+    # Arkadaşını Davet Et / Referans - public (login gerektirmez, OTP ile doğrulama)
+    from app.modules.referans.routes import referans_bp
+    app.register_blueprint(referans_bp, url_prefix="/referans")
+    csrf.exempt(referans_bp)
+
     # ============================================================
     # HATA YÖNETİMİ
     # Public sayfalarda (/kariyer, /basvuru) aday dostu hata ekranları göster.
@@ -164,7 +169,7 @@ def create_app(config_name=None):
     # Login gerektirmeyen (dış erişimli) sayfalar. Buradaki hatalar dashboard'a
     # yönlendirilmek yerine public hata/CSRF sayfası ile karşılanır.
     PUBLIC_PREFIXES = (
-        '/kariyer', '/basvuru', '/beyan',
+        '/kariyer', '/basvuru', '/beyan', '/referans',
         '/egitim/kayit', '/egitim/anket', '/egitim/katil',  # eğitim booking & dış katılım
     )
 

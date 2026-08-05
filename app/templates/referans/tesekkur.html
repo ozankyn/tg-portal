@@ -1,0 +1,59 @@
+{% extends "basvuru/base_public.html" %}
+
+{% block title %}Referansların Alındı{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="bg-tg-card rounded-2xl border border-tg-border shadow-sm p-6 sm:p-8 text-center">
+        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+             style="background:#dcfce7;">
+            <span class="material-symbols-outlined" style="font-size:36px;color:#16a34a;">task_alt</span>
+        </div>
+        <h1 style="font-family:var(--font-d);font-weight:800;font-size:22px;color:var(--text);margin:0;">
+            Teşekkürler{% if eklenen %}, {{ eklenen|length }} kişi kaydedildi!{% else %}!{% endif %}
+        </h1>
+        <p class="mt-2 text-sm" style="color:var(--sub);">
+            {{ calisan.full_name }} — {{ link.proje.ad if link.proje else '' }}
+        </p>
+
+        {% if eklenen %}
+        <div class="mt-6 px-4 py-4 rounded-xl text-left" style="background:var(--bg);border:1px solid var(--border);">
+            <div class="text-xs uppercase tracking-wide mb-2" style="color:var(--sub);">Önerdiğin kişiler</div>
+            <div class="space-y-2">
+                {% for r in eklenen %}
+                <div class="flex items-center justify-between gap-3">
+                    <span style="font-family:var(--font-d);font-weight:700;font-size:14px;color:var(--text);">{{ r.referans_ad_soyad }}</span>
+                    <span class="text-xs" style="color:var(--sub);">{{ r.referans_telefon }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if atlanan %}
+        <div class="mt-4 px-4 py-4 rounded-xl text-left" style="background:#fffbeb;border:1px solid #fde68a;">
+            <div class="text-xs uppercase tracking-wide mb-2" style="color:#b45309;">Kaydedilemeyenler</div>
+            {% for ad, sebep in atlanan %}
+            <p class="text-sm" style="color:#92400e;margin:0 0 4px 0;">
+                <strong>{{ ad }}</strong> — {{ sebep }}
+            </p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if hatali %}
+        <p class="mt-4 text-sm" style="color:var(--sub);">
+            {{ hatali }} satır eksik/geçersiz bilgi içerdiği için kaydedilmedi.
+        </p>
+        {% endif %}
+
+        <p class="mt-6 text-sm" style="color:var(--sub);">
+            İK ekibimiz önerdiğin kişilerle en kısa sürede iletişime geçecek.
+        </p>
+        <a href="{{ url_for('referans.referans_sayfa', token=link.token) }}"
+           class="inline-flex items-center gap-2 mt-3 text-sm" style="color:var(--acc);text-decoration:none;">
+            <span class="material-symbols-outlined text-base">person_add</span>Yeni arkadaş ekle
+        </a>
+    </div>
+</div>
+{% endblock %}

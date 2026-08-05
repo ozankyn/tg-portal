@@ -598,6 +598,20 @@ Kullanıcının doğal dilde sorduğu soruları PostgreSQL sorguları ve Türkç
   Müdürlük bu adın ilk " - " öncesinden ayıklanır: "Akdeniz Md. - Antalya - P.T Sniper" → "Akdeniz Md."
 - kayit_zamani, ip — NOT: is_deleted YOK
 
+### ARKADAŞINI DAVET ET (REFERANS)
+
+**referans_linkleri** (Proje bazlı public referans linki — proje başına tek kayıt)
+- id, proje_id → projeler.id (unique), token, aktif (bool: form açık mı), olusturan_id → users.id
+- NOT: is_deleted YOK
+
+**referans_kayitlari** (Çalışanın önerdiği aday — davet edilen arkadaş)
+- id, proje_id → projeler.id
+- davet_eden_calisan_id → calisanlar.id, davet_eden_ad_soyad, davet_eden_telefon
+- referans_ad_soyad, referans_telefon, referans_il, referans_notu
+- durum: 'yeni', 'arandi', 'ulasilamadi', 'basvurdu', 'reddedildi' (küçük harf string, enum DEĞİL)
+- arayan_user_id → users.id, arama_notu, arama_tarihi, token, ip, created_at
+- NOT: is_deleted YOK. Aynı çalışan birden fazla referans bırakabilir.
+
 ### COĞRAFYA
 
 **iller**: id, ad, plaka_kodu

@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Referans SMS Gönderimi{% endblock %}
+{% block page_title %}Arkadaşını Davet Et - SMS Gönderimi{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  {% if not proje %}
+  <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm p-8 text-center">
+    <span class="material-symbols-outlined text-4xl text-text-muted dark:text-text-muted-dark">folder_off</span>
+    <p class="mt-2 text-text-muted dark:text-text-muted-dark">
+      Görüntüleyebileceğiniz aktif proje bulunamadı.
+    </p>
+  </div>
+  {% else %}
+
+  <!-- Proje seçimi -->
+  <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm p-4">
+    <form method="GET" class="flex flex-wrap items-end gap-3">
+      <div>
+        <label class="block text-xs font-semibold text-text-muted dark:text-text-muted-dark mb-1">Proje</label>
+        <select name="proje_id" onchange="this.form.submit()"
+                class="px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-white dark:bg-[#111418] text-[#111418] dark:text-white text-sm">
+          {% for p in projeler %}
+          <option value="{{ p.id }}" {% if p.id == proje.id %}selected{% endif %}>{{ p.ad }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <a href="{{ url_for('ik.referans_rapor', proje_id=proje.id) }}"
+         class="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-[#111418] dark:text-white text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+        <span class="material-symbols-outlined">table_view</span>Referans Raporu
+      </a>
+    </form>
+  </div>
+
+  <!-- Özet kartlar -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
+      <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Aktif Çalışan</div>
+      <div class="mt-1 text-2xl font-extrabold text-[#111418] dark:text-white">{{ aktif_sayi }}</div>
+    </div>
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
+      <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">SMS Gidecek</div>
+      <div class="mt-1 text-2xl font-extrabold text-blue-600">{{ telefonlu_sayi }}</div>
+      <div class="text-xs text-text-muted dark:text-text-muted-dark">geçerli cep numarası</div>
+    </div>
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
+      <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Toplam Referans</div>
+      <div class="mt-1 text-2xl font-extrabold text-emerald-600">{{ toplam_referans }}</div>
+    </div>
+    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
+      <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Form Durumu</div>
+      <div class="mt-1 text-2xl font-extrabold {{ 'text-emerald-600' if link.aktif else 'text-gray-500' }}">
+        {{ 'Açık' if link.aktif else 'Kapalı' }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Link + SMS -->
+  <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark shadow-sm">
+    <div class="px-4 py-3 border-b border-border-light dark:border-border-dark">
+      <h6 class="font-medium text-[#111418] dark:text-white flex items-center gap-2">
+        <span class="material-symbols-outlined">link</span>Public Referans Linki
+      </h6>
+    </div>
+    <div class="p-4 space-y-4">
+      <div class="flex flex-wrap items-center gap-2">
+        <input type="text" id="linkInput" value="{{ link_url }}" readonly
+               class="flex-1 min-w-[260px] px-3 py-2 rounded-lg border border-border-light dark:border-border-dark bg-gray-50 dark:bg-[#111418] text-sm text-[#111418] dark:text-white">
+        <button type="button" onclick="linkKopyala()"
+                class="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-[#111418] dark:text-white text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+          <span class="material-symbols-outlined">content_copy</span>Kopyala
+        </button>
+        <a href="{{ link_url }}" target="_blank"
+           class="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-[#111418] dark:text-white text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+          <span class="material-symbols-outlined">open_in_new</span>Aç
+        </a>
+      </div>
+      <p class="text-xs text-text-muted dark:text-text-muted-dark">
+        Link proje bazlıdır: projedeki tüm çalışanlar aynı linki kullanır, kim olduğu
+        telefon doğrulaması (SMS kodu) ile belirlenir.
+      </p>
+
+      <div>
+        <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark mb-1">
+          Gönderilecek SMS metni
+          <span class="ml-1 {{ 'text-rose-600' if sms_uzunluk > sms_limit else 'text-emerald-600' }}">
+            ({{ sms_uzunluk }}/{{ sms_limit }} karakter)
+          </span>
+        </div>
+        <div class="px-3 py-2 rounded-lg bg-gray-50 dark:bg-[#111418] border border-border-light dark:border-border-dark text-sm text-[#111418] dark:text-white break-words">
+          {{ sms_metni }}
+        </div>
+        <p class="text-xs text-text-muted dark:text-text-muted-dark mt-1">
+          Metin <strong>Ayarlar → Bildirim Şablonları → REFERANS_DAVET_SMS</strong> üzerinden düzenlenebilir.
+          {% if sms_uzunluk > sms_limit %}
+          <span class="text-rose-600">Metin tek SMS segmentini aşıyor, maliyet iki katına çıkar.</span>
+          {% endif %}
+        </p>
+      </div>
+
+      {% if has_permission('ik.edit') or current_user.is_admin %}
+      <div class="flex flex-wrap gap-2 pt-2">
+        <button type="button" id="smsBtn" onclick="smsGonder()"
+                class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-60">
+          <span class="material-symbols-outlined">sms</span>
+          <span id="smsBtnText">SMS Gönder ({{ telefonlu_sayi }} kişi)</span>
+        </button>
+        <form method="POST" action="{{ url_for('ik.referans_link_durum') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="proje_id" value="{{ proje.id }}">
+          <button type="submit"
+                  class="inline-flex items-center gap-2 px-4 py-2 border border-border-light dark:border-border-dark text-[#111418] dark:text-white text-sm font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-[#252b36] transition-colors">
+            <span class="material-symbols-outlined">{{ 'lock' if link.aktif else 'lock_open' }}</span>
+            {{ 'Formu Kapat' if link.aktif else 'Formu Aç' }}
+          </button>
+        </form>
+      </div>
+      <div id="smsSonuc" class="hidden px-4 py-3 rounded-lg text-sm"></div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function linkKopyala() {
+  const input = document.getElementById('linkInput');
+  input.select();
+  navigator.clipboard.writeText(input.value);
+}
+
+function smsGonder() {
+  const kisi = {{ telefonlu_sayi if proje else 0 }};
+  if (kisi === 0) {
+    alert('Geçerli cep telefonu olan aktif çalışan yok.');
+    return;
+  }
+  if (!confirm(kisi + ' çalışana referans daveti SMS gönderilecek. Onaylıyor musunuz?')) return;
+
+  const btn = document.getElementById('smsBtn');
+  const btnText = document.getElementById('smsBtnText');
+  const sonuc = document.getElementById('smsSonuc');
+  btn.disabled = true;
+  btnText.textContent = 'Gönderiliyor...';
+
+  fetch('{{ url_for("ik.referans_sms_gonder") }}', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRFToken': '{{ csrf_token() }}'
+    },
+    body: JSON.stringify({proje_id: {{ proje.id if proje else 0 }}})
+  })
+  .then(r => r.json())
+  .then(data => {
+    sonuc.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-700', 'bg-rose-50', 'text-rose-700');
+    if (data.success) {
+      sonuc.classList.add('bg-emerald-50', 'text-emerald-700');
+      sonuc.textContent = data.mesaj;
+    } else {
+      sonuc.classList.add('bg-rose-50', 'text-rose-700');
+      sonuc.textContent = data.error || 'SMS gönderilemedi.';
+    }
+  })
+  .catch(() => {
+    sonuc.classList.remove('hidden');
+    sonuc.classList.add('bg-rose-50', 'text-rose-700');
+    sonuc.textContent = 'Bağlantı hatası. Lütfen tekrar deneyin.';
+  })
+  .finally(() => {
+    btn.disabled = false;
+    btnText.textContent = 'SMS Gönder (' + kisi + ' kişi)';
+  });
+}
+</script>
+{% endblock %}

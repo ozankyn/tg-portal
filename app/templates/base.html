@@ -274,9 +274,22 @@
                     </div>
                 </div>
                 
+                <!-- Referanslar (Arkadaşını Davet Et) -->
+                {% set referans_yeni_adet = referans_yeni_count() %}
+                <a href="{{ url_for('ik.referans_rapor') }}"
+                   class="flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors {% if 'referans' in (request.endpoint or '') %}bg-primary/10 text-primary dark:text-white{% else %}text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white{% endif %}">
+                    <span class="flex items-center gap-3">
+                        <span class="material-symbols-outlined">group_add</span>
+                        <span class="font-medium">Referanslar</span>
+                    </span>
+                    {% if referans_yeni_adet > 0 %}
+                    <span class="ml-2 inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-emerald-500 rounded-full">{{ referans_yeni_adet }}</span>
+                    {% endif %}
+                </a>
+
                 <!-- Çalışanlar Submenu -->
                 <div class="sidebar-menu-item">
-                    <button onclick="toggleSubmenu('calisanlarMenu')" 
+                    <button onclick="toggleSubmenu('calisanlarMenu')"
                             class="w-full flex items-center justify-between px-4 py-2.5 rounded-lg transition-colors text-text-muted dark:text-text-muted-dark hover:bg-gray-100 dark:hover:bg-[#252b36] hover:text-[#111418] dark:hover:text-white">
                         <span class="flex items-center gap-3">
                             <span class="material-symbols-outlined">groups</span>

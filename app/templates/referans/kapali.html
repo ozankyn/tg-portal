@@ -1,0 +1,24 @@
+{% extends "basvuru/base_public.html" %}
+
+{% block title %}Referans Formu Kapalı{% endblock %}
+
+{% block content %}
+<div class="max-w-lg mx-auto">
+    <div class="bg-tg-card rounded-2xl border border-tg-border shadow-sm p-6 sm:p-8 text-center">
+        <div class="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+             style="background:#fef2f2;">
+            <span class="material-symbols-outlined" style="font-size:36px;color:#dc2626;">lock_clock</span>
+        </div>
+        <h1 style="font-family:var(--font-d);font-weight:800;font-size:22px;color:var(--text);margin:0;">
+            Referans formu kapalı
+        </h1>
+        <p class="mt-2 text-sm" style="color:var(--sub);">
+            {{ link.proje.ad if link.proje else '' }} için referans alımı
+            şu anda kapatılmıştır.
+        </p>
+        <p class="mt-4 text-sm" style="color:var(--sub);">
+            Bir sorunuz varsa lütfen İK ekibi ile iletişime geçin.
+        </p>
+    </div>
+</div>
+{% endblock %}

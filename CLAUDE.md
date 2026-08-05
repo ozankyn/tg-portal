@@ -256,6 +256,7 @@ def liste():
 | tedarikci | 3 | Tedarikçi CRUD |
 | kariyer | 4 | Kariyer sayfası |
 | onay | 6 | Generic onay workflow |
+| referans | 3 | Arkadaşını Davet Et - public form (OTP), İK: SMS gönderimi + rapor (`/ik/referans-sms`, `/ik/referans-rapor`) |
 
 ---
 

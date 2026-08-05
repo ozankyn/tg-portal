@@ -29,10 +29,10 @@ from app.models.ik import (
 )
 from app.models.base import CalisanDurumu
 from app.utils import (
-    permission_required, paginate_query,
+    permission_required, admin_or_permission_required, paginate_query,
     apply_calisan_scope, calisan_in_scope,
     apply_aday_scope, aday_in_scope, user_scoped_projeler,
-    normalize_telefon,
+    normalize_telefon, sms_ascii,
 )
 
 ik_bp = Blueprint('ik', __name__)
@@ -5436,3 +5436,350 @@ def aday_evrak_zip_toplu():
         flash('Seçilen adaylara ait indirilebilecek evrak bulunamadı.', 'warning')
         return redirect(url_for('ik.aday_liste'))
     return resp
+
+
+# ============================================================
+# ARKADAŞINI DAVET ET (REFERANS)
+# Public form: app/modules/referans  |  Yönetim: /ik/referans-sms, /ik/referans-rapor
+# ============================================================
+
+# Referans kampanyasının ilk açıldığı proje (ekranlarda varsayılan seçili gelir)
+REFERANS_VARSAYILAN_PROJE_ID = 12
+
+REFERANS_SMS_TEK_SEGMENT = 160  # ASCII (GSM-7) tek segment sınırı
+
+# DB'de REFERANS_DAVET_SMS şablonu yoksa kullanılacak metin (ASCII, tek segment)
+REFERANS_SMS_VARSAYILAN = (
+    'TG - Arkadasini davet et, birlikte calismaya baslayin: {referans_link}'
+)
+
+
+def _referans_sms_metni(link_url, ad_soyad='', proje_ad=''):
+    """REFERANS_DAVET_SMS şablonunu render edip ASCII'ye çevirir.
+
+    Şablon DB'den düzenlenebildiği için Türkçe karakter içerebilir; SMS'in
+    tek segmentte (160 karakter) gitmesi için metin ASCII'ye indirgenir.
+    """
+    from app.models.bildirim import BildirimSablonu
+    from app.services.notification import render_sablon
+
+    sablon = BildirimSablonu.query.filter_by(kod='REFERANS_DAVET_SMS', aktif=True).first()
+    metin_sablonu = sablon.icerik_sablonu if sablon else REFERANS_SMS_VARSAYILAN
+    return sms_ascii(render_sablon(metin_sablonu, {
+        'ad_soyad': ad_soyad,
+        'referans_link': link_url,
+        'proje': proje_ad,
+    }))
+
+
+def _referans_aktif_calisanlar(proje_id):
+    """Projede kadrosu olan aktif çalışanlar (SMS hedef kitlesi)."""
+    return Calisan.query.join(HedefKadro, Calisan.kadro_id == HedefKadro.id).filter(
+        HedefKadro.proje_id == proje_id,
+        Calisan.is_deleted == False,
+        Calisan.durum == CalisanDurumu.AKTIF
+    ).order_by(Calisan.ad, Calisan.soyad).all()
+
+
+def _referans_secili_proje(projeler):
+    """URL/form'daki proje_id'yi kullanıcının yetkili olduğu projelerle doğrular.
+
+    Yetkisiz veya geçersiz proje_id gelirse varsayılan projeye, o da listede
+    yoksa ilk projeye düşer. Proje yoksa None döner.
+    """
+    if not projeler:
+        return None
+    izinli = {p.id: p for p in projeler}
+    istenen = request.values.get('proje_id', type=int)
+    if istenen in izinli:
+        return izinli[istenen]
+    if REFERANS_VARSAYILAN_PROJE_ID in izinli:
+        return izinli[REFERANS_VARSAYILAN_PROJE_ID]
+    return projeler[0]
+
+
+@ik_bp.route('/referans-sms')
+@login_required
+@permission_required('ik.view')
+def referans_sms():
+    """Referans daveti SMS gönderim ekranı (proje seç → toplu SMS)."""
+    from app.models.referans import ReferansLink, ReferansKayit
+
+    projeler = user_scoped_projeler()
+    proje = _referans_secili_proje(projeler)
+    if not proje:
+        return render_template('ik/referans_sms.html', projeler=[], proje=None,
+                               active='referans')
+
+    link = ReferansLink.proje_icin(proje.id, olusturan_id=current_user.id)
+    calisanlar = _referans_aktif_calisanlar(proje.id)
+    telefonlu = [c for c in calisanlar if normalize_telefon(c.telefon)]
+
+    link_url = url_for('referans.referans_sayfa', token=link.token, _external=True)
+    sms_metni = _referans_sms_metni(link_url, ad_soyad='', proje_ad=proje.ad)
+
+    toplam_referans = ReferansKayit.query.filter_by(proje_id=proje.id).count()
+
+    return render_template('ik/referans_sms.html',
+                           projeler=projeler, proje=proje, link=link,
+                           link_url=link_url, sms_metni=sms_metni,
+                           sms_uzunluk=len(sms_metni),
+                           sms_limit=REFERANS_SMS_TEK_SEGMENT,
+                           aktif_sayi=len(calisanlar),
+                           telefonlu_sayi=len(telefonlu),
+                           toplam_referans=toplam_referans,
+                           active='referans')
+
+
+@ik_bp.route('/referans-sms/gonder', methods=['POST'])
+@login_required
+@admin_or_permission_required('ik.edit')
+def referans_sms_gonder():
+    """Projenin aktif çalışanlarına referans linkli toplu SMS gönderir (AJAX).
+
+    Yetki: admin veya ik.edit (toplu SMS maliyetli olduğu için kısıtlı).
+    """
+    from app.models.referans import ReferansLink
+    from app.modules.basvuru.routes import send_netgsm_sms
+
+    projeler = user_scoped_projeler()
+    izinli = {p.id: p for p in projeler}
+    # İstek AJAX'tan JSON, formdan gelirse form-data olarak gelebilir
+    veri = request.get_json(silent=True) or request.values
+    try:
+        proje_id = int(veri.get('proje_id') or 0)
+    except (TypeError, ValueError):
+        proje_id = 0
+    proje = izinli.get(proje_id)
+    if not proje:
+        return jsonify({'success': False,
+                        'error': 'Geçersiz proje veya bu proje için yetkiniz yok.'}), 403
+
+    link = ReferansLink.proje_icin(proje.id, olusturan_id=current_user.id)
+    if not link.aktif:
+        return jsonify({'success': False,
+                        'error': 'Bu projenin referans formu kapalı. Önce formu açın.'}), 400
+
+    link_url = url_for('referans.referans_sayfa', token=link.token, _external=True)
+
+    basarili, basarisiz, telefonsuz = 0, 0, 0
+    for c in _referans_aktif_calisanlar(proje.id):
+        telefon = normalize_telefon(c.telefon)
+        if not telefon:
+            if c.telefon:
+                current_app.logger.warning(
+                    f"Referans SMS atlandı - geçersiz telefon: "
+                    f"calisan_id={c.id} tel={c.telefon!r}")
+            telefonsuz += 1
+            continue
+        mesaj = _referans_sms_metni(link_url, ad_soyad=c.full_name, proje_ad=proje.ad)
+        sonuc = send_netgsm_sms(telefon, mesaj)
+        if sonuc.get('success'):
+            basarili += 1
+        else:
+            basarisiz += 1
+
+    parcalar = [f'{basarili} SMS gönderildi']
+    if basarisiz:
+        parcalar.append(f'{basarisiz} başarısız')
+    if telefonsuz:
+        parcalar.append(f'{telefonsuz} telefonsuz/geçersiz numara atlandı')
+
+    return jsonify({'success': True, 'basarili': basarili, 'basarisiz': basarisiz,
+                    'telefonsuz': telefonsuz, 'mesaj': ', '.join(parcalar) + '.'})
+
+
+@ik_bp.route('/referans-link/durum', methods=['POST'])
+@login_required
+@admin_or_permission_required('ik.edit')
+def referans_link_durum():
+    """Projenin public referans formunu açar/kapatır."""
+    from app.models.referans import ReferansLink
+
+    projeler = user_scoped_projeler()
+    izinli = {p.id: p for p in projeler}
+    proje_id = request.form.get('proje_id', type=int)
+    if proje_id not in izinli:
+        flash('Bu proje için yetkiniz yok.', 'danger')
+        return redirect(url_for('ik.referans_sms'))
+
+    link = ReferansLink.proje_icin(proje_id, olusturan_id=current_user.id)
+    link.aktif = not link.aktif
+    db.session.commit()
+    flash('Referans formu ' + ('açıldı.' if link.aktif else 'kapatıldı.'), 'success')
+    return redirect(url_for('ik.referans_sms', proje_id=proje_id))
+
+
+def _referans_rapor_verisi():
+    """Rapor ve Excel export için ortak sorgu/filtre mantığı."""
+    from app.models.referans import ReferansKayit, REFERANS_DURUMLARI
+
+    projeler = user_scoped_projeler()
+    proje = _referans_secili_proje(projeler)
+    if not proje:
+        return {'projeler': [], 'proje': None, 'kayitlar': [], 'sayaclar': {},
+                'davet_edenler': [], 'durum_filtre': '', 'davet_eden_filtre': None,
+                'toplam': 0}
+
+    durum_filtre = (request.args.get('durum') or '').strip()
+    davet_eden_filtre = request.args.get('davet_eden', type=int)
+
+    q = ReferansKayit.query.filter_by(proje_id=proje.id)
+    if durum_filtre in REFERANS_DURUMLARI:
+        q = q.filter(ReferansKayit.durum == durum_filtre)
+    if davet_eden_filtre:
+        q = q.filter(ReferansKayit.davet_eden_calisan_id == davet_eden_filtre)
+    kayitlar = q.order_by(ReferansKayit.created_at.desc()).all()
+
+    # Sayaçlar ve davet eden kırılımı filtresiz (proje geneli) hesaplanır
+    tum_kayitlar = ReferansKayit.query.filter_by(proje_id=proje.id).all()
+    sayaclar = {kod: 0 for kod in REFERANS_DURUMLARI}
+    davet_eden = {}
+    for r in tum_kayitlar:
+        if r.durum in sayaclar:
+            sayaclar[r.durum] += 1
+        anahtar = (r.davet_eden_calisan_id, r.davet_eden_ad_soyad or '-')
+        d = davet_eden.setdefault(anahtar, {'calisan_id': r.davet_eden_calisan_id,
+                                            'ad_soyad': r.davet_eden_ad_soyad or '-',
+                                            'telefon': r.davet_eden_telefon,
+                                            'toplam': 0, 'basvurdu': 0})
+        d['toplam'] += 1
+        if r.durum == 'basvurdu':
+            d['basvurdu'] += 1
+
+    davet_edenler = sorted(davet_eden.values(), key=lambda d: -d['toplam'])
+
+    return {
+        'projeler': projeler, 'proje': proje, 'kayitlar': kayitlar,
+        'sayaclar': sayaclar, 'davet_edenler': davet_edenler,
+        'durum_filtre': durum_filtre, 'davet_eden_filtre': davet_eden_filtre,
+        'toplam': len(tum_kayitlar),
+    }
+
+
+@ik_bp.route('/referans-rapor')
+@login_required
+@permission_required('ik.view')
+def referans_rapor():
+    """Referans raporu: liste, durum güncelleme, filtreler."""
+    from app.models.referans import ReferansLink, REFERANS_DURUMLARI
+
+    veri = _referans_rapor_verisi()
+    link_url = None
+    if veri['proje']:
+        link = ReferansLink.proje_icin(veri['proje'].id, olusturan_id=current_user.id)
+        link_url = url_for('referans.referans_sayfa', token=link.token, _external=True)
+
+    return render_template('ik/referans_rapor.html', veri=veri, link_url=link_url,
+                           durumlar=REFERANS_DURUMLARI, active='referans')
+
+
+@ik_bp.route('/referans/<int:id>/durum', methods=['POST'])
+@login_required
+@permission_required('ik.view')
+def referans_durum_guncelle(id):
+    """Arama sonucunu kaydeder (AJAX). SPV'ler de güncelleyebilir."""
+    from app.models.referans import ReferansKayit, REFERANS_DURUMLARI
+
+    kayit = ReferansKayit.query.get_or_404(id)
+
+    # Koordinatör sadece kendi projelerindeki referansı güncelleyebilir
+    izinli_proje_ids = {p.id for p in user_scoped_projeler()}
+    if kayit.proje_id not in izinli_proje_ids:
+        return jsonify({'success': False, 'error': 'Bu kayıt için yetkiniz yok.'}), 403
+
+    veri = request.get_json(silent=True) or request.form
+    durum = (veri.get('durum') or '').strip()
+    arama_notu = (veri.get('arama_notu') or '').strip()
+
+    if durum not in REFERANS_DURUMLARI:
+        return jsonify({'success': False, 'error': 'Geçersiz durum.'}), 400
+
+    kayit.durum_guncelle(durum, arama_notu=arama_notu or None, user_id=current_user.id)
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'durum': kayit.durum,
+        'durum_etiket': kayit.durum_etiket,
+        'durum_renk': kayit.durum_renk,
+        'arama_notu': kayit.arama_notu or '',
+        'arayan': current_user.full_name,
+        'arama_tarihi': kayit.arama_tarihi.strftime('%d.%m.%Y %H:%M') if kayit.arama_tarihi else '',
+    })
+
+
+@ik_bp.route('/referans-rapor/export')
+@login_required
+@permission_required('ik.view')
+def referans_export():
+    """Referans raporunu Excel olarak indir (ekrandaki filtrelerle)."""
+    import openpyxl
+    from openpyxl.utils import get_column_letter
+    from flask import Response
+
+    veri = _referans_rapor_verisi()
+    if not veri['proje']:
+        flash('Görüntüleyebileceğiniz bir proje bulunamadı.', 'warning')
+        return redirect(url_for('ik.referans_rapor'))
+
+    wb = openpyxl.Workbook()
+
+    ws = wb.active
+    ws.title = 'Referanslar'
+    headers = ['Davet Eden', 'Davet Eden Telefon', 'Referans Ad Soyad', 'Referans Telefon',
+               'İl', 'Referans Notu', 'Durum', 'Arama Notu', 'Arayan', 'Arama Tarihi',
+               'Kayıt Tarihi']
+    ws.append(headers)
+    for r in veri['kayitlar']:
+        ws.append([
+            r.davet_eden_ad_soyad or '-', r.davet_eden_telefon or '-',
+            r.referans_ad_soyad, r.referans_telefon,
+            r.referans_il or '-', r.referans_notu or '-',
+            r.durum_etiket, r.arama_notu or '-',
+            r.arayan.full_name if r.arayan else '-',
+            r.arama_tarihi.strftime('%d.%m.%Y %H:%M') if r.arama_tarihi else '-',
+            r.created_at.strftime('%d.%m.%Y %H:%M') if r.created_at else '-',
+        ])
+    for col in range(1, len(headers) + 1):
+        ws.column_dimensions[get_column_letter(col)].width = 22
+
+    ws2 = wb.create_sheet('Davet Edenler')
+    h2 = ['Davet Eden', 'Telefon', 'Referans Sayısı', 'Başvuran']
+    ws2.append(h2)
+    for d in veri['davet_edenler']:
+        ws2.append([d['ad_soyad'], d['telefon'] or '-', d['toplam'], d['basvurdu']])
+    for col in range(1, len(h2) + 1):
+        ws2.column_dimensions[get_column_letter(col)].width = 22
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    fname = f"referans_{veri['proje'].id}_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+    return Response(
+        output.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename={fname}'}
+    )
+
+
+@ik_bp.app_context_processor
+def inject_referans_count():
+    """Sidebar rozeti: yetkili olunan projelerdeki 'yeni' referans sayısı."""
+    def referans_yeni_count():
+        if not current_user.is_authenticated:
+            return 0
+        try:
+            from app.models.referans import ReferansKayit
+            proje_ids = [p.id for p in user_scoped_projeler()]
+            if not proje_ids:
+                return 0
+            return ReferansKayit.query.filter(
+                ReferansKayit.proje_id.in_(proje_ids),
+                ReferansKayit.durum == 'yeni'
+            ).count()
+        except Exception:
+            db.session.rollback()
+            return 0
+
+    return dict(referans_yeni_count=referans_yeni_count)
