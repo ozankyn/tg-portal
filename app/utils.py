@@ -156,41 +156,37 @@ def enum_choices(enum_class):
 def normalize_telefon(telefon):
     """Türk cep telefonu numarasını 05XXXXXXXXX formatına çevirir.
 
-    Boşluk, tire, parantez, nokta, slash temizlenir; +90 / 90 / 0090
-    önekleri 0'a indirgenir; başında 0 olmayan 10 haneli 5XX numaralara
-    0 eklenir.
+    Rakam dışındaki TÜM karakterler baştan temizlenir: boşluk, tire, parantez,
+    nokta, slash, artı, harfler ve Excel/kopyala-yapıştır ile gelen görünmez
+    unicode kontrol karakterleri (\\u202a LRE, \\u202c PDF, \\u200e LRM, NBSP vb.).
+    Ardından +90 / 90 / 0090 önekleri 0'a indirgenir; başında 0 olmayan 10 haneli
+    5XX numaralara 0 eklenir.
 
-    Geçerli bir cep numarası üretilemezse None döner (sabit hat, eksik
-    hane, harf içeren giriş vb.).
+    Geçerli bir cep numarası üretilemezse None döner (sabit hat, eksik hane,
+    birden fazla numara içeren giriş vb.).
 
     >>> normalize_telefon('+90 (532) 123 45 67')
     '05321234567'
+    >>> normalize_telefon('\\u202a+90 532 123 45 67\\u202c')
+    '05321234567'
     >>> normalize_telefon('5321234567')
     '05321234567'
-    >>> normalize_telefon('2123456789')   # sabit hat
-    None
+    >>> normalize_telefon('2123456789') is None   # sabit hat
+    True
     """
     if telefon is None:
         return None
 
-    s = str(telefon).strip()
+    # Rakam dışındaki her şeyi at. [^0-9] kullanılıyor ([^\d] değil): \d unicode
+    # modda Arapça-Hint rakamlarını da eşleştirir ve numaraya sızmalarına izin verir.
+    s = re.sub(r'[^0-9]', '', str(telefon))
     if not s:
         return None
 
-    # Ayraçları temizle (boşluk, tire, parantez, nokta, slash, alt çizgi)
-    s = re.sub(r'[\s\-\(\)\.\/_]', '', s)
-
-    # Uluslararası önekler
-    if s.startswith('+90'):
-        s = '0' + s[3:]
-    elif s.startswith('0090'):
+    # Uluslararası önek: 0090XXXXXXXXXX -> 0XXXXXXXXXX
+    # (+90 zaten rakam temizliğinde 90 önekine indi, aşağıda ele alınıyor)
+    if s.startswith('0090'):
         s = '0' + s[4:]
-    elif s.startswith('+'):
-        s = s[1:]
-
-    # Ayraç temizliği sonrası sadece rakam kalmalı
-    if not s.isdigit():
-        return None
 
     # 905XXXXXXXXX (12 hane) -> 05XXXXXXXXX
     if s.startswith('90') and len(s) == 12:
