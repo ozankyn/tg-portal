@@ -12,7 +12,11 @@ from app.models.ik import (
     EvrakTipi, AdayEvrak, AdayMedya, SozlesmeSablonu,
 )
 from app.models.proje import HedefKadro, Proje, Musteri, Il, Ilce
-from app.utils import normalize_telefon
+from app.utils import (
+    normalize_telefon,
+    is_iban_evrak_tipi, iban_evrak_uzanti_gecerli, iban_evrak_tipi_idleri,
+    IBAN_FORMAT_HATASI, IBAN_EVRAK_ACIKLAMA,
+)
 
 kariyer_bp = Blueprint('kariyer', __name__)
 
@@ -654,7 +658,9 @@ def evrak_yukle_sayfa(token):
                           kadro=kadro,
                           fotos=fotos,
                           videos=videos,
-                          sirket_sablonlari=sirket_sablonlari)
+                          sirket_sablonlari=sirket_sablonlari,
+                          iban_tipi_idleri=iban_evrak_tipi_idleri(evrak_tipleri),
+                          iban_evrak_aciklama=IBAN_EVRAK_ACIKLAMA)
 
 
 @kariyer_bp.route('/evrak/<token>/yukle', methods=['POST'])
@@ -685,6 +691,12 @@ def evrak_yukle_post(token):
     
     if dosya and allowed_file(dosya.filename):
         evrak_tipi_id = int(request.form['evrak_tipi_id'])
+        evrak_tipi = EvrakTipi.query.get(evrak_tipi_id)
+
+        # IBAN evrağı OCR ile okunduğu için sadece JPEG/PNG/PDF kabul edilir
+        if is_iban_evrak_tipi(evrak_tipi) and not iban_evrak_uzanti_gecerli(dosya.filename):
+            flash(IBAN_FORMAT_HATASI, 'danger')
+            return redirect(url_for('kariyer.evrak_yukle_sayfa', token=token))
 
         # Dosya adı oluştur
         filename = secure_filename(dosya.filename)

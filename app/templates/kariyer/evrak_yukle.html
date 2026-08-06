@@ -110,21 +110,29 @@
                     
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Evrak Tipi *</label>
-                        <select name="evrak_tipi_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900">
+                        <select name="evrak_tipi_id" id="evrakTipiSelect" required class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900">
                             <option value="">Seçiniz</option>
                             {% for tip in evrak_tipleri %}
-                            <option value="{{ tip.id }}">{{ tip.ad }}{% if tip.zorunlu %} *{% endif %}</option>
+                            <option value="{{ tip.id }}"{% if tip.id in iban_tipi_idleri %} data-iban="1"{% endif %}>{{ tip.ad }}{% if tip.zorunlu %} *{% endif %}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Dosya *</label>
-                        <input type="file" name="dosya" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                        <input type="file" name="dosya" id="dosyaInput" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900">
-                        <p class="text-xs text-gray-500 mt-1">PDF, JPG, PNG, DOC, DOCX (Max 10MB)</p>
+                        <p class="text-xs text-gray-500 mt-1" id="dosyaAciklama">PDF, JPG, PNG, DOC, DOCX (Max 10MB)</p>
                     </div>
-                    
+
+                    <!-- IBAN evrak tipi seçilince gösterilir -->
+                    <div id="ibanAciklama" class="hidden rounded-lg border border-blue-200 bg-blue-50 p-3">
+                        <p class="text-xs text-blue-800 flex items-start gap-2">
+                            <span class="material-symbols-outlined text-base leading-none">account_balance</span>
+                            <span>{{ iban_evrak_aciklama }}</span>
+                        </p>
+                    </div>
+
                     <button type="submit" class="w-full px-4 py-2.5 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined">upload</span>
                         Yükle
@@ -526,12 +534,14 @@
             const form = input.closest('form');
             if (!form) return;
             form.addEventListener('submit', function (e) {
+                // exts fonksiyon olabilir (evrak tipine göre değişen kısıtlama)
+                const izinli = typeof exts === 'function' ? exts() : exts;
                 const f = input.files && input.files[0];
                 if (f) {
                     const ext = uzanti(f.name);
-                    if (exts.indexOf(ext) === -1) {
+                    if (izinli.indexOf(ext) === -1) {
                         e.preventDefault();
-                        alert('Desteklenmeyen dosya formatı. İzin verilen: ' + exts.join(', ').toUpperCase());
+                        alert('Desteklenmeyen dosya formatı. İzin verilen: ' + izinli.join(', ').toUpperCase());
                         return;
                     }
                     if (f.size > maxMB * MB) {
@@ -550,7 +560,47 @@
             });
         }
 
-        formKur('dosya', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'], 10);
+        // IBAN evrak tipi: OCR ile okunduğu için sadece JPEG/PNG/PDF kabul edilir
+        const IBAN_EXTS = ['jpg', 'jpeg', 'png', 'pdf'];
+        const GENEL_EXTS = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+
+        const tipSelect = document.getElementById('evrakTipiSelect');
+        const dosyaInput = document.getElementById('dosyaInput');
+        const dosyaAciklama = document.getElementById('dosyaAciklama');
+        const ibanAciklama = document.getElementById('ibanAciklama');
+
+        function ibanSecili() {
+            if (!tipSelect) return false;
+            const opt = tipSelect.options[tipSelect.selectedIndex];
+            return !!(opt && opt.dataset.iban === '1');
+        }
+
+        function tipDegisti() {
+            if (!dosyaInput) return;
+            const iban = ibanSecili();
+
+            dosyaInput.accept = iban ? '.jpg,.jpeg,.png,.pdf' : '.pdf,.jpg,.jpeg,.png,.doc,.docx';
+            if (dosyaAciklama) {
+                dosyaAciklama.textContent = iban
+                    ? 'JPEG, PNG veya PDF (Max 10MB)'
+                    : 'PDF, JPG, PNG, DOC, DOCX (Max 10MB)';
+            }
+            if (ibanAciklama) ibanAciklama.classList.toggle('hidden', !iban);
+
+            // Zaten seçili dosya yeni kısıtlamaya uymuyorsa temizle
+            const f = dosyaInput.files && dosyaInput.files[0];
+            if (iban && f && IBAN_EXTS.indexOf(uzanti(f.name)) === -1) {
+                dosyaInput.value = '';
+                alert('IBAN belgesi sadece JPEG, PNG veya PDF formatında yüklenebilir.');
+            }
+        }
+
+        if (tipSelect) {
+            tipSelect.addEventListener('change', tipDegisti);
+            tipDegisti();  // sayfa yenilenince seçim korunabilir
+        }
+
+        formKur('dosya', () => (ibanSecili() ? IBAN_EXTS : GENEL_EXTS), 10);
         formKur('kargo_barkod', ['jpg', 'jpeg', 'png', 'webp'], 10);
     })();
     </script>

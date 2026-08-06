@@ -33,6 +33,7 @@ from app.utils import (
     apply_calisan_scope, calisan_in_scope,
     apply_aday_scope, aday_in_scope, user_scoped_projeler,
     normalize_telefon, sms_ascii,
+    is_iban_evrak_tipi, iban_evrak_uzanti_gecerli, IBAN_FORMAT_HATASI,
 )
 
 ik_bp = Blueprint('ik', __name__)
@@ -2347,14 +2348,10 @@ def aday_sil(id):
 
 def _is_iban_evrak_tipi(evrak_tipi):
     """Evrak tipinin IBAN / hesap bilgisi belgesi olup olmadığını belirler.
-    Kod 'IBAN' ise veya ad/aciklama içinde 'iban' geçiyorsa True.
+
+    Ortak tanım app/utils.py içinde; burada mevcut çağrı noktaları için isim korunuyor.
     """
-    if not evrak_tipi:
-        return False
-    if (evrak_tipi.kod or '').strip().upper() == 'IBAN':
-        return True
-    metin = f"{evrak_tipi.ad or ''} {evrak_tipi.kod or ''}".lower()
-    return 'iban' in metin
+    return is_iban_evrak_tipi(evrak_tipi)
 
 
 @ik_bp.route('/aday/<int:id>/evrak', methods=['POST'])
@@ -2375,7 +2372,13 @@ def aday_evrak_yukle(id):
     
     if dosya and allowed_file(dosya.filename):
         evrak_tipi_id = int(request.form['evrak_tipi_id'])
-        
+        evrak_tipi = EvrakTipi.query.get(evrak_tipi_id)
+
+        # IBAN evrağı OCR ile okunduğu için sadece JPEG/PNG/PDF kabul edilir
+        if is_iban_evrak_tipi(evrak_tipi) and not iban_evrak_uzanti_gecerli(dosya.filename):
+            flash(IBAN_FORMAT_HATASI, 'danger')
+            return redirect(url_for('ik.aday_detay', id=id))
+
         # Dosya adı oluştur
         filename = secure_filename(dosya.filename)
         ext = filename.rsplit('.', 1)[1].lower()
@@ -2408,8 +2411,7 @@ def aday_evrak_yukle(id):
         flash('Evrak başarıyla yüklendi.', 'success')
 
         # IBAN / Hesap bilgisi evrağı ise IBAN'ı otomatik oku ve adaya kaydet
-        evrak_tipi = EvrakTipi.query.get(evrak_tipi_id)
-        if _is_iban_evrak_tipi(evrak_tipi):
+        if is_iban_evrak_tipi(evrak_tipi):
             try:
                 from app.services.ocr_service import extract_iban_from_image
                 okunan = extract_iban_from_image(filepath)
@@ -4396,7 +4398,13 @@ def calisan_evrak_yukle(id):
     
     if dosya and allowed_file(dosya.filename):
         evrak_tipi_id = int(request.form['evrak_tipi_id'])
-        
+        evrak_tipi = EvrakTipi.query.get(evrak_tipi_id)
+
+        # IBAN evrağı OCR ile okunduğu için sadece JPEG/PNG/PDF kabul edilir
+        if is_iban_evrak_tipi(evrak_tipi) and not iban_evrak_uzanti_gecerli(dosya.filename):
+            flash(IBAN_FORMAT_HATASI, 'danger')
+            return redirect(url_for('ik.calisan_evraklar', id=id))
+
         # Dosya adı oluştur
         filename = secure_filename(dosya.filename)
         ext = filename.rsplit('.', 1)[1].lower()

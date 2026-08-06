@@ -468,3 +468,58 @@ def user_scoped_projeler(user=None):
         return base_q.filter(Proje.id.in_(proje_ids)).all()
 
     return []
+
+
+# ============================================================
+# IBAN EVRAK FORMAT KISITLAMASI
+# ============================================================
+
+# IBAN belgesi OCR ile okunduğu için sadece görsel/PDF kabul edilir.
+# Word dosyaları (.doc/.docx) okunamadığı için kabul edilmez.
+IBAN_EVRAK_UZANTILARI = {'jpg', 'jpeg', 'png', 'pdf'}
+
+IBAN_FORMAT_HATASI = 'IBAN belgesi sadece JPEG, PNG veya PDF formatında yüklenebilir.'
+
+IBAN_EVRAK_ACIKLAMA = (
+    'IBAN belgenizi yükleyin. Kabul edilen formatlar: JPEG, PNG veya PDF. '
+    'Online bankacılık hesap detaylarınızın ekran görüntüsünü veya '
+    'hesap cüzdanınızın fotoğrafını yükleyebilirsiniz.'
+)
+
+
+def is_iban_evrak_tipi(evrak_tipi):
+    """Evrak tipinin IBAN / hesap bilgisi belgesi olup olmadığını belirler.
+
+    Kod 'IBAN' ise veya ad/kod içinde 'iban' geçiyorsa True.
+
+    Args:
+        evrak_tipi: EvrakTipi nesnesi (None olabilir).
+    """
+    if not evrak_tipi:
+        return False
+    if (evrak_tipi.kod or '').strip().upper() == 'IBAN':
+        return True
+    metin = f"{evrak_tipi.ad or ''} {evrak_tipi.kod or ''}".lower()
+    return 'iban' in metin
+
+
+def iban_evrak_uzanti_gecerli(filename):
+    """IBAN evrağı için dosya uzantısının kabul edilip edilmediğini kontrol eder.
+
+    Args:
+        filename: Yüklenen dosyanın adı.
+
+    Returns:
+        True ise uzantı kabul edilir (jpg/jpeg/png/pdf), aksi halde False.
+    """
+    if not filename or '.' not in filename:
+        return False
+    return filename.rsplit('.', 1)[1].lower() in IBAN_EVRAK_UZANTILARI
+
+
+def iban_evrak_tipi_idleri(evrak_tipleri):
+    """Verilen evrak tipi listesinden IBAN tipli olanların id'lerini döndürür.
+
+    Template'te dosya seçicinin `accept` değerini dinamik ayarlamak için kullanılır.
+    """
+    return [t.id for t in (evrak_tipleri or []) if is_iban_evrak_tipi(t)]
