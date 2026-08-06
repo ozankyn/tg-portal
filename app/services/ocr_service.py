@@ -25,14 +25,43 @@ IBAN_PROMPT = (
     "IBAN bulunamadıysa 'YOK' döndür."
 )
 
-# Desteklenen görsel uzantı -> media_type
-_IMAGE_MIME = {
-    'jpg': 'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'png': 'image/png',
-    'gif': 'image/gif',
-    'webp': 'image/webp',
-}
+# Dosya imzası (magic bytes) -> media_type
+# Uzantıya güvenilmez; gerçek format dosya içeriğinden tespit edilir.
+# Anthropic API'nin desteklediği tipler: jpeg, png, gif, webp, pdf.
+def tespit_media_type(data):
+    """Dosya içeriğinden gerçek MIME tipini bulur.
+
+    Args:
+        data: Dosyanın ham byte içeriği (bytes).
+
+    Returns:
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+        'application/pdf' veya tanınmazsa None.
+    """
+    if not data or len(data) < 12:
+        return None
+
+    # JPEG: FF D8 FF
+    if data[:3] == b'\xff\xd8\xff':
+        return 'image/jpeg'
+
+    # PNG: 89 50 4E 47 0D 0A 1A 0A
+    if data[:8] == b'\x89PNG\r\n\x1a\n':
+        return 'image/png'
+
+    # GIF: "GIF87a" veya "GIF89a"
+    if data[:6] in (b'GIF87a', b'GIF89a'):
+        return 'image/gif'
+
+    # WEBP: "RIFF" + 4 byte boyut + "WEBP"
+    if data[:4] == b'RIFF' and data[8:12] == b'WEBP':
+        return 'image/webp'
+
+    # PDF: "%PDF"
+    if data[:4] == b'%PDF':
+        return 'application/pdf'
+
+    return None
 
 
 def normalize_iban(text):
@@ -66,25 +95,28 @@ def normalize_iban(text):
 
 
 def _dosya_bloklari(image_path):
-    """Dosya yolundan Anthropic content bloğu (image veya document) üretir."""
-    ext = image_path.rsplit('.', 1)[1].lower() if '.' in image_path else ''
+    """Dosya yolundan Anthropic content bloğu (image veya document) üretir.
 
+    Dosya tipi uzantıdan değil, içerikten (magic bytes) tespit edilir.
+    """
     with open(image_path, 'rb') as f:
-        data = base64.standard_b64encode(f.read()).decode('utf-8')
+        ham = f.read()
 
-    if ext == 'pdf':
+    media_type = tespit_media_type(ham)
+    if not media_type:
+        raise ValueError(f"Desteklenmeyen veya tanınmayan dosya tipi: {image_path}")
+
+    data = base64.standard_b64encode(ham).decode('utf-8')
+
+    if media_type == 'application/pdf':
         return {
             "type": "document",
             "source": {
                 "type": "base64",
-                "media_type": "application/pdf",
+                "media_type": media_type,
                 "data": data,
             },
         }
-
-    media_type = _IMAGE_MIME.get(ext)
-    if not media_type:
-        raise ValueError(f"Desteklenmeyen dosya tipi: .{ext}")
 
     return {
         "type": "image",
@@ -100,7 +132,8 @@ def extract_iban_from_image(image_path):
     """Görsel/PDF dosyasından IBAN numarasını okur.
 
     Args:
-        image_path: Okunacak dosyanın tam yolu (jpg/png/gif/webp/pdf).
+        image_path: Okunacak dosyanın tam yolu. Format dosya içeriğinden
+            tespit edilir (jpeg/png/gif/webp/pdf); uzantı dikkate alınmaz.
 
     Returns:
         'TR' + 24 hane IBAN string, veya bulunamazsa/hata olursa None.

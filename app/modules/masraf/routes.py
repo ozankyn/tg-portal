@@ -575,33 +575,25 @@ def fis_tani():
     import anthropic
     import json
     import base64
-    
+
+    from app.services.ocr_service import tespit_media_type
+
     if 'dosya' not in request.files:
         return jsonify({'success': False, 'error': 'Dosya yüklenmedi'}), 400
-    
+
     dosya = request.files['dosya']
     if dosya.filename == '':
         return jsonify({'success': False, 'error': 'Dosya seçilmedi'}), 400
-    
-    # Dosya tipini kontrol et
-    allowed = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
-    ext = dosya.filename.rsplit('.', 1)[1].lower() if '.' in dosya.filename else ''
-    if ext not in allowed:
-        return jsonify({'success': False, 'error': 'Sadece görsel dosyalar desteklenir (JPG, PNG)'}), 400
-    
+
+    # Dosya tipini içerikten tespit et (uzantıya güvenilmez)
+    ham = dosya.read()
+    media_type = tespit_media_type(ham)
+    if media_type is None or not media_type.startswith('image/'):
+        return jsonify({'success': False, 'error': 'Sadece görsel dosyalar desteklenir (JPG, PNG, GIF, WEBP)'}), 400
+
     # Dosyayı base64'e çevir
-    image_data = base64.standard_b64encode(dosya.read()).decode('utf-8')
-    
-    # MIME type belirle
-    mime_types = {
-        'jpg': 'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'png': 'image/png',
-        'gif': 'image/gif',
-        'webp': 'image/webp'
-    }
-    media_type = mime_types.get(ext, 'image/jpeg')
-    
+    image_data = base64.standard_b64encode(ham).decode('utf-8')
+
     # Claude API çağrısı
     try:
         client = anthropic.Anthropic(api_key=current_app.config.get('ANTHROPIC_API_KEY'))
