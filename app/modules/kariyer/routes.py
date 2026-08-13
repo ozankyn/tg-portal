@@ -136,16 +136,15 @@ class _FormAday:
 @kariyer_bp.route('/')
 def pozisyonlar():
     """Açık pozisyonları listele"""
-    # Aktif projelerdeki eksik kadrolu pozisyonları getir
-    kadrolar = HedefKadro.query.join(Proje).join(Musteri).filter(
+    # Aktif projelerdeki aktif kadrolar — kadro doluluk durumuna BAKILMAZ,
+    # dolu kadrolar da listelenir ve başvuruya açıktır.
+    acik_pozisyonlar = HedefKadro.query.join(Proje).join(Musteri).filter(
         Proje.aktif == True,
         Musteri.aktif == True,
+        HedefKadro.aktif == True,
         HedefKadro.is_deleted == False
     ).all()
-    
-    # Sadece eksik kadrosu olanları filtrele
-    acik_pozisyonlar = [k for k in kadrolar if k.eksik_sayi > 0]
-    
+
     # İllere göre grupla
     iller = set()
     for k in acik_pozisyonlar:

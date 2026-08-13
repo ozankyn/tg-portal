@@ -382,7 +382,10 @@
             <div class="pos-card-body">
                 <div class="pos-header">
                     <h3 class="pos-title">{{ kadro.pozisyon_adi }}</h3>
+                    {# Kadro doluluğu başvuruyu etkilemez; sadece açık kontenjan varsa bilgi amaçlı gösterilir #}
+                    {% if kadro.eksik_sayi > 0 %}
                     <span class="pos-count-badge">{{ kadro.eksik_sayi }} Kişi</span>
+                    {% endif %}
                 </div>
 
                 {% if kadro.proje.musteri.kariyer_gorunum_adi %}
