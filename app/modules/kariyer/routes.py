@@ -5,7 +5,7 @@ Açık pozisyonları görüntüleme ve doğrudan başvuru - Login gerektirmez
 """
 
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify, session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from app import db
 from app.models.ik import (
     Aday, KAYNAK_TURLERI, BASVURU_KAYNAK_TURLERI, BEDEN_SECENEKLERI,
@@ -76,6 +76,29 @@ def _parse_date(s):
         return datetime.strptime(s, '%Y-%m-%d').date() if s else None
     except (ValueError, TypeError):
         return None
+
+
+# ============================================================
+# YAŞ KONTROLÜ — 18 yaşını doldurmayan aday başvuru yapamaz
+# ============================================================
+
+MIN_BASVURU_YAS = 18
+YAS_HATASI = 'Başvuru yapabilmek için 18 yaşını doldurmuş olmanız gerekmektedir.'
+
+
+def _yas_hesapla(dogum):
+    """Doğum tarihine göre bugün itibarıyla doldurulmuş yaşı döndür."""
+    bugun = date.today()
+    return bugun.year - dogum.year - ((bugun.month, bugun.day) < (dogum.month, dogum.day))
+
+
+def _max_dogum_tarihi():
+    """18 yaşını doldurmuş olmak için en geç doğum tarihi ('YYYY-MM-DD')."""
+    bugun = date.today()
+    try:
+        return bugun.replace(year=bugun.year - MIN_BASVURU_YAS).isoformat()
+    except ValueError:  # 29 Şubat → 28 Şubat
+        return bugun.replace(year=bugun.year - MIN_BASVURU_YAS, day=28).isoformat()
 
 
 def _otp_valid(bsv):
@@ -344,6 +367,14 @@ def basvuru_form(kadro_id):
         if eksikler:
             hatalar.append('Lütfen şu zorunlu alanları doldurun: ' + ', '.join(eksikler))
 
+        # 18 yaş kontrolü — client-side atlanabildiği için burada zorunlu
+        dogum_tarihi_str = request.form.get('dogum_tarihi')
+        dogum_tarihi = _parse_date(dogum_tarihi_str)
+        if dogum_tarihi_str and not dogum_tarihi:
+            hatalar.append('Geçerli bir doğum tarihi giriniz.')
+        elif dogum_tarihi and _yas_hesapla(dogum_tarihi) < MIN_BASVURU_YAS:
+            hatalar.append(YAS_HATASI)
+
         if request.form.get('cinsiyet') == 'erkek' and not request.form.get('askerlik_durumu'):
             hatalar.append('Askerlik durumu erkek adaylar için zorunludur.')
 
@@ -402,7 +433,8 @@ def basvuru_form(kadro_id):
             return render_template('kariyer/form.html', aday=form_aday, kadro=kadro,
                                    basvuru_kaynak_turleri=BASVURU_KAYNAK_TURLERI,
                                    beden_secenekleri=BEDEN_SECENEKLERI,
-                                   iller=iller, form_hatalari=hatalar), 400
+                                   iller=iller, form_hatalari=hatalar,
+                                   max_dogum_tarihi=_max_dogum_tarihi()), 400
 
         # ---- Aday kaydını oluştur (tüm bilgiler tek INSERT) ----
         aday = Aday(
@@ -426,7 +458,7 @@ def basvuru_form(kadro_id):
 
         # Kişisel bilgiler
         aday.tc_kimlik = request.form.get('tc_kimlik')
-        aday.dogum_tarihi = datetime.strptime(request.form.get('dogum_tarihi'), '%Y-%m-%d').date() if request.form.get('dogum_tarihi') else None
+        aday.dogum_tarihi = dogum_tarihi
         aday.dogum_yeri = request.form.get('dogum_yeri')
         aday.cinsiyet = request.form.get('cinsiyet')
         aday.medeni_durum = request.form.get('medeni_durum')
@@ -575,7 +607,7 @@ def basvuru_form(kadro_id):
     return render_template('kariyer/form.html', aday=form_aday, kadro=kadro,
                            basvuru_kaynak_turleri=BASVURU_KAYNAK_TURLERI,
                            beden_secenekleri=BEDEN_SECENEKLERI,
-                           iller=iller)
+                           iller=iller, max_dogum_tarihi=_max_dogum_tarihi())
 
 
 @kariyer_bp.route('/api/ilceler')

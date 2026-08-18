@@ -84,8 +84,14 @@
                         </div>
                         <div class="md:col-span-4">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Doğum Tarihi <span class="text-red-500">*</span></label>
-                            <input type="date" name="dogum_tarihi" required value="{{ aday.dogum_tarihi.strftime('%Y-%m-%d') if aday.dogum_tarihi else '' }}"
+                            <input type="date" name="dogum_tarihi" id="dogum_tarihi" required
+                                   max="{{ max_dogum_tarihi }}"
+                                   value="{{ aday.dogum_tarihi.strftime('%Y-%m-%d') if aday.dogum_tarihi else '' }}"
+                                   data-max-dogum="{{ max_dogum_tarihi }}"
                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <p id="yasUyari" class="hidden mt-1 text-sm text-red-600">
+                                Başvuru yapabilmek için 18 yaşını doldurmuş olmanız gerekmektedir.
+                            </p>
                         </div>
                         <div class="md:col-span-4">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Doğum Yeri</label>
@@ -494,6 +500,44 @@
             cinsiyet.addEventListener('change', guncelle);
             guncelle();
         }
+    })();
+
+    // 18 yaş kontrolü — anlık uyarı + gönderimi engelle (server-side de doğrular)
+    (function () {
+        const dogum = document.getElementById('dogum_tarihi');
+        const uyari = document.getElementById('yasUyari');
+        const form = document.getElementById('basvuruForm');
+        if (!dogum || !uyari || !form) return;
+
+        const MAX_DOGUM = dogum.dataset.maxDogum || '';
+
+        function yasGecerli() {
+            if (!dogum.value) return true;              // boşsa "required" ilgilenir
+            return !MAX_DOGUM || dogum.value <= MAX_DOGUM;  // YYYY-MM-DD → string karşılaştırma
+        }
+
+        function guncelle() {
+            const gecerli = yasGecerli();
+            uyari.classList.toggle('hidden', gecerli);
+            dogum.classList.toggle('border-red-500', !gecerli);
+            dogum.setCustomValidity(gecerli ? '' : uyari.textContent.trim());
+            return gecerli;
+        }
+
+        dogum.addEventListener('change', guncelle);
+        dogum.addEventListener('input', guncelle);
+        guncelle();
+
+        // Bu listener dosya kontrolü/overlay listener'ından ÖNCE kayıtlı olmalı;
+        // yaş hatalıysa stopImmediatePropagation ile overlay açılmasını da engelliyoruz.
+        form.addEventListener('submit', function (e) {
+            if (!guncelle()) {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                dogum.reportValidity();
+                dogum.focus();
+            }
+        });
     })();
 
     // İl seçilince ilçeleri yükle (cascading dropdown)
