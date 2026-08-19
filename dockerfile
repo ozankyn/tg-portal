@@ -13,8 +13,10 @@ ENV TZ=Europe/Istanbul
 # - gcc/libpq-dev: psycopg2 build
 # - libpango/libcairo/libgdk-pixbuf/libffi/shared-mime-info: WeasyPrint PDF rendering
 # - fonts-dejavu: Türkçe karakter desteği
+# - ffmpeg: aday tanıtım videolarının otomatik sıkıştırılması
 RUN apt-get update && apt-get install -y \
     gcc \
+    ffmpeg \
     pkg-config \
     libpq-dev \
     libpango-1.0-0 \

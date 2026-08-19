@@ -12,6 +12,7 @@ from app.models.ik import (
     EvrakTipi, AdayEvrak, AdayMedya, SozlesmeSablonu,
 )
 from app.models.proje import HedefKadro, Proje, Musteri, Il, Ilce
+from app.services.video_sikistir import sikistir_async
 from app.utils import (
     normalize_telefon,
     is_iban_evrak_tipi, iban_evrak_uzanti_gecerli, iban_evrak_tipi_idleri,
@@ -568,6 +569,7 @@ def basvuru_form(kadro_id):
                     mime_type=f.mimetype or f'image/{ext}',
                 ))
 
+        video_medya = None
         if video_file:
             ext = _kariyer_ext(video_file.filename)
             boyut = _dosya_boyut(video_file)
@@ -577,15 +579,20 @@ def basvuru_form(kadro_id):
             fpath = os.path.join(videos_dir, fname)
             video_file.save(fpath)
             rel = f"adaylar/{aday.id}/videos/{fname}"
-            db.session.add(AdayMedya(
+            video_medya = AdayMedya(
                 aday_id=aday.id, tip='video',
                 dosya_adi=secure_filename(video_file.filename),
                 dosya_yolu=rel, dosya_boyut=boyut,
                 mime_type=video_file.mimetype or f'video/{ext}',
-            ))
+            )
+            db.session.add(video_medya)
 
         # Başvuru tamamlandı (durum/flag'ler aday oluşturulurken set edildi)
         db.session.commit()
+
+        # Video arka planda 720p / ~10MB hedefiyle sıkıştırılır
+        if video_medya:
+            sikistir_async(video_medya)
 
         # Session temizle
         session.pop(SESSION_KEY, None)
@@ -863,6 +870,10 @@ def medya_video_yukle(token):
     )
     db.session.add(m)
     db.session.commit()
+
+    # Video arka planda 720p / ~10MB hedefiyle sıkıştırılır
+    sikistir_async(m)
+
     return jsonify({'success': True, 'eklenen': _kariyer_medya_dict(m)})
 
 

@@ -28,6 +28,7 @@ from app.models.ik import (
     SozlesmeSablonu, AdayIslemGecmisi, ADAY_DURUM_AKISI, EHLIYET_SINIFLARI
 )
 from app.models.base import CalisanDurumu
+from app.services.video_sikistir import sikistir_async
 from app.utils import (
     permission_required, admin_or_permission_required, paginate_query,
     apply_calisan_scope, calisan_in_scope,
@@ -2821,6 +2822,9 @@ def aday_video_yukle(id):
     )
     db.session.add(medya)
     db.session.commit()
+
+    # Video arka planda 720p / ~10MB hedefiyle sıkıştırılır
+    sikistir_async(medya)
 
     return jsonify({'success': True, 'eklenen': _medya_to_dict(medya), 'message': 'Video yüklendi'})
 
