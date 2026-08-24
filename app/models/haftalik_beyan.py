@@ -64,12 +64,14 @@ class HaftalikBeyan(db.Model, TimestampMixin):
             func.sum(db.cast(BeyanKayit.cuma, db.Integer)).label('cuma'),
             func.sum(db.cast(BeyanKayit.cumartesi, db.Integer)).label('cumartesi'),
             func.sum(db.cast(BeyanKayit.pazar, db.Integer)).label('pazar'),
+            func.sum(db.cast(BeyanKayit.calisamiyorum, db.Integer)).label('calisamiyorum'),
         ).filter(BeyanKayit.beyan_id == self.id).one()
         return {
             'toplam': row.toplam or 0,
             'cuma': int(row.cuma or 0),
             'cumartesi': int(row.cumartesi or 0),
             'pazar': int(row.pazar or 0),
+            'calisamiyorum': int(row.calisamiyorum or 0),
         }
 
 
@@ -90,6 +92,11 @@ class BeyanKayit(db.Model, TimestampMixin):
     cuma = db.Column(db.Boolean, default=False)
     cumartesi = db.Column(db.Boolean, default=False)
     pazar = db.Column(db.Boolean, default=False)
+
+    # Bu hafta hiç çalışamayacağını beyan edenler: gün seçimi yapılmaz,
+    # minimum gün kuralı (MIN_GUN) bu kayıtlara uygulanmaz
+    calisamiyorum = db.Column(db.Boolean, default=False, nullable=False,
+                              server_default=db.text('false'))
 
     token = db.Column(db.String(64), unique=True, index=True)
     kayit_zamani = db.Column(db.DateTime)
@@ -140,3 +147,12 @@ class BeyanKayit(db.Model, TimestampMixin):
         if self.pazar:
             gunler.append('Pazar')
         return gunler
+
+    @property
+    def durum_etiketi(self):
+        """Rapor/Excel için tek satırlık beyan özeti."""
+        if self.calisamiyorum:
+            return 'Çalışamıyorum'
+        if self.gun_sayisi == 0:
+            return 'Gelmeyecek'
+        return ', '.join(self.secilen_gunler)

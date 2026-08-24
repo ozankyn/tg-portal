@@ -31,6 +31,12 @@ beyan_bp = Blueprint('beyan', __name__)
 OTP_GECERLILIK_DK = 5
 OTP_MAX_DENEME = 5
 
+# Beyan başına en az kaç gün seçilmeli (çalışamıyorum işaretlenmediyse)
+MIN_GUN = 2
+MIN_GUN_UYARI = (f'En az {MIN_GUN} gün seçmeniz gerekmektedir. '
+                 "Çalışamayacaksanız 'Bu hafta çalışamıyorum' "
+                 'seçeneğini işaretleyin.')
+
 
 def _normalize_tel(tel):
     """Telefonu sadece rakamlara indirger ve son 10 haneyi döndürür."""
@@ -164,7 +170,7 @@ def beyan_sayfa(id):
             return redirect(url_for('beyan.beyan_sayfa', id=id))
         kayit = BeyanKayit.query.filter_by(beyan_id=id, calisan_id=calisan.id).first()
         return render_template('beyan/beyan_form.html', beyan=beyan, asama='gun',
-                               calisan=calisan, kayit=kayit)
+                               calisan=calisan, kayit=kayit, min_gun=MIN_GUN)
 
     # Doğrulama aşaması: OTP gönderildiyse kod ekranı, değilse telefon ekranı
     asama = 'kod' if session.get(otp_key) else 'telefon'
@@ -185,9 +191,19 @@ def beyan_kaydet(id):
 
     calisan = Calisan.query.get_or_404(calisan_id)
 
+    calisamiyorum = request.form.get('calisamiyorum') == 'on'
     cuma = request.form.get('cuma') == 'on'
     cumartesi = request.form.get('cumartesi') == 'on'
     pazar = request.form.get('pazar') == 'on'
+
+    # Çalışamıyorum işaretliyse gün seçimi anlamsız -> sıfırlanır
+    if calisamiyorum:
+        cuma = cumartesi = pazar = False
+    elif sum([cuma, cumartesi, pazar]) < MIN_GUN:
+        # Client-side JS atlatılmış olabilir; kayıt yapılmaz.
+        # Mevcut kayıt (varsa) olduğu gibi kalır - eski 1 günlük beyanlar bozulmaz.
+        flash(MIN_GUN_UYARI, 'danger')
+        return redirect(url_for('beyan.beyan_sayfa', id=id))
 
     kayit = BeyanKayit.query.filter_by(beyan_id=id, calisan_id=calisan.id).first()
     if not kayit:
@@ -201,6 +217,7 @@ def beyan_kaydet(id):
     kayit.cuma = cuma
     kayit.cumartesi = cumartesi
     kayit.pazar = pazar
+    kayit.calisamiyorum = calisamiyorum
     kayit.kayit_zamani = datetime.now()
     kayit.ip = _client_ip()
 

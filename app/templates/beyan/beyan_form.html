@@ -74,18 +74,19 @@
         {% endif %}
         <p class="text-sm mb-4" style="color:var(--sub);">
             Bu hafta hangi günler çalışacaksınız? Çalışacağınız günleri işaretleyin.
+            <strong style="color:var(--text);">En az {{ min_gun }} gün seçmelisiniz.</strong>
         </p>
-        <form method="POST" action="{{ url_for('beyan.beyan_kaydet', id=beyan.id) }}">
-            <div class="space-y-3 mb-6">
+        <form method="POST" action="{{ url_for('beyan.beyan_kaydet', id=beyan.id) }}" id="beyanForm">
+            <div class="space-y-3 mb-4" id="gunKutulari">
                 {% set gunler = [
                     ('cuma', 'Cuma', beyan.hafta_baslangic),
                     ('cumartesi', 'Cumartesi', beyan.hafta_baslangic),
                     ('pazar', 'Pazar', beyan.hafta_bitis)
                 ] %}
                 {% for alan, etiket, tarih in gunler %}
-                <label class="flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer border transition-colors"
+                <label class="gun-satir flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer border transition-colors"
                        style="border-color:var(--border);">
-                    <input type="checkbox" name="{{ alan }}"
+                    <input type="checkbox" name="{{ alan }}" class="gun-secim"
                            {% if kayit and kayit[alan] %}checked{% endif %}>
                     <span>
                         <span style="font-family:var(--font-d);font-weight:700;font-size:15px;color:var(--text);">{{ etiket }}</span>
@@ -93,10 +94,72 @@
                 </label>
                 {% endfor %}
             </div>
+
+            {# Hiç çalışamayacaklar için: gün seçimi devre dışı kalır #}
+            <label class="flex items-center gap-3 px-4 py-3 mb-4 rounded-xl cursor-pointer border transition-colors"
+                   style="border-color:var(--border);background:var(--bg);">
+                <input type="checkbox" name="calisamiyorum" id="calisamiyorum"
+                       {% if kayit and kayit.calisamiyorum %}checked{% endif %}>
+                <span>
+                    <span style="font-family:var(--font-d);font-weight:700;font-size:15px;color:var(--text);">Bu hafta çalışamıyorum</span>
+                    <span class="block text-xs" style="color:var(--sub);">İşaretlerseniz gün seçimi yapmanız gerekmez.</span>
+                </span>
+            </label>
+
+            <div id="beyanUyari" class="mb-4 px-4 py-3 rounded-lg text-sm"
+                 style="display:none;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;">
+                En az {{ min_gun }} gün seçmeniz gerekmektedir.
+                Çalışamayacaksanız 'Bu hafta çalışamıyorum' seçeneğini işaretleyin.
+            </div>
+
             <button type="submit" class="btn-primary w-full py-3 flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">send</span>Gönder
             </button>
         </form>
+
+        <script>
+        (function () {
+            var MIN_GUN = {{ min_gun }};
+            var form = document.getElementById('beyanForm');
+            var calisamiyorum = document.getElementById('calisamiyorum');
+            var gunler = Array.prototype.slice.call(document.querySelectorAll('.gun-secim'));
+            var uyari = document.getElementById('beyanUyari');
+
+            function secilenSayi() {
+                return gunler.filter(function (g) { return g.checked; }).length;
+            }
+
+            // "Çalışamıyorum" seçiliyken gün seçimi devre dışı
+            function gunleriGuncelle() {
+                var kapali = calisamiyorum.checked;
+                gunler.forEach(function (g) {
+                    if (kapali) { g.checked = false; }
+                    g.disabled = kapali;
+                    g.closest('.gun-satir').style.opacity = kapali ? '0.45' : '1';
+                    g.closest('.gun-satir').style.cursor = kapali ? 'not-allowed' : 'pointer';
+                });
+                if (kapali) { uyari.style.display = 'none'; }
+            }
+
+            calisamiyorum.addEventListener('change', gunleriGuncelle);
+            gunler.forEach(function (g) {
+                g.addEventListener('change', function () {
+                    if (secilenSayi() >= MIN_GUN) { uyari.style.display = 'none'; }
+                });
+            });
+
+            form.addEventListener('submit', function (e) {
+                if (calisamiyorum.checked) { return; }
+                if (secilenSayi() < MIN_GUN) {
+                    e.preventDefault();
+                    uyari.style.display = 'block';
+                    uyari.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+
+            gunleriGuncelle();
+        })();
+        </script>
         {% endif %}
 
     </div>

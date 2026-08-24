@@ -594,6 +594,8 @@ Kullanıcının doğal dilde sorduğu soruları PostgreSQL sorguları ve Türkç
 **beyan_kayitlari** (Çalışanın gün seçimi — beyan başına çalışan başına 1 kayıt)
 - id, beyan_id → haftalik_beyanlar.id, calisan_id → calisanlar.id
 - telefon, ad_soyad, cuma (bool), cumartesi (bool), pazar (bool)
+- calisamiyorum (bool): "Bu hafta çalışamıyorum" beyanı. TRUE ise cuma/cumartesi/pazar
+  hepsi FALSE'tur. Beyan başına en az 2 gün seçme zorunluluğu bu kayıtlara uygulanmaz.
 - kadro_adi: beyan anındaki kadro adı (hedef_kadrolar.pozisyon_adi kopyası).
   Müdürlük bu adın ilk " - " öncesinden ayıklanır: "Akdeniz Md. - Antalya - P.T Sniper" → "Akdeniz Md."
 - kayit_zamani, ip — NOT: is_deleted YOK
@@ -900,18 +902,23 @@ def _beyan_rapor_verisi(beyan):
     beyan_eden_ids = set(kayit_map.keys())
 
     beyan_etmeyenler = [c for c in aktif_calisanlar if c.id not in beyan_eden_ids]
-    gelmeyecekler = [k for k in kayitlar if k.gun_sayisi == 0]
+    calisamayanlar = [k for k in kayitlar if k.calisamiyorum]
+    # "Çalışamıyorum" seçeneği eklenmeden önce 0 gün işaretleyen eski kayıtlar
+    gelmeyecekler = [k for k in kayitlar if not k.calisamiyorum and k.gun_sayisi == 0]
 
     # Müdürlük bazlı gün kırılımı (departman -> kadro adından parse fallback)
     mudurluk = {}
     for c in aktif_calisanlar:
         dep_ad = _calisan_mudurluk(c)
         m = mudurluk.setdefault(dep_ad, {'toplam': 0, 'beyan_eden': 0,
-                                         'cuma': 0, 'cumartesi': 0, 'pazar': 0})
+                                         'cuma': 0, 'cumartesi': 0, 'pazar': 0,
+                                         'calisamiyorum': 0})
         m['toplam'] += 1
         k = kayit_map.get(c.id)
         if k:
             m['beyan_eden'] += 1
+            if k.calisamiyorum:
+                m['calisamiyorum'] += 1
             if k.cuma:
                 m['cuma'] += 1
             if k.cumartesi:
@@ -925,6 +932,8 @@ def _beyan_rapor_verisi(beyan):
         'kayit_map': kayit_map,
         'beyan_etmeyenler': beyan_etmeyenler,
         'gelmeyecekler': gelmeyecekler,
+        'calisamayanlar': calisamayanlar,
+        'calisamayan_sayi': len(calisamayanlar),
         'gun_sayaclari': beyan.gun_sayaclari,
         'mudurluk': dict(sorted(mudurluk.items())),
         'aktif_sayi': len(aktif_calisanlar),
@@ -1107,8 +1116,8 @@ def haftalik_beyan_export(id):
     # Sayfa 1: Beyan edenler
     ws = wb.active
     ws.title = 'Beyan Edenler'
-    headers = ['Ad Soyad', 'Telefon', 'Kadro', 'Müdürlük', 'Cuma', 'Cumartesi',
-               'Pazar', 'Gün Sayısı', 'Kayıt Zamanı']
+    headers = ['Ad Soyad', 'Telefon', 'Kadro', 'Müdürlük', 'Çalışamıyorum',
+               'Cuma', 'Cumartesi', 'Pazar', 'Gün Sayısı', 'Kayıt Zamanı']
     ws.append(headers)
     for c in veri['aktif_calisanlar']:
         k = veri['kayit_map'].get(c.id)
@@ -1117,6 +1126,7 @@ def haftalik_beyan_export(id):
         ws.append([
             c.full_name, c.telefon or '-',
             _calisan_kadro_adi(c) or '-', _calisan_mudurluk(c),
+            'Evet' if k.calisamiyorum else 'Hayır',
             'Evet' if k.cuma else 'Hayır',
             'Evet' if k.cumartesi else 'Hayır',
             'Evet' if k.pazar else 'Hayır',
@@ -1136,15 +1146,30 @@ def haftalik_beyan_export(id):
     for col in range(1, len(h1) + 1):
         ws1.column_dimensions[get_column_letter(col)].width = 22
 
-    # Sayfa 3: Müdürlük özeti
+    # Sayfa 3: Bu hafta çalışamayanlar
+    ws3 = wb.create_sheet('Çalışamıyorum')
+    h3 = ['Ad Soyad', 'Telefon', 'Kadro', 'Müdürlük', 'Kayıt Zamanı']
+    ws3.append(h3)
+    for k in veri['calisamayanlar']:
+        ws3.append([
+            k.ad_soyad or '-', k.telefon or '-',
+            k.kadro_gosterim or '-', k.mudurluk or '-',
+            k.kayit_zamani.strftime('%d.%m.%Y %H:%M') if k.kayit_zamani else '-',
+        ])
+    for col in range(1, len(h3) + 1):
+        ws3.column_dimensions[get_column_letter(col)].width = 22
+
+    # Sayfa 4: Müdürlük özeti
     ws2 = wb.create_sheet('Müdürlük Özeti')
-    h2 = ['Müdürlük', 'Aktif Çalışan', 'Beyan Eden', 'Cuma', 'Cumartesi', 'Pazar']
+    h2 = ['Müdürlük', 'Aktif Çalışan', 'Beyan Eden', 'Çalışamıyorum',
+          'Cuma', 'Cumartesi', 'Pazar']
     ws2.append(h2)
     for dep, m in veri['mudurluk'].items():
-        ws2.append([dep, m['toplam'], m['beyan_eden'],
+        ws2.append([dep, m['toplam'], m['beyan_eden'], m['calisamiyorum'],
                     m['cuma'], m['cumartesi'], m['pazar']])
     ws2.append([])
     ws2.append(['TOPLAM', veri['aktif_sayi'], veri['beyan_eden_sayi'],
+                veri['calisamayan_sayi'],
                 veri['gun_sayaclari']['cuma'], veri['gun_sayaclari']['cumartesi'],
                 veri['gun_sayaclari']['pazar']])
     for col in range(1, len(h2) + 1):

@@ -64,6 +64,7 @@
             <th class="px-4 py-3 text-center font-medium text-text-muted dark:text-text-muted-dark">Cuma</th>
             <th class="px-4 py-3 text-center font-medium text-text-muted dark:text-text-muted-dark">Cmt</th>
             <th class="px-4 py-3 text-center font-medium text-text-muted dark:text-text-muted-dark">Pazar</th>
+            <th class="px-4 py-3 text-center font-medium text-text-muted dark:text-text-muted-dark">Çalışamıyorum</th>
             <th class="px-4 py-3 text-left font-medium text-text-muted dark:text-text-muted-dark">Durum</th>
             <th class="px-4 py-3 text-right font-medium text-[#111418] dark:text-white w-24"></th>
           </tr>
@@ -90,6 +91,7 @@
             <td class="px-4 py-3 text-center font-medium">{{ o.sayac.cuma }}</td>
             <td class="px-4 py-3 text-center font-medium">{{ o.sayac.cumartesi }}</td>
             <td class="px-4 py-3 text-center font-medium">{{ o.sayac.pazar }}</td>
+            <td class="px-4 py-3 text-center font-medium text-amber-600">{{ o.sayac.calisamiyorum }}</td>
             <td class="px-4 py-3">
               {% if o.beyan.aktif %}
               <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Açık</span>
@@ -106,7 +108,7 @@
           </tr>
           {% else %}
           <tr>
-            <td colspan="8" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz beyan oluşturulmadı</td>
+            <td colspan="9" class="px-4 py-8 text-center text-text-muted dark:text-text-muted-dark">Henüz beyan oluşturulmadı</td>
           </tr>
           {% endfor %}
         </tbody>
