@@ -495,12 +495,22 @@ def calisanlar_export():
 
     # Her çalışanın en son işten çıkış bildirimi (satır başına sorgu atmamak için toplu)
     bildirim_tarihleri = {}
+    sgk_kodlari = {}
     if calisanlar:
+        calisan_ids = [c.id for c in calisanlar]
         bildirim_tarihleri = dict(
             db.session.query(IstenCikisBildirimi.calisan_id,
                              db.func.max(IstenCikisBildirimi.created_at))
-            .filter(IstenCikisBildirimi.calisan_id.in_([c.id for c in calisanlar]))
+            .filter(IstenCikisBildirimi.calisan_id.in_(calisan_ids))
             .group_by(IstenCikisBildirimi.calisan_id).all())
+
+        # En son işten çıkış kaydının SGK çıkış kodu (eskiden yeniye, son kayıt kalır)
+        for cikis_calisan_id, kod in (
+                db.session.query(IstenCikis.calisan_id, SgkCikisKodu.kod)
+                .join(SgkCikisKodu, IstenCikis.sgk_cikis_kodu_id == SgkCikisKodu.id)
+                .filter(IstenCikis.calisan_id.in_(calisan_ids))
+                .order_by(IstenCikis.created_at.asc()).all()):
+            sgk_kodlari[cikis_calisan_id] = kod
 
     wb = Workbook()
     ws = wb.active
@@ -508,6 +518,7 @@ def calisanlar_export():
 
     headers = ['Sicil No', 'Ad Soyad', 'TC Kimlik', 'Proje', 'Kadro', 'Pozisyon',
                'Departman', 'Durum', 'Ayrılma Tarihi', 'Bildirim Tarihi',
+               'Çıkış Nedeni', 'SGK Çıkış Kodu',
                'İşe Başlama', 'Telefon', 'Email', 'IBAN', 'Ehliyet']
     ws.append(headers)
 
@@ -535,6 +546,8 @@ def calisanlar_export():
             durum_etiket.get(c.durum.value if c.durum else '', c.durum.value if c.durum else ''),
             c.isten_ayrilma.strftime('%d.%m.%Y') if c.isten_ayrilma else '',
             bildirim.strftime('%d.%m.%Y') if bildirim else '',
+            c.ayrilma_nedeni or '',
+            str(sgk_kodlari[c.id]) if c.id in sgk_kodlari else '',
             c.ise_baslama.strftime('%d.%m.%Y') if c.ise_baslama else '',
             c.telefon or '',
             c.email or '',
@@ -542,7 +555,7 @@ def calisanlar_export():
             c.ehliyet_sinifi or 'Yok',
         ])
 
-    widths = [12, 28, 13, 22, 22, 22, 20, 12, 15, 15, 14, 16, 28, 28, 10]
+    widths = [12, 28, 13, 22, 22, 22, 20, 12, 15, 15, 30, 15, 14, 16, 28, 28, 10]
     for idx, w in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(idx)].width = w
 
