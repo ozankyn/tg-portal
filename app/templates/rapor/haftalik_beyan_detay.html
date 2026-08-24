@@ -59,7 +59,7 @@
   </div>
 
   <!-- Özet kartlar -->
-  <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
+  <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
     <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
       <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Aktif Çalışan</div>
       <div class="mt-1 text-2xl font-extrabold text-[#111418] dark:text-white">{{ veri.aktif_sayi }}</div>
@@ -75,10 +75,6 @@
     <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
       <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Çalışamıyorum</div>
       <div class="mt-1 text-2xl font-extrabold text-amber-600">{{ veri.calisamayan_sayi }} <span class="text-sm font-medium text-text-muted dark:text-text-muted-dark">kişi</span></div>
-    </div>
-    <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
-      <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Gelmeyecek (0 gün)</div>
-      <div class="mt-1 text-2xl font-extrabold text-gray-600 dark:text-gray-300">{{ veri.gelmeyecekler|length }}</div>
     </div>
     <div class="rounded-2xl border border-border-light dark:border-border-dark bg-white dark:bg-card-dark shadow-sm p-4">
       <div class="text-xs font-semibold text-text-muted dark:text-text-muted-dark">Katılım</div>
@@ -166,14 +162,12 @@
               <td class="px-4 py-2">{{ k.ad_soyad }}</td>
               <td class="px-4 py-2 text-text-muted dark:text-text-muted-dark">{{ k.kadro_gosterim or '-' }}</td>
               <td class="px-4 py-2">
-                {% if k.calisamiyorum %}
+                {% if k.calisamaz %}
                 <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">Çalışamıyorum</span>
-                {% elif k.gun_sayisi > 0 %}
+                {% else %}
                 {% for gun in k.secilen_gunler %}
                 <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{{ gun }}</span>
                 {% endfor %}
-                {% else %}
-                <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Gelmeyecek</span>
                 {% endif %}
               </td>
             </tr>

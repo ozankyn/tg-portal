@@ -596,6 +596,8 @@ Kullanıcının doğal dilde sorduğu soruları PostgreSQL sorguları ve Türkç
 - telefon, ad_soyad, cuma (bool), cumartesi (bool), pazar (bool)
 - calisamiyorum (bool): "Bu hafta çalışamıyorum" beyanı. TRUE ise cuma/cumartesi/pazar
   hepsi FALSE'tur. Beyan başına en az 2 gün seçme zorunluluğu bu kayıtlara uygulanmaz.
+  NOT: Raporda "çalışamıyorum" = calisamiyorum TRUE VEYA üç günün de FALSE olduğu kayıtlar
+  (checkbox eklenmeden önce hiç gün seçmeyen eski beyanlar da bu kategoriye girer).
 - kadro_adi: beyan anındaki kadro adı (hedef_kadrolar.pozisyon_adi kopyası).
   Müdürlük bu adın ilk " - " öncesinden ayıklanır: "Akdeniz Md. - Antalya - P.T Sniper" → "Akdeniz Md."
 - kayit_zamani, ip — NOT: is_deleted YOK
@@ -902,9 +904,8 @@ def _beyan_rapor_verisi(beyan):
     beyan_eden_ids = set(kayit_map.keys())
 
     beyan_etmeyenler = [c for c in aktif_calisanlar if c.id not in beyan_eden_ids]
-    calisamayanlar = [k for k in kayitlar if k.calisamiyorum]
-    # "Çalışamıyorum" seçeneği eklenmeden önce 0 gün işaretleyen eski kayıtlar
-    gelmeyecekler = [k for k in kayitlar if not k.calisamiyorum and k.gun_sayisi == 0]
+    # Çalışamıyorum: checkbox'ı işaretleyenler + hiç gün seçmemiş eski kayıtlar
+    calisamayanlar = [k for k in kayitlar if k.calisamaz]
 
     # Müdürlük bazlı gün kırılımı (departman -> kadro adından parse fallback)
     mudurluk = {}
@@ -917,7 +918,7 @@ def _beyan_rapor_verisi(beyan):
         k = kayit_map.get(c.id)
         if k:
             m['beyan_eden'] += 1
-            if k.calisamiyorum:
+            if k.calisamaz:
                 m['calisamiyorum'] += 1
             if k.cuma:
                 m['cuma'] += 1
@@ -931,7 +932,6 @@ def _beyan_rapor_verisi(beyan):
         'kayitlar': kayitlar,
         'kayit_map': kayit_map,
         'beyan_etmeyenler': beyan_etmeyenler,
-        'gelmeyecekler': gelmeyecekler,
         'calisamayanlar': calisamayanlar,
         'calisamayan_sayi': len(calisamayanlar),
         'gun_sayaclari': beyan.gun_sayaclari,
@@ -1126,7 +1126,7 @@ def haftalik_beyan_export(id):
         ws.append([
             c.full_name, c.telefon or '-',
             _calisan_kadro_adi(c) or '-', _calisan_mudurluk(c),
-            'Evet' if k.calisamiyorum else 'Hayır',
+            'Evet' if k.calisamaz else 'Hayır',
             'Evet' if k.cuma else 'Hayır',
             'Evet' if k.cumartesi else 'Hayır',
             'Evet' if k.pazar else 'Hayır',

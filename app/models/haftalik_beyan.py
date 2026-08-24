@@ -57,14 +57,18 @@ class HaftalikBeyan(db.Model, TimestampMixin):
 
     @property
     def gun_sayaclari(self):
-        """Gün bazında kaç kişinin çalışacağını döndürür."""
-        from sqlalchemy import func
+        """Gün bazında kaç kişinin çalışacağını döndürür.
+
+        'calisamiyorum' hem checkbox'ı işaretleyenleri hem de hiç gün
+        seçmemiş eski kayıtları kapsar (BeyanKayit.calisamaz ile aynı kural).
+        """
+        from sqlalchemy import func, case
         row = db.session.query(
             func.count(BeyanKayit.id).label('toplam'),
             func.sum(db.cast(BeyanKayit.cuma, db.Integer)).label('cuma'),
             func.sum(db.cast(BeyanKayit.cumartesi, db.Integer)).label('cumartesi'),
             func.sum(db.cast(BeyanKayit.pazar, db.Integer)).label('pazar'),
-            func.sum(db.cast(BeyanKayit.calisamiyorum, db.Integer)).label('calisamiyorum'),
+            func.sum(case((BeyanKayit.calisamaz_kosulu(), 1), else_=0)).label('calisamiyorum'),
         ).filter(BeyanKayit.beyan_id == self.id).one()
         return {
             'toplam': row.toplam or 0,
@@ -148,11 +152,28 @@ class BeyanKayit(db.Model, TimestampMixin):
             gunler.append('Pazar')
         return gunler
 
+    @classmethod
+    def calisamaz_kosulu(cls):
+        """calisamaz property'sinin SQL karşılığı (NULL boolean'lar dahil)."""
+        return db.or_(
+            cls.calisamiyorum.is_(True),
+            db.and_(cls.cuma.isnot(True),
+                    cls.cumartesi.isnot(True),
+                    cls.pazar.isnot(True)),
+        )
+
+    @property
+    def calisamaz(self):
+        """Bu hafta hiç çalışmayacak olanlar.
+
+        "Bu hafta çalışamıyorum" seçeneği eklenmeden önce hiç gün
+        işaretlemeyen eski kayıtlar da aynı kategoriye girer.
+        """
+        return bool(self.calisamiyorum) or self.gun_sayisi == 0
+
     @property
     def durum_etiketi(self):
         """Rapor/Excel için tek satırlık beyan özeti."""
-        if self.calisamiyorum:
+        if self.calisamaz:
             return 'Çalışamıyorum'
-        if self.gun_sayisi == 0:
-            return 'Gelmeyecek'
         return ', '.join(self.secilen_gunler)
