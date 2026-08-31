@@ -876,12 +876,17 @@ def _aday_liste_query():
     ehliyet = request.args.get('ehliyet', '').strip()
     search = request.args.get('search', '').strip()
     iletisim = request.args.get('iletisim', '').strip()
+    mukerrer = request.args.get('mukerrer', '').strip()
 
     query = Aday.query.filter_by(is_deleted=False)
     query = apply_aday_scope(query)
 
     if iletisim:
         query = _iletisim_filtre_uygula(query, iletisim)
+
+    # Başvuru anında geçmiş red / işten ayrılış tespit edilenler
+    if mukerrer == 'uyarili':
+        query = query.filter(Aday.mukerrer_uyari.is_(True))
 
     if durum:
         query = query.filter(Aday.durum == durum)
@@ -932,6 +937,9 @@ def aday_liste():
     # "Son İletişim" kolonu için toplu yükleme (sadece bu sayfadaki adaylar)
     son_iletisim = _aday_son_iletisim([a.id for a in pagination.items])
 
+    # "Mükerrer başvuru" rozeti için toplu hesaplama
+    mukerrer_map = _aday_mukerrer_map(pagination.items)
+
     # İstatistikler (scope'a gore)
     scoped_base = apply_aday_scope(Aday.query.filter_by(is_deleted=False))
     stats = {
@@ -963,6 +971,7 @@ def aday_liste():
                           projeler=projeler,
                           iller=iller,
                           il_ilce_map=il_ilce_map,
+                          mukerrer_map=mukerrer_map,
                           son_iletisim=son_iletisim)
 
 
@@ -1347,8 +1356,17 @@ def aday_detay(id):
     
     ise_alim_hazir = len(eksik_evraklar) == 0 and aday.kvkk_onay
     
+    # Mükerrer başvuru: aynı TC/telefonla yapılmış diğer başvurular.
+    # Scope dışı kayıtlar da uyarı amacıyla gösterilir, ancak yalnızca
+    # scope içindekilere link verilir.
+    diger_basvurular = aday.diger_basvurular
+    diger_basvuru_erisim = {a.id: aday_in_scope(a) for a in diger_basvurular}
+
     return render_template('ik/aday_detay.html',
                           aday=aday,
+                          diger_basvurular=diger_basvurular,
+                          diger_basvuru_erisim=diger_basvuru_erisim,
+                          eski_calisan_kayitlari=aday.eski_calisan_kayitlari,
                           evrak_tipleri=evrak_tipleri,
                           evrak_listesi=_aday_evrak_listesi(aday),
                           aday_foto_url=(url_for('ik.aday_dosya_indir', id=aday.id,
@@ -1560,10 +1578,22 @@ def aday_onayla(id):
         flash('Onay için "Planlı Başlangıç Tarihi" zorunludur.', 'danger')
         return redirect(url_for('ik.aday_detay', id=id))
 
+    # Geçmişte red / işten ayrılış varsa İK bilinçli onay vermeli:
+    # modaldaki uyarı kutusundaki onay kutusu işaretlenmeden onay geçmez.
+    onceki_redler = aday.onceki_redler
+    eski_calisanlar = aday.eski_calisan_kayitlari
+    if (onceki_redler or eski_calisanlar) and not request.form.get('mukerrer_onay'):
+        flash('Bu adayın geçmiş red / işten ayrılış kaydı var. Onaylamak için '
+              'uyarıyı okuduğunuzu onaylamanız gerekiyor.', 'danger')
+        return redirect(url_for('ik.aday_detay', id=id))
+
     aday.planlanan_baslangic = datetime.strptime(planlanan, '%Y-%m-%d').date()
-    _aday_log(aday, 'onayla',
-              f'Onaylandı. Planlı başlangıç: {aday.planlanan_baslangic.strftime("%d.%m.%Y")}',
-              'onaylandi')
+    onay_aciklama = f'Onaylandı. Planlı başlangıç: {aday.planlanan_baslangic.strftime("%d.%m.%Y")}'
+    if onceki_redler or eski_calisanlar:
+        onay_aciklama += ' — Geçmiş kayıt uyarısı görülerek onaylandı'
+        if onceki_redler:
+            onay_aciklama += f' ({len(onceki_redler)} önceki red)'
+    _aday_log(aday, 'onayla', onay_aciklama, 'onaylandi')
     aday.durum = 'onaylandi'
     db.session.commit()
 
@@ -1735,6 +1765,55 @@ def _aday_son_iletisim(aday_ids):
         alt, AdayIslemGecmisi.id == alt.c.max_id
     ).all()
     return {log.aday_id: log for log in loglar}
+
+
+def _aday_mukerrer_map(adaylar):
+    """aday_id -> aynı kişiye ait toplam başvuru sayısı (kendisi dahil).
+
+    Aday listesindeki "Mükerrer başvuru" rozeti için toplu hesaplama yapar;
+    her satır için ayrı sorgu atmamak adına sayfadaki adayların TC ve telefon
+    değerleri tek sorguda taranır. Yalnızca 2+ kayıt içerenler döner.
+    """
+    if not adaylar:
+        return {}
+
+    tc_listesi = {a.tc_kimlik for a in adaylar if a.tc_kimlik}
+    tel_listesi = set()
+    for a in adaylar:
+        tel_listesi.update(Aday.telefon_varyantlari(a.telefon))
+    if not tc_listesi and not tel_listesi:
+        return {}
+
+    kosullar = []
+    if tc_listesi:
+        kosullar.append(Aday.tc_kimlik.in_(tc_listesi))
+    if tel_listesi:
+        kosullar.append(Aday.telefon.in_(tel_listesi))
+
+    rows = db.session.query(Aday.id, Aday.tc_kimlik, Aday.telefon).filter(
+        Aday.is_deleted == False,
+        db.or_(*kosullar),
+    ).all()
+
+    # Kimlik değeri -> eşleşen aday id'leri
+    tc_grup, tel_grup = {}, {}
+    for r in rows:
+        if r.tc_kimlik:
+            tc_grup.setdefault(r.tc_kimlik, set()).add(r.id)
+        for varyant in Aday.telefon_varyantlari(r.telefon):
+            tel_grup.setdefault(varyant, set()).add(r.id)
+
+    sonuc = {}
+    for a in adaylar:
+        eslesen = set()
+        if a.tc_kimlik:
+            eslesen |= tc_grup.get(a.tc_kimlik, set())
+        for varyant in Aday.telefon_varyantlari(a.telefon):
+            eslesen |= tel_grup.get(varyant, set())
+        eslesen.add(a.id)
+        if len(eslesen) > 1:
+            sonuc[a.id] = len(eslesen)
+    return sonuc
 
 
 def _iletisim_filtre_uygula(query, iletisim):

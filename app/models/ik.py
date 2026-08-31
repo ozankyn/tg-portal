@@ -232,7 +232,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     ad = db.Column(db.String(50), nullable=False)
     soyad = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(120))
-    telefon = db.Column(db.String(20))
+    telefon = db.Column(db.String(20), index=True)  # mükerrer başvuru taraması
     
     # ==================== Başvuru Bilgileri ====================
     pozisyon_id = db.Column(db.Integer, db.ForeignKey('pozisyonlar.id'))
@@ -279,7 +279,7 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     # degerlendiriliyor, mulakat, teklif, ise_alindi, red, iptal
     
     # ==================== Kişisel Bilgiler (Aday Doldurur) ====================
-    tc_kimlik = db.Column(db.String(11))
+    tc_kimlik = db.Column(db.String(11), index=True)  # mükerrer başvuru taraması
     dogum_tarihi = db.Column(db.Date)
     dogum_yeri = db.Column(db.String(100))
     cinsiyet = db.Column(db.String(10))  # erkek, kadin
@@ -367,6 +367,12 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     havuz_notu = db.Column(db.Text)               # Hangi tür pozisyona uygun / neden havuza alındı
     havuza_alinma_tarihi = db.Column(db.DateTime)
 
+    # ==================== Mükerrer Başvuru Uyarısı ====================
+    # Aynı TC/telefon ile daha önce reddedilmiş ya da işten ayrılmış bir kayıt
+    # varsa başvuru anında işaretlenir; İK onay/red kararını bilerek versin.
+    mukerrer_uyari = db.Column(db.Boolean, default=False)
+    mukerrer_uyari_notu = db.Column(db.Text)
+
     # ==================== İşe Alım Süreci (Faz 3) ====================
     planlanan_baslangic = db.Column(db.Date)          # Planlı işe başlangıç tarihi (onayda zorunlu)
     sgk_bildirgesi = db.Column(db.String(255))        # SGK giriş bildirgesi PDF dosya yolu
@@ -429,6 +435,93 @@ class Aday(db.Model, TimestampMixin, SoftDeleteMixin):
     @property
     def is_gri_liste(self):
         return self.blacklist_durum == ListeDurumu.GRI_LISTE
+
+    # ==================== Mükerrer Başvuru Tespiti ====================
+    # Aynı kişi = aynı TC kimlik VEYA aynı cep telefonu. Telefon alanı eski
+    # kayıtlarda normalize edilmemiş olabildiği için ham + normalize değerlerin
+    # ikisiyle de eşleştirilir.
+
+    RED_DURUMLARI = ('reddedildi', 'red')
+
+    @staticmethod
+    def telefon_varyantlari(telefon):
+        """Telefon eşleştirmesinde kullanılacak değerler (ham + normalize)."""
+        from app.utils import normalize_telefon
+        return [t for t in {telefon, normalize_telefon(telefon)} if t]
+
+    @classmethod
+    def mukerrer_kosulu(cls, tc_kimlik=None, telefon=None):
+        """Aynı kişiye ait kayıtları bulan SQLAlchemy koşulu.
+        Eşleştirilecek hiçbir kimlik bilgisi yoksa None döner."""
+        kosullar = []
+        if tc_kimlik:
+            kosullar.append(cls.tc_kimlik == tc_kimlik)
+        varyantlar = cls.telefon_varyantlari(telefon)
+        if varyantlar:
+            kosullar.append(cls.telefon.in_(varyantlar))
+        if not kosullar:
+            return None
+        return db.or_(*kosullar)
+
+    @property
+    def diger_basvurular(self):
+        """Aynı TC veya telefonla yapılmış DİĞER başvurular (yeniden eskiye).
+        Sonuç instance üzerinde cache'lenir (template birden çok kez okuyor)."""
+        if not hasattr(self, '_diger_basvurular_cache'):
+            kosul = Aday.mukerrer_kosulu(self.tc_kimlik, self.telefon)
+            if kosul is None:
+                self._diger_basvurular_cache = []
+            else:
+                self._diger_basvurular_cache = Aday.query.filter(
+                    Aday.id != self.id,
+                    Aday.is_deleted == False,
+                    kosul,
+                ).order_by(Aday.created_at.desc()).all()
+        return self._diger_basvurular_cache
+
+    @property
+    def mukerrer_sayisi(self):
+        """Bu kişiye ait toplam başvuru sayısı (kendisi dahil)."""
+        return len(self.diger_basvurular) + 1
+
+    @property
+    def is_mukerrer(self):
+        return len(self.diger_basvurular) > 0
+
+    @property
+    def onceki_redler(self):
+        """Aynı kişinin daha önce reddedilmiş başvuruları."""
+        return [a for a in self.diger_basvurular if a.durum in Aday.RED_DURUMLARI]
+
+    @property
+    def eski_calisan_kayitlari(self):
+        """Aynı TC/telefonla işe alınmış ve AYRILMIŞ çalışan kayıtları.
+        Bu adayın kendi dönüştüğü çalışan hariç tutulur."""
+        if not hasattr(self, '_eski_calisan_cache'):
+            kosullar = []
+            if self.tc_kimlik:
+                kosullar.append(Calisan.tc_kimlik == self.tc_kimlik)
+            varyantlar = Aday.telefon_varyantlari(self.telefon)
+            if varyantlar:
+                kosullar.append(Calisan.telefon.in_(varyantlar))
+            if not kosullar:
+                self._eski_calisan_cache = []
+            else:
+                q = Calisan.query.filter(
+                    Calisan.is_deleted == False,
+                    Calisan.durum == CalisanDurumu.AYRILDI,
+                    db.or_(*kosullar),
+                )
+                if self.calisan_id:
+                    q = q.filter(Calisan.id != self.calisan_id)
+                self._eski_calisan_cache = q.order_by(
+                    Calisan.isten_ayrilma.desc().nulls_last()).all()
+        return self._eski_calisan_cache
+
+    @property
+    def mukerrer_uyari_var(self):
+        """İK'nın karar öncesi görmesi gereken bir geçmiş kayıt var mı?"""
+        return bool(self.onceki_redler or self.eski_calisan_kayitlari)
     
     @property
     def is_token_valid(self):
@@ -818,6 +911,7 @@ class AdayIslemGecmisi(db.Model, TimestampMixin):
         'havuza_al': 'Havuza Alındı',
         'aday_reddetti': 'Aday İşi Reddetti',
         'havuzdan_ata': 'Havuzdan Kadroya Atandı',
+        'mukerrer_basvuru': 'Mükerrer Başvuru Tespit Edildi',
         'durum': 'Durum Güncellendi',
         'planli_tarih': 'Planlı Başlangıç Tarihi Değiştirildi',
         # İletişim logları

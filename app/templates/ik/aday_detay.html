@@ -49,6 +49,48 @@
 </div>
 {% endif %}
 
+{% set onceki_redler = aday.onceki_redler %}
+{% if onceki_redler %}
+<div class="mb-6 bg-rose-50 dark:bg-rose-900/20 border-2 border-rose-400 dark:border-rose-700 rounded-lg p-4 flex items-start gap-3">
+    <span class="material-symbols-outlined text-rose-600 text-2xl mt-0.5">history</span>
+    <div class="flex-1">
+        <h4 class="font-bold text-rose-800 dark:text-rose-300">GEÇMİŞ RED KAYDI — {{ onceki_redler|length }} başvuru</h4>
+        {% for r in onceki_redler %}
+        <p class="text-sm text-rose-700 dark:text-rose-400 mt-1">
+            Bu aday daha önce <strong>{{ r.kadro.pozisyon_adi if r.kadro else 'bilinmeyen kadro' }}</strong> kadrosunda reddedildi
+            {% set red_tarih = r.red_tarihi or r.basvuru_tarihi or r.created_at %}
+            {% if red_tarih %}({{ red_tarih.strftime('%d.%m.%Y') }}){% endif %}.
+            {% if r.red_nedeni %}<strong>Sebep:</strong> {{ r.red_nedeni }}{% else %}Red sebebi girilmemiş.{% endif %}
+        </p>
+        {% endfor %}
+        <a href="#diger-basvurular" class="inline-flex items-center gap-1 text-sm font-bold text-rose-800 dark:text-rose-300 hover:underline mt-2">
+            <span class="material-symbols-outlined text-sm">arrow_downward</span> Başvuru geçmişini gör
+        </a>
+    </div>
+</div>
+{% endif %}
+
+{% if eski_calisan_kayitlari %}
+<div class="mb-6 bg-sky-50 dark:bg-sky-900/20 border-2 border-sky-400 dark:border-sky-700 rounded-lg p-4 flex items-start gap-3">
+    <span class="material-symbols-outlined text-sky-600 text-2xl mt-0.5">badge</span>
+    <div class="flex-1">
+        <h4 class="font-bold text-sky-800 dark:text-sky-300">DAHA ÖNCE ÇALIŞMIŞ — İşten çıkış kaydı var</h4>
+        {% for c in eski_calisan_kayitlari %}
+        <p class="text-sm text-sky-700 dark:text-sky-400 mt-1">
+            Bu kişi daha önce
+            <strong>{{ c.kadro.proje.ad if c.kadro and c.kadro.proje else (c.departman.ad if c.departman else 'bilinmeyen proje') }}</strong>
+            projesinde çalışmış
+            {% if c.isten_ayrilma %}ve <strong>{{ c.isten_ayrilma.strftime('%d.%m.%Y') }}</strong> tarihinde ayrılmış{% endif %}.
+            {% if c.ayrilma_nedeni %}<strong>Ayrılma nedeni:</strong> {{ c.ayrilma_nedeni }}{% endif %}
+            {% if has_permission('ik.view') %}
+            <a href="{{ url_for('ik.detay', id=c.id) }}" class="font-bold hover:underline">Çalışan kaydı →</a>
+            {% endif %}
+        </p>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <!-- Main Content Grid -->
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
     
@@ -322,6 +364,76 @@
             </div>
         </div>
 
+        <!-- Başvuru Geçmişi: aynı TC/telefonla yapılmış diğer başvurular -->
+        {% if diger_basvurular %}
+        <div id="diger-basvurular" class="bg-white dark:bg-card-dark rounded-xl border-2 border-orange-300 dark:border-orange-800 p-6 shadow-sm scroll-mt-24">
+            <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-1 flex items-center gap-2">
+                <span class="material-symbols-outlined text-orange-600">content_copy</span>
+                Bu Kişinin Diğer Başvuruları
+                <span class="inline-flex items-center px-2 py-0.5 text-xs font-bold rounded-full bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">{{ diger_basvurular|length }}</span>
+            </h3>
+            <p class="text-sm text-text-muted dark:text-text-muted-dark mb-4">
+                Aynı TC kimlik numarası veya cep telefonu ile yapılmış başvurular.
+            </p>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-xs text-text-muted dark:text-text-muted-dark border-b border-border-light dark:border-border-dark">
+                        <tr>
+                            <th class="px-3 py-2 text-left font-medium">Proje / Kadro</th>
+                            <th class="px-3 py-2 text-left font-medium">Başvuru Tarihi</th>
+                            <th class="px-3 py-2 text-left font-medium">Durum</th>
+                            <th class="px-3 py-2 text-left font-medium">Red / Havuz Notu</th>
+                            <th class="px-3 py-2 w-10"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border-light dark:divide-border-dark">
+                        {% for b in diger_basvurular %}
+                        <tr class="{% if b.durum in ('reddedildi', 'red') %}bg-rose-50 dark:bg-rose-900/10{% endif %}">
+                            <td class="px-3 py-2">
+                                <p class="font-medium text-text-primary dark:text-text-primary-dark">{{ b.kadro.pozisyon_adi if b.kadro else (b.pozisyon.ad if b.pozisyon else '-') }}</p>
+                                <p class="text-xs text-text-muted dark:text-text-muted-dark">{{ b.kadro.proje.ad if b.kadro and b.kadro.proje else '-' }}</p>
+                            </td>
+                            <td class="px-3 py-2 text-text-muted dark:text-text-muted-dark">
+                                {% set b_tarih = b.basvuru_tarihi or b.created_at %}
+                                {{ b_tarih.strftime('%d.%m.%Y') if b_tarih else '-' }}
+                            </td>
+                            <td class="px-3 py-2">
+                                {% if b.durum in ('reddedildi', 'red') %}
+                                <span class="inline-flex px-2 py-1 text-xs font-bold rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400">Reddedildi</span>
+                                {% elif b.durum == 'calisana_donusturuldu' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Çalışana Dönüştürüldü</span>
+                                {% elif b.durum == 'havuzda' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">Havuzda</span>
+                                {% elif b.durum == 'aday_reddetti' %}
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400">Aday Reddetti</span>
+                                {% else %}
+                                <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">{{ b.basvuru_durumu_text }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-3 py-2 text-text-muted dark:text-text-muted-dark">
+                                {% if b.red_nedeni %}
+                                <span class="text-rose-700 dark:text-rose-400">{{ b.red_nedeni }}</span>
+                                {% if b.red_tarihi %}<span class="text-xs block">{{ b.red_tarihi.strftime('%d.%m.%Y') }}</span>{% endif %}
+                                {% elif b.havuz_notu %}{{ b.havuz_notu }}
+                                {% else %}-{% endif %}
+                            </td>
+                            <td class="px-3 py-2">
+                                {% if diger_basvuru_erisim.get(b.id) %}
+                                <a href="{{ url_for('ik.aday_detay', id=b.id) }}" class="p-1.5 inline-flex text-text-muted dark:text-text-muted-dark hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded" title="Başvuruyu aç">
+                                    <span class="material-symbols-outlined text-lg">open_in_new</span>
+                                </a>
+                                {% else %}
+                                <span class="material-symbols-outlined text-lg text-text-muted dark:text-text-muted-dark" title="Bu başvuru yetki kapsamınız dışında">lock</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
         <!-- Süreç Geçmişi (timeline) -->
         <div class="bg-white dark:bg-card-dark rounded-xl border border-border-light dark:border-border-dark p-6 shadow-sm">
             <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-4 flex items-center gap-2">
@@ -346,7 +458,7 @@
             <ol class="relative border-l border-border-light dark:border-border-dark ml-2">
                 {% for log in gecmis %}
                 <li class="mb-5 ml-5">
-                    <span class="absolute -left-1.5 w-3 h-3 rounded-full {% if log.is_iletisim %}{{ dot_renk.get(log.islem, 'bg-primary') }}{% elif log.islem == 'reddet' %}bg-red-500{% elif log.islem == 'donustur' %}bg-green-500{% else %}bg-primary{% endif %}"></span>
+                    <span class="absolute -left-1.5 w-3 h-3 rounded-full {% if log.is_iletisim %}{{ dot_renk.get(log.islem, 'bg-primary') }}{% elif log.islem == 'reddet' %}bg-red-500{% elif log.islem == 'mukerrer_basvuru' %}bg-orange-500{% elif log.islem == 'donustur' %}bg-green-500{% else %}bg-primary{% endif %}"></span>
                     <div class="flex items-center justify-between gap-2 flex-wrap">
                         <p class="text-sm font-bold text-[#111418] dark:text-white flex items-center gap-1.5">
                             {% if log.is_iletisim %}
@@ -364,7 +476,7 @@
                         Geri aranacak: {{ log.hatirlatma_tarihi.strftime('%d.%m.%Y %H:%M') }}
                     </p>
                     {% endif %}
-                    {% if log.aciklama %}<p class="text-sm text-text-muted dark:text-text-muted-dark mt-0.5">{{ log.aciklama }}</p>{% endif %}
+                    {% if log.aciklama %}<p class="text-sm text-text-muted dark:text-text-muted-dark mt-0.5 whitespace-pre-line">{{ log.aciklama }}</p>{% endif %}
                     <p class="text-xs text-text-muted dark:text-text-muted-dark mt-0.5">{{ log.kullanici.full_name if log.kullanici else 'Sistem' }}</p>
                 </li>
                 {% endfor %}
@@ -1038,6 +1150,33 @@
         <h3 class="text-lg font-bold text-[#111418] dark:text-white mb-4">Adayı Onayla</h3>
         <form action="{{ url_for('ik.aday_onayla', id=aday.id) }}" method="POST" class="js-once-submit">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            {% if onceki_redler or eski_calisan_kayitlari %}
+            <!-- Geçmiş red / ayrılış uyarısı — İK bilinçli karar versin -->
+            <div class="mb-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-300 dark:border-rose-800 rounded-lg p-3">
+                <p class="font-bold text-rose-800 dark:text-rose-300 text-sm flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-base">warning</span> Dikkat — geçmiş kayıt bulundu
+                </p>
+                <ul class="mt-2 space-y-1 text-sm text-rose-700 dark:text-rose-400 list-disc list-inside">
+                    {% for r in onceki_redler %}
+                    {% set red_tarih = r.red_tarihi or r.basvuru_tarihi or r.created_at %}
+                    <li>
+                        Bu aday daha önce <strong>{{ r.kadro.pozisyon_adi if r.kadro else 'bilinmeyen kadro' }}</strong> kadrosunda reddedildi{% if red_tarih %} ({{ red_tarih.strftime('%d.%m.%Y') }}){% endif %}.
+                        {% if r.red_nedeni %} Sebep: {{ r.red_nedeni }}{% endif %}
+                    </li>
+                    {% endfor %}
+                    {% for c in eski_calisan_kayitlari %}
+                    <li>
+                        Bu kişi daha önce <strong>{{ c.kadro.proje.ad if c.kadro and c.kadro.proje else (c.departman.ad if c.departman else 'bilinmeyen proje') }}</strong> projesinde çalışmış{% if c.isten_ayrilma %} ve {{ c.isten_ayrilma.strftime('%d.%m.%Y') }} tarihinde ayrılmış{% endif %}.
+                        {% if c.ayrilma_nedeni %} Ayrılma nedeni: {{ c.ayrilma_nedeni }}{% endif %}
+                    </li>
+                    {% endfor %}
+                </ul>
+                <label class="flex items-start gap-2 mt-3 cursor-pointer">
+                    <input type="checkbox" name="mukerrer_onay" value="1" required class="mt-0.5 w-4 h-4 rounded border-rose-400">
+                    <span class="text-sm font-medium text-rose-800 dark:text-rose-300">Uyarıyı okudum, adayı onaylamaya devam ediyorum.</span>
+                </label>
+            </div>
+            {% endif %}
             <label class="block text-sm font-medium text-text-muted dark:text-text-muted-dark mb-1">Planlı Başlangıç Tarihi <span class="text-red-500">*</span></label>
             <input type="date" name="planlanan_baslangic" required value="{{ aday.planlanan_baslangic.strftime('%Y-%m-%d') if aday.planlanan_baslangic else '' }}"
                    class="w-full bg-gray-50 dark:bg-[#111418] border-border-light dark:border-border-dark rounded-lg p-2.5 text-sm">

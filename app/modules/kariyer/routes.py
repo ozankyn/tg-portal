@@ -8,9 +8,11 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from datetime import datetime, timedelta, date
 from app import db
 from app.models.ik import (
-    Aday, KAYNAK_TURLERI, BASVURU_KAYNAK_TURLERI, BEDEN_SECENEKLERI,
+    Aday, AdayIslemGecmisi, Calisan,
+    KAYNAK_TURLERI, BASVURU_KAYNAK_TURLERI, BEDEN_SECENEKLERI,
     EvrakTipi, AdayEvrak, AdayMedya, SozlesmeSablonu,
 )
+from app.models.base import CalisanDurumu
 from app.models.proje import HedefKadro, Proje, Musteri, Il, Ilce
 from app.services.video_sikistir import sikistir_async
 from app.utils import (
@@ -100,6 +102,80 @@ def _max_dogum_tarihi():
         return bugun.replace(year=bugun.year - MIN_BASVURU_YAS).isoformat()
     except ValueError:  # 29 Şubat → 28 Şubat
         return bugun.replace(year=bugun.year - MIN_BASVURU_YAS, day=28).isoformat()
+
+
+# ============================================================
+# MÜKERRER BAŞVURU TESPİTİ
+# Aynı kişi = aynı TC kimlik VEYA aynı cep telefonu.
+# ============================================================
+
+
+def _onceki_basvurular(tc_kimlik, telefon):
+    """Aynı kişiye ait mevcut başvurular (yeniden eskiye, silinmişler hariç)."""
+    kosul = Aday.mukerrer_kosulu(tc_kimlik, telefon)
+    if kosul is None:
+        return []
+    return Aday.query.filter(
+        Aday.is_deleted == False,
+        kosul,
+    ).order_by(Aday.created_at.desc()).all()
+
+
+def _ayrilmis_calisanlar(tc_kimlik, telefon):
+    """Aynı kişinin daha önce çalışıp AYRILDIĞI kayıtlar."""
+    kosullar = []
+    if tc_kimlik:
+        kosullar.append(Calisan.tc_kimlik == tc_kimlik)
+    varyantlar = Aday.telefon_varyantlari(telefon)
+    if varyantlar:
+        kosullar.append(Calisan.telefon.in_(varyantlar))
+    if not kosullar:
+        return []
+    return Calisan.query.filter(
+        Calisan.is_deleted == False,
+        Calisan.durum == CalisanDurumu.AYRILDI,
+        db.or_(*kosullar),
+    ).order_by(Calisan.isten_ayrilma.desc().nulls_last()).all()
+
+
+def _basvuru_ozet(aday):
+    """Geçmiş bir başvuruyu tek satırda özetler (kadro — tarih — durum)."""
+    kadro_ad = aday.kadro.pozisyon_adi if aday.kadro else 'Kadro bilinmiyor'
+    tarih = aday.basvuru_tarihi or aday.created_at
+    parca = f"{kadro_ad} ({tarih.strftime('%d.%m.%Y')})" if tarih else kadro_ad
+    return f"{parca} — {aday.basvuru_durumu_text}"
+
+
+def _mukerrer_uyari_notu(onceki_basvurular, eski_calisanlar):
+    """İK'nın onay/red öncesi görmesi gereken uyarı özeti (yoksa None).
+
+    Yalnızca "dikkat" gerektiren geçmiş kayıtlar yazılır: reddedilmiş
+    başvurular ve işten ayrılmış çalışan kayıtları.
+    """
+    satirlar = []
+    for a in onceki_basvurular:
+        if a.durum not in Aday.RED_DURUMLARI:
+            continue
+        kadro_ad = a.kadro.pozisyon_adi if a.kadro else 'Kadro bilinmiyor'
+        tarih = a.red_tarihi or a.basvuru_tarihi or a.created_at
+        satir = f"{kadro_ad} kadrosunda reddedildi"
+        if tarih:
+            satir += f" ({tarih.strftime('%d.%m.%Y')})"
+        if a.red_nedeni:
+            satir += f" — Sebep: {a.red_nedeni}"
+        satirlar.append(satir)
+
+    for c in eski_calisanlar:
+        proje_ad = (c.kadro.proje.ad if c.kadro and c.kadro.proje
+                    else (c.departman.ad if c.departman else 'Proje bilinmiyor'))
+        satir = f"{proje_ad} projesinde çalışmış"
+        if c.isten_ayrilma:
+            satir += f", {c.isten_ayrilma.strftime('%d.%m.%Y')} tarihinde ayrılmış"
+        if c.ayrilma_nedeni:
+            satir += f" — Sebep: {c.ayrilma_nedeni}"
+        satirlar.append(satir)
+
+    return '\n'.join(satirlar) or None
 
 
 def _otp_valid(bsv):
@@ -404,24 +480,23 @@ def basvuru_form(kadro_id):
             elif _dosya_boyut(video_file) > _VIDEO_MAX:
                 hatalar.append(f'{video_file.filename}: video boyutu 100 MB sınırını aşıyor.')
 
-        # Mükerrer başvuru kontrolü — aynı kadroya aynı TC veya telefon ile
-        # daha önce başvuru yapılmış mı? (silinmiş kayıtlar sayılmaz)
+        # Mükerrer başvuru kontrolü — aynı TC veya telefon ile daha önce
+        # yapılmış başvurular aranır (silinmiş kayıtlar sayılmaz).
+        #   * Aynı kadroya tekrar başvuru  → engellenir
+        #   * Farklı kadroya başvuru       → kabul edilir, süreç geçmişine loglanır
+        #   * Geçmişte red / işten ayrılış → kabul edilir, İK'ya uyarı flag'i konur
         tc_kimlik = request.form.get('tc_kimlik')
         telefon = (bsv.get('telefon') if bsv.get('telefon_dogrulandi')
                    else normalize_telefon(request.form.get('telefon')))
         if not telefon:
             hatalar.append('Geçerli bir cep telefonu numarası girin. Örnek: 05XX XXX XX XX')
+
+        onceki_basvurular = []
         if not hatalar:
-            mukerrer = Aday.query.filter(
-                Aday.kadro_id == kadro_id,
-                Aday.is_deleted == False,
-                db.or_(
-                    db.and_(tc_kimlik != None, Aday.tc_kimlik == tc_kimlik),
-                    db.and_(telefon != None, Aday.telefon == telefon),
-                ),
-            ).first()
-            if mukerrer:
-                hatalar.append('Bu pozisyona daha önce başvuru yapmışsınız.')
+            onceki_basvurular = _onceki_basvurular(tc_kimlik, telefon)
+            if any(a.kadro_id == kadro_id for a in onceki_basvurular):
+                hatalar.append('Bu pozisyona daha önce başvuru yapmışsınız. '
+                               'Başvurunuz kayıtlarımızda mevcut, tekrar başvurmanıza gerek yok.')
 
         # Hata varsa: girilen verileri koruyarak formu yeniden göster (redirect YOK)
         if hatalar:
@@ -437,6 +512,12 @@ def basvuru_form(kadro_id):
                                    iller=iller, form_hatalari=hatalar,
                                    max_dogum_tarihi=_max_dogum_tarihi()), 400
 
+        # ---- Mükerrer/geçmiş kayıt uyarısı ----
+        # Başvuru engellenmedi (farklı kadro), ancak geçmişte red ya da işten
+        # ayrılış varsa İK'nın kararını bilerek vermesi için flag konur.
+        eski_calisanlar = _ayrilmis_calisanlar(tc_kimlik, telefon)
+        uyari_notu = _mukerrer_uyari_notu(onceki_basvurular, eski_calisanlar)
+
         # ---- Aday kaydını oluştur (tüm bilgiler tek INSERT) ----
         aday = Aday(
             ad=ad,
@@ -451,6 +532,8 @@ def basvuru_form(kadro_id):
             telefon_dogrulandi=bool(bsv.get('telefon_dogrulandi')),
             basvuru_tamamlandi=True,
             basvuru_tarihi=datetime.now(),
+            mukerrer_uyari=bool(uyari_notu),
+            mukerrer_uyari_notu=uyari_notu,
         )
         aday.generate_token()
         if bsv.get('telefon_dogrulandi'):
@@ -527,6 +610,23 @@ def basvuru_form(kadro_id):
         # Aday'ı kaydet ve ID al (dosya yolları aday.id'ye göre oluşturulur)
         db.session.add(aday)
         db.session.flush()
+
+        # Mükerrer başvuru logu — aday reddedilmese bile geçmiş görünür olsun
+        if onceki_basvurular or eski_calisanlar:
+            aciklama = 'Bu kişi adına daha önce kayıt bulundu:'
+            for a in onceki_basvurular:
+                aciklama += f'\n• Başvuru: {_basvuru_ozet(a)}'
+            for c in eski_calisanlar:
+                ayrilma = (c.isten_ayrilma.strftime('%d.%m.%Y')
+                           if c.isten_ayrilma else 'tarih yok')
+                aciklama += f'\n• Çalışan kaydı: {c.full_name} — ayrılış {ayrilma}'
+            db.session.add(AdayIslemGecmisi(
+                aday_id=aday.id,
+                islem='mukerrer_basvuru',
+                aciklama=aciklama,
+                onceki_durum=None,
+                yeni_durum=aday.durum,
+            ))
 
         # Dosya yüklemeleri
         import os
