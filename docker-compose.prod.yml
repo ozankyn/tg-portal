@@ -30,7 +30,7 @@ services:
       - OUTLOOK_TENANT_ID=${OUTLOOK_TENANT_ID}
       - OUTLOOK_REDIRECT_URI=${OUTLOOK_REDIRECT_URI}
     volumes:
-      - uploads:/app/uploads
+      - /mnt/HC_Volume_106653597:/app/uploads
     depends_on:
       - db
       - redis
@@ -69,4 +69,3 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  uploads:
