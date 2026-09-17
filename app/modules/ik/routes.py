@@ -431,6 +431,7 @@ def _calisan_liste_query():
     proje_id = request.args.get('proje_id', type=int)
     durum = request.args.get('durum')
     ehliyet = request.args.get('ehliyet', '').strip()
+    liste_durumu = request.args.get('liste_durumu', '').strip()
     search = request.args.get('search', '').strip()
 
     query = Calisan.query.filter_by(is_deleted=False)
@@ -446,6 +447,8 @@ def _calisan_liste_query():
         query = query.filter(Calisan.ehliyet_sinifi.isnot(None), Calisan.ehliyet_sinifi != '')
     elif ehliyet == 'yok':
         query = query.filter(db.or_(Calisan.ehliyet_sinifi.is_(None), Calisan.ehliyet_sinifi == ''))
+    if liste_durumu in ('temiz', 'gri_liste', 'kara_liste'):
+        query = query.filter(Calisan.liste_durumu == ListeDurumu(liste_durumu))
     if search:
         search_filter = f'%{search}%'
         query = query.filter(
@@ -865,6 +868,28 @@ def duzenle(id):
 # ADAY YÖNETİMİ
 # ============================================================
 
+def _aday_listede_mi(liste):
+    """Aday'ın TC'siyle eşleşen, verilen kara/gri listede bir çalışan kaydı var mı?"""
+    return db.session.query(Calisan.id).filter(
+        Aday.tc_kimlik.isnot(None),
+        Aday.tc_kimlik != '',
+        Calisan.tc_kimlik == Aday.tc_kimlik,
+        Calisan.is_deleted == False,
+        Calisan.liste_durumu == liste,
+    ).exists()
+
+
+def _aday_liste_durumu_kosulu(liste_durumu):
+    """Aday listesi için kara/gri liste filtre koşulu (TC üzerinden türetilir)."""
+    kara = _aday_listede_mi(ListeDurumu.KARA_LISTE)
+    gri = _aday_listede_mi(ListeDurumu.GRI_LISTE)
+    if liste_durumu == 'kara_liste':
+        return kara
+    if liste_durumu == 'gri_liste':
+        return db.and_(gri, db.not_(kara))
+    return db.and_(db.not_(kara), db.not_(gri))
+
+
 def _aday_liste_query():
     """Aday listesi query builder - liste ve export icin ortak filtre mantigi"""
     durum = request.args.get('durum')
@@ -877,6 +902,7 @@ def _aday_liste_query():
     search = request.args.get('search', '').strip()
     iletisim = request.args.get('iletisim', '').strip()
     mukerrer = request.args.get('mukerrer', '').strip()
+    liste_durumu = request.args.get('liste_durumu', '').strip()
 
     query = Aday.query.filter_by(is_deleted=False)
     query = apply_aday_scope(query)
@@ -910,6 +936,10 @@ def _aday_liste_query():
         query = query.filter(_ehliyet_var_kosul)
     elif ehliyet == 'yok':
         query = query.filter(db.not_(_ehliyet_var_kosul))
+    # Kara/gri liste: adayda kolon yok, TC ile eşleşen eski çalışan kaydından
+    # türetiliyor (bkz. Aday.blacklist_calisan). Kara liste gri listeye baskın.
+    if liste_durumu in ('temiz', 'gri_liste', 'kara_liste'):
+        query = query.filter(_aday_liste_durumu_kosulu(liste_durumu))
     if search:
         search_filter = f'%{search}%'
         query = query.filter(

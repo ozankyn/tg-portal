@@ -95,6 +95,14 @@
                 <option value="var" {% if request.args.get('ehliyet') == 'var' %}selected{% endif %}>Ehliyeti Var</option>
                 <option value="yok" {% if request.args.get('ehliyet') == 'yok' %}selected{% endif %}>Ehliyeti Yok</option>
             </select>
+
+            <!-- Liste Durumu Filter -->
+            <select name="liste_durumu" onchange="this.form.submit()" class="h-9 px-3 rounded-lg text-xs font-medium bg-gray-100 dark:bg-[#111418] border border-border-light dark:border-border-dark focus:ring-primary focus:border-primary">
+                <option value="">Liste Durumu: Tümü</option>
+                <option value="temiz" {% if request.args.get('liste_durumu') == 'temiz' %}selected{% endif %}>Temiz</option>
+                <option value="gri_liste" {% if request.args.get('liste_durumu') == 'gri_liste' %}selected{% endif %}>Gri Liste</option>
+                <option value="kara_liste" {% if request.args.get('liste_durumu') == 'kara_liste' %}selected{% endif %}>Kara Liste</option>
+            </select>
         </div>
         
         <!-- Search -->
@@ -152,7 +160,17 @@
                                 {% endif %}
                             </div>
                             <div class="min-w-0">
-                                <p class="text-sm font-bold text-[#111418] dark:text-white truncate">{{ calisan.ad }} {{ calisan.soyad }}</p>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-sm font-bold text-[#111418] dark:text-white truncate">{{ calisan.ad }} {{ calisan.soyad }}</p>
+                                    {% set _liste = calisan.liste_durumu.value if calisan.liste_durumu else 'temiz' %}
+                                    {% if _liste == 'kara_liste' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400 shrink-0"
+                                          title="{{ calisan.liste_nedeni or 'Kara listede' }}">KARA LİSTE</span>
+                                    {% elif _liste == 'gri_liste' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 shrink-0"
+                                          title="{{ calisan.liste_nedeni or 'Gri listede' }}">GRİ LİSTE</span>
+                                    {% endif %}
+                                </div>
                                 <p class="text-xs text-text-muted dark:text-text-muted-dark truncate">{{ calisan.email or calisan.telefon or '-' }}</p>
                             </div>
                         </div>

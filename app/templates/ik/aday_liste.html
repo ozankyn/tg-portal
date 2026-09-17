@@ -129,6 +129,15 @@
                 </select>
             </div>
             <div class="w-48">
+                <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Liste Durumu</label>
+                <select name="liste_durumu" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Tümü</option>
+                    <option value="temiz" {% if request.args.get('liste_durumu') == 'temiz' %}selected{% endif %}>Temiz</option>
+                    <option value="gri_liste" {% if request.args.get('liste_durumu') == 'gri_liste' %}selected{% endif %}>Gri Liste</option>
+                    <option value="kara_liste" {% if request.args.get('liste_durumu') == 'kara_liste' %}selected{% endif %}>Kara Liste</option>
+                </select>
+            </div>
+            <div class="w-48">
                 <label class="block text-sm font-medium text-text-primary dark:text-text-primary-dark mb-1">Mükerrer</label>
                 <select name="mukerrer" class="w-full px-3 py-2 border border-border-light dark:border-border-dark dark:bg-[#111418] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">Tümü</option>
